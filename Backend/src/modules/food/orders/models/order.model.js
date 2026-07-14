@@ -150,7 +150,9 @@ const deliveryStateSchema = new mongoose.Schema(
         reachedPickupAt: { type: Date, default: null },
         reachedDropAt: { type: Date, default: null },
         pickedUpAt: { type: Date, default: null },
-        deliveredAt: { type: Date, default: null }
+        deliveredAt: { type: Date, default: null },
+        completedAt: { type: Date, default: null },
+        pickupTime: { type: Date, default: null }
     },
     { _id: false }
 );
@@ -239,9 +241,14 @@ const orderSchema = new mongoose.Schema(
             required: true,
             validate: (v) => Array.isArray(v) && v.length > 0
         },
+        orderType: {
+            type: String,
+            enum: ['delivery', 'takeaway'],
+            default: 'delivery'
+        },
         deliveryAddress: {
             type: deliveryAddressSchema,
-            required: true
+            required: function() { return this.orderType === 'delivery'; }
         },
         customerName: { type: String, default: '', trim: true },
         customerPhone: { type: String, default: '', trim: true },
@@ -268,6 +275,7 @@ const orderSchema = new mongoose.Schema(
                 'picked_up',
                 'reached_drop',
                 'delivered',
+                'completed',
                 'cancelled_by_user',
                 'cancelled_by_restaurant',
                 'cancelled_by_admin',

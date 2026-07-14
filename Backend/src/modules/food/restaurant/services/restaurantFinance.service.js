@@ -3,6 +3,7 @@ import { FoodOrder } from '../../orders/models/order.model.js';
 import { FoodTransaction } from '../../orders/models/foodTransaction.model.js';
 import { FoodRestaurant } from '../models/restaurant.model.js';
 import { FoodRestaurantWithdrawal } from '../models/foodRestaurantWithdrawal.model.js';
+import { RestaurantBonusTransaction } from '../models/restaurantBonusTransaction.model.js';
 
 function toTwoDigitYearString(dateObj) {
     const y = String(dateObj.getFullYear());
@@ -161,6 +162,13 @@ export async function getRestaurantFinance(restaurantId, query = {}) {
         orders: currentCycleOrders
     };
 
+    // Calculate Bonus Earnings
+    const bonusTransactionsAgg = await RestaurantBonusTransaction.aggregate([
+        { $match: { restaurantId: rid } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const totalBonusEarnings = Number(bonusTransactionsAgg?.[0]?.total || 0);
+
     // Invoice Summary (derived from current cycle or broader if needed)
     const invoiceSummary = {
         count: currentCycleOrders.length,
@@ -224,7 +232,8 @@ export async function getRestaurantFinance(restaurantId, query = {}) {
         },
         currentCycle,
         invoiceSummary,
-        pastCycles: pastCyclesResult
+        pastCycles: pastCyclesResult,
+        bonusEarnings: totalBonusEarnings
     };
 }
 

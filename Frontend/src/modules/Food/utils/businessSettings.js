@@ -52,6 +52,7 @@ export const loadBusinessSettings = async () => {
       const settings = response?.data?.data || response?.data;
 
       if (settings) {
+        settings.companyName = "Zapoo";
         cachedSettings = settings;
         try {
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -77,7 +78,9 @@ export const loadBusinessSettings = async () => {
  * Update favicon in document
  */
 export const updateFavicon = (url) => {
-  if (!url || typeof document === 'undefined') return;
+  // Default to Zapoo user logo if no url provided
+  url = url || "/src/assets/user_logo.jpeg";
+  if (typeof document === 'undefined') return;
 
   // Remove existing favicons
   const existingFavicons = document.querySelectorAll("link[rel*='icon']");
@@ -97,8 +100,8 @@ export const updateFavicon = (url) => {
  * Update page title
  */
 export const updateTitle = (companyName) => {
-  if (companyName && typeof document !== 'undefined') {
-    document.title = companyName;
+  if (typeof document !== 'undefined') {
+    document.title = "Zapoo";
   }
 };
 
@@ -131,27 +134,30 @@ export const clearCache = () => {
  * Get cached settings
  */
 export const getCachedSettings = () => {
+  if (cachedSettings) {
+    cachedSettings.companyName = "Zapoo";
+  }
   return cachedSettings;
 };
 
 /**
  * Get company name from business settings with fallback
- * @returns {string} Company name or default "Indian Bites Food"
+ * @returns {string} Company name or default "Zapoo Food"
  */
 export const getCompanyName = () => {
   const settings = getCachedSettings();
-  return settings?.companyName || "Indian Bites";
+  return settings?.companyName || "Zapoo";
 };
 
 /**
  * Get company name asynchronously (loads if not cached)
- * @returns {Promise<string>} Company name or default "Indian Bites Food"
+ * @returns {Promise<string>} Company name or default "Zapoo Food"
  */
 export const getCompanyNameAsync = async () => {
   try {
     const settings = await loadBusinessSettings();
-    return settings?.companyName || "Indian Bites";
+    return settings?.companyName || "Zapoo";
   } catch (error) {
-    return "Indian Bites";
+    return "Zapoo";
   }
 };

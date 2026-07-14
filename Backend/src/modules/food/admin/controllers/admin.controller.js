@@ -54,6 +54,21 @@ export async function updateCustomerStatus(req, res, next) {
     }
 }
 
+export async function toggleCustomerCod(req, res, next) {
+    try {
+        const { id } = req.params;
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid customer id' });
+        }
+        const isCodBlocked = req.body?.isCodBlocked;
+        const updated = await adminService.toggleCustomerCod(id, isCodBlocked);
+        if (!updated) return res.status(404).json({ success: false, message: 'Customer not found' });
+        res.status(200).json({ success: true, message: 'Customer COD status updated successfully', data: { user: updated, customer: updated } });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export async function topupCustomerWallet(req, res, next) {
     try {
         const { id } = req.params;
@@ -685,6 +700,25 @@ export async function updateAdminOfferCartVisibility(req, res, next) {
         }
         res.status(200).json({ success: true, message: 'Offer updated successfully', data: { offer: updated } });
     } catch (error) {
+        next(error);
+    }
+}
+
+export async function updateAdminOffer(req, res, next) {
+    try {
+        const { id } = req.params;
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid offer id' });
+        }
+        const updated = await adminService.updateAdminOffer(id, req.body);
+        if (!updated) {
+            return res.status(404).json({ success: false, message: 'Offer not found' });
+        }
+        res.status(200).json({ success: true, message: 'Offer updated successfully', data: updated });
+    } catch (error) {
+        if (error.name === 'ValidationError' || (error.message && error.message.includes('already exists'))) {
+            return res.status(400).json({ success: false, message: error.message });
+        }
         next(error);
     }
 }

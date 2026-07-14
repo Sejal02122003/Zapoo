@@ -15,6 +15,7 @@ import {
     requestAdminForgotPasswordOtpController,
     resetAdminPasswordWithOtpController
 } from './auth.controller.js';
+import { impersonateRestaurantController } from './auth.controller.js';
 import { authMiddleware, requireAdmin } from './auth.middleware.js';
 import { authRateLimiter } from '../../middleware/rateLimit.js';
 
@@ -53,6 +54,9 @@ router.get('/me', authMiddleware, getMeController);
 // Admin-only: profile update & change password (Bearer + ADMIN role)
 router.patch('/admin/profile', authMiddleware, requireAdmin, updateAdminProfileController);
 router.post('/admin/change-password', authMiddleware, requireAdmin, changeAdminPasswordController);
+
+// Admin impersonate restaurant
+router.post('/admin/impersonate/restaurant/:restaurantId', authMiddleware, requireAdmin, impersonateRestaurantController);
 
 export default router;
 

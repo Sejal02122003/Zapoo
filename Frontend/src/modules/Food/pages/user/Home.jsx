@@ -88,7 +88,7 @@ import {
 import { useAppLocation } from "@food/hooks/useAppLocation";
 import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png";
 import offerImage from "@food/assets/offerimage.png";
-import api, { publicGetOnce, restaurantAPI, getPublicLandingSettings, getPublicExploreIcons, getPublicCategories } from "@food/api";
+import api, { publicGetOnce, restaurantAPI, getPublicLandingSettings, getPublicExploreIcons, getPublicCategories, getPublicFoods } from "@food/api";
 import { API_BASE_URL } from "@food/api/config";
 import OptimizedImage, { ShopPlaceholder } from "@food/components/OptimizedImage";
 import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability";
@@ -162,6 +162,96 @@ const roundCoord = (value) =>
   Number.isFinite(Number(value))
     ? Math.round(Number(value) * 100000) / 100000
     : null;
+
+const AnimatedSamosa = ({ className, delay = 0, scale = 1, isHoldingUmbrella = false }) => {
+  return (
+    <motion.div 
+      className={`relative flex items-center justify-center drop-shadow-2xl ${className}`}
+      style={{ width: 140 * scale, height: 140 * scale }}
+      animate={{ y: [-5, 5, -5], scale: [1, 1.02, 1] }}
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay }}
+    >
+      <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
+        <defs>
+          <radialGradient id={`samosaGrad-${delay}`} cx="50%" cy="50%" r="50%" fx="30%" fy="30%">
+            <stop offset="0%" stopColor="#FDE047" />
+            <stop offset="60%" stopColor="#EAB308" />
+            <stop offset="100%" stopColor="#CA8A04" />
+          </radialGradient>
+        </defs>
+        
+        <motion.path 
+          d="M100 30 Q 40 150 30 170 Q 100 190 170 170 Q 160 150 100 30 Z" 
+          fill={`url(#samosaGrad-${delay})`}
+          stroke="#A16207"
+          strokeWidth="4"
+          strokeLinejoin="round"
+        />
+        <path d="M40 160 Q 100 175 160 160" stroke="#A16207" strokeWidth="4" fill="none" opacity="0.5"/>
+        
+        <g>
+          <motion.ellipse 
+            cx="75" cy="120" rx="6" ry="10" fill="#1F2937"
+            animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
+            transition={{ duration: 4, repeat: Infinity, times: [0, 0.45, 0.5, 0.55, 1], delay }}
+          />
+          <circle cx="73" cy="116" r="2" fill="white" />
+          
+          <motion.ellipse 
+            cx="125" cy="120" rx="6" ry="10" fill="#1F2937"
+            animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
+            transition={{ duration: 4, repeat: Infinity, times: [0, 0.45, 0.5, 0.55, 1], delay }}
+          />
+          <circle cx="123" cy="116" r="2" fill="white" />
+        </g>
+        
+        <path d="M90 140 Q100 155 110 140" stroke="#1F2937" strokeWidth="4" strokeLinecap="round" fill="none" />
+        <path d="M95 145 Q100 150 105 145" stroke="#EF4444" strokeWidth="3" strokeLinecap="round" fill="none" />
+        
+        <ellipse cx="60" cy="130" rx="8" ry="5" fill="#FCA5A5" opacity="0.8" />
+        <ellipse cx="140" cy="130" rx="8" ry="5" fill="#FCA5A5" opacity="0.8" />
+      </svg>
+      
+      {isHoldingUmbrella && (
+        <motion.div 
+          className="absolute text-[80px] z-10"
+          style={{ top: '-40px', left: '-10px', originY: "100%" }}
+          animate={{ rotate: [-5, 5, -5] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        >
+          ☔
+        </motion.div>
+      )}
+    </motion.div>
+  )
+}
+
+const AnimatedChai = ({ className }) => (
+  <motion.div 
+    className={`relative flex items-center justify-center drop-shadow-lg ${className}`}
+    animate={{ rotate: [-2, 2, -2] }}
+    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+  >
+    <svg viewBox="0 0 100 120" className="w-[45px] h-[65px] overflow-visible">
+      <path d="M20 20 L30 110 Q 50 120 70 110 L80 20 Z" fill="rgba(255,255,255,0.4)" stroke="#9CA3AF" strokeWidth="2" />
+      <path d="M25 40 L30 108 Q 50 115 70 108 L75 40 Z" fill="#D97706" />
+      <ellipse cx="50" cy="40" rx="25" ry="4" fill="#F59E0B" />
+      <path d="M20 20 L30 110 Q 50 120 70 110 L80 20 Z" fill="rgba(255,255,255,0.2)" />
+      <ellipse cx="50" cy="20" rx="30" ry="6" stroke="#9CA3AF" strokeWidth="2" fill="none" />
+      
+      <motion.path 
+        d="M40 5 Q 30 -10 50 -20" stroke="white" strokeWidth="3" fill="none" opacity="0.6" strokeLinecap="round"
+        animate={{ y: [-5, -15], opacity: [0.6, 0] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      />
+      <motion.path 
+        d="M60 0 Q 70 -15 50 -25" stroke="white" strokeWidth="3" fill="none" opacity="0.6" strokeLinecap="round"
+        animate={{ y: [-5, -15], opacity: [0.6, 0] }}
+        transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+      />
+    </svg>
+  </motion.div>
+);
 
 export default function Home() {
   const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
@@ -263,6 +353,12 @@ export default function Home() {
   const [menuCategories, setMenuCategories] = useState([]);
   const [loadingMenuCategories, setLoadingMenuCategories] = useState(false);
   const [showAllCategoriesModal, setShowAllCategoriesModal] = useState(false);
+  
+  // Category food filtering state
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [categoryFoods, setCategoryFoods] = useState([]);
+  const [isFoodsLoading, setIsFoodsLoading] = useState(false);
+  
   const isHandlingSwitchOff = useRef(false);
   const heroShellRef = useRef(null);
   const stickyHeaderRef = useRef(null);
@@ -554,6 +650,7 @@ export default function Home() {
     const combinedList = [...staticCategories];
     const staticNames = new Set(staticCategories.map(c => c.name.toLowerCase()));
 
+    /*
     list.forEach(category => {
       const name = String(category.name || category.label || "").toLowerCase();
       if (!staticNames.has(name)) {
@@ -561,6 +658,7 @@ export default function Home() {
         staticNames.add(name);
       }
     });
+    */
 
     return combinedList;
   }, [menuCategories, realCategories, normalizedLandingCategories]);
@@ -697,6 +795,36 @@ export default function Home() {
   } = profileContext;
   const { addToCart, cart } = useCart();
   const { location, loading: effectiveZoneLoading, requestLocation, zoneId: effectiveZoneId, zoneStatus: effectiveZoneStatus, isOutOfService: isEffectiveLocationOutOfService } = useAppLocation();
+  
+  useEffect(() => {
+    async function fetchCategoryFoods() {
+      setIsFoodsLoading(true);
+      try {
+        const params = { limit: 100 };
+        if (effectiveZoneId) params.zoneId = effectiveZoneId;
+        if (selectedCategory) params.category = selectedCategory;
+        const res = await getPublicFoods(params);
+        if (Array.isArray(res)) {
+          setCategoryFoods(res);
+        } else if (res && Array.isArray(res.foods)) {
+          setCategoryFoods(res.foods);
+        } else if (res?.data && Array.isArray(res.data)) {
+          setCategoryFoods(res.data);
+        } else if (res?.data?.foods && Array.isArray(res.data.foods)) {
+          setCategoryFoods(res.data.foods);
+        } else {
+          setCategoryFoods([]);
+        }
+      } catch (err) {
+        console.error("Error fetching category foods:", err);
+        setCategoryFoods([]);
+      } finally {
+        setIsFoodsLoading(false);
+      }
+    }
+    fetchCategoryFoods();
+  }, [selectedCategory, effectiveZoneId]);
+
   const [showToast, setShowToast] = useState(false);
   const [showManageCollections, setShowManageCollections] = useState(false);
   const [selectedRestaurantSlug, setSelectedRestaurantSlug] = useState(null);
@@ -2146,140 +2274,106 @@ export default function Home() {
         </div>
 
         <div className="md:hidden relative overflow-x-clip bg-white dark:bg-[#0a0a0a]">
-          {/* Brand Top Section (Vibrant Orange Theme) */}
-          {/* Decoupled Dark Background - Dynamic height based on actual components to prevent clipping sticky elements while covering properly */}
-          <div
-            className="absolute top-0 left-0 right-0 overflow-hidden bg-gradient-to-b from-[#FE593B] to-[#FD7C50] rounded-b-[2rem] shadow-lg pointer-events-none z-0 transition-all duration-300 [transform:translateZ(0)] [mask-image:-webkit-radial-gradient(white,black)]"
-            style={{ height: festVideoActive ? '360px' : (headerBgHeight > 0 ? `${headerBgHeight + 30}px` : (activeTab === 'food' ? '320px' : '160px')) }}
-          >
-            {festVideoActive && (
-              <div className="absolute inset-0 z-0 overflow-hidden rounded-b-[2rem] bg-slate-900 pointer-events-auto">
-                {festBannerImages.map((image, index) => (
-                  <img
-                    key={`hero-bg-${index}-${image}`}
-                    src={image}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out"
-                    style={{
-                      opacity: bgIndex === index ? 1 : 0,
-                      zIndex: bgIndex === index ? 2 : 1,
-                    }}
-                    loading={index === 0 ? "eager" : "lazy"}
-                    draggable={false}
-                  />
-                ))}
-                <div className="absolute inset-0 bg-black/20 z-[3]" />
+          {/* Unified Top Section with Banner Background */}
+          <div className="relative z-40 w-full rounded-b-[3rem] shadow-2xl bg-gradient-to-b from-slate-800 to-slate-600 transition-all duration-300 overflow-hidden">
+            {/* Background Effects Container */}
+            <div className="absolute inset-0 pointer-events-none z-0">
+              {/* Lightning Flash Effect */}
+              <motion.div
+                className="absolute inset-0 bg-white"
+                animate={{ opacity: [0, 0, 0.4, 0, 0, 0.15, 0, 0] }}
+                transition={{ duration: 7, repeat: Infinity, ease: "linear", times: [0, 0.8, 0.81, 0.83, 0.85, 0.86, 0.88, 1] }}
+              />
+              {/* Optional subtle overlay */}
+              <div className="absolute inset-0 bg-black/20" />
+              {/* Parallax Rain */}
+              {[...Array(30)].map((_, i) => (
+                <motion.div
+                  key={`rain-front-${i}`}
+                  className="absolute w-[2px] h-[50px] bg-white/40 rounded-full"
+                  style={{ left: `${Math.random() * 100}%`, top: -60, rotate: '5deg' }}
+                  animate={{ y: ['0px', '500px'], x: ['0px', '40px'] }}
+                  transition={{ duration: 0.5 + Math.random() * 0.3, repeat: Infinity, delay: Math.random() * 1, ease: "linear" }}
+                />
+              ))}
+              {/* Background decorative elements */}
+              {activeTab === "food" && (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+                  className="absolute right-[-20px] top-[-50px] w-[200px] h-[200px] bg-white/10 rounded-full blur-2xl pointer-events-none"
+                />
+              )}
+            </div>
+
+            {/* Header Section (Floating over the background) */}
+            <div className="relative z-20 w-full pt-1 pb-2">
+              <HomeHeader
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                location={effectiveLocation}
+                handleLocationClick={handleLocationClick}
+                handleSearchFocus={handleSearchFocus}
+                placeholderIndex={placeholderIndex}
+                placeholders={placeholders}
+                vegMode={vegMode}
+                handleVegModeChange={handleVegModeChange}
+                isCategoryStuck={isCategoryStuck}
+                handleVoiceSearchClick={handleVoiceSearchClick}
+              />
+            </div>
+
+            {/* Banner Content (Text, Mascots) positioned at the bottom of this unified block */}
+            {activeTab === "food" && (
+              <div id="fest-banner-wrapper" className="relative z-10 w-full h-[190px] sm:h-[210px] px-4 sm:px-6 pt-8 pb-8 flex items-center justify-between">
+                
+                {/* Content Container (Text & Badge) */}
+                <div className="flex flex-col justify-center h-full">
+                  <motion.div
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.1, type: "spring", stiffness: 120 }}
+                  >
+                    <span className="inline-flex items-center gap-1 bg-white text-[#FE593B] text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-widest shadow-md">
+                      <Flame className="w-3 h-3 text-[#FE593B] fill-[#FE593B]" />
+                      Hot Offers
+                    </span>
+                  </motion.div>
+
+                  <motion.h2
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 120 }}
+                    className="text-white font-black text-[26px] sm:text-3xl leading-[1.05] mt-2.5 drop-shadow-[0_2px_10px_rgba(0,0,0,0.15)]"
+                  >
+                    HUNGRY?<br />
+                    <span className="text-yellow-300">WE GOT YOU!</span>
+                  </motion.h2>
+
+                  <motion.p
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.3, type: "spring", stiffness: 120 }}
+                    className="text-white/90 text-xs sm:text-sm font-bold mt-1.5"
+                  >
+                    Free delivery on first order
+                  </motion.p>
+                </div>
+
+                {/* Mascots Container */}
+                <div className="flex items-end justify-end h-full pb-4">
+                  <AnimatedChai className="z-0 mb-1 mr-[-10px] sm:mr-0" />
+                  <div className="relative flex items-end">
+                    <AnimatedSamosa className="z-10 relative mr-[-25px] sm:mr-[-35px]" scale={0.75} delay={0.5} />
+                    <AnimatedSamosa className="z-20 relative" scale={0.85} isHoldingUmbrella={true} />
+                  </div>
+                </div>
               </div>
             )}
-            {/* Animated glowing decorative blobs */}
-            <motion.div
-              animate={{
-                scale: [1, 1.2, 1],
-                x: [-10, 10, -10],
-                y: [-10, 10, -10],
-              }}
-              transition={{
-                duration: 8,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              className="absolute -top-12 -left-12 w-40 h-40 rounded-full bg-yellow-300/35 blur-2xl pointer-events-none"
-            />
-            <motion.div
-              animate={{
-                scale: [1.2, 1, 1.2],
-                x: [10, -10, 10],
-                y: [10, -10, 10],
-              }}
-              transition={{
-                duration: 10,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              className="absolute -bottom-16 -right-12 w-48 h-48 rounded-full bg-orange-300/25 blur-3xl pointer-events-none"
-            />
-
-            {/* Animated Light Sunburst Rays in Orange Background */}
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 70, repeat: Infinity, ease: "linear" }}
-              className="absolute w-[600px] h-[600px] top-[-150px] left-[-150px] opacity-10 pointer-events-none z-0"
-              style={{
-                backgroundImage: `repeating-conic-gradient(from 0deg, rgba(255,255,255,0.4) 0deg 15deg, transparent 15deg 30deg)`
-              }}
-            />
-
-            {/* Stable floating food icons related to the website */}
-            {[
-              { emoji: '🍕', x: 20, delay: 0, duration: 12, scale: 0.8 },
-              { emoji: '🍔', x: 80, delay: 3, duration: 15, scale: 1.1 },
-              { emoji: '🌶️', x: 140, delay: 1.5, duration: 10, scale: 0.9 },
-              { emoji: '🍗', x: 200, delay: 4.5, duration: 14, scale: 1.0 },
-              { emoji: '🍩', x: 260, delay: 2, duration: 16, scale: 0.85 },
-              { emoji: '🍕', x: 100, delay: 6, duration: 13, scale: 0.95 },
-              { emoji: '🍔', x: 220, delay: 7.5, duration: 15, scale: 1.05 }
-            ].map((item, i) => (
-              <motion.div
-                key={`food-float-${i}`}
-                initial={{
-                  x: `${item.x}px`,
-                  y: 280,
-                  opacity: 0,
-                  scale: item.scale,
-                  rotate: i * 45,
-                }}
-                animate={{
-                  y: [280, -60],
-                  rotate: [i * 45, i * 45 + 360],
-                  opacity: [0, 0.25, 0.25, 0],
-                }}
-                transition={{
-                  duration: item.duration,
-                  repeat: Infinity,
-                  ease: "linear",
-                  delay: item.delay,
-                }}
-                className="absolute text-xl pointer-events-none filter blur-[0.3px] select-none z-[1]"
-              >
-                {item.emoji}
-              </motion.div>
-            ))}
           </div>
 
-          {/* Unified Scroll Container so Sticky Search Bar works for the whole page */}
-          <div className="relative z-10 w-full mb-2">
-            <HomeHeader
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              location={effectiveLocation}
-              handleLocationClick={handleLocationClick}
-              handleSearchFocus={handleSearchFocus}
-              placeholderIndex={placeholderIndex}
-              placeholders={placeholders}
-              vegMode={vegMode}
-              handleVegModeChange={handleVegModeChange}
-              isCategoryStuck={isCategoryStuck}
-              handleVoiceSearchClick={handleVoiceSearchClick}
-            />
-
-            {activeTab === "food" && (
-              <div id="fest-banner-wrapper" className="w-full">
-                {festVideoActive ? (
-                  <div className="w-full h-[235px] sm:h-[245px]" />
-                ) : (
-                  <div className="pb-4 sm:pb-6">
-                    <FestBanner
-                      isVegMode={vegMode}
-                      images={[]}
-                      hideFoodImages={false}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="h-3 w-full" />
-
+          {/* Main Page Content Container */}
+          <div className="relative z-20 w-full -mt-4 mb-2">
             <AnimatePresence mode="wait">
               {activeTab === "food" ? (
                 <motion.div
@@ -2324,13 +2418,15 @@ export default function Home() {
                         </span>
                       </Link>
 
-                      {displayCategories.map((category, index) => (
-                        <Link
+                      {displayCategories.map((category, index) => {
+                        const isSelected = selectedCategory === (category.slug || "");
+                        return (
+                        <div
                           key={category.id || index}
-                          to={Object.keys(COLLECTION_DATA).includes(category.slug) ? `/user/collection/${category.slug}` : `/user/category/${category.slug}`}
-                          className="flex-shrink-0 flex flex-col items-center gap-1.5 group w-[76px]"
+                          onClick={() => setSelectedCategory(category.slug || "")}
+                          className="flex-shrink-0 flex flex-col items-center gap-1.5 group w-[76px] cursor-pointer"
                         >
-                          <div className="relative w-[68px] h-[68px] sm:w-[84px] sm:h-[84px] rounded-full overflow-hidden shadow-md border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] group-active:scale-95 transition-all duration-300">
+                          <div className={`relative w-[68px] h-[68px] sm:w-[84px] sm:h-[84px] rounded-full overflow-hidden shadow-md border-2 group-active:scale-95 transition-all duration-300 ${isSelected ? "border-primary bg-primary/10" : "border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1a1a]"}`}>
                             {/* Shining Glint Effect */}
                             <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
                               <motion.div
@@ -2356,8 +2452,8 @@ export default function Home() {
                           <span className="text-[11px] font-extrabold text-gray-900 dark:text-gray-100 text-center leading-tight line-clamp-1 w-full px-0.5">
                             {category.name}
                           </span>
-                        </Link>
-                      ))}
+                        </div>
+                      )})}
                     </div>
                   </div>
 
@@ -2507,7 +2603,49 @@ export default function Home() {
                     showSkeleton={showExploreSkeleton}
                   />
 
-                  {/* Featured Foods - Horizontal Scroll */}
+                  {/* Category Filtered Foods */}
+                  {(selectedCategory !== "" || categoryFoods.length > 0 || isFoodsLoading) && (
+                    <section className="content-auto space-y-0 pt-3 sm:pt-4 pb-4">
+                      <div className="px-4 mb-3">
+                        <h2 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-400 tracking-widest uppercase">
+                          {isFoodsLoading ? "Finding delicious items..." : `${categoryFoods.length} Food Items`}
+                        </h2>
+                      </div>
+
+                      {isFoodsLoading ? (
+                        <div className="px-4 py-8 flex items-center justify-center">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      ) : categoryFoods.length === 0 ? (
+                        <div className="px-4 py-8 flex flex-col items-center justify-center text-center">
+                          <div className="w-16 h-16 bg-gray-50 dark:bg-[#1a1a1a] rounded-full flex items-center justify-center mb-3">
+                            <Search className="h-6 w-6 text-gray-400" />
+                          </div>
+                          <p className="text-gray-500 font-medium text-sm">No items found in this category</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-4">
+                          {categoryFoods.map(food => (
+                            <div key={food.id || food._id} className="rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] shadow-sm flex flex-col">
+                              <div className="relative h-28 bg-gray-50">
+                                <OptimizedImage src={food.image} alt={food.name} className="w-full h-full object-cover" />
+                              </div>
+                              <div className="p-2.5 flex-1 flex flex-col">
+                                <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">{food.name}</h3>
+                                <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-1">{food.restaurantName}</p>
+                                <div className="mt-auto pt-2 flex items-center justify-between">
+                                  <span className="text-sm font-bold">₹{food.price}</span>
+                                  <div className="h-6 w-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-primary">
+                                    <Plus className="h-3 w-3" />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  )}
 
                   {/* Restaurants - Enhanced with Animations */}
                   <section
@@ -3650,3 +3788,4 @@ export default function Home() {
     </div>
   );
 }
+

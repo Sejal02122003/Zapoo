@@ -6,6 +6,7 @@ import { FoodZone } from '../../admin/models/zone.model.js';
 import { FoodOffer } from '../../admin/models/offer.model.js';
 import { FoodDiningRestaurant } from '../../dining/models/diningRestaurant.model.js';
 import Promocode from '../../../../models/Promocode.js';
+import { LocationCoupon } from '../../admin/models/locationCoupon.model.js';
 import { upsertOutletTimingsForRestaurant } from './outletTimings.service.js';
 import { getDrivingDistances } from '../../../../services/googleMaps.service.js';
 import { parseQueryLimit, parseQueryPage } from '../../../../utils/helpers.js';
@@ -500,10 +501,10 @@ export const getCurrentRestaurantProfile = async (restaurantId) => {
                 'openingTime',
                 'closingTime',
                 'openDays',
-                'estimatedDeliveryTime',
                 'estimatedDeliveryTimeMinutes',
                 'diningSettings',
                 'isAcceptingOrders',
+                'isTakeawayEnabled',
                 'status',
                 'approvedAt',
                 'pendingUpdateReason',
@@ -568,6 +569,7 @@ export const updateRestaurantAcceptingOrders = async (restaurantId, isAcceptingO
                 'openDays',
                 'diningSettings',
                 'isAcceptingOrders',
+                'isTakeawayEnabled',
                 'status',
                 'approvedAt',
                 'pendingUpdateReason',
@@ -776,6 +778,23 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
             }
         } else {
             throw new ValidationError('pureVegRestaurant must be a boolean');
+        }
+    }
+
+    if (body.isTakeawayEnabled !== undefined) {
+        if (typeof body.isTakeawayEnabled === 'boolean') {
+            update.isTakeawayEnabled = body.isTakeawayEnabled;
+        } else if (typeof body.isTakeawayEnabled === 'string') {
+            const normalized = body.isTakeawayEnabled.trim().toLowerCase();
+            if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+                update.isTakeawayEnabled = true;
+            } else if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+                update.isTakeawayEnabled = false;
+            } else {
+                throw new ValidationError('isTakeawayEnabled must be a boolean');
+            }
+        } else {
+            throw new ValidationError('isTakeawayEnabled must be a boolean');
         }
     }
 
@@ -1020,8 +1039,11 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         reason = 'Restaurant Name Change';
     }
 
-    update.pendingUpdateReason = reason;
-    update.status = 'pending';
+    const fieldsRequiringApproval = updatedFields.filter(f => f !== 'isTakeawayEnabled');
+    if (fieldsRequiringApproval.length > 0) {
+        update.pendingUpdateReason = reason;
+        update.status = 'pending';
+    }
 
     try {
         const doc = await FoodRestaurant.findByIdAndUpdate(
@@ -1051,6 +1073,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                     'ownerEmail',
                     'ownerPhone',
                     'primaryContactNumber',
+                    'isTakeawayEnabled',
                 'pureVegRestaurant',
                 'profileImage',
                 'coverImages',
@@ -1086,7 +1109,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
             }
         ).lean();
 
-        if (currentRestaurant.status !== 'pending') {
+        if (fieldsRequiringApproval.length > 0 && currentRestaurant.status !== 'pending') {
             const restaurantNameForNotification =
                 update.restaurantName || currentRestaurant.restaurantName || doc?.restaurantName;
             void notifyAdminsAboutRestaurantProfileReview(restaurantId, restaurantNameForNotification);
@@ -1253,6 +1276,10 @@ export const uploadRestaurantMenuImages = async (restaurantId, files = []) => {
 };
 
 export const listApprovedRestaurants = async (query = {}) => {
+    // OVERRIDE FOR ZAPOO: Disable location/zone filters to show ALL restaurants
+    query.zoneId = '';
+    query.lat = '';
+    query.lng = '';
     const limit = parseQueryLimit(query.limit, 100, 1000);
     const page = parseQueryPage(query.page, 1);
     const skip = (page - 1) * limit;
@@ -1288,6 +1315,9 @@ export const listApprovedRestaurants = async (query = {}) => {
     const maxPrice = toFiniteNumber(query.maxPrice);
     if (maxPrice !== null) {
         filter.featuredPrice = { $lte: Math.max(0, maxPrice) };
+    }
+    if (query.isTakeawayEnabled === 'true') {
+        filter.isTakeawayEnabled = true;
     }
     if (query.topRated === 'true') {
         filter.rating = { ...(filter.rating || {}), $gte: 4.5 };
@@ -1659,6 +1689,13 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, query = {}) => {
         // Filter out those that have reached usage limit
         const validPromos = restaurantPromos.filter(p => !p.usageLimit || p.usageCount < p.usageLimit);
 
+        // Fetch Location Coupons
+        const locationCoupons = await LocationCoupon.find({
+            restaurantId,
+            isActive: true,
+            $or: [{ expiryDate: { $exists: false } }, { expiryDate: null }, { expiryDate: { $gt: now } }]
+        }).sort({ createdAt: -1 }).lean();
+
         const mappedAdminOffers = adminOffers.map(o => ({
             id: String(o._id),
             title: o.discountType === 'percentage'
@@ -1681,7 +1718,18 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, query = {}) => {
             discountValue: p.discountValue
         }));
 
-        return [...mappedAdminOffers, ...mappedPromos];
+        const mappedLocationCoupons = locationCoupons.map(lc => ({
+            id: String(lc._id),
+            title: lc.discountType === 'percentage'
+                ? `${Number(lc.discountValue) || 0}% OFF up to ₹${lc.maximumDiscount}`
+                : `Flat ₹${Number(lc.discountValue) || 0} OFF`,
+            code: lc.code,
+            description: lc.description || `Special location-based offer! Max distance ${lc.maximumDistance}km`,
+            discountType: lc.discountType,
+            discountValue: lc.discountValue
+        }));
+
+        return [...mappedAdminOffers, ...mappedPromos, ...mappedLocationCoupons];
     };
 
     let doc = null;
@@ -1752,7 +1800,15 @@ export const listPublicOffers = async () => {
         .populate({ path: 'restaurantId', select: 'restaurantName restaurantNameNormalized profileImage estimatedDeliveryTime rating' })
         .lean();
 
-    const allOffers = list.map((o) => {
+    const locationCouponsList = await LocationCoupon.find({
+        isActive: true,
+        $or: [{ expiryDate: { $exists: false } }, { expiryDate: null }, { expiryDate: { $gt: now } }]
+    })
+        .sort({ createdAt: -1 })
+        .populate({ path: 'restaurantId', select: 'restaurantName restaurantNameNormalized profileImage estimatedDeliveryTime rating' })
+        .lean();
+
+    const mappedFoodOffers = list.map((o) => {
         const restaurant = o.restaurantId && typeof o.restaurantId === 'object' ? o.restaurantId : null;
         const restaurantSlug = restaurant?.restaurantNameNormalized || undefined;
         const restaurantName =
@@ -1791,9 +1847,45 @@ export const listPublicOffers = async () => {
         };
     });
 
+    const mappedLocationCoupons = locationCouponsList.map((lc) => {
+        const restaurant = lc.restaurantId && typeof lc.restaurantId === 'object' ? lc.restaurantId : null;
+        let title = '';
+        if (lc.discountType === 'percentage') {
+            title = `${Number(lc.discountValue) || 0}% OFF`;
+            if (lc.maximumDiscount) title += ` up to ₹${lc.maximumDiscount}`;
+        } else {
+            title = `₹${Number(lc.discountValue) || 0} OFF`;
+            if (lc.minimumOrderAmount) title += ` above ₹${lc.minimumOrderAmount}`;
+        }
+        
+        return {
+            id: String(lc._id),
+            offerId: String(lc._id),
+            couponCode: lc.code,
+            title,
+            discountType: lc.discountType,
+            discountValue: lc.discountValue,
+            maxDiscount: lc.maximumDiscount ?? null,
+            customerScope: 'all',
+            restaurantScope: 'selected',
+            restaurantId: restaurant?._id ? String(restaurant._id) : String(lc.restaurantId),
+            restaurantName: restaurant?.restaurantName || 'Selected Restaurant',
+            restaurantSlug: restaurant?.restaurantNameNormalized || undefined,
+            restaurantImage: restaurant?.profileImage || null,
+            deliveryTime: restaurant?.estimatedDeliveryTime || null,
+            restaurantRating: typeof restaurant?.rating === 'number' ? restaurant.rating : 0,
+            endDate: lc.expiryDate || null,
+            showInCart: true,
+            minOrderValue: lc.minimumOrderAmount ?? 0,
+            isLocationCoupon: true
+        };
+    });
+
+    const allOffers = [...mappedFoodOffers, ...mappedLocationCoupons];
+
     // Categorize into dailyDeals and bestOffers
     // For demo/UI mapping: take the highest percentage discounts or first 2 as daily deals
-    const dailyDeals = allOffers.slice(0, 2).map(o => ({
+    const dailyDeals = mappedFoodOffers.slice(0, 2).map(o => ({
         ...o,
         dealText: o.discountType === 'percentage' ? `Items at ${o.discountValue}% OFF` : `Starting at ₹119`, // Mock text for UI matching
     }));

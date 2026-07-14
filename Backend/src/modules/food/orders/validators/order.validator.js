@@ -60,7 +60,8 @@ export function validateCalculateOrderDto(body) {
         deliveryAddressId: z.string().optional(),
         zoneId: z.string().optional(),
         couponCode: z.string().optional(),
-        deliveryFleet: z.string().optional()
+        deliveryFleet: z.string().optional(),
+        orderType: z.enum(['delivery', 'takeaway']).optional().default('delivery')
     });
     const result = schema.safeParse(body);
     if (!result.success) {
@@ -74,8 +75,9 @@ export function validateCalculateOrderDto(body) {
 
 export function validateCreateOrderDto(body) {
     const schema = z.object({
+        orderType: z.enum(['delivery', 'takeaway']).optional().default('delivery'),
         items: z.array(orderItemSchema).min(1, 'At least one item required'),
-        address: addressSchema,
+        address: addressSchema.optional(),
         restaurantId: z.string().min(1, 'Restaurant id required'),
         restaurantName: z.string().optional(),
         customerName: z.string().optional(),
@@ -89,6 +91,12 @@ export function validateCreateOrderDto(body) {
         paymentMethod: z.enum(['cash', 'razorpay', 'razorpay_qr', 'card', 'wallet']),
         zoneId: z.string().nullable().optional(),
         scheduledAt: z.string().datetime({ offset: true }).nullable().optional()
+    }).refine(data => {
+        if (data.orderType === 'delivery' && !data.address) return false;
+        return true;
+    }, {
+        message: "Address is required for delivery orders",
+        path: ["address"]
     });
     const result = schema.safeParse(body);
     if (!result.success) {
@@ -133,6 +141,7 @@ export function validateOrderStatusDto(body) {
             'ready_for_pickup',
             'picked_up',
             'delivered',
+            'completed',
             'cancelled_by_restaurant'
         ]),
         note: z.string().optional()

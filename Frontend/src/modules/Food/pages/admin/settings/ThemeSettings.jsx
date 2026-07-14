@@ -14,12 +14,13 @@ export default function ThemeSettings() {
   const [selectedApp, setSelectedApp] = useState('user_app');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   
   const [configs, setConfigs] = useState({
-    user_app: { primaryColor: '#e11d48', secondaryColor: '#be123c', logoUrl: '', fontFamily: "'Poppins', sans-serif" },
-    delivery_app: { primaryColor: '#0ea5e9', secondaryColor: '#0284c7', logoUrl: '', fontFamily: "'Poppins', sans-serif" },
-    restaurant_app: { primaryColor: '#B80B3D', secondaryColor: '#66001D', logoUrl: '', fontFamily: "'Poppins', sans-serif" },
-    admin_app: { primaryColor: '#2563eb', secondaryColor: '#1d4ed8', logoUrl: '', fontFamily: "'Poppins', sans-serif" },
+    user_app: { primaryColor: '#e11d48', secondaryColor: '#be123c', logoUrl: '', logoHistory: [], fontFamily: "'Poppins', sans-serif", buttonHoverColor: '#3b82f6', sidebarFontColor: '#ffffff' },
+    delivery_app: { primaryColor: '#0ea5e9', secondaryColor: '#0284c7', logoUrl: '', logoHistory: [], fontFamily: "'Poppins', sans-serif", buttonHoverColor: '#3b82f6', sidebarFontColor: '#ffffff' },
+    restaurant_app: { primaryColor: '#B80B3D', secondaryColor: '#66001D', logoUrl: '', logoHistory: [], fontFamily: "'Poppins', sans-serif", buttonHoverColor: '#3b82f6', sidebarFontColor: '#ffffff' },
+    admin_app: { primaryColor: '#2563eb', secondaryColor: '#1d4ed8', logoUrl: '', logoHistory: [], fontFamily: "'Poppins', sans-serif", buttonHoverColor: '#3b82f6', sidebarFontColor: '#ffffff' },
   });
 
   const fontOptions = [
@@ -58,13 +59,40 @@ export default function ThemeSettings() {
   };
 
   const handleColorChange = (type, value) => {
-    setConfigs(prev => ({
-      ...prev,
-      [selectedApp]: {
-        ...prev[selectedApp],
-        [type]: value
+    setConfigs(prev => {
+      const appConfig = prev[selectedApp];
+      
+      // Special handling for logoUrl to instantly reflect history in UI
+      if (type === 'logoUrl') {
+        const currentUrl = appConfig.logoUrl;
+        let updatedHistory = [...(appConfig.logoHistory || [])];
+        
+        if (currentUrl && !updatedHistory.includes(currentUrl)) {
+          updatedHistory.push(currentUrl);
+        }
+        updatedHistory = updatedHistory.filter(url => url !== value);
+        if (updatedHistory.length > 10) {
+          updatedHistory = updatedHistory.slice(-10);
+        }
+        
+        return {
+          ...prev,
+          [selectedApp]: {
+            ...appConfig,
+            logoUrl: value,
+            logoHistory: updatedHistory
+          }
+        };
       }
-    }));
+      
+      return {
+        ...prev,
+        [selectedApp]: {
+          ...appConfig,
+          [type]: value
+        }
+      };
+    });
   };
 
   const handleLogoUpload = async (e) => {
@@ -93,12 +121,25 @@ export default function ThemeSettings() {
     setSaving(true);
     try {
       const currentConfig = configs[selectedApp];
-      await adminClient.put(`/app-config/${selectedApp}`, {
+      const response = await adminClient.put(`/app-config/${selectedApp}`, {
         primaryColor: currentConfig.primaryColor,
         secondaryColor: currentConfig.secondaryColor,
         logoUrl: currentConfig.logoUrl,
-        fontFamily: currentConfig.fontFamily
+        logoHistory: currentConfig.logoHistory, // Send the locally managed history
+        fontFamily: currentConfig.fontFamily,
+        buttonHoverColor: currentConfig.buttonHoverColor,
+        sidebarFontColor: currentConfig.sidebarFontColor
       });
+      
+      if (response.data?.success && response.data?.data) {
+        setConfigs(prev => ({
+          ...prev,
+          [selectedApp]: {
+            ...prev[selectedApp],
+            ...response.data.data
+          }
+        }));
+      }
       toast.success(`${apps.find(a => a.id === selectedApp).label} configuration saved!`);
       
       // Update theme instantly (so the admin panel shows the updated colors if they are editing the active app)
@@ -202,6 +243,42 @@ export default function ThemeSettings() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-2">Button Hover Color</label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="color"
+                      value={currentConfig.buttonHoverColor || '#3b82f6'}
+                      onChange={(e) => handleColorChange('buttonHoverColor', e.target.value)}
+                      className="w-14 h-14 rounded cursor-pointer border-0 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={currentConfig.buttonHoverColor || '#3b82f6'}
+                      onChange={(e) => handleColorChange('buttonHoverColor', e.target.value)}
+                      className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-2">Sidebar Font Color</label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="color"
+                      value={currentConfig.sidebarFontColor || '#ffffff'}
+                      onChange={(e) => handleColorChange('sidebarFontColor', e.target.value)}
+                      className="w-14 h-14 rounded cursor-pointer border-0 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={currentConfig.sidebarFontColor || '#ffffff'}
+                      onChange={(e) => handleColorChange('sidebarFontColor', e.target.value)}
+                      className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase"
+                    />
+                  </div>
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-slate-600 mb-2">Typography (Font Family)</label>
                   <select
                     value={currentConfig.fontFamily || "'Poppins', sans-serif"}
@@ -222,20 +299,23 @@ export default function ThemeSettings() {
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-slate-700">App Logo</h3>
                 
-                <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors relative">
+                <div className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-colors relative ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:bg-slate-50'}`}>
                   <input 
                     type="file" 
                     accept="image/*" 
                     onChange={handleLogoUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    onDragEnter={() => setIsDragging(true)}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={() => setIsDragging(false)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
                   {currentConfig.logoUrl ? (
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center pointer-events-none">
                       <img src={currentConfig.logoUrl} alt="App Logo" className="h-24 object-contain mb-4" />
-                      <p className="text-sm text-slate-500">Click to change logo</p>
+                      <p className="text-sm text-slate-500">Click or drag to change logo</p>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center pointer-events-none">
                       <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4">
                         <Upload className="w-8 h-8" />
                       </div>
@@ -244,6 +324,30 @@ export default function ThemeSettings() {
                     </div>
                   )}
                 </div>
+
+                {currentConfig.logoHistory && (
+                  <div className="mt-6 pt-4 border-t border-slate-100">
+                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Previous Logos</h4>
+                    {currentConfig.logoHistory.length > 0 ? (
+                      <>
+                        <p className="text-xs text-slate-500 mb-4">Click any previous logo to restore it.</p>
+                        <div className="flex flex-wrap gap-3">
+                          {currentConfig.logoHistory.map((url, idx) => (
+                            <div 
+                              key={idx} 
+                              onClick={() => handleColorChange('logoUrl', url)}
+                              className={`h-16 w-16 rounded-lg border p-2 flex items-center justify-center cursor-pointer transition-all ${currentConfig.logoUrl === url ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-500' : 'border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-slate-100'}`}
+                            >
+                              <img src={url} alt={`Previous Logo ${idx + 1}`} className="max-h-full max-w-full object-contain" />
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-xs text-slate-500 italic">No previous logos available. Upload a new logo and save to start building your history.</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -254,7 +358,7 @@ export default function ThemeSettings() {
                 style={{ backgroundColor: currentConfig.primaryColor, fontFamily: currentConfig.fontFamily || "'Poppins', sans-serif" }}
               >
                 <div className="p-6 text-white flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3" style={{ color: currentConfig.sidebarFontColor || '#ffffff' }}>
                     {currentConfig.logoUrl ? (
                       <img src={currentConfig.logoUrl} alt="Logo" className="h-10 bg-white/20 p-1 rounded" />
                     ) : (
@@ -274,9 +378,21 @@ export default function ThemeSettings() {
                     <p className="text-sm text-slate-500">The quick brown fox jumps over the lazy dog.</p>
                   </div>
                   
+                  <style>
+                    {`
+                      .preview-hover-btn {
+                        background-color: ${currentConfig.primaryColor};
+                        color: #ffffff;
+                        transition: all 0.3s ease;
+                      }
+                      .preview-hover-btn:hover {
+                        background-color: ${currentConfig.buttonHoverColor || '#3b82f6'} !important;
+                        color: #ffffff !important;
+                      }
+                    `}
+                  </style>
                   <button 
-                    className="mt-4 px-6 py-2 rounded-lg text-white font-medium w-full"
-                    style={{ backgroundColor: currentConfig.primaryColor }}
+                    className="preview-hover-btn mt-4 px-6 py-2 rounded-lg font-medium w-full"
                   >
                     Action Button
                   </button>

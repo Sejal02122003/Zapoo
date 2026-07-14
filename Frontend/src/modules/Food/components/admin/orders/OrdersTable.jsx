@@ -388,7 +388,12 @@ export default function OrdersTable({
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.orderStatus)}`}>
-                          {order.orderStatus}
+                          {order.deliveryType === 'Takeaway' ? (
+                            order.orderStatus === 'Delivered' ? 'Delivered' : 
+                            (order.orderStatus === 'Ready' || order.orderStatus === 'Food On The Way') ? 'Pending Pickup' :
+                            order.orderStatus === 'Processing' ? 'Preparing' :
+                            order.orderStatus
+                          ) : order.orderStatus}
                         </span>
                         <span className="text-xs text-slate-500">{order.deliveryType}</span>
                       </div>
@@ -439,7 +444,7 @@ export default function OrdersTable({
                         </button>
                       )}
                       {/* Assign Delivery Partner Button */}
-                      {(!order.deliveryPartnerName && onAssignDelivery && ['Pending', 'Processing'].includes(order.orderStatus)) && (
+                      {(!order.deliveryPartnerName && onAssignDelivery && ['Pending', 'Processing'].includes(order.orderStatus) && order.deliveryType !== 'Takeaway') && (
                         <button
                           onClick={() => onAssignDelivery(order)}
                           className="p-1.5 rounded text-orange-600 hover:bg-orange-50 transition-colors"

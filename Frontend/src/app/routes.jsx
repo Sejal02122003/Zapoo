@@ -88,11 +88,7 @@ const AppRoutes = () => {
       <Route path="/admin/*" element={<AdminRouter />} />
 
       {/* Handle root and other paths via FoodAppWrapper */}
-      <Route path="/" element={
-        <Suspense fallback={<PageLoader />}>
-          <MasterLandingPage />
-        </Suspense>
-      } />
+      <Route path="/" element={<Navigate to="/food/user" replace />} />
       <Route path="/*" element={<FoodAppWrapper />} />
     </Routes>
   )

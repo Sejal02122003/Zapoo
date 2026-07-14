@@ -1226,7 +1226,7 @@ function RestaurantDetailsContent() {
     }))
 
     // CRITICAL: Validate restaurant data before adding to cart
-    if (!restaurant || !restaurant.name) {
+    if (!restaurant || !(restaurant.name || restaurant.restaurantName)) {
       debugError('? Cannot add item to cart: Restaurant data is missing!');
       toast.error('Restaurant information is missing. Please refresh the page.');
       return;
@@ -1503,7 +1503,7 @@ function RestaurantDetailsContent() {
         originalPrice: item.originalPrice,
         image: item.image,
         restaurantId: restaurantId,
-        restaurantName: restaurant?.name || "",
+        restaurantName: restaurant?.name || restaurant?.restaurantName || "",
         restaurantSlug: restaurant?.slug || slug || "",
         foodType: item.foodType,
         isSpicy: item.isSpicy,
@@ -1538,7 +1538,7 @@ function RestaurantDetailsContent() {
       // Add to collection
       addFavorite({
         slug: restaurantSlug,
-        name: restaurant.name || "",
+        name: restaurant.name || restaurant.restaurantName || "",
         cuisine: restaurant.cuisine || "",
         rating: restaurant.rating || 0,
         deliveryTime: restaurant.deliveryTime || restaurant.estimatedDeliveryTime || "",

@@ -18,6 +18,8 @@ import {
     createDiningRequestController,
     getPendingDiningRequestController
 } from '../controllers/restaurant.controller.js';
+import locationCouponRoutes from './locationCoupon.routes.js';
+import { getMyChallenges } from '../controllers/restaurantChallenge.controller.js';
 import {
     createRestaurantSupportTicketController,
     listRestaurantSupportTicketsController
@@ -208,10 +210,14 @@ router.get('/orders/:orderId', authMiddleware, requireRestaurant, orderControlle
 router.patch('/orders/:orderId/status', authMiddleware, requireRestaurant, orderController.updateOrderStatusRestaurantController);
 router.post('/orders/:orderId/resend-notification', authMiddleware, requireRestaurant, orderController.resendDeliveryNotificationRestaurantController);
 
-// Complaints (restaurant dashboard)
+// Support / Complaints (restaurant dashboard)
 router.get('/complaints', authMiddleware, requireRestaurant, getRestaurantComplaintsController);
 router.post('/support/tickets', authMiddleware, requireRestaurant, createRestaurantSupportTicketController);
 router.get('/support/tickets', authMiddleware, requireRestaurant, listRestaurantSupportTicketsController);
+
+// Challenges (restaurant dashboard)
+router.get('/challenges', authMiddleware, requireRestaurant, getMyChallenges);
+router.use('/location-coupons', locationCouponRoutes);
 
 // Download menu PDF (restaurant can download their own, admin can download any)
 router.get('/download-menu-pdf/:id', authMiddleware, (req, res, next) => {

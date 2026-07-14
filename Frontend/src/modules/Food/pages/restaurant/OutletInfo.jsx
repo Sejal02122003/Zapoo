@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
-import { ArrowLeft, Star, ChevronRight } from "lucide-react"
+import { ArrowLeft, Star, ChevronRight, ShoppingBag } from "lucide-react"
 import { restaurantAPI } from "@food/api"
 import { toast } from "sonner"
 import { Input } from "@food/components/ui/input"
@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@food/components/ui/dialog"
+import { Switch } from "@food/components/ui/switch"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
 
@@ -43,6 +44,8 @@ export default function OutletInfo() {
   const [editSection, setEditSection] = useState(null)
   const [editFormData, setEditFormData] = useState({})
   const [savingEdit, setSavingEdit] = useState(false)
+  const [takeawayStatus, setTakeawayStatus] = useState(false)
+  const [savingTakeaway, setSavingTakeaway] = useState(false)
 
   // Fetch restaurant data on mount
   useEffect(() => {
@@ -57,6 +60,7 @@ export default function OutletInfo() {
           setRestaurantId(data.restaurantId || data.id || "")
           const mongoId = String(data.id || data._id || "")
           setRestaurantMongoId(mongoId)
+          setTakeawayStatus(data.isTakeawayEnabled === true)
           
           if (data.profileImage?.url) {
             setThumbnailImage(data.profileImage.url)
@@ -172,6 +176,21 @@ export default function OutletInfo() {
       setUploadingImage(false)
       setImageType(null)
       setUploadingCount(0)
+    }
+  }
+
+  const handleTakeawayStatusChange = async (checked) => {
+    const previousStatus = takeawayStatus
+    try {
+      setSavingTakeaway(true)
+      setTakeawayStatus(checked)
+      await restaurantAPI.updateProfile({ isTakeawayEnabled: checked })
+      toast.success(checked ? "Takeaway is now ON" : "Takeaway is now OFF")
+    } catch (error) {
+      setTakeawayStatus(previousStatus)
+      toast.error("Error updating takeaway status")
+    } finally {
+      setSavingTakeaway(false)
     }
   }
 
@@ -365,6 +384,40 @@ export default function OutletInfo() {
         <div className="mb-4">
           <h2 className="text-[17px] font-bold text-gray-900 tracking-tight">Restaurant Information</h2>
           <p className="text-[13px] text-gray-500 mt-1 font-medium">All onboarding and profile details at one place.</p>
+        </div>
+
+        <div className="space-y-3.5 mb-4">
+          <div className="bg-white rounded-3xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-gray-100/50">
+            <div className="flex flex-col mb-4.5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-50 rounded-lg">
+                  <ShoppingBag className="w-5 h-5 text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-gray-900">Takeaway Status</p>
+                  <p className="text-xs text-gray-500">Allow customers to pick up orders directly</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-[15px] font-bold text-gray-900 mb-1">Turn on takeaway</p>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${takeawayStatus ? "bg-green-500 animate-pulse" : "bg-gray-600"}`}></div>
+                  <p className="text-[13px] text-gray-500 font-medium">
+                    {takeawayStatus ? "Accepting takeaway orders" : "Not accepting takeaway"}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={takeawayStatus}
+                onCheckedChange={handleTakeawayStatusChange}
+                disabled={savingTakeaway}
+                className="data-[state=checked]:bg-green-500"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3.5">

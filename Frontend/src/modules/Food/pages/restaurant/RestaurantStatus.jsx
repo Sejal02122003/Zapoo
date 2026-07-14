@@ -6,7 +6,7 @@ import { ArrowLeft, Settings, ChevronRight } from "lucide-react"
 import { Switch } from "@food/components/ui/switch"
 import { Card, CardContent } from "@food/components/ui/card"
 import { restaurantAPI } from "@food/api"
-import { useAuthStore } from "@/core/auth/auth.store"
+import { isModuleAuthenticated } from "@food/utils/auth"
 import {
   Dialog,
   DialogContent,
@@ -34,7 +34,7 @@ const persistRestaurantOnlineStatus = (isOnline) => {
 export default function RestaurantStatus() {
   const navigate = useNavigate()
   const goBack = useRestaurantBackNavigation()
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isAuthenticated = isModuleAuthenticated('restaurant')
   const [deliveryStatus, setDeliveryStatus] = useState(false)
   const [restaurantData, setRestaurantData] = useState(null)
   const [loading, setLoading] = useState(true)

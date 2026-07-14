@@ -188,7 +188,7 @@ export default function Wallet() {
 
                 <div className="flex flex-col md:items-start items-center text-center md:text-left">
                   <h2 className="text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white mb-2 md:mb-3">
-                    {companyName} Money
+                    Zapoo Money
                   </h2>
 
                   <div className="mb-2 md:mb-3">

@@ -126,6 +126,11 @@ const restaurantSchema = new mongoose.Schema(
       default: true,
       index: true,
     },
+    isTakeawayEnabled: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     panNumber: {
       type: String,
     },

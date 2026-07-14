@@ -402,7 +402,7 @@ function OrderTrackingCardInner({ hasBottomNav = true }) {
 
             <div className="bg-gradient-to-br from-primary to-[#D94E0A] shadow-lg shadow-primary/20 rounded-xl px-4 py-2 shrink-0 flex flex-col items-center justify-center border border-orange-200">
               <p className="text-orange-50 text-[10px] font-bold uppercase tracking-wider opacity-95 leading-tight mb-[2px]">
-                arriving in
+                {activeOrder?.orderType === 'takeaway' ? 'pickup in' : 'arriving in'}
               </p>
               <p className="text-white text-base md:text-[17px] font-black leading-tight drop-shadow-sm">
                 {timeRemaining !== null

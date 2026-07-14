@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom"
-import { Tag, User, Home as HomeIcon, UtensilsCrossed, ShoppingBag } from "lucide-react"
+import { Tag, User, Home as HomeIcon, UtensilsCrossed, Store } from "lucide-react"
 import { useState, useEffect } from "react"
 import { getPublicLandingSettings } from "@food/api"
 import { useAppLocation } from "@food/hooks/useAppLocation"
@@ -37,11 +37,13 @@ export default function BottomNavigation() {
   const isDining = pathname === "/food/dining" || pathname.startsWith("/food/user/dining")
   const isUnder250 = pathname === "/food/under-250" || pathname.startsWith("/food/user/under-250")
   const isOrders = pathname === "/food/orders" || pathname.startsWith("/food/user/orders")
+  const isTakeaway = pathname === "/food/user/takeaway"
   const isProfile = pathname === "/food/profile" || pathname.startsWith("/food/user/profile")
   const isHome =
     !isDining &&
     !isUnder250 &&
     !isOrders &&
+    !isTakeaway &&
     !isProfile &&
     (pathname === "/food" ||
       pathname === "/food/" ||
@@ -82,17 +84,17 @@ export default function BottomNavigation() {
           </span>
         </Link>
 
-        {/* Orders Tab */}
+        {/* Takeaway Tab */}
         <Link
-          to="/food/user/orders"
-          className={`flex flex-col items-center justify-center gap-1 w-[22%] py-2 rounded-[1.5rem] transition-all duration-300 ${isOrders
+          to="/food/user/takeaway"
+          className={`flex flex-col items-center justify-center gap-1 w-[22%] py-2 rounded-[1.5rem] transition-all duration-300 ${isTakeaway
             ? "bg-[#ffeef2] dark:bg-primary/20 text-primary"
             : "text-slate-500 dark:text-gray-400"
             }`}
         >
-          <ShoppingBag className={`h-5 w-5 ${isOrders ? "text-primary" : "text-slate-500 dark:text-gray-400"}`} strokeWidth={isOrders ? 2.5 : 2} />
-          <span className={`text-[10px] sm:text-xs font-bold ${isOrders ? "text-primary" : "text-slate-500 dark:text-gray-400 font-semibold"}`}>
-            Orders
+          <Store className={`h-5 w-5 ${isTakeaway ? "text-primary" : "text-slate-500 dark:text-gray-400"}`} strokeWidth={isTakeaway ? 2.5 : 2} />
+          <span className={`text-[10px] sm:text-xs font-bold ${isTakeaway ? "text-primary" : "text-slate-500 dark:text-gray-400 font-semibold"}`}>
+            Takeaway
           </span>
         </Link>
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { Search, Menu, ChevronRight, MapPin, X, Bell, HelpCircle } from "lucide-react"
+import { Search, Menu, ChevronRight, MapPin, X, Bell, HelpCircle, ShoppingBag } from "lucide-react"
+import { toast } from "sonner"
 import { restaurantAPI } from "@food/api"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import useNotificationInbox from "@food/hooks/useNotificationInbox"
@@ -354,7 +355,7 @@ export default function RestaurantNavbar({
   }
 
   return (
-    <div className="w-full bg-gradient-to-r from-[#B80B3D] to-[#66001D] rounded-b-[24px] shadow-lg px-4 pt-5 pb-5 flex items-center justify-between relative">
+    <div className="w-full bg-primary rounded-b-[24px] shadow-lg px-4 pt-5 pb-5 flex items-center justify-between relative">
       {/* Search Overlay */}
       {isSearchActive && (
         <div className="absolute inset-0 bg-white z-50 flex items-center px-4 gap-3">

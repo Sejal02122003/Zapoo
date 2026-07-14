@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import { FoodOrder, FoodSettings } from '../models/order.model.js';
+import { appEvents, EVENTS } from '../../../../core/utils/events.js';
+import '../../restaurant/services/restaurantChallenge.service.js';
 // import { paymentSnapshotFromOrder } from './foodOrderPayment.service.js';
 import { logger } from '../../../../utils/logger.js';
 import { FoodUser } from '../../../../core/users/user.model.js';
@@ -139,8 +141,9 @@ export async function createOrder(userId, dto) {
 
   const settings = await getDispatchSettings();
   const dispatchMode = settings.dispatchMode;
+  const orderType = dto.orderType || 'delivery';
 
-  const deliveryAddress = {
+  const deliveryAddress = orderType === 'takeaway' ? undefined : {
     label: dto.address?.label || "Home",
     name: dto.address?.name || dto.address?.fullName || dto.customerName || "",
     fullName: dto.address?.fullName || dto.address?.name || dto.customerName || "",
@@ -264,10 +267,11 @@ export async function createOrder(userId, dto) {
     zoneId: dto.zoneId
       ? new mongoose.Types.ObjectId(dto.zoneId)
       : restaurant.zoneId,
+    orderType,
     items: dto.items,
     deliveryAddress,
-    customerName: dto.customerName || deliveryAddress.fullName || "",
-    customerPhone: dto.customerPhone || deliveryAddress.phone || "",
+    customerName: dto.customerName || (deliveryAddress ? deliveryAddress.fullName : ""),
+    customerPhone: dto.customerPhone || (deliveryAddress ? deliveryAddress.phone : ""),
     pricing: normalizedPricing,
     payment,
     orderStatus: "created",
@@ -410,6 +414,7 @@ export async function createOrder(userId, dto) {
     "picked_up",
   ];
   if (
+    orderType === 'delivery' &&
     dispatchMode === "auto" &&
     (isCash ||
       order.payment.status === "paid" ||
@@ -424,6 +429,7 @@ export async function createOrder(userId, dto) {
   }
 
   const saved = normalizeOrderForClient(order);
+  appEvents.emit(EVENTS.ORDER_CREATED, order);
   return { order: saved, razorpay: razorpayPayload };
 }
 
@@ -1174,6 +1180,14 @@ export async function updateOrderStatusRestaurant(
       throw new ValidationError(`Current order status '${from}' is further ahead than '${orderStatus}'. Order cannot be moved backwards.`);
   }
   order.orderStatus = orderStatus;
+  
+  if (orderStatus === 'completed' && order.orderType === 'takeaway') {
+      order.deliveryState = order.deliveryState || {};
+      order.deliveryState.currentPhase = 'completed';
+      order.deliveryState.completedAt = new Date();
+      order.pickupTime = new Date();
+  }
+
   pushStatusHistory(order, {
     byRole: "RESTAURANT",
     byId: restaurantId,
@@ -1196,6 +1210,9 @@ export async function updateOrderStatusRestaurant(
   } else if (orderStatus === "ready_for_pickup") {
     title = "Food is ready! 🛍️";
     body = "Your order is ready and waiting to be picked up.";
+  } else if (orderStatus === "completed") {
+    title = "Order Completed! ✅";
+    body = "Your order has been picked up. Enjoy your meal!";
   } else if (String(orderStatus).includes("cancel")) {
     const isOnlinePaid = order.payment.method === "razorpay" && (order.payment.status === "paid" || order.payment.status === "refunded");
     const refundDetail = isOnlinePaid ? ` Your refund of ₹${order.pricing.total} is being processed and will be credited to your original payment method within 5-7 working days.` : "";
@@ -1366,6 +1383,10 @@ export async function updateOrderStatusRestaurant(
         from,
         to: orderStatus
     });
+
+    if (orderStatus === 'completed' && order.orderType === 'takeaway') {
+        appEvents.emit(EVENTS.ORDER_COMPLETED, order);
+    }
 
     // ✅ NEW: Automated Razorpay Refund on Restaurant Cancel
     // Triggers if the restaurant sets status to a cancelled state (e.g., cancelled_by_restaurant)
@@ -1834,6 +1855,10 @@ export async function updateOrderStatusAdmin(orderId, adminId, orderStatus, note
     from,
     to: orderStatus
   });
+
+  if (orderStatus === 'completed' || orderStatus === 'delivered') {
+      appEvents.emit(EVENTS.ORDER_COMPLETED, order);
+  }
 
   return normalizeOrderForClient(order);
 }

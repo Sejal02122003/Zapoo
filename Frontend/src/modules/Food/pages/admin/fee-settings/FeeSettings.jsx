@@ -16,10 +16,12 @@ export default function FeeSettings() {
     freeDeliveryUpTo: "",
     freeDeliveryThreshold: "",
     platformFee: "",
+    takeawayPlatformFee: "",
     packagingFee: "",
     gstRate: "",
     gstOnDeliveryFee: "",
     gstOnPlatformFee: "",
+    gstOnTakeawayPlatformFee: "",
     gstOnPackagingFee: "",
     deliveryBonusAmount: "",
     dispatchRadiusTiers: "2, 4, 6, 8, 10",
@@ -41,10 +43,12 @@ export default function FeeSettings() {
           freeDeliveryUpTo: response.data.data.feeSettings.freeDeliveryUpTo ?? "",
           freeDeliveryThreshold: response.data.data.feeSettings.freeDeliveryThreshold ?? "",
           platformFee: response.data.data.feeSettings.platformFee ?? "",
+          takeawayPlatformFee: response.data.data.feeSettings.takeawayPlatformFee ?? "",
           packagingFee: response.data.data.feeSettings.packagingFee ?? "",
           gstRate: response.data.data.feeSettings.gstRate ?? "",
           gstOnDeliveryFee: response.data.data.feeSettings.gstOnDeliveryFee ?? "",
           gstOnPlatformFee: response.data.data.feeSettings.gstOnPlatformFee ?? "",
+          gstOnTakeawayPlatformFee: response.data.data.feeSettings.gstOnTakeawayPlatformFee ?? "",
           gstOnPackagingFee: response.data.data.feeSettings.gstOnPackagingFee ?? "",
           deliveryBonusAmount: response.data.data.feeSettings.deliveryBonusAmount ?? "",
           dispatchRadiusTiers: response.data.data.feeSettings.dispatchRadiusTiers?.join(", ") ?? "2, 4, 6, 8, 10",
@@ -57,10 +61,12 @@ export default function FeeSettings() {
           freeDeliveryUpTo: "",
           freeDeliveryThreshold: "",
           platformFee: "",
+          takeawayPlatformFee: "",
           packagingFee: "",
           gstRate: "",
           gstOnDeliveryFee: "",
           gstOnPlatformFee: "",
+          gstOnTakeawayPlatformFee: "",
           gstOnPackagingFee: "",
           deliveryBonusAmount: "",
           dispatchRadiusTiers: "2, 4, 6, 8, 10",
@@ -89,10 +95,12 @@ export default function FeeSettings() {
         freeDeliveryUpTo: feeSettings.freeDeliveryUpTo === "" ? undefined : Number(feeSettings.freeDeliveryUpTo),
         freeDeliveryThreshold: feeSettings.freeDeliveryThreshold === "" ? undefined : Number(feeSettings.freeDeliveryThreshold),
         platformFee: feeSettings.platformFee === "" ? undefined : Number(feeSettings.platformFee),
+        takeawayPlatformFee: feeSettings.takeawayPlatformFee === "" ? undefined : Number(feeSettings.takeawayPlatformFee),
         packagingFee: feeSettings.packagingFee === "" ? undefined : Number(feeSettings.packagingFee),
         gstRate: feeSettings.gstRate === "" ? undefined : Number(feeSettings.gstRate),
         gstOnDeliveryFee: feeSettings.gstOnDeliveryFee === "" ? undefined : Number(feeSettings.gstOnDeliveryFee),
         gstOnPlatformFee: feeSettings.gstOnPlatformFee === "" ? undefined : Number(feeSettings.gstOnPlatformFee),
+        gstOnTakeawayPlatformFee: feeSettings.gstOnTakeawayPlatformFee === "" ? undefined : Number(feeSettings.gstOnTakeawayPlatformFee),
         gstOnPackagingFee: feeSettings.gstOnPackagingFee === "" ? undefined : Number(feeSettings.gstOnPackagingFee),
         deliveryBonusAmount: feeSettings.deliveryBonusAmount === "" ? undefined : Number(feeSettings.deliveryBonusAmount),
         dispatchRadiusTiers: feeSettings.dispatchRadiusTiers ? feeSettings.dispatchRadiusTiers.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n)) : undefined,
@@ -110,10 +118,12 @@ export default function FeeSettings() {
             freeDeliveryUpTo: saved.freeDeliveryUpTo ?? "",
             freeDeliveryThreshold: saved.freeDeliveryThreshold ?? "",
             platformFee: saved.platformFee ?? "",
+            takeawayPlatformFee: saved.takeawayPlatformFee ?? "",
             packagingFee: saved.packagingFee ?? "",
             gstRate: saved.gstRate ?? "",
             gstOnDeliveryFee: saved.gstOnDeliveryFee ?? "",
             gstOnPlatformFee: saved.gstOnPlatformFee ?? "",
+            gstOnTakeawayPlatformFee: saved.gstOnTakeawayPlatformFee ?? "",
             gstOnPackagingFee: saved.gstOnPackagingFee ?? "",
             deliveryBonusAmount: saved.deliveryBonusAmount ?? "",
             dispatchRadiusTiers: saved.dispatchRadiusTiers?.join(", ") ?? "2, 4, 6, 8, 10",
@@ -505,6 +515,26 @@ export default function FeeSettings() {
                     Platform service fee per order
                   </p>
                 </div>
+                
+                {/* Takeaway Platform Fee */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">
+                    Takeaway Platform Fee (₹)
+                  </label>
+                  <input
+                    type="number"
+                    value={feeSettings.takeawayPlatformFee}
+                    onChange={(e) => setFeeSettings({ ...feeSettings, takeawayPlatformFee: e.target.value })}
+                    min="0"
+                    step="1"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                    placeholder="5"
+                  />
+                  <p className="text-xs text-slate-500">
+                    Platform service fee per takeaway order
+                  </p>
+                </div>
+                
                 {/* Packaging Fee */}
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-slate-700">
@@ -581,6 +611,26 @@ export default function FeeSettings() {
                   />
                   <p className="text-xs text-slate-500">
                     GST percentage applied on platform fee
+                  </p>
+                </div>
+
+                {/* GST on Takeaway Platform Fee */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">
+                    GST on Takeaway Platform Fee (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={feeSettings.gstOnTakeawayPlatformFee}
+                    onChange={(e) => setFeeSettings({ ...feeSettings, gstOnTakeawayPlatformFee: e.target.value })}
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                    placeholder="18"
+                  />
+                  <p className="text-xs text-slate-500">
+                    GST percentage applied on takeaway platform fee
                   </p>
                 </div>
 

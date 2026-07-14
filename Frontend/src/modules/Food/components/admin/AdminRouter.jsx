@@ -39,7 +39,9 @@ const AddonsList = lazy(() => import("@food/pages/admin/addons/AddonsList"));
 // Promotions Management
 const BasicCampaign = lazy(() => import("@food/pages/admin/campaigns/BasicCampaign"));
 const FoodCampaign = lazy(() => import("@food/pages/admin/campaigns/FoodCampaign"));
+const RestaurantChallenges = lazy(() => import("@food/pages/admin/campaigns/RestaurantChallenges"));
 const Coupons = lazy(() => import("@food/pages/admin/Coupons"));
+const LocationCoupons = lazy(() => import("@food/pages/admin/locationCoupons/LocationCouponsList"));
 const Cashback = lazy(() => import("@food/pages/admin/Cashback"));
 const Banners = lazy(() => import("@food/pages/admin/Banners"));
 const PromotionalBanner = lazy(() => import("@food/pages/admin/PromotionalBanner"));
@@ -215,7 +217,9 @@ export default function AdminRouter() {
             {/* PROMOTIONS, CUSTOMERS, DELIVERYMEN, etc. */}
             <Route path="campaigns/basic" element={<BasicCampaign />} />
             <Route path="campaigns/food" element={<FoodCampaign />} />
+            <Route path="restaurant-challenges" element={<RestaurantChallenges />} />
             <Route path="coupons" element={<Coupons />} />
+            <Route path="location-coupons" element={<LocationCoupons />} />
             <Route path="cashback" element={<Cashback />} />
             <Route path="banners" element={<Banners />} />
             <Route path="promotional-banner" element={<PromotionalBanner />} />

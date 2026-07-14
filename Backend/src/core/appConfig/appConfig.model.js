@@ -19,9 +19,21 @@ const appConfigSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    logoHistory: {
+        type: [String],
+        default: []
+    },
     fontFamily: {
         type: String,
         default: "'Poppins', sans-serif"
+    },
+    buttonHoverColor: {
+        type: String,
+        default: '#3b82f6'
+    },
+    sidebarFontColor: {
+        type: String,
+        default: '#ffffff'
     }
 }, { timestamps: true });
 

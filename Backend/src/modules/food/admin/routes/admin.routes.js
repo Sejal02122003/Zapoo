@@ -5,6 +5,7 @@ import * as foodApprovalController from '../controllers/foodApproval.controller.
 import * as addonsApprovalController from '../controllers/addonsApproval.controller.js';
 import * as businessSettingsController from '../controllers/businessSettings.controller.js';
 import * as feedbackExperienceController from '../controllers/feedbackExperience.controller.js';
+import * as restaurantChallengeController from '../controllers/restaurantChallenge.controller.js';
 import * as notificationBroadcastController from '../controllers/notificationBroadcast.controller.js';
 import * as diningAdminController from '../../dining/controllers/diningAdmin.controller.js';
 import * as orderController from '../../orders/controllers/order.controller.js';
@@ -13,10 +14,12 @@ import * as liveMonitorController from '../controllers/liveMonitor.controller.js
 import * as appIntroAdController from '../controllers/appIntroAd.controller.js';
 import { upload } from '../../../../middleware/upload.js';
 import menuBulkRoutes from './menuBulk.routes.js';
+import locationCouponRoutes from './locationCoupon.routes.js';
 
 const router = express.Router();
 
 router.use('/menu', menuBulkRoutes);
+router.use('/location-coupons', locationCouponRoutes);
 
 // ----- Public Business Settings (No Admin Required) -----
 router.get('/business-settings/public', businessSettingsController.getBusinessSettings);
@@ -43,6 +46,7 @@ router.delete('/notifications/broadcast/:id', notificationBroadcastController.de
 router.get('/customers', adminController.getCustomers);
 router.get('/customers/:id', adminController.getCustomerById);
 router.patch('/customers/:id/status', adminController.updateCustomerStatus);
+router.patch('/customers/:id/cod-status', adminController.toggleCustomerCod);
 router.post('/customers/:id/wallet-topup', adminController.topupCustomerWallet);
 
 // ----- Safety / Emergency Reports -----
@@ -126,6 +130,7 @@ router.delete('/foods/:id', adminController.deleteFood);
 router.get('/offers', adminController.getAllOffers);
 router.post('/offers', adminController.createAdminOffer);
 router.patch('/offers/:id/cart-visibility', adminController.updateAdminOfferCartVisibility);
+router.patch('/offers/:id', adminController.updateAdminOffer);
 router.delete('/offers/:id', adminController.deleteAdminOffer);
 
 // ----- Feedback Experience (Admin) -----
@@ -225,6 +230,13 @@ router.post('/orders/:orderId/assign-delivery', orderController.assignDeliveryPa
 // ----- CMS Pages (About + legal) -----
 router.get('/pages-social-media/:key', getAdminPageController);
 router.put('/pages-social-media/:key', upsertAdminPageController);
+
+// ----- Restaurant Challenges -----
+router.post('/restaurant-challenges', restaurantChallengeController.createRestaurantChallenge);
+router.get('/restaurant-challenges', restaurantChallengeController.getRestaurantChallenges);
+router.get('/restaurant-challenges/:id', restaurantChallengeController.getRestaurantChallengeById);
+router.patch('/restaurant-challenges/:id', restaurantChallengeController.updateRestaurantChallenge);
+router.delete('/restaurant-challenges/:id', restaurantChallengeController.deleteRestaurantChallenge);
 
 router.get('/sidebar-badges', adminController.getSidebarBadges);
 router.get('/notifications/fssai-expired', adminController.getExpiredFssaiNotifications);

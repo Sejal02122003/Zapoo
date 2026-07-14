@@ -33,6 +33,7 @@ export default function Coupons() {
     usageLimit: "",
     perUserLimit: "",
     isFirstOrderOnly: false,
+    orderType: "Both",
   })
 
   const fetchOffers = useCallback(async () => {
@@ -175,6 +176,7 @@ export default function Coupons() {
       usageLimit: "",
       perUserLimit: "",
       isFirstOrderOnly: false,
+      orderType: "Both",
     })
   }
 
@@ -220,6 +222,7 @@ export default function Coupons() {
         usageLimit: formData.usageLimit !== "" ? Number(formData.usageLimit) : undefined,
         perUserLimit: formData.perUserLimit !== "" ? Number(formData.perUserLimit) : undefined,
         isFirstOrderOnly: Boolean(formData.isFirstOrderOnly),
+        orderType: formData.orderType,
       }
       await adminAPI.createAdminOffer(payload)
 
@@ -347,6 +350,19 @@ export default function Coupons() {
                     className={`w-full px-3 py-2.5 text-sm rounded-lg border ${errors.discountValue ? "border-red-500" : "border-slate-300"} bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                   />
                   {errors.discountValue && <p className="mt-1 text-xs text-red-600">{errors.discountValue}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Applicable Order Type</label>
+                  <select
+                    value={formData.orderType}
+                    onChange={(e) => handleFormChange("orderType", e.target.value)}
+                    className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="Both">Both</option>
+                    <option value="Delivery">Delivery</option>
+                    <option value="Takeaway">Takeaway</option>
+                  </select>
                 </div>
 
                 <div>
@@ -552,6 +568,7 @@ export default function Coupons() {
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Restaurant</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Dish</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Coupon Code</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Order Type</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Customer Scope</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Discount</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Price</th>
@@ -582,6 +599,11 @@ export default function Coupons() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-mono font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded whitespace-nowrap">
                           {offer.couponCode}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-slate-700 whitespace-nowrap">
+                          {offer.orderType || 'Both'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

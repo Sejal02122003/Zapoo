@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const root = 'c:\\Users\\ASUS\\OneDrive\\Desktop\\Appzeto-Master1\\Frontend\\src\\modules\\Food';
+const root = 'c:\\Users\\ASUS\\OneDrive\\Desktop\\Zapoo-Master1\\Frontend\\src\\modules\\Food';
 
 const replacements = [
     { from: /#EB590E/gi, to: '#FF3385' },

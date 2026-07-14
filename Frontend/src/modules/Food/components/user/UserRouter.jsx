@@ -18,6 +18,7 @@ const CollectionPage = lazy(() => import("@food/pages/user/CollectionPage"))
 const Categories = lazy(() => import("@food/pages/user/Categories"))
 const CategoryPage = lazy(() => import("@food/pages/user/CategoryPage"))
 const MomoPage = lazy(() => import("@food/pages/user/MomoPage"))
+const TakeawayPage = lazy(() => import("@food/pages/user/TakeawayPage"))
 const Restaurants = lazy(() => import("@food/pages/user/restaurants/Restaurants"))
 const RestaurantDetails = lazy(() => import("@food/pages/user/restaurants/RestaurantDetails"))
 const DiningRestaurantDetails = lazy(() => import("@food/pages/user/dining/DiningRestaurantDetails"))
@@ -126,6 +127,7 @@ export default function UserRouter() {
           <Route path="categories" element={<Categories />} />
           <Route path="category/momo" element={<MomoPage />} />
           <Route path="category/:category" element={<CategoryPage />} />
+          <Route path="takeaway" element={<TakeawayPage />} />
           <Route path="restaurants" element={<Restaurants />} />
           <Route path="restaurants/:slug" element={<RestaurantDetails />} />
           <Route path="search" element={<SearchResults />} />

@@ -31,7 +31,12 @@ export function OrdersProvider({ children }) {
       ...orderData,
       status: "confirmed",
       createdAt: new Date().toISOString(),
-      tracking: {
+      tracking: orderData.orderType === 'takeaway' ? {
+        confirmed: { status: true, timestamp: new Date().toISOString() },
+        preparing: { status: false, timestamp: null },
+        ready_for_pickup: { status: false, timestamp: null },
+        completed: { status: false, timestamp: null }
+      } : {
         confirmed: { status: true, timestamp: new Date().toISOString() },
         preparing: { status: false, timestamp: null },
         outForDelivery: { status: false, timestamp: null },
@@ -60,6 +65,10 @@ export function OrdersProvider({ children }) {
           updatedTracking.outForDelivery = { status: true, timestamp: new Date().toISOString() }
         } else if (status === "delivered") {
           updatedTracking.delivered = { status: true, timestamp: new Date().toISOString() }
+        } else if (status === "ready_for_pickup") {
+          updatedTracking.ready_for_pickup = { status: true, timestamp: new Date().toISOString() }
+        } else if (status === "completed") {
+          updatedTracking.completed = { status: true, timestamp: new Date().toISOString() }
         }
         return {
           ...order,

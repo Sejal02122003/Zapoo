@@ -137,7 +137,8 @@ export async function createInitialTransaction(order) {
     const paymentGatewayFee = commissionSnapshot.paymentGatewayFee || 0;
     const tcs = commissionSnapshot.tcs || 0;
 
-    const restaurantNet = (order.pricing?.subtotal || 0) + (order.pricing?.packagingFee || 0) - restaurantCommission - gstOnItem - gstOnCommission - paymentGatewayFee - tcs;
+    const restaurantCouponDiscount = Number(order.pricing?.restaurantCouponDiscount) || 0;
+    const restaurantNet = (order.pricing?.subtotal || 0) + (order.pricing?.packagingFee || 0) - restaurantCommission - gstOnItem - gstOnCommission - paymentGatewayFee - tcs - restaurantCouponDiscount;
 
     const calculatedPlatformNetProfit = (order.pricing?.platformFee || 0) + (order.pricing?.deliveryFee || 0) + restaurantCommission + gstOnItem + paymentGatewayFee + tcs - riderShare;
     const platformNetProfit = order.platformProfit !== undefined
@@ -178,6 +179,8 @@ export async function createInitialTransaction(order) {
             platformFee: Number(order.pricing?.platformFee || 0) || 0,
             restaurantCommission,
             discount: Number(order.pricing?.discount || 0) || 0,
+            restaurantCouponDiscount: Number(order.pricing?.restaurantCouponDiscount || 0) || 0,
+            couponCode: order.pricing?.couponCode || null,
             total: Number(order.pricing?.total || 0) || 0,
             currency: String(order.pricing?.currency || order.currency || 'INR'),
         },

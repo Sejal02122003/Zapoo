@@ -10,6 +10,10 @@
 
 .restaurant-theme {
   color: var(--rt-text);
+  --primary: var(--rt-primary);
+  --color-primary: var(--rt-primary);
+  --secondary: var(--rt-primary-strong);
+  --color-secondary: var(--rt-primary-strong);
 }
 
 .restaurant-theme [class~="text-primary"],

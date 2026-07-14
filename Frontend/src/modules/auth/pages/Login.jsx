@@ -5,7 +5,8 @@ import { Phone, ArrowRight, ShieldCheck, Loader2, Utensils, Star, Heart, ShieldQ
 import { toast } from "sonner"
 import { authAPI, userAPI } from "@food/api"
 import { setAuthData } from "@food/utils/auth"
-import logoNew from "@/assets/logo.png"
+import logoNew from "@/assets/user_logo.jpeg"
+import bgPattern from "@/assets/food_pattern_orange.png"
 import {
   Dialog,
   DialogContent,
@@ -257,21 +258,12 @@ export default function UnifiedOTPFastLogin() {
   })
 
   return (
-    <div className="min-h-screen bg-[#FFFBF5] dark:bg-[#121212] flex flex-col relative overflow-hidden font-['Poppins']">
-      {/* Decorative Background Elements */}
-      <motion.div animate={floatingAnimation(0, 5, 20)} className="absolute top-16 right-8 md:right-32 text-orange-400 opacity-60 drop-shadow-md">
-        <Gauge className="w-12 h-12" />
-      </motion.div>
-      <motion.div animate={floatingAnimation(1, 4.5, 15)} className="absolute top-32 left-8 md:left-24 text-green-500 opacity-50 drop-shadow-md">
-        <Leaf className="w-10 h-10" />
-      </motion.div>
-      <motion.div animate={floatingAnimation(2, 6, 25)} className="absolute bottom-40 right-10 md:right-40 text-red-400 opacity-70 drop-shadow-md">
-        <MapPin className="w-14 h-14" />
-      </motion.div>
-      <motion.div animate={floatingAnimation(1.5, 5.5, 20)} className="absolute top-1/2 left-4 md:left-20 text-yellow-500 opacity-60 drop-shadow-md">
-        <Pizza className="w-12 h-12" />
-      </motion.div>
-
+    <div 
+      className="min-h-screen flex flex-col relative overflow-hidden font-['Poppins'] bg-[#FF8A00]"
+      style={{ backgroundImage: `url(${bgPattern})`, backgroundRepeat: 'repeat', backgroundSize: '500px' }}
+    >
+      {/* Lightening Overlay to soften the vibrant background */}
+      <div className="absolute inset-0 bg-white/40 dark:bg-black/40 z-0 pointer-events-none"></div>
       {/* Main Content */}
       <div className="absolute top-4 right-4 z-20">
         <Link to="/user/auth/support" className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-sm text-gray-700 dark:text-gray-300 hover:text-[#E53935] border border-gray-200/60 dark:border-gray-700/60 transition-all flex items-center gap-1.5 font-bold text-[11px] uppercase tracking-wider">
@@ -285,16 +277,16 @@ export default function UnifiedOTPFastLogin() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="w-full max-w-md lg:max-w-lg flex flex-col items-center"
+          className="w-full max-w-md lg:max-w-lg flex flex-col items-center bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-xl p-8 sm:p-10 rounded-[2.5rem] shadow-2xl border border-white/50 dark:border-white/10"
         >
           {/* Central Logo */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5, type: "spring", bounce: 0.4 }}
-            className="w-32 h-32 md:w-40 md:h-40 rounded-full shadow-[0_15px_35px_rgba(229,57,53,0.35)] border-4 border-white dark:border-gray-800 mb-8 overflow-hidden bg-white"
+            className="w-36 h-36 rounded-full bg-white shadow-lg overflow-hidden border-[6px] border-white mb-8"
           >
-            <img src={logoNew} alt="Indian Bite Logo" className="w-full h-full object-cover" />
+            <img src={logoNew} alt="Zapoo Logo" className="w-full h-full object-cover" />
           </motion.div>
 
           <motion.div
@@ -303,11 +295,16 @@ export default function UnifiedOTPFastLogin() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-center w-full mb-10"
           >
-            <h1 className="text-[2rem] sm:text-4xl font-bold text-[#4E342E] dark:text-white leading-[1.2] mb-3 drop-shadow-sm">
+            <h1 className="text-3xl sm:text-4xl font-bold text-[#4E342E] dark:text-white leading-[1.2] mb-3 drop-shadow-sm flex flex-col items-center gap-1">
               {step === 1 ? (
-                <>Delicious food<br />Delivered fast <span className="inline-block hover:scale-110 transition-transform cursor-pointer">🍕</span></>
+                <>
+                  <span>Delicious food</span>
+                  <span className="flex items-center justify-center gap-2">
+                    Delivered fast <span className="inline-block hover:scale-110 transition-transform cursor-pointer">🍕</span>
+                  </span>
+                </>
               ) : (
-                "Verify OTP"
+                <span>Verify OTP</span>
               )}
             </h1>
             <p className="text-[#8D6E63] dark:text-gray-400 font-medium text-[15px]">

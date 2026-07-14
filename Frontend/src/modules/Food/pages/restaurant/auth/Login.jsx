@@ -5,7 +5,8 @@ import { ShieldCheck, Utensils, Star, Heart, ArrowRight, Loader2, Store, ShieldQ
 import { Button } from "@food/components/ui/button"
 import { toast } from "sonner"
 import { restaurantAPI } from "@food/api"
-import logoNew from "@/assets/logo.png"
+import logoNew from "@/assets/restaurant_logo.jpeg"
+import loginBg from "@/assets/Restauntrant_bg.jpg"
 
 const DEFAULT_COUNTRY_CODE = "+91"
 
@@ -15,6 +16,14 @@ export default function RestaurantLogin() {
   const [phone, setPhone] = useState(() => sessionStorage.getItem("restaurantLoginPhone") || "")
   const [loading, setLoading] = useState(false)
   const submitting = useRef(false)
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem("restaurantToken")
+    if (token) {
+      navigate("/food/restaurant/dashboard", { replace: true })
+    }
+  }, [navigate])
 
   const validatePhone = (num) => {
     const digits = num.replace(/\D/g, "")
@@ -58,11 +67,22 @@ export default function RestaurantLogin() {
   const primaryColor = "#7e3866"
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] flex flex-col relative overflow-hidden font-['Poppins']">
-      {/* Decorative Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pointer-events-none" />
-      <div className="absolute top-[-100px] right-[-100px] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none animate-pulse" />
-      <div className="absolute bottom-[-100px] left-[-100px] w-[400px] h-[400px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+    <div 
+      className="min-h-screen flex flex-col relative overflow-hidden font-['Poppins']"
+      style={{
+        backgroundImage: `url(${loginBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Solid Blue Overlay over the image */}
+      <div className="absolute inset-0 bg-[#22A2E3]/30 dark:bg-black/60 backdrop-blur-[2px] z-0"></div>
+
+      {/* Decorative Background Elements (Now acts as extra lighting effects on top of the overlay) */}
+      <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-[#22A2E3]/20 via-[#22A2E3]/10 to-transparent pointer-events-none" />
+      <div className="absolute top-[-100px] right-[-100px] w-[500px] h-[500px] bg-[#22A2E3]/15 rounded-full blur-[120px] pointer-events-none animate-pulse" />
+      <div className="absolute bottom-[-100px] left-[-100px] w-[400px] h-[400px] bg-[#22A2E3]/15 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Main Content */}
       <div className="absolute top-6 right-6 z-20">
@@ -92,7 +112,7 @@ export default function RestaurantLogin() {
             >
               <img 
                 src={logoNew} 
-                alt="Indian Bites Logo" 
+                alt="Zapoo Logo" 
                 className="w-full h-full object-cover scale-[1.15]"
                 style={{ borderRadius: '50%' }}
               />
@@ -102,7 +122,7 @@ export default function RestaurantLogin() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="text-gray-400 dark:text-gray-500 font-bold text-xs uppercase tracking-[0.3em]"
+              className="text-white font-bold text-xs uppercase tracking-[0.3em]"
             >
               RESTAURANT PARTNER
             </motion.p>
@@ -116,7 +136,7 @@ export default function RestaurantLogin() {
               <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-2 font-['Outfit'] tracking-tight">
                 Partner Login
               </h2>
-              <div className="h-1 w-10 bg-primary rounded-full mb-3 hidden sm:block" />
+              <div className="h-1 w-10 bg-[#22A2E3] rounded-full mb-3 hidden sm:block" />
               <p className="text-base text-gray-500 dark:text-gray-400 font-medium">
                 Enter your registered mobile number to manage your restaurant
               </p>
@@ -124,10 +144,10 @@ export default function RestaurantLogin() {
 
             <form onSubmit={handleSendOTP} className="space-y-8">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-1">Mobile Number</label>
+                <label className="text-[10px] font-black text-[#22A2E3] uppercase tracking-[0.2em] ml-1">Mobile Number</label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                    <span className="text-sm font-bold text-primary border-r border-gray-200 dark:border-gray-800 pr-3">+91</span>
+                    <span className="text-sm font-bold text-[#22A2E3] border-r-2 border-[#22A2E3]/30 dark:border-[#22A2E3]/20 pr-3">+91</span>
                   </div>
                   <input
                     ref={phoneInputRef}
@@ -137,7 +157,7 @@ export default function RestaurantLogin() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                     maxLength={10}
-                    className="block w-full pl-16 pr-6 py-4 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white border-2 border-transparent focus:border-primary/50 rounded-2xl outline-none transition-all placeholder:text-gray-300 font-bold text-lg shadow-sm"
+                    className="block w-full pl-16 pr-6 py-4 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white border-2 border-[#22A2E3]/30 focus:!border-[#22A2E3] focus:!ring-4 focus:!ring-[#22A2E3]/20 rounded-2xl outline-none transition-all placeholder:text-gray-300 font-bold text-lg shadow-sm"
                     placeholder="00000 00000"
                   />
                 </div>
@@ -146,7 +166,7 @@ export default function RestaurantLogin() {
               <button
                 type="submit"
                 disabled={loading || phone.length < 10}
-                className="w-full py-4.5 bg-primary hover:bg-[#6a2f56] disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:text-gray-400 text-white rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 group overflow-hidden relative"
+                className="w-full py-4.5 bg-[#22A2E3] hover:bg-[#1a85bb] disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:text-gray-400 text-white rounded-2xl font-bold text-lg shadow-xl shadow-[#22A2E3]/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 group overflow-hidden relative"
               >
                 {loading ? (
                   <Loader2 className="w-6 h-6 animate-spin" />
@@ -166,9 +186,9 @@ export default function RestaurantLogin() {
           </div>
 
           <div className="mt-8 text-center">
-            <p className="text-[11px] text-gray-400 font-medium leading-relaxed max-w-[320px] mx-auto">
-              By continuing, you agree to Indian Bites's <br />
-              <Link to="/food/restaurant/profile/terms" className="text-gray-900 dark:text-white font-bold hover:text-primary transition-colors">Terms of Service</Link> & <Link to="/food/restaurant/profile/privacy" className="text-gray-900 dark:text-white font-bold hover:text-primary transition-colors">Privacy Policy</Link>
+            <p className="text-[11px] text-white font-medium leading-relaxed max-w-[320px] mx-auto">
+              By continuing, you agree to Zapoo's <br />
+              <Link to="/food/restaurant/profile/terms" className="text-white font-bold hover:text-gray-200 transition-colors">Terms of Service</Link> & <Link to="/food/restaurant/profile/privacy" className="text-white font-bold hover:text-gray-200 transition-colors">Privacy Policy</Link>
             </p>
           </div>
 

@@ -7,7 +7,7 @@ import { diningAPI, restaurantAPI } from "@food/api"
 import Loader from "@food/components/Loader"
 import { Badge } from "@food/components/ui/badge"
 import { toast } from "sonner"
-import { useAuthStore } from "@/core/auth/auth.store"
+import { isModuleAuthenticated } from "@food/utils/auth"
 const debugError = (...args) => {}
 
 const getRestaurantFromResponse = (response) =>
@@ -75,7 +75,7 @@ const getBookerPhone = (booking) =>
 export default function DiningReservations() {
     const navigate = useNavigate()
     const goBack = useRestaurantBackNavigation()
-    const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+    const isAuthenticated = isModuleAuthenticated('restaurant')
     const [bookings, setBookings] = useState([])
     const [loading, setLoading] = useState(true)
     const [restaurant, setRestaurant] = useState(null)

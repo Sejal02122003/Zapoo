@@ -210,3 +210,41 @@ export const resetAdminPasswordWithOtpController = async (req, res, next) => {
     next(error);
   }
 };
+
+export const impersonateRestaurantController = async (req, res, next) => {
+  try {
+    const restaurantId = req.params.restaurantId;
+    if (!restaurantId) throw new Error("Restaurant ID is required");
+
+    // We import directly to avoid cyclic dependencies
+    const { default: FoodRestaurant } = await import("../../modules/food/restaurant/models/restaurant.model.js");
+    const restaurant = await FoodRestaurant.findById(restaurantId);
+    if (!restaurant) throw new Error("Restaurant not found");
+
+    const { signAccessToken, signRefreshToken } = await import("./token.util.js");
+    const payload = {
+      id: restaurant._id,
+      role: "restaurant",
+      restaurantId: restaurant._id, // Add this if needed by other services
+    };
+
+    const accessToken = signAccessToken(payload);
+    const refreshToken = signRefreshToken(payload);
+
+    return res.status(200).json({
+      success: true,
+      message: "Impersonation successful",
+      data: {
+        accessToken,
+        refreshToken,
+        user: {
+          id: restaurant._id,
+          role: "restaurant",
+          name: restaurant.restaurantName || restaurant.name || "Restaurant"
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

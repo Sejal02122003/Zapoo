@@ -291,7 +291,7 @@ export async function getRestaurants(query) {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .select('restaurantName location area city profileImage coverImages menuImages menuPdf status ownerName ownerPhone zoneId zoneRank rating discount itemDiscounts discountRules')
+            .select('restaurantName location area city profileImage coverImages menuImages menuPdf status ownerName ownerPhone zoneId zoneRank rating discount itemDiscounts discountRules isTakeawayEnabled')
             .populate('zoneId', 'name zoneName')
             .lean(),
         FoodRestaurant.countDocuments(filter)
@@ -1404,8 +1404,20 @@ export async function getCustomerById(id) {
         updatedAt: u.updatedAt,
         addresses: u.addresses || [],
         gender: u.gender || '',
-        dateOfBirth: u.dateOfBirth || null
+        dateOfBirth: u.dateOfBirth || null,
+        isCodBlocked: u.isCodBlocked === true
     };
+}
+
+export async function toggleCustomerCod(id, isCodBlocked) {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
+    const updatedDoc = await FoodUser.findByIdAndUpdate(
+        id,
+        { $set: { isCodBlocked: Boolean(isCodBlocked) } },
+        { new: true }
+    );
+    if (!updatedDoc) return null;
+    return updatedDoc.toObject();
 }
 
 export async function updateCustomerStatus(id, isActive) {
@@ -2489,6 +2501,10 @@ export async function updateRestaurantById(id, body = {}) {
 
     if (body.isAcceptingOrders !== undefined) {
         doc.isAcceptingOrders = parseBooleanLike(body.isAcceptingOrders, 'isAcceptingOrders');
+    }
+
+    if (body.isTakeawayEnabled !== undefined) {
+        doc.isTakeawayEnabled = parseBooleanLike(body.isTakeawayEnabled, 'isTakeawayEnabled');
     }
 
     if (body.cuisines !== undefined) {
@@ -3621,6 +3637,7 @@ export async function getAllOffers(_query = {}) {
             restaurantName,
             dishName: 'All Items',
             couponCode: o.couponCode,
+            orderType: o.orderType || 'Both',
             customerGroup: o.customerScope === 'first-time' ? 'new' : 'all',
             discountType: o.discountType,
             discountPercentage,
@@ -3661,6 +3678,7 @@ export async function createAdminOffer(body) {
         startDate: body.startDate,
         isFirstOrderOnly: body.isFirstOrderOnly ?? false,
         endDate: body.endDate,
+        orderType: body.orderType || 'Both',
         status: body.endDate && new Date(body.endDate).getTime() <= Date.now() ? 'inactive' : 'active',
         showInCart: true
     });
@@ -3695,6 +3713,43 @@ export async function updateAdminOfferCartVisibility(offerId, itemId, showInCart
     const updated = await FoodOffer.findByIdAndUpdate(
         offerId,
         { $set: { showInCart: Boolean(showInCart) } },
+        { new: true }
+    ).lean();
+    return updated;
+}
+
+export async function updateAdminOffer(id, body) {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
+    
+    // Check if new coupon code already exists for a DIFFERENT offer
+    if (body.couponCode) {
+        const existing = await FoodOffer.findOne({ couponCode: body.couponCode, _id: { $ne: id } }).lean();
+        if (existing) {
+            throw new ValidationError('Coupon code already exists');
+        }
+    }
+
+    const updated = await FoodOffer.findByIdAndUpdate(
+        id,
+        {
+            $set: {
+                couponCode: body.couponCode,
+                discountType: body.discountType,
+                discountValue: body.discountValue,
+                customerScope: body.customerScope,
+                restaurantScope: body.restaurantScope,
+                restaurantId: body.restaurantScope === 'selected' ? body.restaurantId : undefined,
+                minOrderValue: body.minOrderValue ?? 0,
+                maxDiscount: body.maxDiscount ?? null,
+                usageLimit: body.usageLimit ?? null,
+                perUserLimit: body.perUserLimit ?? null,
+                startDate: body.startDate,
+                isFirstOrderOnly: body.isFirstOrderOnly ?? false,
+                endDate: body.endDate,
+                orderType: body.orderType || 'Both',
+                status: body.endDate && new Date(body.endDate).getTime() <= Date.now() ? 'inactive' : 'active'
+            }
+        },
         { new: true }
     ).lean();
     return updated;

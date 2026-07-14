@@ -6,6 +6,7 @@ import { FoodOffer } from '../../admin/models/offer.model.js';
 import { FoodOfferUsage } from '../../admin/models/offerUsage.model.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { haversineKm } from './order.helpers.js';
+import { validateLocationCoupon } from '../../admin/services/locationCoupon.service.js';
 
 export async function calculateOrderPricing(userId, dto) {
   const restaurant = await FoodRestaurant.findById(dto.restaurantId)
@@ -49,8 +50,20 @@ export async function calculateOrderPricing(userId, dto) {
     gstRate: 5,
   };
 
+  const orderType = dto.orderType || 'delivery';
+  
+  let platformFee = 0;
+  let gstOnPlatformFee = 0;
+  
+  if (orderType === 'takeaway') {
+    platformFee = feeSettings.takeawayPlatformFee != null ? Number(feeSettings.takeawayPlatformFee) : 0;
+    gstOnPlatformFee = feeSettings.gstOnTakeawayPlatformFee != null ? Number(feeSettings.gstOnTakeawayPlatformFee) : 0;
+  } else {
+    platformFee = feeSettings.platformFee != null ? Number(feeSettings.platformFee) : 0;
+    gstOnPlatformFee = feeSettings.gstOnPlatformFee != null ? Number(feeSettings.gstOnPlatformFee) : 0;
+  }
+  
   const packagingFee = feeSettings.packagingFee != null ? Number(feeSettings.packagingFee) : 0;
-  const platformFee = feeSettings.platformFee != null ? Number(feeSettings.platformFee) : 0;
 
   const freeUpTo = Number(feeSettings.freeDeliveryUpTo || 0);
   let distanceKm = null;
@@ -65,7 +78,10 @@ export async function calculateOrderPricing(userId, dto) {
   }
   let deliveryFee = 0;
   let deliveryFeeBreakdown = null;
-  if (
+
+  if (orderType === 'takeaway') {
+    deliveryFee = 0;
+  } else if (
     Number.isFinite(freeUpTo) &&
     freeUpTo > 0 &&
     subtotal >= freeUpTo
@@ -126,7 +142,6 @@ export async function calculateOrderPricing(userId, dto) {
 
   const gstRate = feeSettings.gstRate != null ? Number(feeSettings.gstRate) : 0;
   const gstOnDeliveryFee = feeSettings.gstOnDeliveryFee != null ? Number(feeSettings.gstOnDeliveryFee) : 0;
-  const gstOnPlatformFee = feeSettings.gstOnPlatformFee != null ? Number(feeSettings.gstOnPlatformFee) : 0;
   const gstOnPackagingFee = feeSettings.gstOnPackagingFee != null ? Number(feeSettings.gstOnPackagingFee) : 0;
 
   const itemTax = (Number.isFinite(gstRate) && gstRate > 0) ? (subtotal * (gstRate / 100)) : 0;
@@ -249,8 +264,43 @@ export async function calculateOrderPricing(userId, dto) {
     }
   }
 
+  // --- Location Coupon Service Execution ---
+  let restaurantCouponDiscount = 0;
+  let appliedRestaurantCoupon = null;
+
+  if (codeRaw) {
+    const itemsCount = items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
+    const locationRes = await validateLocationCoupon({
+        couponCode: codeRaw,
+        restaurantId: dto.restaurantId,
+        subtotal,
+        itemsCount,
+        distanceKm
+    });
+
+    if (locationRes.discount > 0) {
+        // We found a valid location coupon!
+        restaurantCouponDiscount = locationRes.discount;
+        appliedRestaurantCoupon = locationRes.appliedCoupon;
+        
+        // Since it's mutually exclusive and we use the same coupon code field:
+        // Override global coupon if the location coupon matches.
+        // Or if both matched somehow, location coupon takes precedence (or we can just clear global)
+        discount = 0;
+        appliedCoupon = null;
+        couponError = null; 
+    } else if (locationRes.error && !appliedCoupon) {
+        // If neither global nor location coupon was valid, show the location coupon error
+        // ONLY if the global coupon error was generic "Invalid or expired"
+        if (couponError === "Invalid or expired coupon code.") {
+            couponError = locationRes.error;
+        }
+    }
+  }
+  // --- End Location Coupon Service Execution ---
+
   const couponDiscount = discount;
-  const totalDiscount = couponDiscount;
+  const totalDiscount = couponDiscount + restaurantCouponDiscount;
   const totalBeforeDiscount = subtotal + deliveryFee + tax + platformFee + packagingFee;
   const total = Math.max(0, totalBeforeDiscount - totalDiscount);
 
@@ -272,10 +322,12 @@ export async function calculateOrderPricing(userId, dto) {
       discount: totalDiscount,
       itemDiscount: itemDiscountTotal > 0 ? itemDiscountTotal : undefined,
       couponDiscount: couponDiscount > 0 ? couponDiscount : undefined,
+      restaurantCouponDiscount: restaurantCouponDiscount > 0 ? restaurantCouponDiscount : undefined,
       total,
       currency: "INR",
-      couponCode: appliedCoupon?.code || codeRaw || null,
+      couponCode: appliedCoupon?.code || appliedRestaurantCoupon?.code || codeRaw || null,
       appliedCoupon,
+      appliedRestaurantCoupon,
       couponError,
     },
   };

@@ -51,7 +51,7 @@ import { cn } from "@food/utils/utils"
 import { Input } from "@food/components/ui/input"
 import { adminSidebarMenu } from "@food/utils/adminSidebarMenu"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
-import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png"
+import quickSpicyLogo from "@/assets/user_logo.jpeg"
 import { adminAPI } from "@food/api"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -500,8 +500,8 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             isInSection ? "text-base font-bold" : "text-base font-bold",
             item.label === "Log out" ? "text-red-500 hover:bg-red-500/10 hover:text-red-400" :
             isActive(item.path)
-              ? "bg-white/10 text-white border border-white/15"
-              : "text-neutral-100 hover:bg-white/5 hover:text-white",
+              ? "bg-white/10 sidebar-dynamic-text border border-white/15"
+              : "sidebar-dynamic-text hover-bg-dynamic",
             isCollapsed && "justify-center px-2"
           )}
           style={{ animationDelay: `${index * 0.05}s` }}
@@ -510,7 +510,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
           <Icon className={cn(
             "shrink-0 transition-all duration-300 text-left",
             isInSection ? "w-4 h-4" : "w-4 h-4",
-            isActive(item.path) ? "text-white scale-110" : "text-neutral-300"
+            isActive(item.path) ? "sidebar-dynamic-text scale-110" : "sidebar-dynamic-text opacity-70"
           )} />
           {!isCollapsed && (
             <div className="flex-1 flex items-center justify-between overflow-hidden">
@@ -543,12 +543,12 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
               onClick={() => toggleSection(sectionKey)}
               className={cn(
                 "w-full flex items-center justify-center px-2 py-2 rounded-lg transition-all duration-300 ease-out text-base font-bold",
-                "text-white hover:bg-white/5"
+                "sidebar-dynamic-text hover-bg-dynamic"
               )}
               title={item.label}
             >
               <div className="relative">
-                <Icon className="w-4 h-4 shrink-0 text-neutral-300 transition-transform duration-300" />
+                <Icon className="w-4 h-4 shrink-0 sidebar-dynamic-text transition-transform duration-300" />
                 {getBadgeCount(item.label, item.path) > 0 && (
                   <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-neutral-950 animate-pulse" />
                 )}
@@ -564,11 +564,11 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             onClick={() => toggleSection(sectionKey)}
             className={cn(
               "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg transition-all duration-300 ease-out text-base font-bold text-left",
-              "text-white hover:bg-white/5"
+              "sidebar-dynamic-text hover-bg-dynamic"
             )}
           >
             <div className="flex items-center gap-2.5 text-left flex-1 min-w-0">
-              <Icon className="w-4 h-4 shrink-0 text-neutral-100 transition-transform duration-300" />
+              <Icon className="w-4 h-4 shrink-0 sidebar-dynamic-text transition-transform duration-300" />
               <span className="font-bold text-left">{item.label}</span>
               {getBadgeCount(item.label, item.path) > 0 && (
                 <span className="shrink-0 bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 min-w-[18px] text-center">
@@ -577,7 +577,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
               )}
             </div>
             <div className="transition-transform duration-300 shrink-0" style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
-              <ChevronDown className="w-4 h-4 shrink-0 text-neutral-300" />
+              <ChevronDown className="w-4 h-4 shrink-0 sidebar-dynamic-text" />
             </div>
           </button>
           {isExpanded && item.subItems && (
@@ -596,8 +596,8 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                     className={cn(
                       "flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-300 ease-out text-base font-bold text-left",
                       isActive(subItem.path, allSubPaths)
-                        ? "bg-white/10 text-white"
-                        : "text-neutral-100 hover:bg-white/5 hover:text-white"
+                        ? "bg-white/10 sidebar-dynamic-text"
+                        : "sidebar-dynamic-text hover-bg-dynamic"
                     )}
                     style={{ animationDelay: `${subIndex * 0.03}s` }}
                   >
@@ -692,6 +692,20 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
           scrollbar-width: thin;
           scrollbar-color: rgba(255, 255, 255, 0.25) rgba(17, 24, 39, 0.4);
         }
+        
+        .hover-bg-dynamic {
+          transition: all 0.2s ease-in-out;
+        }
+        
+        .hover-bg-dynamic:hover {
+          background-color: var(--button-hover-color, rgba(255, 255, 255, 0.05)) !important;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .sidebar-dynamic-text {
+          color: var(--sidebar-font-color, #ffffff) !important;
+        }
       `}</style>
       <div
         className={cn(
@@ -711,28 +725,27 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
         >
           <div className="flex items-center justify-between mb-3">
             {!isCollapsed && (
-              <div className="flex items-center gap-2 animate-[slideIn_0.3s_ease-out]">
-                <div className="w-24 h-12 rounded-lg flex items-center justify-center shadow-black/20">
+              <div className="flex items-center gap-3 animate-[slideIn_0.3s_ease-out]">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0">
                   {logoUrl ? (
                     <img
                       src={logoUrl || quickSpicyLogo}
                       alt={companyName || "Company"}
-                      className="w-24 h-10 object-contain"
+                      className="w-10 h-10 object-contain"
                       loading="lazy"
                       onError={(e) => {
-                        if (!e.target.src.includes("quicky-spicy-logo.png")) {
+                        if (!e.target.src.includes("user_logo.jpeg")) {
                           e.target.src = quickSpicyLogo
                         }
                       }}
                     />
-                  ) : companyName ? (
-                    <span className="text-xs font-semibold text-white px-2 truncate">
-                      {companyName}
-                    </span>
                   ) : (
-                    <img src={quickSpicyLogo} alt="Company" className="w-24 h-10 object-contain" loading="lazy" />
+                    <img src={quickSpicyLogo} alt="Company" className="w-10 h-10 object-contain" loading="lazy" />
                   )}
                 </div>
+                <span className="text-xl font-extrabold sidebar-dynamic-text truncate tracking-tight">
+                  {companyName || "Zapoo"}
+                </span>
               </div>
             )}
             {isCollapsed && (
@@ -745,7 +758,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                       className="w-10 h-10 object-contain"
                       loading="lazy"
                       onError={(e) => {
-                        if (!e.target.src.includes("quicky-spicy-logo.png")) {
+                        if (!e.target.src.includes("user_logo.jpeg")) {
                           e.target.src = quickSpicyLogo
                         }
                       }}
@@ -759,7 +772,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleCollapse}
-                className="text-neutral-300 hover:text-white transition-all duration-200 hover:scale-110 p-1.5 rounded-lg hover:bg-white/5"
+                className="sidebar-dynamic-text opacity-70 hover:opacity-100 transition-all duration-200 hover:scale-110 p-1.5 rounded-lg hover-bg-dynamic"
                 title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               >
                 {isCollapsed ? (
@@ -770,7 +783,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
               </button>
               <button
                 onClick={onClose}
-                className="lg:hidden text-neutral-300 hover:text-white transition-all duration-200 hover:scale-110"
+                className="lg:hidden sidebar-dynamic-text opacity-70 hover:opacity-100 transition-all duration-200 hover:scale-110"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -780,7 +793,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
           {/* Admin Panel Label */}
           {!isCollapsed && (
             <div className="mb-3 animate-[slideIn_0.4s_ease-out_0.1s_both]">
-              <h2 className="text-sm font-semibold text-neutral-300 uppercase tracking-wider text-left">
+              <h2 className="text-sm font-semibold sidebar-dynamic-text uppercase tracking-wider text-left">
                 Admin Panel
               </h2>
             </div>
@@ -841,7 +854,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
                       <div className="px-3 py-2 mb-2 flex items-center justify-between">
-                        <span className="text-neutral-300 font-semibold text-base text-left">
+                        <span className="sidebar-dynamic-text font-semibold text-base text-left">
                           {item.label}
                         </span>
                         {item.items.some(subItem => {

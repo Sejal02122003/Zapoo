@@ -42,6 +42,7 @@ const statusConfig = {
 export default function OrdersPage({ statusKey = "all" }) {
   const config = statusConfig[statusKey] || statusConfig["all"]
   const [orders, setOrders] = useState([])
+  const [orderTypeTab, setOrderTypeTab] = useState("all") // "all" | "delivery" | "takeaway"
   const [isLoading, setIsLoading] = useState(true)
   const [processingRefund, setProcessingRefund] = useState(null)
   const [processingActionOrderId, setProcessingActionOrderId] = useState(null)
@@ -521,7 +522,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         orderStatus: displayStatus,
         deliveryPartnerName,
         deliveryPartnerPhone,
-        deliveryType: order.deliveryType || "Home Delivery",
+        deliveryType: order.orderType === 'takeaway' ? 'Takeaway' : (order.deliveryType || "Home Delivery"),
         orderOtp: order.deliveryOtp,
         address: order.address || order.customerAddress || order.deliveryAddress,
         refundStatus: order.payment?.refund?.status || (order.payment?.status === 'refunded' ? 'processed' : null)
@@ -554,6 +555,19 @@ export default function OrdersPage({ statusKey = "all" }) {
     toggleColumn,
     resetColumns,
   } = useOrdersManagement(normalizedOrders, statusKey, config.title)
+
+  const finalFilteredOrders = useMemo(() => {
+    if (statusKey === "food-on-the-way" || orderTypeTab === "all") {
+      return filteredOrders
+    }
+    if (orderTypeTab === "delivery") {
+      return filteredOrders.filter(o => o.orderType !== "takeaway" && String(o.deliveryType || "").toLowerCase() !== "takeaway" && String(o.deliveryType || "").toLowerCase() !== "take_away")
+    }
+    if (orderTypeTab === "takeaway") {
+      return filteredOrders.filter(o => o.orderType === "takeaway" || String(o.deliveryType || "").toLowerCase() === "takeaway" || String(o.deliveryType || "").toLowerCase() === "take_away")
+    }
+    return filteredOrders
+  }, [filteredOrders, orderTypeTab, statusKey])
 
   useEffect(() => {
     isFirstLoadRef.current = true
@@ -970,8 +984,30 @@ export default function OrdersPage({ statusKey = "all" }) {
           setIsViewOrderOpen(false)
         }}
       />
+      {statusKey !== "food-on-the-way" && (
+        <div className="flex space-x-2 border-b border-slate-200 mb-6 px-2 bg-white rounded-t-xl pt-2 shadow-sm border-x border-t">
+          <button 
+            onClick={() => setOrderTypeTab("all")}
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${orderTypeTab === 'all' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+          >
+            All Orders
+          </button>
+          <button 
+            onClick={() => setOrderTypeTab("delivery")}
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${orderTypeTab === 'delivery' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+          >
+            Delivery Orders
+          </button>
+          <button 
+            onClick={() => setOrderTypeTab("takeaway")}
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${orderTypeTab === 'takeaway' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+          >
+            Takeaway Orders
+          </button>
+        </div>
+      )}
       <OrdersTable 
-        orders={filteredOrders} 
+        orders={finalFilteredOrders} 
         visibleColumns={visibleColumns}
         onViewOrder={handleViewOrder}
         onPrintOrder={handlePrintOrder}

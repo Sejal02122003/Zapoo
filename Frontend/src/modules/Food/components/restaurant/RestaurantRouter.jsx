@@ -1,10 +1,11 @@
-import { Suspense, lazy } from "react"
+import { Suspense, lazy, useEffect } from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import ProtectedRoute from "@food/components/ProtectedRoute"
 import Loader from "@food/components/Loader"
 import GlobalPickupOtpModal from "./GlobalPickupOtpModal"
 import RestaurantBlockGuard from "./RestaurantBlockGuard"
 import "./restaurantTheme.css"
+import restaurantLogo from "@/assets/restaurant_logo.jpeg"
 
 // Lazy Loading Components
 const RestaurantNotifications = lazy(() => import("@food/pages/restaurant/Notifications"))
@@ -34,6 +35,7 @@ const RestaurantSupport = lazy(() => import("@food/pages/restaurant/RestaurantSu
 const FssaiDetails = lazy(() => import("@food/pages/restaurant/FssaiDetails"))
 const FssaiUpdate = lazy(() => import("@food/pages/restaurant/FssaiUpdate"))
 const Hyperpure = lazy(() => import("@food/pages/restaurant/Hyperpure"))
+const Challenges = lazy(() => import("@food/pages/restaurant/Challenges"))
 const ItemDetailsPage = lazy(() => import("@food/pages/restaurant/ItemDetailsPage"))
 const HubFinance = lazy(() => import("@food/pages/restaurant/HubFinance"))
 const FinanceDetailsPage = lazy(() => import("@food/pages/restaurant/FinanceDetailsPage"))
@@ -52,8 +54,24 @@ const OTP = lazy(() => import("@food/pages/restaurant/auth/OTP"))
 const Signup = lazy(() => import("@food/pages/restaurant/auth/Signup"))
 const ForgotPassword = lazy(() => import("@food/pages/restaurant/auth/ForgotPassword"))
 const VerificationPending = lazy(() => import("@food/pages/restaurant/auth/VerificationPending"))
+const RestaurantLocationCoupons = lazy(() => import("@food/pages/restaurant/locationCoupons/RestaurantLocationCoupons"))
 
 export default function RestaurantRouter() {
+  useEffect(() => {
+    let link = document.querySelector("link[rel~='icon']")
+    if (!link) {
+      link = document.createElement("link")
+      link.rel = "icon"
+      document.head.appendChild(link)
+    }
+    const originalHref = link.href
+    link.href = restaurantLogo
+    
+    return () => {
+      link.href = originalHref
+    }
+  }, [])
+
   return (
     <div className="restaurant-theme">
       <Suspense fallback={<Loader />}>
@@ -86,6 +104,7 @@ export default function RestaurantRouter() {
             <Route path="delivery-settings" element={<DeliverySettings />} />
             <Route path="rush-hour" element={<RushHour />} />
             <Route path="menu-categories" element={<MenuCategoriesPage />} />
+            <Route path="challenges" element={<Challenges />} />
             <Route path="status" element={<RestaurantStatus />} />
             <Route path="explore" element={<ExploreMore />} />
             <Route path="outlet-timings" element={<OutletTimings />} />
@@ -114,6 +133,7 @@ export default function RestaurantRouter() {
             <Route path="update-bank-details" element={<UpdateBankDetails />} />
             <Route path="reservations" element={<DiningReservations />} />
             <Route path="zone-setup" element={<ZoneSetup />} />
+            <Route path="coupon" element={<RestaurantLocationCoupons />} />
           </Route>
         </Routes>
       </Suspense>

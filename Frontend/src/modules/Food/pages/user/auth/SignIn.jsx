@@ -4,6 +4,7 @@ import { AlertCircle, Loader2, ChefHat, Smartphone, MapPin, Gauge, Pizza, Leaf, 
 import AnimatedPage from "@food/components/user/AnimatedPage"
 import { authAPI } from "@food/api"
 import { motion } from "framer-motion"
+import logoNew from "@/assets/user_logo.jpeg"
 
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -143,15 +144,20 @@ export default function SignIn() {
 
       <div className="w-full max-w-md px-6 py-8 relative z-10 flex flex-col items-center">
         {/* Central Logo */}
-        <motion.div 
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5, type: "spring", bounce: 0.4 }}
-          className="w-32 h-32 rounded-full bg-gradient-to-br from-[#E53935] to-[#D32F2F] flex flex-col items-center justify-center shadow-[0_15px_35px_rgba(229,57,53,0.35)] border-4 border-white dark:border-gray-800 mb-8"
-        >
-          <ChefHat className="w-12 h-12 text-white mb-1" />
-          <span className="text-white font-black tracking-wider text-sm">INDIAN BITE</span>
-        </motion.div>
+        <div className="relative mb-8 flex justify-center mt-4">
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, type: "spring", bounce: 0.4 }}
+            className="w-36 h-36 rounded-full bg-white shadow-lg overflow-hidden border-[6px] border-white"
+          >
+            <img 
+              src={logoNew} 
+              alt="User Logo" 
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+        </div>
 
         {/* Headings */}
         <motion.div 

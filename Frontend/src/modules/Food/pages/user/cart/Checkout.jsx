@@ -17,15 +17,30 @@ import { useOrders } from "@food/context/OrdersContext"
 export default function Checkout() {
   const navigate = useNavigate()
   const { cart, clearCart } = useCart()
-  const { getDefaultAddress, getDefaultPaymentMethod, setDefaultAddress, addresses, paymentMethods } = useProfile()
+  const { getDefaultAddress, getDefaultPaymentMethod, setDefaultAddress, addresses, paymentMethods, userProfile } = useProfile()
   const { createOrder } = useOrders()
   const getAddressId = (address) => address?.id || address?._id || ""
   const [selectedAddressId, setSelectedAddressId] = useState(getAddressId(getDefaultAddress()))
   const [selectedPayment, setSelectedPayment] = useState(getDefaultPaymentMethod()?.id || "")
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
+  const [orderType, setOrderType] = useState('delivery')
 
   const selectedAddress = addresses.find(addr => getAddressId(addr) === selectedAddressId) || getDefaultAddress()
-  const defaultPayment = paymentMethods.find(pm => pm.id === selectedPayment) || getDefaultPaymentMethod()
+
+  const availablePaymentMethods = [
+    ...paymentMethods,
+    ...(userProfile?.isCodBlocked || orderType === 'takeaway' ? [] : [{
+      id: 'cod',
+      type: 'cod',
+      cardNumber: 'N/A',
+      cardHolder: 'Cash on Delivery',
+      expiryMonth: 'N/A',
+      expiryYear: 'N/A',
+      isDefault: false
+    }])
+  ]
+
+  const defaultPayment = availablePaymentMethods.find(pm => pm.id === selectedPayment) || getDefaultPaymentMethod() || availablePaymentMethods[0]
 
   useEffect(() => {
     const defaultId = getAddressId(getDefaultAddress())
@@ -37,15 +52,19 @@ export default function Checkout() {
   }, [addresses, selectedAddressId, getDefaultAddress])
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity * 83, 0)
-  const deliveryFee = 2.99 * 83
+  const deliveryFee = orderType === 'takeaway' ? 0 : 2.99 * 83
   const tax = subtotal * 0.08
   const total = subtotal + deliveryFee + tax
 
   const [restaurantNote, setRestaurantNote] = useState("")
 
   const handlePlaceOrder = async () => {
-    if (!selectedAddress || !selectedPayment) {
+    if (orderType === 'delivery' && (!selectedAddress || !selectedPayment)) {
       alert("Please select a delivery address and payment method")
+      return
+    }
+    if (orderType === 'takeaway' && !selectedPayment) {
+      alert("Please select a payment method")
       return
     }
 
@@ -66,7 +85,8 @@ export default function Checkout() {
           quantity: item.quantity,
           image: item.image
         })),
-        address: selectedAddress,
+        address: orderType === 'takeaway' ? null : selectedAddress,
+        orderType,
         paymentMethod: defaultPayment,
         subtotal,
         deliveryFee,
@@ -116,12 +136,36 @@ export default function Checkout() {
             </Link>
             <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold dark:text-white">Checkout</h1>
           </div>
+          
+          <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mb-6 md:mb-8 w-fit max-w-full">
+            <button
+              onClick={() => setOrderType('delivery')}
+              className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                orderType === 'delivery' 
+                  ? 'bg-white dark:bg-gray-700 text-black dark:text-white shadow-sm' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Delivery
+            </button>
+            <button
+              onClick={() => setOrderType('takeaway')}
+              className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                orderType === 'takeaway' 
+                  ? 'bg-white dark:bg-gray-700 text-black dark:text-white shadow-sm' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Takeaway
+            </button>
+          </div>
         </ScrollReveal>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           {/* Left Column - Order Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Delivery Address */}
+            {orderType === 'delivery' && (
             <ScrollReveal delay={0.1}>
               <Card>
                 <CardHeader>
@@ -184,6 +228,7 @@ export default function Checkout() {
                 </CardContent>
               </Card>
             </ScrollReveal>
+            )}
 
             {/* Payment Method */}
             <ScrollReveal delay={0.2}>
@@ -195,11 +240,11 @@ export default function Checkout() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {paymentMethods.length > 0 ? (
+                  {availablePaymentMethods.length > 0 ? (
                     <div className="space-y-3">
-                      {paymentMethods.map((payment) => {
+                      {availablePaymentMethods.map((payment) => {
                         const isSelected = selectedPayment === payment.id
-                        const cardNumber = `**** **** **** ${payment.cardNumber}`
+                        const cardNumber = payment.type === 'cod' ? '' : `**** **** **** ${payment.cardNumber}`
 
                         return (
                           <div
@@ -220,10 +265,15 @@ export default function Checkout() {
                                     {payment.type}
                                   </Badge>
                                 </div>
-                                <p className="font-semibold">{cardNumber}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {payment.cardHolder}  Expires {payment.expiryMonth}/{payment.expiryYear.slice(-2)}
-                                </p>
+                                <p className="font-semibold">{payment.cardHolder}</p>
+                                {payment.type !== 'cod' && (
+                                  <>
+                                    <p className="font-semibold">{cardNumber}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Expires {payment.expiryMonth}/{payment.expiryYear.slice(-2)}
+                                    </p>
+                                  </>
+                                )}
                               </div>
                               {isSelected && (
                                 <CheckCircle className="h-5 w-5 text-primary" />
@@ -255,16 +305,16 @@ export default function Checkout() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-primary" />
+                    <MapPin className="h-5 w-5 text-primary" />
                     Add note for restaurant
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Textarea
+                  <textarea
                     placeholder="E.g. Please make it extra spicy, or no onions..."
                     value={restaurantNote}
                     onChange={(e) => setRestaurantNote(e.target.value)}
-                    className="min-h-[100px] resize-none"
+                    className="min-h-[100px] resize-none w-full p-2 border rounded-md"
                   />
                   <p className="text-xs text-muted-foreground mt-2">
                     Your request will be shared with the restaurant.

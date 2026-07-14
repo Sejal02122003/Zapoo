@@ -28,7 +28,7 @@ import BottomNavOrders from "@food/components/restaurant/BottomNavOrders";
 import RestaurantNavbar from "@food/components/restaurant/RestaurantNavbar";
 import notificationSound from "@food/assets/audio/alert.mp3";
 import { restaurantAPI, diningAPI } from "@food/api";
-import { useAuthStore } from "@/core/auth/auth.store";
+import { isModuleAuthenticated } from "@food/utils/auth";
 import { useRestaurantNotifications } from "@food/hooks/useRestaurantNotifications";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -78,7 +78,7 @@ const transformOrderForList = (order) => ({
   mongoId: order._id,
   status: order.status || "pending",
   customerName: order.userId?.name || order.customerName || "Customer",
-  type: "Home Delivery",
+  type: order.orderType === 'takeaway' ? 'Takeaway' : "Home Delivery",
   tableOrToken: null,
   timePlaced: new Date(getAllOrdersTimestamp(order)).toLocaleDateString(
     "en-US",
@@ -132,7 +132,7 @@ function CompletedOrders({ onSelectOrder, refreshToken = 0 }) {
             mongoId: order._id,
             status: order.status || "delivered",
             customerName: order.userId?.name || order.customerName || "Customer",
-            type: "Home Delivery",
+            type: order.orderType === 'takeaway' ? 'Takeaway' : "Home Delivery",
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
@@ -338,7 +338,7 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
             mongoId: order._id,
             status: order.status || "cancelled",
             customerName: order.userId?.name || order.customerName || "Customer",
-            type: "Home Delivery",
+            type: order.orderType === 'takeaway' ? 'Takeaway' : "Home Delivery",
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
@@ -571,7 +571,7 @@ function DeadOrders({ onSelectOrder, refreshToken = 0 }) {
             mongoId: order._id,
             status: "dead",
             customerName: order.userId?.name || order.customerName || "Customer",
-            type: "Home Delivery",
+            type: order.orderType === 'takeaway' ? 'Takeaway' : "Home Delivery",
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
@@ -1357,7 +1357,7 @@ const getInitialCountdown = (order) => {
 
 export default function OrdersMain() {
   const navigate = useNavigate();
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthenticated = isModuleAuthenticated('restaurant');
   const [activeFilter, setActiveFilter] = useState("new");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -2493,7 +2493,7 @@ export default function OrdersMain() {
           
           <div class="center" style="margin-top: 15px;">
             <p class="bold">Thank you for ordering!</p>
-            <p style="font-size: 10px;">Powered by ${settings.companyName || "Indian Bites"}</p>
+            <p style="font-size: 10px;">Powered by ${settings.companyName || "Zapoo"}</p>
           </div>
         </body>
         </html>
@@ -4030,10 +4030,7 @@ function PreparingOrders({
               mongoId: order._id,
               status: order.status || "preparing",
               customerName: order.userId?.name || "Customer",
-              type:
-                order.deliveryFleet === "standard"
-                  ? "Home Delivery"
-                  : "Express Delivery",
+              type: order.orderType === 'takeaway' ? 'Takeaway' : (order.deliveryFleet === "standard" ? "Home Delivery" : "Express Delivery"),
               tableOrToken: null,
               timePlaced: new Date(order.createdAt).toLocaleTimeString(
                 "en-US",
@@ -4347,10 +4344,7 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
             mongoId: order._id,
             status: order.status || "ready",
             customerName: order.userId?.name || "Customer",
-            type:
-              order.deliveryFleet === "standard"
-                ? "Home Delivery"
-                : "Express Delivery",
+            type: order.orderType === 'takeaway' ? 'Takeaway' : (order.deliveryFleet === "standard" ? "Home Delivery" : "Express Delivery"),
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
@@ -4474,10 +4468,7 @@ const OutForDeliveryOrders = ({ onSelectOrder, refreshToken = 0 }) => {
             mongoId: order._id,
             status: order.status || "out_for_delivery",
             customerName: order.userId?.name || "Customer",
-            type:
-              order.deliveryFleet === "standard"
-                ? "Home Delivery"
-                : "Express Delivery",
+            type: order.orderType === 'takeaway' ? 'Takeaway' : (order.deliveryFleet === "standard" ? "Home Delivery" : "Express Delivery"),
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",

@@ -237,6 +237,20 @@ export default function Customers() {
     }
   }
 
+  const handleToggleCod = async () => {
+    try {
+      if (!userDetails) return;
+      const newStatus = !userDetails.isCodBlocked;
+      setUserDetails({ ...userDetails, isCodBlocked: newStatus });
+      await adminAPI.toggleCustomerCod(selectedCustomer, newStatus);
+      toast.success(`COD ${newStatus ? 'blocked' : 'unblocked'} for this user`);
+    } catch (error) {
+      debugError('Error updating COD status:', error);
+      toast.error('Failed to update COD status');
+      setUserDetails({ ...userDetails, isCodBlocked: !userDetails.isCodBlocked }); // Revert
+    }
+  }
+
   const submitTopup = async () => {
     if (!topupAmount || isNaN(topupAmount) || Number(topupAmount) <= 0) {
       toast.error("Please enter a valid amount");
@@ -789,6 +803,29 @@ export default function Customers() {
                     </p>
                   </div>
                 )}
+              </div>
+
+              {/* COD Settings Section */}
+              <div className="bg-slate-50 rounded-lg p-4 mt-4 border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 mb-1">Block Cash on Delivery (COD)</h4>
+                    <p className="text-xs text-slate-600">Toggle to block this user from placing COD orders</p>
+                  </div>
+                  <button
+                    onClick={handleToggleCod}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      userDetails.isCodBlocked ? "bg-red-600" : "bg-slate-300"
+                    }`}
+                    title={userDetails.isCodBlocked ? "COD Blocked" : "COD Allowed"}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        userDetails.isCodBlocked ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
           ) : (

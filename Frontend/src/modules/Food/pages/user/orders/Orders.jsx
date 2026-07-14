@@ -6,6 +6,7 @@ import { useCart } from "@food/context/CartContext"
 import { toast } from "sonner"
 import { getCompanyNameAsync } from "@food/utils/businessSettings"
 import { useAuthStore } from "@/core/auth/auth.store"
+import { isModuleAuthenticated } from "@food/utils/auth"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -14,7 +15,7 @@ const debugError = (...args) => {}
 export default function Orders() {
   const navigate = useNavigate()
   const { replaceCart } = useCart()
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isAuthenticated = isModuleAuthenticated('user')
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -1146,7 +1147,7 @@ Order again from this restaurant in the ${companyName} app.`
 
        {/* Footer Branding */}
       <div className="flex justify-center mt-8 mb-4">
-        <h1 className="text-4xl font-black text-gray-200 dark:text-gray-800 tracking-tighter italic uppercase">indianbites</h1>
+        <h1 className="text-4xl font-black text-gray-200 dark:text-gray-800 tracking-tighter italic uppercase">zapoo</h1>
       </div>
 
       {/* Rating & Feedback Modal */}

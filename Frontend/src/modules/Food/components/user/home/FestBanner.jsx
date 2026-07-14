@@ -36,12 +36,14 @@ export default function FestBanner() {
           </motion.span>
         </div>
 
-        {/* Top Text Header: "PAYDAY PARTY" */}
-        <div className="relative z-10 flex flex-col items-center text-center mt-1">
+        {/* Centered Content Wrapper */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center w-full gap-3">
+          
+          {/* Top Text Header: "PAYDAY PARTY" */}
           <motion.div
             animate={{ scale: [1, 1.03, 1], rotate: [-1, 1, -1] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            className="flex flex-col items-center"
+            className="flex flex-col items-center text-center w-full"
           >
             <span className="text-[10px] font-black text-yellow-300 tracking-[0.2em] uppercase drop-shadow-md">
               Limited Time Feast
@@ -51,11 +53,10 @@ export default function FestBanner() {
               <span className="text-red-500 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">PARTY</span>
             </h2>
           </motion.div>
-        </div>
 
-        {/* Marching Cartoon Food Characters */}
-        <div className="relative z-10 w-full flex justify-center items-end gap-5 sm:gap-7 pb-2.5">
-          {/* Character 1: Soda Cup */}
+          {/* Marching Cartoon Food Characters */}
+          <div className="flex justify-center items-center gap-4 sm:gap-6">
+            {/* Character 1: Soda Cup */}
           <motion.div
             animate={{
               y: [0, -6, 0],
@@ -120,16 +121,8 @@ export default function FestBanner() {
             <span className="text-3xl filter drop-shadow-md">🍟</span>
           </motion.div>
         </div>
+      </div>
 
-        {/* Order Now Button */}
-        <motion.div
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="relative z-10 bg-red-600 hover:bg-red-700 text-white font-black text-xs px-6 py-2 rounded-full shadow-lg flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
-        >
-          <span>ORDER NOW</span>
-          <Play className="h-3 w-3 fill-white" />
-        </motion.div>
 
         {/* Left Theater Curtain */}
         <motion.div

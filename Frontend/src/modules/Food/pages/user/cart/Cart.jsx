@@ -194,6 +194,7 @@ export default function Cart() {
   const [orderSuccessSavingsAmount, setOrderSuccessSavingsAmount] = useState(0)
   const [placedOrderId, setPlacedOrderId] = useState(null)
   const [selectedAddressId, setSelectedAddressId] = useState(null)
+  const [orderType, setOrderType] = useState('delivery')
   const [deliveryAddressMode, setDeliveryAddressMode] = useState(() => {
     try {
       if (typeof window === "undefined") return "saved"
@@ -594,7 +595,7 @@ export default function Cart() {
           if (data) {
             // CRITICAL: Validate that fetched restaurant matches cart items
             const fetchedRestaurantId = data.restaurantId || data._id?.toString();
-            const fetchedRestaurantName = data.name;
+            const fetchedRestaurantName = data.name || data.restaurantName;
 
             // Check if restaurantId matches
             const restaurantIdMatches =
@@ -632,7 +633,7 @@ export default function Cart() {
             debugLog("? Restaurant data loaded from cart restaurantId:", {
               _id: data._id,
               restaurantId: data.restaurantId,
-              name: data.name,
+              name: data.name || data.restaurantName,
               cartRestaurantId: cartRestaurantId,
               cartRestaurantName: cartRestaurantName
             })
@@ -655,7 +656,8 @@ export default function Cart() {
 
           // Try exact match first
           let matchingRestaurant = restaurants.find(r =>
-            r.name?.toLowerCase().trim() === cart[0].restaurant?.toLowerCase().trim()
+            (r.name?.toLowerCase().trim() === cart[0].restaurant?.toLowerCase().trim()) ||
+            (r.restaurantName?.toLowerCase().trim() === cart[0].restaurant?.toLowerCase().trim())
           )
 
           // If no exact match, try partial match
@@ -663,19 +665,21 @@ export default function Cart() {
             debugLog("?? No exact match, trying partial match...")
             matchingRestaurant = restaurants.find(r =>
               r.name?.toLowerCase().includes(cart[0].restaurant?.toLowerCase().trim()) ||
-              cart[0].restaurant?.toLowerCase().trim().includes(r.name?.toLowerCase())
+              r.restaurantName?.toLowerCase().includes(cart[0].restaurant?.toLowerCase().trim()) ||
+              cart[0].restaurant?.toLowerCase().trim().includes(r.name?.toLowerCase()) ||
+              cart[0].restaurant?.toLowerCase().trim().includes(r.restaurantName?.toLowerCase())
             )
           }
 
           if (matchingRestaurant) {
             // CRITICAL: Validate that the found restaurant matches cart items
             const cartRestaurantName = cart[0]?.restaurant?.toLowerCase().trim();
-            const foundRestaurantName = matchingRestaurant.name?.toLowerCase().trim();
+            const foundRestaurantName = matchingRestaurant.name?.toLowerCase().trim() || matchingRestaurant.restaurantName?.toLowerCase().trim();
 
             if (cartRestaurantName && foundRestaurantName && cartRestaurantName !== foundRestaurantName) {
               debugError("? CRITICAL: Restaurant name mismatch!", {
                 cartRestaurantName: cart[0]?.restaurant,
-                foundRestaurantName: matchingRestaurant.name,
+                foundRestaurantName: matchingRestaurant.name || matchingRestaurant.restaurantName,
                 cartRestaurantId: cart[0]?.restaurantId,
                 foundRestaurantId: matchingRestaurant.restaurantId || matchingRestaurant._id
               });
@@ -685,7 +689,7 @@ export default function Cart() {
             }
 
             debugLog("? Found restaurant by name:", {
-              name: matchingRestaurant.name,
+              name: matchingRestaurant.name || matchingRestaurant.restaurantName,
               _id: matchingRestaurant._id,
               restaurantId: matchingRestaurant.restaurantId,
               slug: matchingRestaurant.slug,
@@ -1077,7 +1081,7 @@ export default function Cart() {
 
     return Number(feeSettings.deliveryFee || 0)
   })()
-  const deliveryFee = pricing != null ? (pricing.deliveryFee ?? 0) : fallbackDeliveryFee
+  const deliveryFee = orderType === 'takeaway' ? 0 : (pricing != null ? (pricing.deliveryFee ?? 0) : fallbackDeliveryFee)
   const deliveryFeeBreakdown = pricing?.deliveryFeeBreakdown || null
   const hasDistanceDeliveryBreakdown =
     deliveryFeeBreakdown?.source === "distance" &&
@@ -1100,14 +1104,17 @@ export default function Cart() {
   const savings = pricing?.savings ?? Math.max(0, totalBeforeDiscount - total)
 
   // Determine if COD should be hidden
-  const isCodHidden = onlinePaymentOnly || (maxCodAmount > 0 && total > maxCodAmount)
+  const isCodHidden = onlinePaymentOnly || (maxCodAmount > 0 && total > maxCodAmount) || orderType === 'takeaway' || userProfile?.isCodBlocked
 
   // Ensure valid payment method is selected
   useEffect(() => {
     if (isCodHidden && selectedPaymentMethod === "cash") {
       setSelectedPaymentMethod("razorpay")
     }
-  }, [isCodHidden, selectedPaymentMethod, total])
+    if (userProfile?.isCodBlocked && selectedPaymentMethod === "wallet") {
+      setSelectedPaymentMethod("razorpay")
+    }
+  }, [isCodHidden, selectedPaymentMethod, total, userProfile?.isCodBlocked])
 
   // Calculate platform pricing comparison savings
   const platformPricingSavings = useMemo(() => {
@@ -1542,9 +1549,14 @@ export default function Cart() {
 
 
   const handlePlaceOrder = async () => {
-    if (!hasSavedAddress) {
+    if (orderType === 'delivery' && !hasSavedAddress) {
       toast.error("Please choose a delivery location to continue")
       openLocationSelector()
+      return
+    }
+
+    if (orderType === 'takeaway' && !(restaurantData?.name || restaurantData?.restaurantName)) {
+      toast.error("Restaurant information is missing")
       return
     }
 
@@ -1644,7 +1656,7 @@ export default function Cart() {
       // CRITICAL: Validate restaurant ID before placing order
       // Ensure we're using the correct restaurant from restaurantData (most reliable)
       const finalRestaurantId = restaurantData?.restaurantId || restaurantData?._id || null;
-      const finalRestaurantName = restaurantData?.name || null;
+      const finalRestaurantName = restaurantData?.name || restaurantData?.restaurantName || null;
 
       if (!finalRestaurantId) {
         debugError('? CRITICAL: Cannot place order - Restaurant ID is missing!');
@@ -1652,7 +1664,7 @@ export default function Cart() {
           restaurantData: restaurantData ? {
             _id: restaurantData._id,
             restaurantId: restaurantData.restaurantId,
-            name: restaurantData.name
+            name: restaurantData.name || restaurantData.restaurantName
           } : 'Not loaded',
           cartRestaurantId: restaurantId,
           cartRestaurantName: cart[0]?.restaurant,
@@ -1819,6 +1831,7 @@ export default function Cart() {
         // `useZone()` can return `null`. Zod expects string/undefined, not null.
         zoneId: zoneId || undefined,
         scheduledAt: isScheduled ? new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString() : undefined,
+        orderType: orderType,
       };
       // Log final order details (including paymentMethod for COD debugging)
       debugLog('?? FINAL: Sending order to backend with:', {
@@ -2070,7 +2083,7 @@ export default function Cart() {
           `2. Backend is accessible at ${backendUrl}\n` +
           `3. Check browser console (F12) for more details\n\n` +
           `If backend is not running, start it with:\n` +
-          `cd appzetofood/backend && npm start`
+          `cd zapoofood/backend && npm start`
 
         debugError("?? Network Error Details:", {
           code: error.code,
@@ -2197,6 +2210,31 @@ export default function Cart() {
 
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
           <div className="max-w-3xl mx-auto">
+            {/* Takeaway / Delivery Toggle */}
+            {restaurantData?.isTakeawayEnabled && (
+              <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl mb-4 md:mb-6 w-full shadow-inner">
+                <button
+                  onClick={() => setOrderType('delivery')}
+                  className={`flex-1 py-2.5 md:py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    orderType === 'delivery' 
+                      ? 'bg-white dark:bg-[#2a2a2a] text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5' 
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  Delivery
+                </button>
+                <button
+                  onClick={() => setOrderType('takeaway')}
+                  className={`flex-1 py-2.5 md:py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    orderType === 'takeaway' 
+                      ? 'bg-white dark:bg-[#2a2a2a] text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5' 
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  Takeaway
+                </button>
+              </div>
+            )}
             {/* Main Cart Content */}
             <div className="space-y-2 md:space-y-4">
               {/* Cart Items */}
@@ -2567,6 +2605,7 @@ export default function Cart() {
               </div>
 
               {/* Delivery Time */}
+              {orderType === 'delivery' && (
               <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
                 <div className="flex items-start gap-3 md:gap-4">
                   <div className="mt-0.5">
@@ -2631,8 +2670,10 @@ export default function Cart() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Delivery Address */}
+              {orderType === 'delivery' && (
               <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
                 <div className="flex items-start justify-between w-full text-left">
                   <div className="flex items-start gap-4 flex-1">
@@ -2753,6 +2794,7 @@ export default function Cart() {
                    </button>
                 </div>
               </div>
+              )}
 
               {/* Contact */}
               <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-4 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
@@ -3382,7 +3424,8 @@ export default function Cart() {
                           selectedColor: 'bg-blue-500 text-white',
                           subInfo: `Bal: ${RUPEE_SYMBOL}${walletBalance.toFixed(0)}`,
                           disabled: walletBalance < total,
-                          disabledText: 'Low Balance'
+                          disabledText: 'Low Balance',
+                          hidden: userProfile?.isCodBlocked
                         },
                         {
                           id: 'cash',

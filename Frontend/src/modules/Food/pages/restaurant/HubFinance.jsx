@@ -794,9 +794,14 @@ export default function HubFinance() {
                     <p className="text-4xl font-bold text-gray-900 mb-2">
                       ₹{(financeData?.currentCycle?.estimatedPayout || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-gray-600 mb-2">
                       {financeData?.currentCycle?.totalOrders || 0} {financeData?.currentCycle?.totalOrders === 1 ? 'order' : 'orders'}
                     </p>
+                    {financeData?.bonusEarnings > 0 && (
+                      <p className="text-sm font-semibold text-purple-600 mb-4 bg-purple-50 inline-block px-3 py-1 rounded-full border border-purple-100">
+                        + ₹{financeData.bonusEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bonus Earnings
+                      </p>
+                    )}
                     <button
                       onClick={() => setShowWithdrawalModal(true)}
                       disabled={!(financeData?.currentCycle?.estimatedPayout > 0)}

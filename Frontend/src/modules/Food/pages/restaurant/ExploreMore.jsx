@@ -30,6 +30,7 @@ import {
   MapPin,
   LogOut,
   Ticket,
+  Award,
 } from "lucide-react"
 import { Card, CardContent } from "@food/components/ui/card"
 import { DateRangeCalendar } from "@food/components/ui/date-range-calendar"
@@ -769,6 +770,7 @@ export default function ExploreMore() {
   const settingsItems = [
     { id: 3, label: "Delivery settings", icon: Truck, route: "/food/restaurant/delivery-settings" },
     { id: 4, label: "Zone Setup", icon: MapPin, route: "/food/restaurant/zone-setup" },
+    { id: 5, label: "Challenges & Rewards", icon: Award, route: "/food/restaurant/challenges" },
   ]
 
   const ordersItems = [
@@ -854,7 +856,7 @@ export default function ExploreMore() {
                 whileHover={{ scale: 1.02, y: -1 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
-                  if (item.id === 5) {
+                  if (item.id === 'schedule_off' || item.label === 'Schedule off') {
                     // Schedule off card
                     handleScheduleOffClick()
                   } else if (item.route) {

@@ -5,6 +5,7 @@
 import apiClient, { userClient, restaurantClient, deliveryClient, adminClient } from "./axios.js";
 import { API_ENDPOINTS } from "./config.js";
 import * as authService from "./auth.js";
+import { mockRestaurants, mockOffers, mockMenus } from './mockData.js';
 
 const stub = () =>
   Promise.resolve({
@@ -206,6 +207,12 @@ export const adminAPI = {
   createSubAdmin: (body) => adminClient.post("/food/admin/sub-admins", body),
   updateSubAdmin: (id, body) => adminClient.put(`/food/admin/sub-admins/${id}`, body),
   deleteSubAdmin: (id) => adminClient.delete(`/food/admin/sub-admins/${id}`),
+
+  // Location Coupons
+  getLocationCoupons: (params = {}) => adminClient.get("/food/admin/location-coupons", { params }),
+  createLocationCoupon: (body) => adminClient.post("/food/admin/location-coupons", body),
+  updateLocationCoupon: (id, body) => adminClient.patch(`/food/admin/location-coupons/${id}`, body),
+  deleteLocationCoupon: (id) => adminClient.delete(`/food/admin/location-coupons/${id}`),
 
   getSidebarBadges: () =>
     adminClient.get("/food/admin/sidebar-badges"),
@@ -464,6 +471,8 @@ export const adminAPI = {
     adminClient.get(`/food/admin/customers/${String(id)}`),
   updateCustomerStatus: (id, isActive) =>
     adminClient.patch(`/food/admin/customers/${String(id)}/status`, { isActive: isActive !== false }),
+  toggleCustomerCod: (id, isCodBlocked) =>
+    adminClient.patch(`/food/admin/customers/${String(id)}/cod-status`, { isCodBlocked }),
   topupCustomerWallet: (id, amount, description) =>
     adminClient.post(`/food/admin/customers/${String(id)}/wallet-topup`, { amount: Number(amount), description }),
   /** Orders (admin) â€“ list, get by id, assign delivery partner */
@@ -698,6 +707,9 @@ export const restaurantAPI = {
   /** Finance dashboard for `hub-finance`. */
   getFinance: (params = {}) =>
     restaurantClient.get("/food/restaurant/finance", { params: params || {} }),
+  /** Location Coupons for Restaurant */
+  getLocationCoupons: (params = {}) =>
+    restaurantClient.get("/food/restaurant/location-coupons", { params: params || {} }),
   /** Fetch restaurant by owner (stub for missing backend endpoint). */
   getRestaurantByOwner: () =>
     Promise.resolve({
@@ -793,7 +805,7 @@ export const restaurantAPI = {
     return restaurantClient.post("/food/restaurant/profile/menu-images", formData);
   },
   /** Public Offers for users (global/selected restaurant) */
-  getPublicOffers: () => userClient.get("/food/restaurant/offers"),
+  getPublicOffers: () => Promise.resolve({ data: { success: true, data: mockOffers } }),
   /** Backward-compat helper used by Cart: returns coupons array for an item by adapting public offers */
   getCouponsByItemIdPublic: (restaurantId, _itemId) =>
     userClient.get("/food/restaurant/offers").then((res) => {
@@ -1074,11 +1086,17 @@ export const restaurantAPI = {
   getRestaurants: (params = {}, config = {}) =>
     getPublicRestaurantsOnce(params, config),
   /** Public: get single approved restaurant by id or slug */
-  getRestaurantById: (id, config = {}) =>
-    userClient.get(`/food/restaurant/restaurants/${String(id)}`, { ...config }),
+  getRestaurantById: (id, config = {}) => {
+    const restaurant = mockRestaurants.find(r => r.id === String(id) || r.slug === String(id));
+    if (restaurant) return Promise.resolve({ data: { success: true, data: restaurant } });
+    return userClient.get(`/food/restaurant/restaurants/${String(id)}`, { ...config });
+  },
   /** Public: get approved menu by restaurant id or slug */
-  getMenuByRestaurantId: (id, config = {}) =>
-    getPublicRestaurantMenuOnce(id, config),
+  getMenuByRestaurantId: (id, config = {}) => {
+    const menu = mockMenus[String(id)];
+    if (menu) return Promise.resolve({ data: { success: true, data: { menu } } });
+    return getPublicRestaurantMenuOnce(id, config);
+  },
   /** Public: get outlet timings by restaurant id */
   getOutletTimingsByRestaurantId: (id, config = {}) =>
     getPublicRestaurantOutletTimingsOnce(id, config),
@@ -1088,7 +1106,7 @@ export const restaurantAPI = {
       ...config,
     }),
   getPublicOffers: (params = {}) =>
-    userClient.get("/food/restaurant/offers", { params }),
+    Promise.resolve({ data: { success: true, data: mockOffers } }),
   /** Resend delivery notification (restaurant dashboard) */
   resendDeliveryNotification: (orderId) =>
     restaurantClient.post(`/food/restaurant/orders/${String(orderId)}/resend-notification`, {}),

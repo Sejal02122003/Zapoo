@@ -1,13 +1,13 @@
-# 🍔 Foodelo Admin Panel: The Complete Master Operations Manual
+# 🍔 Zapoo Admin Panel: The Complete Master Operations Manual
 
-Welcome to the official **Foodelo Admin Operations Manual**. This document is designed to be the "source of truth" for managing your food delivery ecosystem. Whether you are onboarding your first restaurant or managing a fleet of 5,000 riders, this guide covers every button, setting, and workflow in the platform.
+Welcome to the official **Zapoo Admin Operations Manual**. This document is designed to be the "source of truth" for managing your food delivery ecosystem. Whether you are onboarding your first restaurant or managing a fleet of 5,000 riders, this guide covers every button, setting, and workflow in the platform.
 
 ---
 
 ## 📖 1. Introduction & Core Concept
 
-### 1.1 What is Foodelo?
-Foodelo is a hyper-local food delivery marketplace that connects three distinct parties:
+### 1.1 What is Zapoo?
+Zapoo is a hyper-local food delivery marketplace that connects three distinct parties:
 1.  **Customers:** Who browse and order food.
 2.  **Restaurants:** Who prepare the meals.
 3.  **Delivery Partners:** Who bridge the gap between the kitchen and the doorstep.
@@ -82,12 +82,12 @@ You can toggle the entire dashboard to show data for:
 ## 👥 4. User Management: Moderating the Community
 
 ### 4.1 The User List
-Every customer registered on Foodelo is listed here. You can search by Name, Phone, or Email.
+Every customer registered on Zapoo is listed here. You can search by Name, Phone, or Email.
 
 ### 4.2 User Deep-Dive
 Clicking on a user's name reveals their **Profile Page**:
 *   **Order History:** A complete list of every order, including items bought and total spent.
-*   **Wallet Balance:** The amount of "Foodelo Credits" they have (often from refunds).
+*   **Wallet Balance:** The amount of "Zapoo Credits" they have (often from refunds).
 *   **Saved Addresses:** Every location they have saved (Home, Work, Gym).
 *   **Refund Logs:** Track how many times this user has complained or asked for money back.
 
@@ -220,7 +220,7 @@ The admin panel integrates with Stripe, Razorpay, or PayPal.
 ### 11.2 Refund Management
 When an order is cancelled, you can refund money to:
 1.  **Original Source:** Back to their Credit Card (Takes 5-7 days).
-2.  **Foodelo Wallet:** Instant credit (Encourages the user to order again!).
+2.  **Zapoo Wallet:** Instant credit (Encourages the user to order again!).
 
 ---
 
@@ -301,7 +301,7 @@ You can manually export the following at any time:
 
 ## 🧭 22. Sidebar Navigation Guide: Total Control Center
 
-The sidebar is your primary tool for navigating the Foodelo platform. Each section is designed to handle a specific part of your business operations. Below is a detailed breakdown of every single menu item.
+The sidebar is your primary tool for navigating the Zapoo platform. Each section is designed to handle a specific part of your business operations. Below is a detailed breakdown of every single menu item.
 
 ### 📊 22.1 Main Controls
 *   **Dashboard:** 
@@ -507,8 +507,8 @@ The sidebar is your primary tool for navigating the Foodelo platform. Each secti
 This Admin Panel is the engine of your business. Treat it with care, monitor the data daily, and always prioritize the user experience.
 
 **Support Contact:**
-📧 Email: admin-support@foodelo.com
-📞 Phone: +1-888-FOODELO
+📧 Email: admin-support@zapoo.com
+📞 Phone: +1-888-ZAPOO
 
 ---
 **Document Version:** 2.1.0

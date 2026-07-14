@@ -40,7 +40,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@food/components/ui/popover";
-import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png";
+import quickSpicyLogo from "@/assets/user_logo.jpeg";
 import { adminAPI } from "@food/api";
 import { clearModuleAuth } from "@food/utils/auth";
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings";
@@ -278,29 +278,7 @@ export default function AdminNavbar({ onMenuClick }) {
             >
               <Menu className="w-5 h-5" />
             </button>
-            {/* Logo and Company Name */}
-            <div className="flex items-center cursor-pointer" onClick={() => navigate('/admin')}>
-              <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center">
-                {businessSettings?.logo?.url ? (
-                  <img
-                    src={businessSettings.logo.url}
-                    alt={businessSettings.companyName || "Company"}
-                    className="w-10 h-10 object-contain"
-                    loading="lazy"
-                    onError={(e) => {
-                      if (!e.target.src.includes("quicky-spicy-logo.png")) {
-                        e.target.src = quickSpicyLogo;
-                      }
-                    }}
-                  />
-                ) : (
-                  <img src={quickSpicyLogo} alt={businessSettings?.companyName || "Company"} className="w-10 h-10 object-contain" loading="lazy" />
-                )}
-              </div>
-              <span className="text-red-600 font-extrabold text-xl ml-1 tracking-tight">
-                {businessSettings?.companyName || "Indian Bites"}
-              </span>
-            </div>
+
           </div>
 
           {/* Center: Search Bar */}

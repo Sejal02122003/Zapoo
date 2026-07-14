@@ -235,8 +235,8 @@ export default function HomeHeader({
         </div>
       </div>
 
-      {/* Sticky Search Bar and Veg Toggle */}
-      <div id="home-header-search-row" className={`relative sticky z-[60] px-1 pb-2 transition-all duration-300 pointer-events-none mt-2 sm:mt-3 ${isCategoryStuck ? 'top-0 pt-2 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-2xl' : 'top-2 pt-2 bg-transparent'}`}>
+      {/* Search Bar and Veg Toggle */}
+      <div id="home-header-search-row" className="relative z-20 px-1 pb-2 mt-2 sm:mt-3 pointer-events-none">
         <div className="flex items-center gap-2.5 w-[96%] mx-auto pointer-events-auto">
           {/* Search Bar */}
           <div

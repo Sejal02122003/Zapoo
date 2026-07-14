@@ -88,6 +88,7 @@ export default function Categories() {
             type: cat?.type || "",
           }));
           
+          /*
           transformed.forEach(cat => {
             const name = (cat.name || "").toLowerCase();
             if (!staticNames.has(name)) {
@@ -95,6 +96,7 @@ export default function Categories() {
               staticNames.add(name);
             }
           });
+          */
         }
         
         setCategories(combinedList);

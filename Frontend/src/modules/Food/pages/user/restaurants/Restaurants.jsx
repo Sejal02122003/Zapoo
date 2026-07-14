@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link } from "react-router-dom"
-import { ArrowLeft, Clock, MapPin, Heart, Star } from "lucide-react"
+import { Link, useLocation } from "react-router-dom"
+import { ArrowLeft, Clock, MapPin, Heart, Star, Search, ChevronDown, ArrowDownUp, Timer } from "lucide-react"
+import { motion } from "framer-motion"
 import AnimatedPage from "@food/components/user/AnimatedPage"
 import Footer from "@food/components/user/Footer"
 import ScrollReveal from "@food/components/user/ScrollReveal"
 import TextReveal from "@food/components/user/TextReveal"
+import TakeawayRestaurantRow from "@food/components/user/TakeawayRestaurantRow"
 import { Card, CardTitle, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import { RestaurantGridSkeleton } from "@food/components/ui/loading-skeletons"
@@ -45,6 +47,10 @@ export default function Restaurants() {
   const { location: userLocation, zoneId } = useAppLocation()
   const [restaurants, setRestaurants] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedSort, setSelectedSort] = useState(null)
+  const [under30MinsFilter, setUnder30MinsFilter] = useState(false)
+  const location = useLocation()
+  const isTakeawayView = new URLSearchParams(location.search).get('takeaway') === 'true'
   const showRestaurantsSkeleton = useDelayedLoading(loading)
 
   useEffect(() => {
@@ -56,6 +62,9 @@ export default function Restaurants() {
         const params = { limit: 300, _ts: Date.now() }
         if (zoneId) {
           params.zoneId = zoneId
+        }
+        if (isTakeawayView) {
+          params.isTakeawayEnabled = true
         }
         const response = await restaurantAPI.getRestaurants(params)
         const list =
@@ -103,32 +112,147 @@ export default function Restaurants() {
     return () => {
       cancelled = true
     }
-  }, [zoneId])
+  }, [zoneId, isTakeawayView])
 
   const hasRestaurants = useMemo(() => restaurants.length > 0, [restaurants.length])
 
   return (
-    <AnimatedPage className="min-h-screen bg-gradient-to-b from-yellow-50/30 dark:from-[#0a0a0a] via-white dark:via-[#0a0a0a] to-orange-50/20 dark:to-[#0a0a0a]">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 md:py-8 lg:py-10 space-y-4 sm:space-y-6 lg:space-y-8">
-        <ScrollReveal>
-          <div className="flex items-center gap-3 sm:gap-4 lg:gap-5 mb-4 lg:mb-6">
+    <AnimatedPage className={`min-h-screen ${isTakeawayView ? 'bg-gradient-to-b from-orange-500 via-orange-300 to-white dark:to-[#0a0a0a]' : 'bg-gradient-to-b from-yellow-50/30 dark:from-[#0a0a0a] via-white dark:via-[#0a0a0a] to-orange-50/20 dark:to-[#0a0a0a]'}`}>
+      {/* ── Seamless Sticky Header for Takeaway View ── */}
+      {isTakeawayView && (
+        <div className="sticky top-0 z-[100] bg-orange-500 w-full px-4 py-3 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
             <Link to="/">
-              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 hover:bg-gray-100 dark:hover:bg-gray-800">
-                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-gray-900 dark:text-gray-100" />
+              <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 bg-white/20 hover:bg-white/30 text-white border-0">
+                <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
-            <TextReveal className="flex items-center gap-2 sm:gap-3 lg:gap-4">
-              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white">
-                All Restaurants
-              </h1>
-            </TextReveal>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5 cursor-pointer">
+                <span className="text-white font-black text-sm sm:text-base tracking-wide uppercase drop-shadow-sm">MOMO CRAVINGS</span>
+                <ChevronDown className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-white/90 text-[10px] sm:text-xs truncate max-w-[180px] sm:max-w-[220px]">
+                {userLocation?.address || "Current Location"}
+              </span>
+            </div>
           </div>
-        </ScrollReveal>
+          <Link to="/food/user/search">
+            <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 bg-white hover:bg-gray-100 shadow-sm border-0">
+              <Search className="h-5 w-5 text-primary" strokeWidth={2.5} />
+            </Button>
+          </Link>
+        </div>
+      )}
 
-        {showRestaurantsSkeleton ? (
+      <div className={`max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 ${isTakeawayView ? 'pt-4 sm:pt-6 pb-8 lg:pb-10' : 'py-4 sm:py-6 md:py-8 lg:py-10'} space-y-4 sm:space-y-6 lg:space-y-8`}>
+        {!isTakeawayView && (
+          <ScrollReveal>
+            <div className="flex items-center gap-3 sm:gap-4 lg:gap-5 mb-4 lg:mb-6">
+              <Link to="/">
+                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-gray-900 dark:text-gray-100" />
+                </Button>
+              </Link>
+              <TextReveal className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white">
+                  All Restaurants
+                </h1>
+              </TextReveal>
+            </div>
+          </ScrollReveal>
+        )}
+
+        {isTakeawayView && (
+          <ScrollReveal>
+            <div className="w-full h-[140px] sm:h-[160px] relative px-4 flex flex-col items-center justify-center overflow-visible mb-6 sm:mb-8">
+              {/* Floating Emojis */}
+              <motion.div
+                animate={{ y: [-10, 10, -10], rotate: [-10, 10, -10] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute left-[10%] sm:left-[15%] top-6 text-4xl drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)] z-0"
+              >😋</motion.div>
+              
+              <motion.div
+                animate={{ y: [10, -10, 10], rotate: [10, -10, 10] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                className="absolute right-[12%] sm:right-[18%] top-8 text-3xl drop-shadow-[0_5px_10px_rgba(0,0,0,0.2)] opacity-80 z-0"
+              >🍽️</motion.div>
+              
+              <motion.div
+                animate={{ y: [-5, 5, -5], scale: [0.9, 1.1, 0.9] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute left-[20%] sm:left-[25%] bottom-4 text-2xl drop-shadow-md z-0"
+              >🔥</motion.div>
+              
+              <motion.div
+                animate={{ y: [5, -5, 5], rotate: [0, 15, 0] }}
+                transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                className="absolute right-[22%] sm:right-[28%] bottom-6 text-2xl drop-shadow-md z-0"
+              >✨</motion.div>
+
+              {/* Content */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
+                className="flex flex-col items-center z-10"
+              >
+                <div className="bg-white/20 border border-white/30 backdrop-blur-md rounded-full px-3 py-1 flex items-center gap-2 mb-2 shadow-sm">
+                  <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                  <span className="text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase">
+                    Hot & Steaming
+                  </span>
+                </div>
+                
+                <h2 className="text-3xl sm:text-[40px] font-black drop-shadow-md flex items-center gap-2 mt-0 sm:mt-1">
+                  <span className="text-yellow-400 tracking-tight">CRAVING</span>
+                  <span className="text-white border-[1.5px] border-white/70 rounded-xl px-2 py-0.5 bg-white/5 backdrop-blur-sm shadow-inner tracking-tight">MOMOS?</span>
+                </h2>
+                
+                <p className="text-white/95 text-[11px] sm:text-[13px] font-semibold mt-3 max-w-[280px] sm:max-w-[340px] text-center drop-shadow-sm leading-snug">
+                  From classic steamed to spicy kurkure, satisfy your dumpling cravings right here!
+                </p>
+              </motion.div>
+            </div>
+          </ScrollReveal>
+        )}
+
+        <div className={isTakeawayView ? "bg-white dark:bg-[#121212] pt-6 pb-24 px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 -mx-3 sm:-mx-4 md:-mx-6 lg:-mx-8 xl:-mx-12 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] mt-2 relative z-10 min-h-screen" : ""}>
+          {isTakeawayView && (
+            <div className="flex items-center gap-2 md:gap-3 mb-6">
+              <Button
+                variant="outline"
+                className="h-8 sm:h-9 md:h-10 px-3 sm:px-4 md:px-5 rounded-md flex items-center gap-2 whitespace-nowrap flex-shrink-0 font-medium transition-all bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm md:text-base"
+              >
+                <ArrowDownUp className="h-4 w-4 md:h-5 md:w-5 rotate-90" />
+                <span className="text-sm md:text-base font-medium">Sort</span>
+                <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setUnder30MinsFilter(!under30MinsFilter)}
+                className={`h-8 sm:h-9 md:h-10 px-3 sm:px-4 md:px-5 rounded-md flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 font-medium transition-all text-sm md:text-base ${under30MinsFilter
+                  ? 'bg-primary text-white border border-primary hover:bg-secondary'
+                  : 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
+                  }`}
+              >
+                <Timer className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+                <span className="text-xs sm:text-sm md:text-base font-medium">Under 30 mins</span>
+              </Button>
+            </div>
+          )}
+
+          {showRestaurantsSkeleton ? (
           <RestaurantGridSkeleton count={4} />
         ) : !hasRestaurants ? (
           <div className="py-16 text-center text-sm text-gray-500">No restaurants available right now.</div>
+        ) : isTakeawayView ? (
+          <div className="flex flex-col w-full px-1">
+            {restaurants.map((restaurant, index) => (
+              <TakeawayRestaurantRow key={restaurant.id} restaurant={restaurant} />
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 xl:gap-6 pt-2 sm:pt-3 lg:pt-4">
             {restaurants.map((restaurant, index) => {
@@ -219,7 +343,8 @@ export default function Restaurants() {
               )
             })}
           </div>
-        )}
+          )}
+        </div>
       </div>
       <Footer />
     </AnimatedPage>

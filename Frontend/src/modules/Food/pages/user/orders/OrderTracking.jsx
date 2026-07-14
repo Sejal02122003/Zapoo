@@ -38,7 +38,7 @@ import { useLocation as useUserLocation } from "@food/hooks/useLocation"
 import DeliveryTrackingMap from "@food/components/user/DeliveryTrackingMap"
 import { orderAPI, restaurantAPI } from "@food/api"
 import { useCompanyName } from "@food/hooks/useCompanyName"
-import { useAuthStore } from "@/core/auth/auth.store"
+import { isModuleAuthenticated } from "@food/utils/auth"
 import { useUserNotifications } from "@food/hooks/useUserNotifications"
 import {
   patchOrderFromSocketPayload,
@@ -333,6 +333,9 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
     id: apiOrder?.orderId || apiOrder?._id,
     mongoId: apiOrder?._id || null,
     orderId: apiOrder?.orderId || apiOrder?._id,
+    orderType: apiOrder?.orderType || previousOrder?.orderType || 'delivery',
+    pickupTime: apiOrder?.pickupTime || previousOrder?.pickupTime || null,
+    completedAt: apiOrder?.completedAt || previousOrder?.completedAt || null,
     restaurant: apiOrder?.restaurantName || apiOrder?.restaurantId?.restaurantName || apiOrder?.restaurantId?.name || apiOrder?.restaurant?.restaurantName || apiOrder?.restaurant?.name || previousOrder?.restaurant || 'Restaurant',
     restaurantPhone:
       apiOrder?.restaurantPhone ||
@@ -490,7 +493,7 @@ export default function OrderTracking() {
   const { orderId } = useParams()
   const [searchParams] = useSearchParams()
   const lookupIdFromQuery = searchParams.get("id") || searchParams.get("orderId")
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isAuthenticated = isModuleAuthenticated('user')
   const confirmed = searchParams.get("confirmed") === "true"
   const { getOrderById } = useOrders()
   const { profile, getDefaultAddress } = useProfile()
@@ -784,7 +787,9 @@ export default function OrderTracking() {
       return null
     },
     fetchOrderDetailsWithFallback: async (options = {}) => {
-      const lookupIds = lookupIdsRef.current
+      const lookupIds = lookupIdsRef.current.length > 0 
+        ? lookupIdsRef.current 
+        : [normalizeLookupId(orderId)].filter(Boolean)
       if (lookupIds.length === 0) throw new Error("Order id required")
       let lastError = null
       for (const id of lookupIds) {
@@ -1678,7 +1683,7 @@ export default function OrderTracking() {
       </motion.div>
 
       {/* Map Section */}
-      {!isDeliveredOrder && orderStatus !== 'cancelled' && orderStatus !== 'dead' && !(isScheduledOrder && ['placed', 'confirmed'].includes(orderStatus)) && (
+      {!isDeliveredOrder && orderStatus !== 'cancelled' && orderStatus !== 'dead' && !(isScheduledOrder && ['placed', 'confirmed'].includes(orderStatus)) && order?.orderType !== 'takeaway' && (
         <MapErrorBoundary>
           <DeliveryMap
             orderId={orderId}
@@ -1696,7 +1701,7 @@ export default function OrderTracking() {
       <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-4 md:space-y-6 pb-24 md:pb-32">
         {/* Cancellation window removed as per user request to hide immediately after acceptance */}
 
-        {customerDeliveryOtp && orderStatus !== 'delivered' && orderStatus !== 'cancelled' && orderStatus !== 'dead' && (
+        {customerDeliveryOtp && orderStatus !== 'delivered' && orderStatus !== 'cancelled' && orderStatus !== 'dead' && order?.orderType !== 'takeaway' && (
           <motion.div
             className="bg-blue-50 dark:bg-blue-900/10 rounded-xl p-4 shadow-sm border border-blue-100 dark:border-blue-900/30"
             initial={{ opacity: 0, y: 20 }}
@@ -1879,7 +1884,7 @@ export default function OrderTracking() {
         )}
 
         {/* Delivery Partner Info */}
-        {order?.deliveryPartnerId && (
+        {order?.deliveryPartnerId && order?.orderType !== 'takeaway' && (
           <motion.div
             className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
@@ -1965,14 +1970,36 @@ export default function OrderTracking() {
             }
             showArrow={false}
           />
-          <SectionItem
-            iconNode={
-              <div
-                dangerouslySetInnerHTML={{ __html: SAFE_CUSTOMER_PIN }}
-                className="w-6 h-6 [&_svg]:w-full [&_svg]:h-full [&_svg]:block"
-              />
-            }
-            title="Delivery at Location"
+          {order?.orderType === 'takeaway' ? (
+            <SectionItem
+              iconNode={
+                <div
+                  dangerouslySetInnerHTML={{ __html: SAFE_RESTAURANT_PIN }}
+                  className="w-6 h-6 [&_svg]:w-full [&_svg]:h-full [&_svg]:block"
+                />
+              }
+              title="Pickup Location"
+              subtitle={order?.restaurantAddress || 'Restaurant address not available'}
+              showArrow={false}
+              rightContent={
+                <motion.button
+                  className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center"
+                  onClick={handleCallRestaurant}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <Phone className="w-5 h-5 text-blue-600" />
+                </motion.button>
+              }
+            />
+          ) : (
+            <SectionItem
+              iconNode={
+                <div
+                  dangerouslySetInnerHTML={{ __html: SAFE_CUSTOMER_PIN }}
+                  className="w-6 h-6 [&_svg]:w-full [&_svg]:h-full [&_svg]:block"
+                />
+              }
+              title="Delivery at Location"
             subtitle={(() => {
               // Priority 1: Use order address formattedAddress (live location address)
               if (order?.address?.formattedAddress && order.address.formattedAddress !== "Select location") {
@@ -2014,6 +2041,7 @@ export default function OrderTracking() {
             })()}
             showArrow={false}
           />
+          )}
           {!isAdminAccepted && orderStatus !== 'cancelled' && orderStatus !== 'delivered' && (
             <SectionItem
               icon={MessageSquare}

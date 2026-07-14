@@ -503,6 +503,11 @@ export async function listPublicApprovedFoods(query = {}) {
         isAvailable: { $ne: false }
     };
 
+    if (query.category && query.category.toLowerCase() !== 'all') {
+        const safeCategory = query.category.trim().replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+        filter.categoryName = { $regex: new RegExp(`^${safeCategory}$`, 'i') };
+    }
+
     const zoneIdRaw = String(query.zoneId || '').trim();
     if (zoneIdRaw && mongoose.Types.ObjectId.isValid(zoneIdRaw)) {
         const zoneRestaurants = await FoodRestaurant.distinct('_id', {

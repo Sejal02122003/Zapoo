@@ -225,6 +225,7 @@ export default function OrderDetails() {
           const transformedOrder = {
             id: order.orderId || order._id,
             status: orderStatusRaw.toUpperCase() || 'PENDING',
+            orderType: order.orderType || 'delivery',
             date: new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
             time: new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
             restaurant: restaurantName,
@@ -778,6 +779,11 @@ export default function OrderDetails() {
               <span className={`px-2.5 py-1 rounded text-xs font-bold ${getStatusColor(orderData.status)}`}>
                 {orderData.status}
               </span>
+              {orderData.orderType === 'takeaway' && (
+                <span className="px-2.5 py-1 rounded text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                  TAKEAWAY
+                </span>
+              )}
               <span className="text-xs text-gray-500">{orderData.date}, {orderData.time}</span>
               {/* Resend button for order details */}
               {(orderData.status === "PREPARING" || orderData.status === "READY" || orderData.status === "CONFIRMED") && 

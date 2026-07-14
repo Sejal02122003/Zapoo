@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { FoodOrder } from '../models/order.model.js';
+import { appEvents, EVENTS } from '../../../../core/utils/events.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { FoodTransaction } from '../models/foodTransaction.model.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
@@ -1226,5 +1227,10 @@ export async function updateOrderStatusDelivery(orderId, deliveryPartnerId, orde
     from,
     to: orderStatus,
   });
+
+  if (orderStatus === 'delivered' || orderStatus === 'completed') {
+      appEvents.emit(EVENTS.ORDER_COMPLETED, order);
+  }
+
   return order.toObject();
 }

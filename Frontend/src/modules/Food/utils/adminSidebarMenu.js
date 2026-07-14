@@ -136,6 +136,18 @@ export const adminSidebarMenu = [
         path: "/admin/food/coupons",
         icon: "Gift",
       },
+      {
+        type: "link",
+        label: "Restaurant Challenges",
+        path: "/admin/food/restaurant-challenges",
+        icon: "Award",
+      },
+      {
+        type: "link",
+        label: "Location Coupons",
+        path: "/admin/food/location-coupons",
+        icon: "MapPin",
+      },
     ],
   },
   {

@@ -5,8 +5,9 @@ export const applyDynamicTheme = async () => {
     const apps = ['user_app', 'restaurant_app', 'delivery_app', 'admin_app'];
     
     // Fetch all configurations simultaneously using the public endpoint
+    const timestamp = Date.now();
     const promises = apps.map(appType => 
-      publicGetOnce(`/app-config/${appType}`, { noCache: true }).catch(() => null)
+      publicGetOnce(`/app-config/${appType}`, { noCache: true, params: { _ts: timestamp } }).catch(() => null)
     );
     
     const results = await Promise.all(promises);
@@ -72,9 +73,17 @@ export const applyDynamicTheme = async () => {
         }
       }
       
-      // Apply font-family based on the current active app context
-      if (activeConfig.fontFamily && appType === currentAppType) {
-        root.style.setProperty('--main-font-family', activeConfig.fontFamily);
+      // Apply font-family and hover color based on the current active app context
+      if (appType === currentAppType) {
+        if (activeConfig.fontFamily) {
+          root.style.setProperty('--main-font-family', activeConfig.fontFamily);
+        }
+        if (activeConfig.buttonHoverColor) {
+          root.style.setProperty('--button-hover-color', activeConfig.buttonHoverColor);
+        }
+        if (activeConfig.sidebarFontColor) {
+          root.style.setProperty('--sidebar-font-color', activeConfig.sidebarFontColor);
+        }
       }
     });
 
