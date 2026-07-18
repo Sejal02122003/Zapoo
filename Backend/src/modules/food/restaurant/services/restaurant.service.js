@@ -187,6 +187,7 @@ const toRestaurantProfile = (doc) => {
             diningType: String(doc.diningSettings?.diningType || 'family-dining').trim() || 'family-dining'
         },
         isAcceptingOrders: doc.isAcceptingOrders !== false,
+        isTakeawayEnabled: Boolean(doc.isTakeawayEnabled),
         status: doc.status || null,
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,

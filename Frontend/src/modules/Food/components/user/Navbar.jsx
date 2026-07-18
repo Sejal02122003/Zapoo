@@ -18,29 +18,34 @@ export default function Navbar() {
   const { getCartCount } = useCart()
   const { openLocationSelector } = useLocationSelector()
   const cartCount = getCartCount()
-  const [logoUrl, setLogoUrl] = useState(null)
+  const [logoUrl, setLogoUrl] = useState(() => localStorage.getItem('user_app_logo') || null)
   const [companyName, setCompanyName] = useState(null)
 
   // Load business settings logo
   useEffect(() => {
     const loadLogo = async () => {
       try {
-        const cached = getCachedSettings()
-        if (cached) {
-          if (cached.logo?.url) {
-            setLogoUrl(cached.logo.url)
-          }
-          if (cached.companyName) {
-            setCompanyName(cached.companyName)
-          }
+        const userLogo = localStorage.getItem('user_app_logo');
+        if (userLogo) {
+          setLogoUrl(userLogo);
         } else {
-          const settings = await loadBusinessSettings()
-          if (settings) {
-            if (settings.logo?.url) {
-              setLogoUrl(settings.logo.url)
+          const cached = getCachedSettings()
+          if (cached) {
+            if (cached.logo?.url) {
+              setLogoUrl(cached.logo.url)
             }
-            if (settings.companyName) {
-              setCompanyName(settings.companyName)
+            if (cached.companyName) {
+              setCompanyName(cached.companyName)
+            }
+          } else {
+            const settings = await loadBusinessSettings()
+            if (settings) {
+              if (settings.logo?.url) {
+                setLogoUrl(settings.logo.url)
+              }
+              if (settings.companyName) {
+                setCompanyName(settings.companyName)
+              }
             }
           }
         }
@@ -51,7 +56,12 @@ export default function Navbar() {
     loadLogo()
 
     // Listen for business settings updates
-        const handleSettingsUpdate = () => {
+    // Listen for business settings updates
+    const handleSettingsUpdate = () => {
+        const userLogo = localStorage.getItem('user_app_logo');
+        if (userLogo) {
+            setLogoUrl(userLogo);
+        } else {
             const cached = getCachedSettings()
             if (cached) {
                 if (cached.logo?.url) {
@@ -62,10 +72,20 @@ export default function Navbar() {
                 }
             }
         }
+    }
+    
+    // Listen for themeLoaded
+    const handleThemeLoaded = () => {
+        const userLogo = localStorage.getItem('user_app_logo');
+        if (userLogo) setLogoUrl(userLogo);
+    };
+
     window.addEventListener('businessSettingsUpdated', handleSettingsUpdate)
+    window.addEventListener('themeLoaded', handleThemeLoaded)
 
     return () => {
       window.removeEventListener('businessSettingsUpdated', handleSettingsUpdate)
+      window.removeEventListener('themeLoaded', handleThemeLoaded)
     }
   }, [])
 

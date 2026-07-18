@@ -689,52 +689,49 @@ export default function FoodsList() {
           </table>
         </div>
 
+        {/* Pagination Controls */}
         {!loading && filteredFoods.length > 0 && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
-            <div className="text-sm text-slate-600">
-              Showing{" "}
-              <span className="font-semibold text-slate-800">{(currentPage - 1) * pageSize + 1}</span>
-              {" "}to{" "}
-              <span className="font-semibold text-slate-800">
-                {Math.min(currentPage * pageSize, filteredFoods.length)}
-              </span>
-              {" "}of{" "}
-              <span className="font-semibold text-slate-800">{filteredFoods.length}</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-200 px-6 py-4 bg-white gap-4">
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-slate-500">
+                Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to <span className="font-medium">{Math.min(currentPage * pageSize, filteredFoods.length)}</span> of <span className="font-medium">{filteredFoods.length}</span> results
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-700">Items per page:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-2 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
             </div>
-
             <div className="flex items-center gap-2">
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="px-2.5 py-1.5 text-sm rounded-md border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
-              >
-                <option value={10}>10 / page</option>
-                <option value={20}>20 / page</option>
-                <option value={50}>50 / page</option>
-              </select>
-
               <button
                 type="button"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                <ChevronLeft className="w-4 h-4" />
-                Prev
+                Previous
               </button>
-
-              <span className="px-3 py-1.5 text-sm font-medium text-slate-700">
-                {currentPage} / {totalPages}
-              </span>
-
+              <div className="text-sm font-medium text-slate-700 px-2">
+                Page {currentPage} of {totalPages}
+              </div>
               <button
                 type="button"
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage >= totalPages}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 Next
-                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>

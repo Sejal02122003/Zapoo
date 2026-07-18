@@ -44,6 +44,9 @@ export default function AddonsList() {
   const [editForm, setEditForm] = useState({ name: "", price: "", description: "", isAvailable: true })
   const [editImagePreview, setEditImagePreview] = useState("")
   const [editImageFile, setEditImageFile] = useState(null)
+  
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   useEffect(() => {
     const fetchAddons = async () => {
@@ -79,6 +82,18 @@ export default function AddonsList() {
     result.sort((a, b) => getItemCreatedMs(b) - getItemCreatedMs(a))
     return result
   }, [addons])
+
+  const totalPages = Math.ceil(filteredAddons.length / itemsPerPage) || 1;
+  const paginatedAddons = useMemo(() => {
+    return filteredAddons.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredAddons, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const countLabel = filteredAddons.length
 
@@ -249,7 +264,7 @@ export default function AddonsList() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredAddons.length === 0 ? (
+              ) : paginatedAddons.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
@@ -259,10 +274,10 @@ export default function AddonsList() {
                   </td>
                 </tr>
               ) : (
-                filteredAddons.map((addon, index) => (
+                paginatedAddons.map((addon, index) => (
                   <tr key={String(addon.id || addon._id)} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-slate-700">{index + 1}</span>
+                      <span className="text-sm font-medium text-slate-700">{(currentPage - 1) * itemsPerPage + index + 1}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center">
@@ -326,6 +341,52 @@ export default function AddonsList() {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination */}
+        {filteredAddons.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-200 px-6 py-4 mt-4 gap-4 bg-white rounded-b-lg">
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-slate-500">
+                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredAddons.length)}</span> of <span className="font-medium">{filteredAddons.length}</span> results
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-700">Items per page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-2 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Previous
+              </button>
+              <div className="text-sm font-medium text-slate-700 px-2">
+                Page {currentPage} of {totalPages}
+              </div>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>

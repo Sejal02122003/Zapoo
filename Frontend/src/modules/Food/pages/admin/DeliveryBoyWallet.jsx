@@ -18,7 +18,7 @@ export default function DeliveryBoyWallet() {
   const [total, setTotal] = useState(0)
   const [pages, setPages] = useState(1)
   const [summary, setSummary] = useState(null)
-  const limit = 20
+  const [limit, setLimit] = useState(10)
 
   const fetchWallets = useCallback(async (overrides = {}) => {
     const p = overrides.page ?? page
@@ -49,7 +49,7 @@ export default function DeliveryBoyWallet() {
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [page, searchQuery])
+  }, [page, searchQuery, limit])
 
   useEffect(() => {
     fetchWallets()
@@ -262,10 +262,28 @@ export default function DeliveryBoyWallet() {
 
           {/* Pagination */}
           {pages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
-              <p className="text-sm text-slate-600">
-                Page {page} of {pages} · {total} total
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 pt-4 border-t border-slate-200 gap-4">
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-slate-600">
+                  Page {page} of {pages} · {total} total
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-700">Items per page:</span>
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    className="px-2 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}

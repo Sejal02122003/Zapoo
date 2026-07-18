@@ -43,6 +43,9 @@ export default function TransactionReport() {
   const [zones, setZones] = useState([])
   const [restaurants, setRestaurants] = useState([])
   const navigate = useNavigate()
+  
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   // Fetch zones and restaurants for filters
   useEffect(() => {
@@ -133,6 +136,18 @@ export default function TransactionReport() {
   const filteredTransactions = useMemo(() => {
     return transactions // Backend already filters, so just return transactions
   }, [transactions])
+
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage) || 1;
+  const paginatedTransactions = useMemo(() => {
+    return filteredTransactions.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredTransactions, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filters]);
 
   const handleExport = (format) => {
     if (filteredTransactions.length === 0) {
@@ -459,7 +474,7 @@ export default function TransactionReport() {
                     </td>
                   </tr>
                 ) : (
-                  filteredTransactions.map((transaction, index) => (
+                  paginatedTransactions.map((transaction, index) => (
                     <tr
                       key={transaction.id}
                       className="hover:bg-slate-50 transition-colors"
@@ -511,6 +526,52 @@ export default function TransactionReport() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {filteredTransactions.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-200 px-6 py-4 mt-4 gap-4">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-slate-500">
+                  Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredTransactions.length)}</span> of <span className="font-medium">{filteredTransactions.length}</span> results
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-700">Items per page:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Previous
+                </button>
+                <div className="text-sm font-medium text-slate-700 px-2">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

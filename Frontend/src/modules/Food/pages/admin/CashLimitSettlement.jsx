@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Search, Receipt, Loader2, Package } from "lucide-react"
 import { adminAPI } from "@food/api"
 import { toast } from "sonner"
@@ -35,7 +35,7 @@ export default function CashLimitSettlement() {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [pages, setPages] = useState(1)
-  const limit = 20
+  const [limit, setLimit] = useState(10)
 
   const fetchData = async (overrides = {}) => {
     const p = overrides.page || page
@@ -66,7 +66,7 @@ export default function CashLimitSettlement() {
 
   useEffect(() => {
     fetchData()
-  }, [page])
+  }, [page, limit])
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -180,10 +180,28 @@ export default function CashLimitSettlement() {
           )}
 
           {pages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
-              <p className="text-sm text-slate-600">
-                Page {page} of {pages} � {total} total
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 pt-4 border-t border-slate-200 gap-4">
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-slate-600">
+                  Page {page} of {pages} • {total} total
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-700">Items per page:</span>
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    className="px-2 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <button
                   type="button"

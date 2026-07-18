@@ -516,11 +516,13 @@ export default function TakeawayPage() {
     return 999
   }
 
-  // Sort and filter restaurants based on selected sort and filters
   const sortedAndFilteredRestaurants = useMemo(() => {
     const baseRestaurants = under250Restaurants;
 
-    let filtered = baseRestaurants.map(r => ({ ...r, menuItems: [...(r.menuItems || [])] }))
+    // Filter out closed restaurants entirely
+    let filtered = baseRestaurants
+      .filter(r => getRestaurantAvailabilityStatus(r).isOpen)
+      .map(r => ({ ...r, menuItems: [...(r.menuItems || [])] }))
 
     // Apply search filter
     if (searchQuery.trim()) {

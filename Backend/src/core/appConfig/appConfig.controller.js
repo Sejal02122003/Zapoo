@@ -29,7 +29,7 @@ export const updateAppConfig = async (req, res) => {
         
         let config = await AppConfig.findOne({ appName });
         if (!config) {
-            config = new AppConfig({ appName, primaryColor, secondaryColor, logoUrl, fontFamily, buttonHoverColor, sidebarFontColor });
+            config = new AppConfig({ appName, primaryColor, secondaryColor, logoUrl, logoHistory, fontFamily, buttonHoverColor, sidebarFontColor });
         } else {
             if (primaryColor) config.primaryColor = primaryColor;
             if (secondaryColor) config.secondaryColor = secondaryColor;

@@ -29,7 +29,7 @@ export default function DesktopNavbar({ showLogo = true }) {
     const { vegMode, setVegMode } = useProfile()
     const { zoneId } = useAppLocation()
     const [heroSearch, setHeroSearch] = useState("")
-    const [logoUrl, setLogoUrl] = useState(null)
+    const [logoUrl, setLogoUrl] = useState(() => localStorage.getItem('user_app_logo') || null)
     const [companyName, setCompanyName] = useState(null)
     const [hasScrolledPastBanner, setHasScrolledPastBanner] = useState(false)
     const [under250PriceLimit, setUnder250PriceLimit] = useState(250)
@@ -90,22 +90,27 @@ export default function DesktopNavbar({ showLogo = true }) {
     useEffect(() => {
         const loadLogo = async () => {
             try {
-                const cached = getCachedSettings()
-                if (cached) {
-                    if (cached.logo?.url) {
-                        setLogoUrl(cached.logo.url)
-                    }
-                    if (cached.companyName) {
-                        setCompanyName(cached.companyName)
-                    }
+                const userLogo = localStorage.getItem('user_app_logo');
+                if (userLogo) {
+                    setLogoUrl(userLogo);
                 } else {
-                    const settings = await loadBusinessSettings()
-                    if (settings) {
-                        if (settings.logo?.url) {
-                            setLogoUrl(settings.logo.url)
+                    const cached = getCachedSettings()
+                    if (cached) {
+                        if (cached.logo?.url) {
+                            setLogoUrl(cached.logo.url)
                         }
-                        if (settings.companyName) {
-                            setCompanyName(settings.companyName)
+                        if (cached.companyName) {
+                            setCompanyName(cached.companyName)
+                        }
+                    } else {
+                        const settings = await loadBusinessSettings()
+                        if (settings) {
+                            if (settings.logo?.url) {
+                                setLogoUrl(settings.logo.url)
+                            }
+                            if (settings.companyName) {
+                                setCompanyName(settings.companyName)
+                            }
                         }
                     }
                 }
@@ -117,20 +122,34 @@ export default function DesktopNavbar({ showLogo = true }) {
 
         // Listen for business settings updates
         const handleSettingsUpdate = () => {
-            const cached = getCachedSettings()
-            if (cached) {
-                if (cached.logo?.url) {
-                    setLogoUrl(cached.logo.url)
-                }
-                if (cached.companyName) {
-                    setCompanyName(cached.companyName)
+            const userLogo = localStorage.getItem('user_app_logo');
+            if (userLogo) {
+                setLogoUrl(userLogo);
+            } else {
+                const cached = getCachedSettings()
+                if (cached) {
+                    if (cached.logo?.url) {
+                        setLogoUrl(cached.logo.url)
+                    }
+                    if (cached.companyName) {
+                        setCompanyName(cached.companyName)
+                    }
                 }
             }
         }
+        
+        // Listen for themeLoaded
+        const handleThemeLoaded = () => {
+            const userLogo = localStorage.getItem('user_app_logo');
+            if (userLogo) setLogoUrl(userLogo);
+        };
+
         window.addEventListener('businessSettingsUpdated', handleSettingsUpdate)
+        window.addEventListener('themeLoaded', handleThemeLoaded)
 
         return () => {
             window.removeEventListener('businessSettingsUpdated', handleSettingsUpdate)
+            window.removeEventListener('themeLoaded', handleThemeLoaded)
         }
     }, [])
 

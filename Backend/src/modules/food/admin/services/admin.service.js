@@ -5354,8 +5354,8 @@ export async function updateRestaurantZoneRank(restaurantId, rank) {
     
     const parsedRank = rank === null || rank === '' ? null : parseInt(rank, 10);
     
-    if (parsedRank !== null && (isNaN(parsedRank) || parsedRank < 1 || parsedRank > 5)) {
-        throw new ValidationError('Rank must be between 1 and 5');
+    if (parsedRank !== null && (isNaN(parsedRank) || parsedRank < 1 || parsedRank > 100)) {
+        throw new ValidationError('Rank must be between 1 and 100');
     }
 
     const restaurant = await FoodRestaurant.findById(restaurantId);

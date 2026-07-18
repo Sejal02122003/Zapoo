@@ -132,7 +132,7 @@ export default function RestaurantsList() {
   const [isEditingDetails, setIsEditingDetails] = useState(false)
   const [savingDetails, setSavingDetails] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 50
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const [detailsForm, setDetailsForm] = useState({
     name: "",
@@ -1434,10 +1434,28 @@ export default function RestaurantsList() {
           </div>
           
           {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-200">
-              <div className="text-sm text-slate-500">
-                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredRestaurants.length)} of {filteredRestaurants.length} restaurants
+          {filteredRestaurants.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-6 pt-4 border-t border-slate-200 gap-4">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-slate-500">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredRestaurants.length)} of {filteredRestaurants.length} restaurants
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-700">Items per page:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <button

@@ -289,7 +289,7 @@ const restaurantSchema = new mongoose.Schema(
     zoneRank: {
       type: Number,
       min: 1,
-      max: 5,
+      max: 100,
       default: null,
       index: true,
     },
@@ -439,6 +439,18 @@ restaurantSchema.index(
   },
 );
 restaurantSchema.index({ status: 1, createdAt: -1 });
+
+// Enforce unique rank per zone
+restaurantSchema.index(
+  { zoneId: 1, zoneRank: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      zoneRank: { $type: "number" },
+      zoneId: { $type: "objectId" }
+    },
+  }
+);
 
 export const FoodRestaurant = mongoose.model(
   "FoodRestaurant",

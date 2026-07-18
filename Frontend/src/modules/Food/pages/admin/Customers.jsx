@@ -36,7 +36,7 @@ export default function Customers() {
   })
 
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 50
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   useEffect(() => {
     setCurrentPage(1)
@@ -102,7 +102,7 @@ export default function Customers() {
   const paginatedCustomers = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
     return filteredCustomers.slice(startIndex, startIndex + itemsPerPage)
-  }, [filteredCustomers, currentPage])
+  }, [filteredCustomers, currentPage, itemsPerPage])
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }))
@@ -613,10 +613,28 @@ export default function Customers() {
           </div>
 
           {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4 mt-4">
-              <div className="text-sm text-slate-500">
-                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredCustomers.length)}</span> of <span className="font-medium">{filteredCustomers.length}</span> results
+          {filteredCustomers.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-200 px-6 py-4 mt-4 gap-4">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-slate-500">
+                  Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredCustomers.length)}</span> of <span className="font-medium">{filteredCustomers.length}</span> results
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-700">Items per page:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <button

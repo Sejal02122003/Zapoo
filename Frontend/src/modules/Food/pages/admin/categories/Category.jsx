@@ -57,6 +57,7 @@ export default function Category() {
   const [loading, setLoading] = useState(true)
   const [showPendingOnly, setShowPendingOnly] = useState(false)
   const [page, setPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
@@ -108,7 +109,7 @@ export default function Category() {
       fetchCategories()
     }, 300)
     return () => window.clearTimeout(timer)
-  }, [searchQuery, showPendingOnly, page])
+  }, [searchQuery, showPendingOnly, page, itemsPerPage])
 
   const filteredCategories = useMemo(() => {
     const query = String(searchQuery || "").trim().toLowerCase()
@@ -127,7 +128,7 @@ export default function Category() {
   const fetchCategories = async () => {
     try {
       setLoading(true)
-      const params = { limit: 100, page }
+      const params = { limit: itemsPerPage, page }
       if (searchQuery) params.search = searchQuery
       if (showPendingOnly) params.approvalStatus = "pending"
 
@@ -136,7 +137,7 @@ export default function Category() {
       const list = data.categories || []
       setCategories(Array.isArray(list) ? list : [])
       const totalCount = data.total || list.length
-      setTotalPages(Math.ceil(totalCount / 100) || 1)
+      setTotalPages(Math.ceil(totalCount / itemsPerPage) || 1)
     } catch (error) {
       if (error?.response?.status === 401) {
         toast.error("Authentication required. Please login again.")
@@ -614,10 +615,26 @@ export default function Category() {
               </button>
             </div>
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <div>
+              <div className="flex items-center gap-4">
                 <p className="text-sm text-slate-700">
                   Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
                 </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-700">Items per page:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    className="px-2 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">

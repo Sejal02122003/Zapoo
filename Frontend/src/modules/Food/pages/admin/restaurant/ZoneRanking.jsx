@@ -1,20 +1,29 @@
 import { useState, useEffect } from "react"
 import { MapPin, Search } from "lucide-react"
+import { useSearchParams } from "react-router-dom"
 import { adminAPI } from "@food/api"
 
 export default function ZoneRanking() {
   const [zones, setZones] = useState([])
-  const [selectedZone, setSelectedZone] = useState("")
+  const [searchParams] = useSearchParams()
+  const initialZone = searchParams.get("zone") || ""
+  const [selectedZone, setSelectedZone] = useState(initialZone)
   const [restaurants, setRestaurants] = useState([])
   const [loadingZones, setLoadingZones] = useState(true)
   const [loadingRestaurants, setLoadingRestaurants] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [changedRanks, setChangedRanks] = useState({})
   const [isSaving, setIsSaving] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   useEffect(() => {
     fetchZones()
   }, [])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, selectedZone])
 
   useEffect(() => {
     if (selectedZone) {
@@ -96,6 +105,12 @@ export default function ZoneRanking() {
     r.restaurantName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const totalPages = Math.ceil(filteredRestaurants.length / itemsPerPage) || 1;
+  const paginatedRestaurants = filteredRestaurants.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className="p-2 lg:p-3 bg-slate-50 min-h-screen">
       <div className="w-full mx-auto max-w-7xl">
@@ -105,7 +120,7 @@ export default function ZoneRanking() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Zone Restaurant Ranking</h1>
-            <p className="text-sm text-slate-600">Select a zone to rank up to 5 restaurants at the top</p>
+            <p className="text-sm text-slate-600">Select a zone to rank up to 100 restaurants at the top</p>
           </div>
           {Object.keys(changedRanks).length > 0 && (
             <div className="ml-auto">
@@ -183,7 +198,7 @@ export default function ZoneRanking() {
                       </td>
                     </tr>
                   ) : (
-                    filteredRestaurants.map(r => (
+                    paginatedRestaurants.map(r => (
                       <tr key={r.id || r._id} className="hover:bg-slate-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -216,11 +231,11 @@ export default function ZoneRanking() {
                             className="ml-auto block w-32 px-3 py-1.5 text-base border border-slate-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                           >
                             <option value="none">None</option>
-                            <option value="1">Rank 1</option>
-                            <option value="2">Rank 2</option>
-                            <option value="3">Rank 3</option>
-                            <option value="4">Rank 4</option>
-                            <option value="5">Rank 5</option>
+                            {[...Array(100)].map((_, i) => (
+                              <option key={i + 1} value={i + 1}>
+                                Rank {i + 1}
+                              </option>
+                            ))}
                           </select>
                         </td>
                       </tr>
@@ -229,6 +244,66 @@ export default function ZoneRanking() {
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination Controls */}
+            {filteredRestaurants.length > 0 && (
+              <div className="bg-white px-4 py-3 border-t border-slate-200 flex items-center justify-between sm:px-6">
+                <div className="flex-1 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <p className="text-sm text-slate-700">
+                      Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+                      <span className="font-medium">
+                        {Math.min(currentPage * itemsPerPage, filteredRestaurants.length)}
+                      </span>{" "}
+                      of <span className="font-medium">{filteredRestaurants.length}</span> results
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-700">Items per page:</span>
+                      <select
+                        value={itemsPerPage}
+                        onChange={(e) => {
+                          setItemsPerPage(Number(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                        className="px-2 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Previous</span>
+                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <span className="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Next</span>
+                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

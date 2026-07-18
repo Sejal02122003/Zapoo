@@ -41,7 +41,7 @@ export default function OrdersTable({
   deletingOrderId,
 }) {
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const totalPages = Math.ceil(orders.length / itemsPerPage)
   
   // Reset to page 1 when orders change
@@ -546,10 +546,28 @@ export default function OrdersTable({
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-          <div className="text-sm text-slate-600">
-            Showing <span className="font-semibold">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
-            <span className="font-semibold">{Math.min(currentPage * itemsPerPage, orders.length)}</span> of{" "}
-            <span className="font-semibold">{orders.length}</span> orders
+          <div className="flex items-center gap-4 text-sm text-slate-600">
+            <div>
+              Showing <span className="font-semibold">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+              <span className="font-semibold">{Math.min(currentPage * itemsPerPage, orders.length)}</span> of{" "}
+              <span className="font-semibold">{orders.length}</span> orders
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-700">Items per page:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-2 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
