@@ -341,8 +341,19 @@ export const adminAPI = {
     adminClient.delete(`/food/admin/delivery/${String(id)}`),
   getAvailableDeliveryPartners: (params) =>
     adminClient.get("/food/admin/delivery/available-partners", { params }),
-  assignDeliveryPartner: (orderId, partnerId) =>
-    adminClient.post(`/food/admin/orders/${String(orderId)}/assign-delivery`, { deliveryPartnerId: partnerId }),
+  assignDeliveryPartner: (orderId, partnerId, incentive = 0, incentiveReason = '') =>
+    adminClient.post(`/food/admin/orders/${String(orderId)}/assign-delivery`, { deliveryPartnerId: partnerId, incentive, incentiveReason }),
+    
+  // Audit Logs
+  getAuditLogs: (params) => adminClient.get("/food/admin/audit-logs", { params }),
+  getAuditLogById: (id) => adminClient.get(`/food/admin/audit-logs/${String(id)}`),
+  exportAuditLogs: (params) => adminClient.get("/food/admin/audit-logs/export", { params, responseType: 'blob' }),
+  
+  // Analytics
+  getIncentivesSummary: (params) => adminClient.get("/food/admin/analytics/incentives/summary", { params }),
+  getIncentivesByCity: (params) => adminClient.get("/food/admin/analytics/incentives/by-city", { params }),
+  getIncentivesAcceptanceImpact: (params) => adminClient.get("/food/admin/analytics/incentives/acceptance-impact", { params }),
+  
   /** GET /food/admin/delivery/support-tickets - list all delivery support tickets (query: status, priority, search, page, limit). */
   getDeliverySupportTickets: (params) =>
     adminClient.get("/food/admin/delivery/support-tickets", { params }),

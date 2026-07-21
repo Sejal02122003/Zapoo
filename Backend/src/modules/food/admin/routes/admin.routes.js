@@ -12,6 +12,8 @@ import * as orderController from '../../orders/controllers/order.controller.js';
 import { getAdminPageController, upsertAdminPageController } from '../controllers/pageContent.controller.js';
 import * as liveMonitorController from '../controllers/liveMonitor.controller.js';
 import * as appIntroAdController from '../controllers/appIntroAd.controller.js';
+import * as auditLogController from '../controllers/auditLog.controller.js';
+import * as analyticsController from '../controllers/analytics.controller.js';
 import { upload } from '../../../../middleware/upload.js';
 import menuBulkRoutes from './menuBulk.routes.js';
 import locationCouponRoutes from './locationCoupon.routes.js';
@@ -223,9 +225,20 @@ router.patch('/dining/requests/:id/reject', diningAdminController.rejectDiningRe
 // ----- Orders -----
 router.get('/orders', orderController.listOrdersAdminController);
 router.get('/orders/:orderId', orderController.getOrderByIdAdminController);
-router.patch('/orders/:orderId/status', orderController.updateOrderStatusAdminController);
+router.patch('/orders/:orderId/update-status', orderController.updateOrderStatusAdminController);
 router.delete('/orders/:orderId', orderController.deleteOrderAdminController);
+router.post('/orders/:orderId/cancel', orderController.cancelOrderController);
 router.post('/orders/:orderId/assign-delivery', orderController.assignDeliveryPartnerController);
+
+// Audit Logs
+router.get('/audit-logs/export', auditLogController.exportAuditLogsController);
+router.get('/audit-logs/:id', auditLogController.getAuditLogByIdController);
+router.get('/audit-logs', auditLogController.getAuditLogsController);
+
+// Analytics
+router.get('/analytics/incentives/summary', analyticsController.getIncentivesSummaryController);
+router.get('/analytics/incentives/by-city', analyticsController.getIncentivesByCityController);
+router.get('/analytics/incentives/acceptance-impact', analyticsController.getIncentivesAcceptanceImpactController);
 
 // ----- CMS Pages (About + legal) -----
 router.get('/pages-social-media/:key', getAdminPageController);

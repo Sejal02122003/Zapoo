@@ -896,13 +896,10 @@ export default function Cart() {
       const allCoupons = []
       const uniqueCouponCodes = new Set()
 
-      // Fetch coupons for each item in cart
-      for (const cartItem of cart) {
+      // Fetch coupons for each item in cart in parallel
+      await Promise.all(cart.map(async (cartItem) => {
         const couponItemId = cartItem.itemId || cartItem.id
-        if (!couponItemId) {
-          debugLog(`[CART-COUPONS] Skipping item without id:`, cartItem)
-          continue
-        }
+        if (!couponItemId) return
 
         try {
           debugLog(`[CART-COUPONS] Fetching coupons for itemId: ${couponItemId}, name: ${cartItem.name}`)
@@ -943,7 +940,7 @@ export default function Cart() {
         } catch (error) {
           debugError(`[CART-COUPONS] Error fetching coupons for item ${cartItem.id}:`, error)
         }
-      }
+      }))
 
       debugLog(`[CART-COUPONS] Total unique coupons found: ${allCoupons.length}`, allCoupons)
       setAvailableCoupons(allCoupons)
@@ -3834,7 +3831,7 @@ export default function Cart() {
           {showAutoApplyPopup && autoApplyPopupData && (
             <motion.div 
               key="auto-apply-popup"
-              className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 sm:p-0"
+              className="fixed inset-0 z-[100] flex flex-col justify-end"
             >
               <motion.div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -3844,7 +3841,7 @@ export default function Cart() {
                 onClick={() => setShowAutoApplyPopup(false)}
               />
               
-              <div className="relative w-full max-w-sm flex flex-col items-center">
+              <div className="relative w-full sm:max-w-md mx-auto flex flex-col items-center">
                 {/* Floating Close Button */}
                 <motion.button
                   initial={{ opacity: 0, y: 10 }}
@@ -3857,10 +3854,11 @@ export default function Cart() {
                 </motion.button>
 
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  className="relative w-full bg-gradient-to-b from-[#e0eeff] to-white rounded-3xl shadow-2xl overflow-hidden flex flex-col pt-12 pb-6 px-6"
+                  initial={{ opacity: 0, y: "100%" }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: "100%" }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                  className="relative w-full bg-gradient-to-b from-[#e0eeff] to-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col pt-10 pb-8 px-6"
                 >
                   {/* Sun rays background */}
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] opacity-20 pointer-events-none"

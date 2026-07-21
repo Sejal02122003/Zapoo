@@ -851,14 +851,6 @@ export async function cancelOrder(orderId, userId, reason, refundDestination = "
     userId: new mongoose.Types.ObjectId(userId),
   });
   if (!order) throw new NotFoundError("Order not found");
-
-  const allowed = ["created"];
-  const timeSinceCreation = Date.now() - new Date(order.createdAt).getTime();
-  const isWithin60Seconds = timeSinceCreation <= 65000; // 65 seconds grace period
-  
-  if (!allowed.includes(order.orderStatus) && !isWithin60Seconds) {
-    throw new ValidationError("Order cannot be cancelled after 60 seconds");
-  }
   
   if (["delivered", "picked_up", "cancelled_by_user", "cancelled_by_restaurant"].includes(order.orderStatus)) {
       throw new ValidationError("Order cannot be cancelled in its current state");
@@ -873,6 +865,10 @@ export async function cancelOrder(orderId, userId, reason, refundDestination = "
     to: "cancelled_by_user",
     note: reason || "",
   });
+  
+  // Cancel Incentive if exists
+  const { cancelPendingIncentive } = await import('./incentive.service.js');
+  await cancelPendingIncentive(order, userId, "Order cancelled by user", "USER_CANCEL");
 
   const paymentMethod = String(order.payment?.method || "cash").toLowerCase();
   const paymentStatus = String(order.payment?.status || "cod_pending").toLowerCase();
@@ -1685,13 +1681,15 @@ export async function assignDeliveryPartnerAdmin(
   orderId,
   deliveryPartnerId,
   adminId,
+  incentiveAmount = 0,
+  incentiveReason = ''
 ) {
   const identity = buildOrderIdentityFilter(orderId);
   if (!identity) throw new ValidationError("Order id required");
 
   const order = await FoodOrder.findOne(identity);
   if (!order) throw new NotFoundError("Order not found");
-  
+
   if (order.dispatch?.deliveryPartnerId && order.dispatch?.status === "accepted") {
     throw new ValidationError("Order already assigned to another partner");
   }
@@ -1700,6 +1698,10 @@ export async function assignDeliveryPartnerAdmin(
   if (cancellableStatuses.includes(order.orderStatus)) {
     throw new ValidationError("Order is cancelled or delivered, cannot assign delivery partner");
   }
+
+  // Import and validate incentive eligibility
+  const { validateIncentiveEligibility } = await import('./incentive.service.js');
+  validateIncentiveEligibility(order, { _id: adminId }, incentiveAmount, incentiveReason, "MANUAL");
 
   const partner = await FoodDeliveryPartner.findById(deliveryPartnerId)
     .select("status availabilityStatus")
@@ -1732,8 +1734,30 @@ export async function assignDeliveryPartnerAdmin(
   order.dispatch.assignedAt = now;
   order.dispatch.acceptedAt = now;
   
+  // Update deliveryAssignment
+  order.deliveryAssignment = {
+      assignedBy: new mongoose.Types.ObjectId(adminId),
+      assignedAt: now,
+      assignmentType: 'MANUAL',
+      incentive: incentiveAmount || 0,
+      incentiveReason: incentiveReason || '',
+      incentiveStatus: (incentiveAmount > 0) ? 'PENDING' : 'PENDING'
+  };
+  
   pushStatusHistory(order, { byRole: 'ADMIN', byId: adminId, from: 'assigned', to: 'accepted', note: 'Manually assigned by admin' });
   await order.save();
+  
+  // Write AuditLog
+  const { FoodAuditLog } = await import('../../admin/models/auditLog.model.js');
+  await FoodAuditLog.create({
+      action: incentiveAmount > 0 ? "INCENTIVE_ADDED" : "ASSIGN_RIDER",
+      performedBy: new mongoose.Types.ObjectId(adminId),
+      orderId: order._id,
+      riderId: new mongoose.Types.ObjectId(deliveryPartnerId),
+      incentiveAmount: incentiveAmount || 0,
+      reason: incentiveReason || "Manual assignment",
+      metadata: { assignmentType: "MANUAL" }
+  });
 
   // Call the same post-acceptance logic
   try {
@@ -1759,10 +1783,25 @@ export async function assignDeliveryPartnerAdmin(
       const { getIO, rooms } = await import('../../../../config/socket.js');
       const io = getIO();
       if (io) {
-          const payload = { orderMongoId: order._id.toString(), orderId: order._id.toString(), orderStatus: order.orderStatus, dispatchStatus: order.dispatch?.status };
+          const payload = { 
+              orderMongoId: order._id.toString(), 
+              orderId: order._id.toString(), 
+              orderStatus: order.orderStatus, 
+              dispatchStatus: order.dispatch?.status,
+              bonus: incentiveAmount || 0,
+              reason: incentiveReason || ''
+          };
           io.to(rooms.delivery(deliveryPartnerId)).emit('order_status_update', payload);
           io.to(rooms.restaurant(order.restaurantId)).emit('order_status_update', payload);
           io.to(rooms.user(order.userId)).emit('order_status_update', payload);
+          
+          // New dedicated event for rider bonus tracking
+          io.to(rooms.delivery(deliveryPartnerId)).emit('delivery_assigned', {
+              orderId: order.orderId || order._id.toString(),
+              bonus: incentiveAmount || 0,
+              reason: incentiveReason || 'Manual Assignment'
+          });
+          
           io.to('all_delivery').emit('order_claimed', { orderId: order._id.toString(), claimedBy: deliveryPartnerId });
       }
 
@@ -1804,6 +1843,13 @@ export async function updateOrderStatusAdmin(orderId, adminId, orderStatus, note
     to: orderStatus,
     note: note || "Status updated by admin"
   });
+
+  // Cancel Incentive if changing to a cancelled state
+  if (["cancelled_by_admin", "cancelled_by_restaurant", "cancelled_by_user", "dead"].includes(orderStatus)) {
+    const { cancelPendingIncentive } = await import('./incentive.service.js');
+    await cancelPendingIncentive(order, adminId, `Order cancelled by admin: ${note}`, "ADMIN_CANCEL");
+  }
+
   await order.save();
 
   try {

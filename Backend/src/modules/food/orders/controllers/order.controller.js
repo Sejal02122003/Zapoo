@@ -364,7 +364,13 @@ export async function assignDeliveryPartnerController(req, res, next) {
         const adminId = req.user?.userId;
         const orderId = req.params.orderId;
         const dto = validateAssignDeliveryDto(req.body);
-        const order = await orderService.assignDeliveryPartnerAdmin(orderId, dto.deliveryPartnerId, adminId);
+        const order = await orderService.assignDeliveryPartnerAdmin(
+            orderId, 
+            dto.deliveryPartnerId, 
+            adminId,
+            dto.incentive,
+            dto.incentiveReason
+        );
         return sendResponse(res, 200, 'Delivery partner assigned', { order });
     } catch (err) {
         next(err);

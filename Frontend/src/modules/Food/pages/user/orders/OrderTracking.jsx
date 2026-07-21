@@ -20,7 +20,8 @@ import {
   CircleSlash,
   Loader2,
   Clock,
-  Calendar
+  Calendar,
+  XCircle
 } from "lucide-react"
 import AnimatedPage from "@food/components/user/AnimatedPage"
 import { Card, CardContent } from "@food/components/ui/card"
@@ -2098,23 +2099,23 @@ export default function OrderTracking() {
           </div>
         </motion.div>
 
-        {cancelSecondsRemaining > 0 && orderStatus !== 'cancelled' && orderStatus !== 'delivered' && orderStatus !== 'picked_up' && (
+        {/* Cancel Order Section (Top level so it's clearly visible) */}
+        {orderStatus !== 'cancelled' && orderStatus !== 'delivered' && orderStatus !== 'picked_up' && (
           <motion.div
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-3 bg-white dark:bg-[#1a1a1a] p-4 rounded-xl shadow-sm"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
           >
             <Button
               variant="outline"
-              className="w-full text-red-600 border-red-100 hover:bg-red-50 h-12 rounded-xl font-semibold"
+              className="w-full h-12 rounded-xl font-semibold transition-colors text-red-600 border-red-100 hover:bg-red-50"
               onClick={handleCancelOrder}
+              disabled={isCancelling}
             >
-              Cancel Order ({cancelSecondsRemaining}s)
+              <XCircle className="w-4 h-4 mr-2" />
+              {isCancelling ? "Cancelling..." : "Cancel Order"}
             </Button>
-            <p className="text-[10px] text-gray-400 text-center px-4">
-              You can cancel your order for free within the next {cancelSecondsRemaining} seconds.
-            </p>
           </motion.div>
         )}
 

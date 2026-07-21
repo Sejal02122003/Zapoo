@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, ArrowRight, Wallet, History, Star } from 'lucide-react';
 
@@ -7,7 +7,9 @@ import { CheckCircle, ArrowRight, Wallet, History, Star } from 'lucide-react';
  * Post-delivery success screen.
  */
 export const OrderSummaryModal = ({ order, onDone }) => {
+  const bonus = order?.deliveryAssignment?.incentive || order?.deliveryBonusAmount || 0;
   const earnings = order?.earnings || order?.riderEarning || (order?.orderAmount * 0.1) || 0;
+  const total = Number(earnings) + Number(bonus);
 
   return (
     <div className="fixed inset-0 z-160 bg-green-500 overflow-y-auto">
@@ -32,7 +34,11 @@ export const OrderSummaryModal = ({ order, onDone }) => {
               <Star className="w-4 h-4 text-orange-400 fill-orange-400" />
             </div>
             
-            <p className="text-gray-950 text-5xl sm:text-6xl font-bold mb-5 sm:mb-6 tracking-tighter">₹{Number(earnings).toFixed(2)}</p>
+            <p className="text-gray-950 text-5xl sm:text-6xl font-bold mb-5 sm:mb-6 tracking-tighter">â‚¹{Number(total).toFixed(2)}</p>
+            
+            {bonus > 0 && (
+              <p className="text-orange-500 font-bold mb-4">Includes â‚¹{bonus} delivery bonus!</p>
+            )}
             
             <div className="flex items-center justify-center gap-3 py-3 bg-green-50 rounded-2xl text-green-700 text-sm font-bold border border-green-100">
               <Wallet className="w-5 h-5" />

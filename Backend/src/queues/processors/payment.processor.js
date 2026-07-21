@@ -58,6 +58,44 @@ async function handleDeliveryCompleted(data) {
         commissionAmount = 0,
         total = 0, paymentMethod
     } = data;
+    
+    // Check for pending manual incentive on the order
+    let incentiveAmount = 0;
+    try {
+        const { FoodOrder } = await import('../../modules/food/orders/models/order.model.js');
+        const order = await FoodOrder.findById(orderMongoId);
+        
+        if (order?.deliveryAssignment?.incentiveStatus === 'PENDING' && order?.deliveryAssignment?.incentive > 0) {
+            incentiveAmount = order.deliveryAssignment.incentive;
+            
+            // Mark incentive as EARNED
+            order.deliveryAssignment.incentiveStatus = 'EARNED';
+            await order.save();
+            
+            // Credit incentive to Rider Wallet
+            await creditWallet({
+                entityType: 'deliveryBoy',
+                entityId: deliveryPartnerId,
+                amount: incentiveAmount,
+                description: `Order ${orderId} - manual assignment incentive`,
+                category: 'bonus',
+                orderId: orderMongoId,
+                metadata: { orderId, reason: order.deliveryAssignment.incentiveReason }
+            });
+            
+            // Add to totalBonus
+            const { FoodDeliveryWallet } = await import('../../modules/food/delivery/models/deliveryWallet.model.js');
+            const mongoose = await import('mongoose');
+            await FoodDeliveryWallet.updateOne(
+                { deliveryPartnerId: new mongoose.default.Types.ObjectId(deliveryPartnerId) },
+                { $inc: { totalBonus: incentiveAmount } }
+            );
+            
+            logger.info(`[PaymentProcessor] Delivery partner ${deliveryPartnerId} credited manual incentive ${incentiveAmount} for order ${orderId}`);
+        }
+    } catch (err) {
+        logger.error(`[PaymentProcessor] Failed to process delivery incentive: ${err.message}`);
+    }
 
     // 1. Credit restaurant wallet with their commission (payout)
     if (restaurantId && commissionAmount > 0) {

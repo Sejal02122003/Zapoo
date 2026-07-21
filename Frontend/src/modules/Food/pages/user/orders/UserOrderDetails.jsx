@@ -12,7 +12,8 @@ import {
   Calendar,
   MapPin,
   RotateCcw,
-  FileText } from "lucide-react"
+  FileText,
+  XCircle } from "lucide-react"
 import { orderAPI, restaurantAPI } from "@food/api"
 import { useCart } from "@food/context/CartContext"
 import { toast } from "sonner"
@@ -33,6 +34,21 @@ export default function UserOrderDetails() {
   const [order, setOrder] = useState(null)
   const [restaurant, setRestaurant] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isCancelling, setIsCancelling] = useState(false)
+  const [isCancellable, setIsCancellable] = useState(false)
+
+  useEffect(() => {
+    if (!order) return;
+    
+    const checkCancellable = () => {
+      // Allow cancellation always, unless it's already cancelled or delivered
+      const unCancellableStatuses = ["cancelled", "cancelled_by_restaurant", "restaurant_cancelled", "delivered", "picked_up"];
+      const isAlreadyCancelled = unCancellableStatuses.includes(order.status) || order.status?.includes('cancel');
+      setIsCancellable(!isAlreadyCancelled);
+    };
+    
+    checkCancellable();
+  }, [order]);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -91,6 +107,31 @@ export default function UserOrderDetails() {
       toast.success("Order ID copied")
     } catch {
       toast.error("Failed to copy Order ID")
+    }
+  }
+
+  const handleCancelOrder = async () => {
+    const confirm = window.confirm("Are you sure you want to cancel this order? This action cannot be undone.")
+    if (!confirm) return
+
+    setIsCancelling(true)
+    try {
+      const orderMongoId = order._id || orderId
+      await orderAPI.cancelOrder(orderMongoId, { reason: "Cancelled by user" })
+      toast.success("Order cancelled successfully")
+      
+      // refresh order details
+      const response = await orderAPI.getOrderDetails(orderMongoId)
+      if (response?.data?.success && response.data.data?.order) {
+        setOrder(response.data.data.order)
+      } else if (response?.data?.order) {
+        setOrder(response.data.order)
+      }
+    } catch (error) {
+      debugError("Error cancelling order:", error)
+      toast.error(error?.response?.data?.message || "Failed to cancel order")
+    } finally {
+      setIsCancelling(false)
     }
   }
 
@@ -513,6 +554,21 @@ export default function UserOrderDetails() {
             )}
           </div>
         </div>
+
+        {/* Cancel Order Section (Top level so it's clearly visible) */}
+        {!(order.status === "cancelled" || order.status === "cancelled_by_restaurant" || order.status === "restaurant_cancelled" || order.status?.includes('cancel') || order.status === "delivered" || order.status === "picked_up") && (
+          <div className="bg-white dark:bg-[#121212] p-4 rounded-xl shadow-sm border dark:border-gray-800">
+            <button
+              type="button"
+              onClick={handleCancelOrder}
+              disabled={isCancelling}
+              className="w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20"
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              {isCancelling ? "Cancelling..." : "Cancel Order"}
+            </button>
+          </div>
+        )}
 
         {/* Restaurant Info Card */}
         <div className="bg-white dark:bg-[#121212] p-4 rounded-xl shadow-sm border dark:border-gray-800">

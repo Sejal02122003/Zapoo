@@ -49,6 +49,10 @@ const NewAdvertisement = lazy(() => import("@food/pages/admin/advertisement/NewA
 const AdRequests = lazy(() => import("@food/pages/admin/advertisement/AdRequests"));
 const AdsList = lazy(() => import("@food/pages/admin/advertisement/AdsList"));
 
+// Analytics & Audit
+const AuditLogs = lazy(() => import("@food/pages/admin/analytics/AuditLogs"));
+const IncentivesAnalytics = lazy(() => import("@food/pages/admin/analytics/IncentivesAnalytics"));
+
 // Help & Support
 const Chattings = lazy(() => import("@food/pages/admin/Chattings"));
 const ContactMessages = lazy(() => import("@food/pages/admin/ContactMessages"));
@@ -184,6 +188,10 @@ export default function AdminRouter() {
             <Route path="orders/offline-payments" element={<OrdersPage statusKey="offline-payments" />} />
             <Route path="order-detect-delivery" element={<OrderDetectDelivery />} />
             <Route path="order-refunds/new" element={<NewRefundRequests />} />
+            
+            {/* Analytics & Audit Logs */}
+            <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="analytics/incentives" element={<IncentivesAnalytics />} />
 
             {/* RESTAURANT MANAGEMENT */}
             <Route path="zone-setup" element={<ZoneSetup />} />

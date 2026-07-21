@@ -683,6 +683,29 @@ export async function rejectOrderDelivery(orderId, deliveryPartnerId, reason = '
   order.dispatch.deliveryPartnerId = undefined;
   order.dispatch.assignedAt = undefined;
   order.dispatch.acceptedAt = undefined;
+  
+  // Cancel Incentive if exists and pending
+  if (order.deliveryAssignment && order.deliveryAssignment.incentiveStatus === 'PENDING') {
+    const previousIncentiveAmount = order.deliveryAssignment.incentive;
+    order.deliveryAssignment.incentiveStatus = 'CANCELLED';
+    
+    // AuditLog for cancellation
+    try {
+      const { FoodAuditLog } = await import('../../admin/models/auditLog.model.js');
+      await FoodAuditLog.create({
+        action: "INCENTIVE_CANCELLED",
+        performedBy: order.deliveryAssignment.assignedBy, // The admin who assigned it
+        orderId: order._id,
+        riderId: deliveryPartnerId,
+        incentiveAmount: previousIncentiveAmount,
+        reason: `Rider rejected order: ${reason || 'No reason'}`,
+        metadata: { trigger: "RIDER_REJECTED" }
+      });
+    } catch (err) {
+      logger.error(`[Incentive] Failed to log INCENTIVE_CANCELLED: ${err.message}`);
+    }
+  }
+  
   pushStatusHistory(order, {
     byRole: 'DELIVERY_PARTNER',
     byId: deliveryPartnerId,

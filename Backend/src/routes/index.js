@@ -14,6 +14,7 @@ import fcmRoutes from '../core/notifications/fcm.routes.js';
 import notificationRoutes from '../core/notifications/notification.routes.js';
 import { authMiddleware } from '../core/auth/auth.middleware.js';
 import * as businessSettingsController from '../modules/food/admin/controllers/businessSettings.controller.js';
+import * as adminController from '../modules/food/admin/controllers/admin.controller.js';
 import { requireRoles } from '../core/roles/role.middleware.js';
 import { getQueuesController } from '../controllers/admin.controller.js';
 import webhookRoutes from '../core/payments/routes/webhook.routes.js';
@@ -58,8 +59,9 @@ router.patch('/v1/food/dining/bookings/:bookingId/status', authMiddleware, requi
 
 router.use('/v1/uploads', uploadRoutes);
 
-// Mark business-settings/public as truly public
+// Mark business-settings/public and fee-settings/public as truly public
 router.get('/v1/food/admin/business-settings/public', businessSettingsController.getBusinessSettings);
+router.get('/v1/food/admin/fee-settings/public', adminController.getFeeSettings);
 
 router.use('/v1/food/admin/env', envSettingRoutes);
 router.use('/v1/food/admin', authMiddleware, requireRoles('ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), restaurantAdminRoutes);

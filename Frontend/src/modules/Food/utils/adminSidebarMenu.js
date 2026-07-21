@@ -205,6 +205,13 @@ export const adminSidebarMenu = [
     ] },
   {
     type: "section",
+    label: "ANALYTICS & AUDIT",
+    items: [
+      { type: "link", label: "Audit Logs", path: "/admin/food/audit-logs", icon: "FileText" },
+      { type: "link", label: "Incentives Analytics", path: "/admin/food/analytics/incentives", icon: "Award" }
+    ] },
+  {
+    type: "section",
     label: "TRANSACTION MANAGEMENT",
     items: [
       { type: "link", label: "Restaurant Withdraws", path: "/admin/food/restaurant-withdraws", icon: "CreditCard" },
