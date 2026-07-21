@@ -51,8 +51,7 @@ export default function Notifications() {
     unreadCount: broadcastUnreadCount,
     markAsRead: markBroadcastAsRead,
     dismiss: dismissBroadcastNotification,
-    dismissAll: dismissAllBroadcastNotifications,
-  } = useNotificationInbox("user", { limit: 100 })
+    dismissAll: dismissAllBroadcastNotifications } = useNotificationInbox("user", { limit: 100 })
 
   // Persistence: Save to localStorage whenever list updates
   useEffect(() => {
@@ -109,8 +108,7 @@ export default function Notifications() {
   const mergedNotifications = useMemo(() => {
     const localItems = (notificationsList || []).map((item) => ({
       ...item,
-      source: "local",
-    }))
+      source: "local" }))
     const broadcastItems = (broadcastNotifications || []).map((item) => ({
       ...item,
       source: "broadcast",
@@ -121,13 +119,11 @@ export default function Notifications() {
             month: "short",
             hour: "2-digit",
             minute: "2-digit",
-            hour12: true,
-          })
+            hour12: true })
         : "Just now",
       timestamp: item.createdAt || Date.now(),
       icon: "Bell",
-      iconColor: "text-blue-600",
-    }))
+      iconColor: "text-blue-600" }))
 
     return [...broadcastItems, ...localItems].sort(
       (a, b) =>

@@ -10,8 +10,7 @@ export default function Carousel({ children, className = "" }) {
       const scrollAmount = 300
       scrollRef.current.scrollBy({
         left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      })
+        behavior: "smooth" })
     }
   }
 

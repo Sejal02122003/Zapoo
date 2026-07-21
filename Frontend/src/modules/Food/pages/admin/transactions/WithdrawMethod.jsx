@@ -13,8 +13,7 @@ export default function WithdrawMethod() {
     methodFields: true,
     activeStatus: true,
     defaultMethod: true,
-    actions: true,
-  })
+    actions: true })
 
   const filteredMethods = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -52,8 +51,7 @@ export default function WithdrawMethod() {
       methodFields: true,
       activeStatus: true,
       defaultMethod: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const columnsConfig = {
@@ -62,8 +60,7 @@ export default function WithdrawMethod() {
     methodFields: "Method Fields",
     activeStatus: "Active Status",
     defaultMethod: "Default Method",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">

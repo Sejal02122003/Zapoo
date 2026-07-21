@@ -28,8 +28,7 @@ export const useLocationSharing = (orderId, enabled = false) => {
             lat: latitude,
             lng: longitude,
             lastSentAt: lastSentAtRef.current,
-            now,
-          })
+            now })
         ) {
           return;
         }
@@ -47,9 +46,7 @@ export const useLocationSharing = (orderId, enabled = false) => {
               speed: speed || 0,
               accuracy: accuracy || null,
               timestamp: now,
-              status: 'on_the_way',
-            },
-          }),
+              status: 'on_the_way' } }),
         );
       },
       () => {},

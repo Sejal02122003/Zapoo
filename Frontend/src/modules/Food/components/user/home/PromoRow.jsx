@@ -13,8 +13,7 @@ export default function PromoRow({ handleVegModeChange, navigate, isVegMode, tog
       bgColor: "bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-950/40 dark:to-orange-950/20",
       borderColor: "border-rose-200/60 dark:border-rose-800/40",
       textColor: "text-rose-600 dark:text-rose-400",
-      iconContainerColor: "bg-rose-500/10 dark:bg-rose-400/10",
-    },
+      iconContainerColor: "bg-rose-500/10 dark:bg-rose-400/10" },
     {
       id: 'pure-veg',
       title: "PURE",
@@ -23,18 +22,16 @@ export default function PromoRow({ handleVegModeChange, navigate, isVegMode, tog
       bgColor: "bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/20",
       borderColor: "border-emerald-200/60 dark:border-emerald-800/40",
       textColor: "text-emerald-600 dark:text-emerald-400",
-      iconContainerColor: "bg-emerald-500/10 dark:bg-emerald-400/10",
-    },
+      iconContainerColor: "bg-emerald-500/10 dark:bg-emerald-400/10" },
     {
-      id: 'under-250',
+      id: 'under-99',
       title: "UNDER",
-      value: "₹250",
+      value: "₹99",
       icon: pricePromoIcon,
       bgColor: "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/20",
       borderColor: "border-amber-200/60 dark:border-amber-800/40",
       textColor: "text-amber-600 dark:text-amber-400",
-      iconContainerColor: "bg-amber-500/10 dark:bg-amber-400/10",
-    },
+      iconContainerColor: "bg-amber-500/10 dark:bg-amber-400/10" },
   ];
 
   return (
@@ -49,7 +46,7 @@ export default function PromoRow({ handleVegModeChange, navigate, isVegMode, tog
           onClick={() => {
             if (promo.id === 'pure-veg') handleVegModeChange(!isVegMode);
             else if (promo.id === 'offers') navigate('/food/user/offers');
-            else if (promo.id === 'under-250') navigate('/food/user/under-250');
+            else if (promo.id === 'under-99') navigate('/food/user/under-99');
           }}
         >
           {/* Subtle Glow Effect */}

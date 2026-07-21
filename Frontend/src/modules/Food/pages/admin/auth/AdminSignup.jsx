@@ -7,8 +7,7 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
-} from "@food/components/ui/card"
+  CardTitle } from "@food/components/ui/card"
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Mail, User, Lock, Eye, EyeOff, ArrowLeft, Shield } from "lucide-react"
@@ -28,8 +27,7 @@ export default function AdminSignup() {
     name: "",
     email: "",
     password: "",
-    confirmPassword: "",
-  })
+    confirmPassword: "" })
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)

@@ -39,16 +39,14 @@ const toDateLabel = (value) => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: true,
-  });
+    hour12: true });
 };
 
 export default function NotificationBroadcast() {
   const [form, setForm] = useState({
     title: "",
     message: "",
-    targetType: "ALL",
-  });
+    targetType: "ALL" });
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -82,22 +80,19 @@ export default function NotificationBroadcast() {
         ownerType,
         ownerId: String(item?._id || item?.id || ""),
         label: String(item?.name || item?.phone || "User").trim(),
-        subLabel: [item?.phone, item?.email].filter(Boolean).join(" • "),
-      }));
+        subLabel: [item?.phone, item?.email].filter(Boolean).join(" • ") }));
 
       const restaurants = normalizeRecipients(restaurantsRes, "RESTAURANT", (item, ownerType) => ({
         ownerType,
         ownerId: String(item?._id || item?.id || ""),
         label: String(item?.restaurantName || item?.ownerName || "Restaurant").trim(),
-        subLabel: [item?.ownerPhone, item?.ownerEmail].filter(Boolean).join(" • "),
-      }));
+        subLabel: [item?.ownerPhone, item?.ownerEmail].filter(Boolean).join(" • ") }));
 
       const deliveryPartners = normalizeRecipients(deliveryRes, "DELIVERY_PARTNER", (item, ownerType) => ({
         ownerType,
         ownerId: String(item?._id || item?.id || ""),
         label: String(item?.name || item?.phone || "Delivery Partner").trim(),
-        subLabel: [item?.phone, item?.email].filter(Boolean).join(" • "),
-      }));
+        subLabel: [item?.phone, item?.email].filter(Boolean).join(" • ") }));
 
       setAllRecipients([...customers, ...restaurants, ...deliveryPartners]);
     } catch {
@@ -170,10 +165,8 @@ export default function NotificationBroadcast() {
                 ownerType: item.ownerType,
                 ownerId: item.ownerId,
                 label: item.label,
-                subLabel: item.subLabel,
-              }))
-            : [],
-      });
+                subLabel: item.subLabel }))
+            : [] });
       setForm({ title: "", message: "", targetType: "ALL" });
       setSelectedRecipients([]);
       setSearch("");

@@ -119,7 +119,7 @@ export const legalHtmlToPlainText = (html) => {
   text = text.replace(/<[^>]*>/g, "");
 
   // Clean up multiple newlines (keep max 2 consecutive)
-  text = text.replace(/\n{3,}/g, "\n\n");
+  text = text.replace(/\n{3 }/g, "\n\n");
   text = text
     .split("\n")
     .map((l) => l.trimEnd())

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { IndianRupee, Loader2, Wallet } from "lucide-react"
+import { IndianRupee, Loader2 } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import { adminAPI } from "@food/api"
 import { toast } from "sonner"
 const debugLog = (...args) => {}
@@ -59,8 +60,7 @@ export default function DeliveryCashLimit() {
       // Send both fields to avoid unintentionally overwriting the other value
       const response = await adminAPI.updateDeliveryCashLimit({
         deliveryCashLimit: value,
-        deliveryWithdrawalLimit: withdrawalValue,
-      })
+        deliveryWithdrawalLimit: withdrawalValue })
       const saved =
         response?.data?.data?.deliveryCashLimit ??
         response?.data?.deliveryCashLimit ??
@@ -93,8 +93,7 @@ export default function DeliveryCashLimit() {
       // Send both fields to avoid unintentionally overwriting the other value
       const response = await adminAPI.updateDeliveryCashLimit({
         deliveryCashLimit: cashValue,
-        deliveryWithdrawalLimit: value,
-      })
+        deliveryWithdrawalLimit: value })
       const saved =
         response?.data?.data?.deliveryWithdrawalLimit ??
         response?.data?.deliveryWithdrawalLimit ??
@@ -160,7 +159,7 @@ export default function DeliveryCashLimit() {
                     {loading && (
                       <p className="text-xs text-emerald-700/80 mt-1 flex items-center gap-2">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Loading current limit…
+                        Loading current limitï¿½
                       </p>
                     )}
                   </div>
@@ -179,7 +178,7 @@ export default function DeliveryCashLimit() {
 
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <div className="flex items-start gap-3">
-              <Wallet className="w-5 h-5 text-amber-700 mt-0.5" />
+              <WalletIcon className="" />
               <div className="flex-1">
                 <div className="font-semibold text-amber-900 mb-1">
                   Minimum Withdrawal Amount (Global)
@@ -204,7 +203,7 @@ export default function DeliveryCashLimit() {
                     {loading && (
                       <p className="text-xs text-amber-700/80 mt-1 flex items-center gap-2">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Loading…
+                        Loadingï¿½
                       </p>
                     )}
                   </div>

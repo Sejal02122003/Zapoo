@@ -18,8 +18,7 @@ export default function DisbursementReportRestaurants() {
     restaurant: "All restaurants",
     paymentMethod: "All Payment Method",
     status: "All status",
-    time: "All Time",
-  })
+    time: "All Time" })
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -87,8 +86,7 @@ export default function DisbursementReportRestaurants() {
       restaurant: "All restaurants",
       paymentMethod: "All Payment Method",
       status: "All status",
-      time: "All Time",
-    })
+      time: "All Time" })
   }
 
   const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.paymentMethod !== "All Payment Method" ? 1 : 0) + (filters.status !== "All status" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
@@ -189,7 +187,7 @@ export default function DisbursementReportRestaurants() {
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="All restaurants">All restaurants</option>
-                  <option value="Café Monarch">Café Monarch</option>
+                  <option value="Cafï¿½ Monarch">Cafï¿½ Monarch</option>
                   <option value="Hungry Puppets">Hungry Puppets</option>
                   <option value="Redcliff Cafe">Redcliff Cafe</option>
                 </select>

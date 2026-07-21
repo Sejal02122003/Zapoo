@@ -181,6 +181,7 @@ export async function createInitialTransaction(order) {
             discount: Number(order.pricing?.discount || 0) || 0,
             restaurantCouponDiscount: Number(order.pricing?.restaurantCouponDiscount || 0) || 0,
             couponCode: order.pricing?.couponCode || null,
+            restaurantCouponCode: order.pricing?.restaurantCouponCode || null,
             total: Number(order.pricing?.total || 0) || 0,
             currency: String(order.pricing?.currency || order.currency || 'INR'),
         },

@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   checkOnboardingStatus,
-  isRestaurantOnboardingComplete,
-} from "@food/utils/onboardingUtils";
+  isRestaurantOnboardingComplete } from "@food/utils/onboardingUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import Lenis from "lenis";
 import {
@@ -21,8 +20,7 @@ import {
   Clock,
   Users,
   MessageSquare,
-  FileText,
-} from "lucide-react";
+  FileText } from "lucide-react";
 import { toast } from "sonner";
 import BottomNavOrders from "@food/components/restaurant/BottomNavOrders";
 import RestaurantNavbar from "@food/components/restaurant/RestaurantNavbar";
@@ -63,8 +61,7 @@ const allOrdersStatusPriority = {
   delivered: 6,
   completed: 6,
   cancelled: 7,
-  dead: 8,
-};
+  dead: 8 };
 
 const getAllOrdersTimestamp = (order) =>
   order?.cancelledAt ||
@@ -86,8 +83,7 @@ const transformOrderForList = (order) => ({
       month: "short",
       day: "numeric",
       hour: "2-digit",
-      minute: "2-digit",
-    },
+      minute: "2-digit" },
   ),
   eta: null,
   itemsSummary:
@@ -104,8 +100,7 @@ const transformOrderForList = (order) => ({
   initialETA: order.estimatedDeliveryTime || 30,
   sortTimestamp: new Date(getAllOrdersTimestamp(order)).getTime(),
   scheduledAt: order.scheduledAt || null,
-  restaurantNote: order.restaurantNote || null,
-});
+  restaurantNote: order.restaurantNote || null });
 
 // Completed Orders List Component
 function CompletedOrders({ onSelectOrder, refreshToken = 0 }) {
@@ -136,8 +131,7 @@ function CompletedOrders({ onSelectOrder, refreshToken = 0 }) {
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
-              minute: "2-digit",
-            }),
+              minute: "2-digit" }),
             deliveredAt:
               order.deliveredAt || order.updatedAt || order.createdAt,
             itemsSummary:
@@ -147,8 +141,7 @@ function CompletedOrders({ onSelectOrder, refreshToken = 0 }) {
             photoUrl: order.items?.[0]?.image || null,
             photoAlt: order.items?.[0]?.name || "Order",
             amount: order.pricing?.total || order.total || 0,
-            paymentMethod: order.paymentMethod || order.payment?.method || null,
-          }));
+            paymentMethod: order.paymentMethod || order.payment?.method || null }));
 
           transformedOrders.sort((a, b) => {
             const dateA = new Date(a.deliveredAt);
@@ -220,8 +213,7 @@ function CompletedOrders({ onSelectOrder, refreshToken = 0 }) {
                   day: "numeric",
                   year: "numeric",
                   hour: "2-digit",
-                  minute: "2-digit",
-                })
+                  minute: "2-digit" })
               : "N/A";
 
             return (
@@ -239,8 +231,7 @@ function CompletedOrders({ onSelectOrder, refreshToken = 0 }) {
                       tableOrToken: order.tableOrToken,
                       timePlaced: deliveredDate,
                       itemsSummary: order.itemsSummary,
-                      paymentMethod: order.paymentMethod,
-                    })
+                      paymentMethod: order.paymentMethod })
                   }
                   className="w-full text-left flex gap-3 items-stretch">
                   <div className="h-16 w-16 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center flex-shrink-0 my-auto border border-gray-100">
@@ -342,8 +333,7 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
-              minute: "2-digit",
-            }),
+              minute: "2-digit" }),
             cancelledAt:
               order.cancelledAt || order.updatedAt || order.createdAt,
             cancelledBy: order.cancelledBy || "unknown",
@@ -357,8 +347,7 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
             photoAlt: order.items?.[0]?.name || "Order",
             amount: order.pricing?.total || order.total || 0,
             paymentMethod: order.paymentMethod || order.payment?.method || null,
-            restaurantNote: order.restaurantNote || null,
-          }));
+            restaurantNote: order.restaurantNote || null }));
 
           transformedOrders.sort((a, b) => {
             const dateA = new Date(a.cancelledAt);
@@ -430,8 +419,7 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
                   day: "numeric",
                   year: "numeric",
                   hour: "2-digit",
-                  minute: "2-digit",
-                })
+                  minute: "2-digit" })
               : "N/A";
 
             const cancelledByText =
@@ -456,8 +444,7 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
                       tableOrToken: order.tableOrToken,
                       timePlaced: cancelledDate,
                       itemsSummary: order.itemsSummary,
-                      paymentMethod: order.paymentMethod,
-                    })
+                      paymentMethod: order.paymentMethod })
                   }
                   className="w-full text-left flex gap-3 items-stretch">
                   <div className="h-16 w-16 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center flex-shrink-0 my-auto border border-gray-100">
@@ -575,16 +562,14 @@ function DeadOrders({ onSelectOrder, refreshToken = 0 }) {
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
-              minute: "2-digit",
-            }),
+              minute: "2-digit" }),
             cancelledAt: order.cancelledAt || order.updatedAt || order.createdAt,
             cancellationReason: order.cancellationReason || "Auto-killed: Order was not delivered within 1 hour",
             itemsSummary: order.items?.map((item) => `${item.quantity}x ${item.name}`).join(", ") || "No items",
             photoUrl: order.items?.[0]?.image || null,
             photoAlt: order.items?.[0]?.name || "Order",
             amount: order.pricing?.total || order.total || 0,
-            paymentMethod: order.paymentMethod || order.payment?.method || null,
-          }));
+            paymentMethod: order.paymentMethod || order.payment?.method || null }));
 
           transformedOrders.sort((a, b) => {
             const dateA = new Date(a.cancelledAt);
@@ -654,8 +639,7 @@ function DeadOrders({ onSelectOrder, refreshToken = 0 }) {
                   day: "numeric",
                   year: "numeric",
                   hour: "2-digit",
-                  minute: "2-digit",
-                })
+                  minute: "2-digit" })
               : "N/A";
 
             return (
@@ -673,8 +657,7 @@ function DeadOrders({ onSelectOrder, refreshToken = 0 }) {
                       tableOrToken: order.tableOrToken,
                       timePlaced: cancelledDate,
                       itemsSummary: order.itemsSummary,
-                      paymentMethod: order.paymentMethod,
-                    })
+                      paymentMethod: order.paymentMethod })
                   }
                   className="w-full text-left flex gap-3 items-stretch">
                   <div className="h-16 w-16 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center flex-shrink-0 my-auto border border-gray-100">
@@ -883,8 +866,7 @@ function TableBookings() {
                   <span>
                     {new Date(booking.date).toLocaleDateString("en-GB", {
                       day: "2-digit",
-                      month: "short",
-                    })}
+                      month: "short" })}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -1107,8 +1089,7 @@ function AllOrders({ onSelectOrder, onCancel }) {
                 ...order,
                 status: "ready",
                 eta: null,
-                sortTimestamp: Date.now(),
-              }
+                sortTimestamp: Date.now() }
             : order,
         ),
       );
@@ -1414,8 +1395,7 @@ export default function OrdersMain() {
     isActive: null,
     rejectionReason: null,
     onboarding: null,
-    isLoading: true,
-  });
+    isLoading: true });
   const [isReverifying, setIsReverifying] = useState(false);
   const audioUnlockedRef = useRef(false);
   const showNewOrderPopupRef = useRef(showNewOrderPopup);
@@ -1625,8 +1605,7 @@ export default function OrdersMain() {
             pendingUpdateReason: restaurant.pendingUpdateReason,
             rejectionReason: restaurant.rejectionReason || null,
             onboarding: restaurant.onboarding || null,
-            isLoading: false,
-          });
+            isLoading: false });
 
           // Check if onboarding is incomplete and redirect if needed
           if (!isRestaurantOnboardingComplete(restaurant)) {
@@ -1634,8 +1613,7 @@ export default function OrdersMain() {
             const incompleteStep = await checkOnboardingStatus();
             if (incompleteStep) {
               navigate(`/food/restaurant/onboarding?step=${incompleteStep}`, {
-                replace: true,
-              });
+                replace: true });
               return;
             }
           }
@@ -1686,8 +1664,7 @@ export default function OrdersMain() {
           isActive: restaurant.isActive,
           rejectionReason: restaurant.rejectionReason || null,
           onboarding: restaurant.onboarding || null,
-          isLoading: false,
-        });
+          isLoading: false });
       }
 
       // Trigger profile refresh event
@@ -1737,8 +1714,7 @@ export default function OrdersMain() {
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    });
+      smoothWheel: true });
 
     function raf(time) {
       lenis.raf(time);
@@ -1915,8 +1891,7 @@ export default function OrdersMain() {
 
     window.addEventListener("pointerdown", unlockAudio, {
       once: true,
-      passive: true,
-    });
+      passive: true });
     window.addEventListener("keydown", unlockAudio, { once: true });
 
     return () => {
@@ -2003,8 +1978,7 @@ export default function OrdersMain() {
                 orderToPopup.paymentMethod ||
                 orderToPopup.payment?.method ||
                 null,
-              payment: orderToPopup.payment,
-            };
+              payment: orderToPopup.payment };
 
             debugLog("?? Found order ready for popup:", orderForPopup);
             markOrderAsShown({ orderId, _id: orderToPopup._id });
@@ -2614,8 +2588,7 @@ export default function OrdersMain() {
 
         container.scrollTo({
           left: scrollLeft,
-          behavior: "smooth",
-        });
+          behavior: "smooth" });
       }
     }
   };
@@ -2760,8 +2733,7 @@ export default function OrdersMain() {
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
-            WebkitOverflowScrolling: "touch",
-          }}>
+            WebkitOverflowScrolling: "touch" }}>
           <style>{`
             .scrollbar-hide::-webkit-scrollbar {
               display: none;
@@ -2786,12 +2758,10 @@ export default function OrdersMain() {
                 }`}
                 animate={{
                   scale: isActive ? 1.05 : 1,
-                  opacity: isActive ? 1 : 0.7,
-                }}
+                  opacity: isActive ? 1 : 0.7 }}
                 transition={{
                   duration: 0.3,
-                  ease: [0.25, 0.1, 0.25, 1],
-                }}
+                  ease: [0.25, 0.1, 0.25, 1] }}
                 whileTap={{ scale: 0.95 }}>
                 {isActive && (
                   <motion.div
@@ -2801,8 +2771,7 @@ export default function OrdersMain() {
                     transition={{
                       type: "spring",
                       stiffness: 500,
-                      damping: 30,
-                    }}
+                      damping: 30 }}
                   />
                 )}
                 <div className="flex items-center gap-2 relative z-10">
@@ -3109,8 +3078,7 @@ export default function OrdersMain() {
                             month: "short",
                             hour: "2-digit",
                             minute: "2-digit",
-                            hour12: true,
-                          })}
+                            hour12: true })}
                         </p>
                       </div>
                     </div>
@@ -3130,8 +3098,7 @@ export default function OrdersMain() {
                             day: "numeric",
                             month: "short",
                             hour: "2-digit",
-                            minute: "2-digit",
-                          })
+                            minute: "2-digit" })
                         : "Just now"}
                     </p>
                   </div>
@@ -3379,8 +3346,7 @@ export default function OrdersMain() {
                                   0,
                                 );
                                 return acceptSwipeProgress * maxTravel;
-                              })(),
-                            }}
+                              })() }}
                             onMouseDown={(e) => handleAcceptSwipeStart(e.clientX)}
                             onTouchStart={(e) =>
                               handleAcceptSwipeStart(e.touches[0].clientX)
@@ -3805,8 +3771,7 @@ function OrderCard({
   restaurantNote = null,
   pickupOtp = null,
   cancellationReason = null,
-  rejectionReason = null,
-}) {
+  rejectionReason = null }) {
   const normalizedStatus = String(status || "").toLowerCase();
   const isReady = normalizedStatus === "ready";
   const isPreparing = normalizedStatus === "preparing";
@@ -3925,8 +3890,7 @@ function OrderCard({
                       month: "short",
                       hour: "2-digit",
                       minute: "2-digit",
-                      hour12: true,
-                    })}
+                      hour12: true })}
                   </span>
                 </div>
               ) : (
@@ -3994,8 +3958,7 @@ function PreparingOrders({
   onSelectOrder,
   onCancel,
   refreshToken = 0,
-  onStatusChanged,
-}) {
+  onStatusChanged }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -4050,8 +4013,7 @@ function PreparingOrders({
                 order.paymentMethod || order.payment?.method || null,
               scheduledAt: order.scheduledAt || null,
               restaurantNote: order.restaurantNote || null,
-              pickupOtp: order.pickupOtp || null,
-            };
+              pickupOtp: order.pickupOtp || null };
           });
 
           if (isMounted) {
@@ -4348,8 +4310,7 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
-              minute: "2-digit",
-            }),
+              minute: "2-digit" }),
             eta: null, // Don't show ETA for ready orders
             itemsSummary:
               order.items
@@ -4362,8 +4323,7 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
             dispatchStatus: order.dispatch?.status || null,
             scheduledAt: order.scheduledAt || null,
             restaurantNote: order.restaurantNote || null,
-            pickupOtp: order.pickupOtp || null,
-          }));
+            pickupOtp: order.pickupOtp || null }));
 
           if (isMounted) {
             setOrders(transformedOrders);
@@ -4472,8 +4432,7 @@ const OutForDeliveryOrders = ({ onSelectOrder, refreshToken = 0 }) => {
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
-              minute: "2-digit",
-            }),
+              minute: "2-digit" }),
             eta: null,
             itemsSummary:
               order.items
@@ -4485,8 +4444,7 @@ const OutForDeliveryOrders = ({ onSelectOrder, refreshToken = 0 }) => {
             deliveryPartnerId: order.deliveryPartnerId || null,
             dispatchStatus: order.dispatch?.status || null,
             scheduledAt: order.scheduledAt || null,
-            restaurantNote: order.restaurantNote || null,
-          }));
+            restaurantNote: order.restaurantNote || null }));
 
           if (isMounted) {
             setOrders(transformedOrders);

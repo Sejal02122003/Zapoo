@@ -13,8 +13,7 @@ export default function ReferralSettings() {
     referralRewardUser: "",
     referralRewardDelivery: "",
     referralLimitUser: "",
-    referralLimitDelivery: "",
-  })
+    referralLimitDelivery: "" })
 
   const fetchSettings = async () => {
     try {
@@ -26,15 +25,13 @@ export default function ReferralSettings() {
           referralRewardUser: s.referralRewardUser ?? "",
           referralRewardDelivery: s.referralRewardDelivery ?? "",
           referralLimitUser: s.referralLimitUser ?? "",
-          referralLimitDelivery: s.referralLimitDelivery ?? "",
-        })
+          referralLimitDelivery: s.referralLimitDelivery ?? "" })
       } else {
         setSettings({
           referralRewardUser: "",
           referralRewardDelivery: "",
           referralLimitUser: "",
-          referralLimitDelivery: "",
-        })
+          referralLimitDelivery: "" })
       }
     } catch (e) {
       debugError("Error fetching referral settings:", e)
@@ -56,8 +53,7 @@ export default function ReferralSettings() {
         referralRewardDelivery: settings.referralRewardDelivery === "" ? 0 : Number(settings.referralRewardDelivery),
         referralLimitUser: settings.referralLimitUser === "" ? 0 : Number(settings.referralLimitUser),
         referralLimitDelivery: settings.referralLimitDelivery === "" ? 0 : Number(settings.referralLimitDelivery),
-        isActive: true,
-      }
+        isActive: true }
       const res = await adminAPI.createOrUpdateReferralSettings(body)
       if (res?.data?.success) {
         toast.success("Referral settings saved successfully")
@@ -67,8 +63,7 @@ export default function ReferralSettings() {
             referralRewardUser: saved.referralRewardUser ?? "",
             referralRewardDelivery: saved.referralRewardDelivery ?? "",
             referralLimitUser: saved.referralLimitUser ?? "",
-            referralLimitDelivery: saved.referralLimitDelivery ?? "",
-          })
+            referralLimitDelivery: saved.referralLimitDelivery ?? "" })
         }
       } else {
         toast.error(res?.data?.message || "Failed to save referral settings")

@@ -183,9 +183,7 @@ export default function AddRestaurant() {
       landmark: "",
       formattedAddress: "",
       latitude: "",
-      longitude: "",
-    },
-  })
+      longitude: "" } })
 
   // Step 2: Images & Operational
   const [step2, setStep2] = useState({
@@ -195,8 +193,7 @@ export default function AddRestaurant() {
     estimatedDeliveryTime: "",
     openingTime: "",
     closingTime: "",
-    openDays: [],
-  })
+    openDays: [] })
 
   // Step 3: Documents
   const [step3, setStep3] = useState({
@@ -215,8 +212,7 @@ export default function AddRestaurant() {
     confirmAccountNumber: "",
     ifscCode: "",
     accountHolderName: "",
-    accountType: "",
-  })
+    accountType: "" })
 
   const languageTabs = [
     { key: "default", label: "Default" },
@@ -302,8 +298,7 @@ export default function AddRestaurant() {
           !isUploadableFile(step2.profileImage) &&
           (step2.profileImage?.url || (typeof step2.profileImage === "string" && step2.profileImage.trim()))
             ? step2.profileImage
-            : null,
-      }
+            : null }
 
       const serializableStep3 = {
         ...step3,
@@ -321,8 +316,7 @@ export default function AddRestaurant() {
           !isUploadableFile(step3.fssaiImage) &&
           (step3.fssaiImage?.url || (typeof step3.fssaiImage === "string" && step3.fssaiImage.trim()))
             ? step3.fssaiImage
-            : null,
-      }
+            : null }
 
       localStorage.setItem(
         ADMIN_ADD_STORAGE_KEY,
@@ -331,8 +325,7 @@ export default function AddRestaurant() {
           step1,
           step2: serializableStep2,
           step3: serializableStep3,
-          timestamp: Date.now(),
-        })
+          timestamp: Date.now() })
       )
     } catch (err) {
       debugError("Failed to persist admin add form data:", err)
@@ -599,8 +592,7 @@ export default function AddRestaurant() {
         accountNumber: step3.accountNumber,
         ifscCode: step3.ifscCode,
         accountHolderName: step3.accountHolderName,
-        accountType: step3.accountType,
-      }
+        accountType: step3.accountType }
 
       // Call backend API
       const response = await adminAPI.createRestaurant(payload)
@@ -748,8 +740,7 @@ export default function AddRestaurant() {
           state,
           pincode,
           latitude: typeof lat === 'number' ? Number(lat.toFixed(6)) : "",
-          longitude: typeof lng === 'number' ? Number(lng.toFixed(6)) : "",
-        }
+          longitude: typeof lng === 'number' ? Number(lng.toFixed(6)) : "" }
       }
 
       const ok = await loadMaps()
@@ -786,9 +777,7 @@ export default function AddRestaurant() {
               state: parsed.state || prev.location.state,
               pincode: parsed.pincode || prev.location.pincode,
               latitude: parsed.latitude !== "" ? parsed.latitude : prev.location.latitude,
-              longitude: parsed.longitude !== "" ? parsed.longitude : prev.location.longitude,
-            },
-          }))
+              longitude: parsed.longitude !== "" ? parsed.longitude : prev.location.longitude } }))
           
           setLocationSearchValue(parsed.formattedAddress)
           inputElement.blur()
@@ -853,8 +842,7 @@ export default function AddRestaurant() {
           display: r.display_name || "",
           lat: Number(r.lat),
           lng: Number(r.lon),
-          addr: r.address || {},
-        }))
+          addr: r.address || {} }))
         setLocationSuggestions(mapped)
       } catch (e) {
         debugError("Nominatim search failed:", e)
@@ -994,9 +982,7 @@ export default function AddRestaurant() {
                         state: state || prev.location.state,
                         pincode: pincode || prev.location.pincode,
                         latitude: lat,
-                        longitude: lng,
-                      },
-                    }))
+                        longitude: lng } }))
                     setLocationSearchValue(display)
                     setLocationSuggestions([])
                   }}

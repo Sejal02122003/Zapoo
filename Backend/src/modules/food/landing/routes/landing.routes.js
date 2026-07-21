@@ -10,12 +10,12 @@ import {
 } from '../controllers/heroBanner.controller.js';
 
 import {
-    listUnder250BannersController,
-    uploadUnder250BannersController,
-    deleteUnder250BannerController,
-    updateUnder250BannerOrderController,
-    toggleUnder250BannerStatusController
-} from '../controllers/under250Banner.controller.js';
+    listUnder99BannersController,
+    uploadUnder99BannersController,
+    deleteUnder99BannerController,
+    updateUnder99BannerOrderController,
+    toggleUnder99BannerStatusController
+} from '../controllers/under99Banner.controller.js';
 import {
     listDiningBannersController,
     uploadDiningBannersController,
@@ -37,7 +37,7 @@ import {
 } from '../controllers/exploreIcon.controller.js';
 import {
     getPublicHeroBannersController,
-    getPublicUnder250BannersController,
+    getPublicUnder99BannersController,
     getPublicDiningBannersController,
     getPublicExploreIconsController,
     getPublicGourmetController,
@@ -78,15 +78,15 @@ router.patch('/hero-banners/:id/link-restaurants', linkRestaurantsToBannerContro
 
 
 // Admin under 250 banners
-router.get('/hero-banners/under-250', listUnder250BannersController);
+router.get('/hero-banners/under-99', listUnder99BannersController);
 router.post(
-    '/hero-banners/under-250/multiple',
+    '/hero-banners/under-99/multiple',
     upload.array('files'),
-    uploadUnder250BannersController
+    uploadUnder99BannersController
 );
-router.delete('/hero-banners/under-250/:id', deleteUnder250BannerController);
-router.patch('/hero-banners/under-250/:id/order', updateUnder250BannerOrderController);
-router.patch('/hero-banners/under-250/:id/status', toggleUnder250BannerStatusController);
+router.delete('/hero-banners/under-99/:id', deleteUnder99BannerController);
+router.patch('/hero-banners/under-99/:id/order', updateUnder99BannerOrderController);
+router.patch('/hero-banners/under-99/:id/status', toggleUnder99BannerStatusController);
 
 // Admin ads banners
 router.get('/hero-banners/ads', listDiningBannersController);
@@ -124,7 +124,7 @@ router.patch('/hero-banners/gourmet/:id/status', toggleGourmetStatusAdmin);
 
 // Public landing endpoints (Food user app)
 router.get('/hero-banners/public', getPublicHeroBannersController);
-router.get('/hero-banners/under-250/public', getPublicUnder250BannersController);
+router.get('/hero-banners/under-99/public', getPublicUnder99BannersController);
 router.get('/hero-banners/ads/public', getPublicDiningBannersController);
 router.get('/explore-icons/public', getPublicExploreIconsController);
 router.get('/hero-banners/gourmet/public', getPublicGourmetController);

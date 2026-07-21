@@ -23,8 +23,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-} from "@food/components/ui/dialog"
+  DialogTitle } from "@food/components/ui/dialog"
 import { restaurantAPI, zoneAPI } from "@food/api"
 import OptimizedImage from "@food/components/OptimizedImage"
 import { clearModuleAuth } from "@food/utils/auth"
@@ -35,8 +34,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@food/components/ui/select"
+  SelectValue } from "@food/components/ui/select"
 
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
@@ -73,8 +71,7 @@ export default function EditOwner() {
       pincode: "",
       landmark: "",
       latitude: "",
-      longitude: "",
-    }
+      longitude: "" }
   })
   
   const [formData, setFormData] = useState({
@@ -103,8 +100,7 @@ export default function EditOwner() {
       pincode: "",
       landmark: "",
       latitude: "",
-      longitude: "",
-    }
+      longitude: "" }
   })
   const [hasChanges, setHasChanges] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -133,8 +129,7 @@ export default function EditOwner() {
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    })
+      smoothWheel: true })
 
     function raf(time) {
       lenis.raf(time)
@@ -182,8 +177,7 @@ export default function EditOwner() {
               pincode: data.location?.pincode || data.pincode || "",
               landmark: data.location?.landmark || data.landmark || "",
               latitude: data.location?.latitude || "",
-              longitude: data.location?.longitude || "",
-            }
+              longitude: data.location?.longitude || "" }
           }
           setOwnerData(ownerDataFromBackend)
           setFormData(ownerDataFromBackend)
@@ -285,8 +279,7 @@ export default function EditOwner() {
 
       const autocomplete = new window.google.maps.places.Autocomplete(inputElement, {
         componentRestrictions: { country: "in" },
-        fields: ["address_components", "geometry", "formatted_address"],
-      })
+        fields: ["address_components", "geometry", "formatted_address"] })
 
       autocomplete.addListener("place_changed", () => {
         const place = autocomplete.getPlace()
@@ -314,9 +307,7 @@ export default function EditOwner() {
             state: state || prev.location.state,
             pincode: pincode || prev.location.pincode,
             latitude: lat,
-            longitude: lng,
-          },
-        }))
+            longitude: lng } }))
         setLocationSearchValue(formattedAddress)
       })
     }
@@ -344,8 +335,7 @@ export default function EditOwner() {
           display: r.display_name || "",
           lat: Number(r.lat),
           lng: Number(r.lon),
-          addr: r.address || {},
-        }))
+          addr: r.address || {} }))
         setLocationSuggestions(mapped)
       } catch (e) {
         debugError("Nominatim search failed:", e)

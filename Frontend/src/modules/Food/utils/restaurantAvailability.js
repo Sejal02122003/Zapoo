@@ -144,8 +144,7 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
       isActive: false,
       isAcceptingOrders: false,
       isWithinTimings: false,
-      reason: "missing-restaurant",
-    }
+      reason: "missing-restaurant" }
   }
 
   const ignoreOperationalStatus = options?.ignoreOperationalStatus === true
@@ -158,8 +157,7 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
       isActive,
       isAcceptingOrders,
       isWithinTimings: false,
-      reason: "inactive",
-    }
+      reason: "inactive" }
   }
 
   if (!ignoreOperationalStatus && !isAcceptingOrders) {
@@ -168,8 +166,7 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
       isActive,
       isAcceptingOrders,
       isWithinTimings: false,
-      reason: "not-accepting-orders",
-    }
+      reason: "not-accepting-orders" }
   }
 
   const dayName = DAY_NAMES[now.getDay()]
@@ -185,8 +182,7 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
         isActive,
         isAcceptingOrders,
         isWithinTimings: false,
-        reason: "closed-day",
-      }
+        reason: "closed-day" }
     }
   }
 
@@ -196,8 +192,7 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
       isActive,
       isAcceptingOrders,
       isWithinTimings: false,
-      reason: "day-closed",
-    }
+      reason: "day-closed" }
   }
 
   const openingTime =
@@ -239,6 +234,5 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
       : null,
     reason: isWithinTimings
       ? (isAcceptingOrders ? "open" : "open-by-timings")
-      : (hasExplicitWindow ? "outside-hours" : "no-timings"),
-  }
+      : (hasExplicitWindow ? "outside-hours" : "no-timings") }
 }

@@ -88,8 +88,7 @@ const buildFallbackTiming = (restaurant) => {
   return {
     isOpen: true,
     openingTime,
-    closingTime,
-  }
+    closingTime }
 }
 
 const getMealPeriod = (slot) => {
@@ -300,13 +299,11 @@ export default function TableBooking() {
         image: restaurant?.image || restaurant?.restaurant?.image || restaurant?.profileImage?.url || "",
         location: restaurant?.location || restaurant?.restaurant?.location || null,
         slug: restaurant?.slug || slug || "",
-        diningSettings: restaurant?.diningSettings || restaurant?.restaurant?.diningSettings || null,
-      },
+        diningSettings: restaurant?.diningSettings || restaurant?.restaurant?.diningSettings || null },
       guests: selectedGuests,
       date: selectedDate,
       timeSlot: selectedSlot,
-      discount: selectedSlot,
-    }
+      discount: selectedSlot }
 
     try {
       sessionStorage.setItem(BOOKING_DRAFT_KEY, JSON.stringify(bookingDraft))

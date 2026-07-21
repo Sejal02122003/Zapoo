@@ -15,8 +15,7 @@ const getStatusColor = (orderStatus) => {
     "Payment Failed": "bg-red-100 text-red-700",
     "Refunded": "bg-sky-100 text-sky-700",
     "Dine In": "bg-indigo-100 text-indigo-700",
-    "Offline Payments": "bg-slate-100 text-slate-700",
-  }
+    "Offline Payments": "bg-slate-100 text-slate-700" }
   return colors[orderStatus] || "bg-slate-100 text-slate-700"
 }
 
@@ -38,8 +37,7 @@ export default function OrdersTable({
   onRejectOrder,
   onAssignDelivery,
   actionLoadingOrderId,
-  deletingOrderId,
-}) {
+  deletingOrderId }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const totalPages = Math.ceil(orders.length / itemsPerPage)

@@ -5,8 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@food/components/ui/dialog"
+  DialogDescription } from "@food/components/ui/dialog"
 
 export default function AddEditBasicCampaignDialog({ isOpen, onOpenChange, campaign, onSave }) {
   const [formData, setFormData] = useState({
@@ -14,8 +13,7 @@ export default function AddEditBasicCampaignDialog({ isOpen, onOpenChange, campa
     dateStart: "",
     dateEnd: "",
     timeStart: "",
-    timeEnd: "",
-  })
+    timeEnd: "" })
   const [errors, setErrors] = useState({})
 
   useEffect(() => {
@@ -25,16 +23,14 @@ export default function AddEditBasicCampaignDialog({ isOpen, onOpenChange, campa
         dateStart: campaign.dateStart || "",
         dateEnd: campaign.dateEnd || "",
         timeStart: campaign.timeStart || "",
-        timeEnd: campaign.timeEnd || "",
-      })
+        timeEnd: campaign.timeEnd || "" })
     } else {
       setFormData({
         title: "",
         dateStart: "",
         dateEnd: "",
         timeStart: "",
-        timeEnd: "",
-      })
+        timeEnd: "" })
     }
     setErrors({})
   }, [campaign, isOpen])

@@ -63,8 +63,7 @@ const mapOrderStatus = (order) => {
     'ready_for_pickup': 'Restaurant Accepted',
     'ready': 'Restaurant Accepted',
     'picked_up': 'Order ID Accepted',
-    'out_for_delivery': 'Order ID Accepted',
-  }
+    'out_for_delivery': 'Order ID Accepted' }
 
   return statusMap[status] || 'Ordered'
 }
@@ -227,8 +226,7 @@ const transformOrder = (order, index) => {
     ...order,
     status: order.status || order.orderStatus,
     deliveryPartnerName: deliveryBoyName,
-    deliveryPartnerPhone: deliveryBoyNumber,
-  }
+    deliveryPartnerPhone: deliveryBoyNumber }
 
   const orderDate = new Date(order.createdAt)
   const dateStr = orderDate.toLocaleDateString('en-GB', { 
@@ -270,8 +268,7 @@ export default function OrderDetectDelivery() {
     restaurantName: true,
     deliveryBoy: true,
     status: true,
-    actions: true,
-  })
+    actions: true })
 
   const [orders, setOrders] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -334,8 +331,7 @@ export default function OrderDetectDelivery() {
     handleExport,
     handleViewOrder,
     handlePrintOrder,
-    toggleColumn,
-  } = useGenericTableManagement(
+    toggleColumn } = useGenericTableManagement(
     orders,
     "Order Detect Delivery",
     ["orderId", "userName", "userNumber", "restaurantName", "deliveryBoyName", "status"]
@@ -364,8 +360,7 @@ export default function OrderDetectDelivery() {
       restaurantName: true,
       deliveryBoy: true,
       status: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   // Loading state
@@ -530,8 +525,7 @@ export default function OrderDetectDelivery() {
           restaurantName: "Restaurant Name",
           deliveryBoy: "Delivery Boy Name & Number",
           status: "Status",
-          actions: "Actions",
-        }}
+          actions: "Actions" }}
       />
       <ViewOrderDetectDeliveryDialog
         isOpen={isViewOrderOpen}

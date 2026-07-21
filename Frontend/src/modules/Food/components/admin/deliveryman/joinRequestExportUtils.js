@@ -111,16 +111,13 @@ export const exportJoinRequestsToPDF = (requests, filename = "join_requests") =>
           startY: 28,
           styles: {
             fontSize: 8,
-            cellPadding: 2,
-          },
+            cellPadding: 2 },
           headStyles: {
             fillColor: [241, 245, 249],
             textColor: [15, 23, 42],
-            fontStyle: 'bold',
-          },
+            fontStyle: 'bold' },
           alternateRowStyles: {
-            fillColor: [248, 250, 252],
-          },
+            fillColor: [248, 250, 252] },
           columnStyles: {
             0: { cellWidth: 15 }, // SI
             1: { cellWidth: 35 }, // Name
@@ -131,8 +128,7 @@ export const exportJoinRequestsToPDF = (requests, filename = "join_requests") =>
             6: { cellWidth: 30 }, // Vehicle Type
             7: { cellWidth: 25 }, // Status
           },
-          margin: { top: 28, left: 14, right: 14 },
-        })
+          margin: { top: 28, left: 14, right: 14 } })
 
         // Save the PDF instantly (like Excel)
         const fileTimestamp = new Date().toISOString().split("T")[0]

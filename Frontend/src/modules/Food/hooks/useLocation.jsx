@@ -168,8 +168,7 @@ const reverseGeocodeDirect = async (latitude, longitude) => {
         area: area,
         mainTitle: area || city,
         address: formattedAddress,
-        formattedAddress: formattedAddress,
-      }
+        formattedAddress: formattedAddress }
 
       globalReverseGeocodeLastSuccess = value
       return value
@@ -177,8 +176,7 @@ const reverseGeocodeDirect = async (latitude, longitude) => {
       return {
         city: "Current Location",
         address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-        formattedAddress: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-      }
+        formattedAddress: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }
     } finally {
       globalReverseGeocodeInFlight = null
     }
@@ -290,8 +288,7 @@ export function useLocationEngine() {
         city: locationData.city || "",
         state: locationData.state || "",
         area: locationData.area || "",
-        formattedAddress: locationData.formattedAddress || locationData.address || "",
-      }
+        formattedAddress: locationData.formattedAddress || locationData.address || "" }
 
       // Add optional fields if available
       if (locationData.accuracy !== undefined && locationData.accuracy !== null) {
@@ -350,8 +347,7 @@ export function useLocationEngine() {
           area: loc.area || '',
           mainTitle: loc.area || loc.city,
           address: loc.address || loc.formattedAddress,
-          formattedAddress: loc.formattedAddress,
-        };
+          formattedAddress: loc.formattedAddress };
         globalReverseGeocodeLastSuccess = value;
         return value;
       }
@@ -727,8 +723,7 @@ export function useLocationEngine() {
           country: country || "",
           area: area || "", // Area is CRITICAL - must be extracted
           address: formattedAddress || `${city || "Current Location"}`,
-          formattedAddress: formattedAddress || `${city || "Current Location"}`,
-        }
+          formattedAddress: formattedAddress || `${city || "Current Location"}` }
 
         debugLog("??? RETURNING LOCATION DATA:", finalLocation)
         return finalLocation
@@ -747,8 +742,7 @@ export function useLocationEngine() {
         return {
           city: "Current Location",
           address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-          formattedAddress: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-        }
+          formattedAddress: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }
       }
     }
   }
@@ -785,8 +779,7 @@ export function useLocationEngine() {
             country: "",
             area: "",
             address: "Select location",
-            formattedAddress: "Select location",
-          }
+            formattedAddress: "Select location" }
           lastDbLocationRef.current = outOfRangeLocation
           lastDbLocationFetchAtRef.current = Date.now()
           return outOfRangeLocation
@@ -908,8 +901,7 @@ export function useLocationEngine() {
                   country: "",
                   area: "",
                   address: "Select location",
-                  formattedAddress: "Select location",
-                }
+                  formattedAddress: "Select location" }
               } else {
                 debugLog("?? Calling reverse geocode with coordinates:", { latitude, longitude })
                 try {
@@ -933,8 +925,7 @@ export function useLocationEngine() {
                         country: "",
                         area: "",
                         address: "Select location",
-                        formattedAddress: "Select location",
-                      }
+                        formattedAddress: "Select location" }
                     }
                   } catch (fallbackErr) {
                     debugError("? All geocoding methods failed:", fallbackErr.message)
@@ -944,8 +935,7 @@ export function useLocationEngine() {
                       country: "",
                       area: "",
                       address: "Select location",
-                      formattedAddress: "Select location",
-                    }
+                      formattedAddress: "Select location" }
                   }
                 }
               }
@@ -1209,8 +1199,7 @@ export function useLocationEngine() {
                 country: "",
                 area: "",
                 address: "Select location",
-                formattedAddress: "Select location",
-              }
+                formattedAddress: "Select location" }
             } else if (lastResolvedAddressRef.current && lastResolvedAddressRef.current.formattedAddress) {
               addr = lastResolvedAddressRef.current
             } else {
@@ -1222,8 +1211,7 @@ export function useLocationEngine() {
                 country: "",
                 area: "",
                 address: "Select location",
-                formattedAddress: "Select location",
-              }
+                formattedAddress: "Select location" }
             }
 
             // CRITICAL: Ensure formattedAddress is NEVER coordinates
@@ -1751,8 +1739,7 @@ export function useLocationEngine() {
     permissionGranted,
     requestLocation,
     startWatchingLocation,
-    stopWatchingLocation,
-  }
+    stopWatchingLocation }
 }
 
 

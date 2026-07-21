@@ -29,8 +29,7 @@ const restaurantRows = [
     subscriptionUsed: 1,
     isTrial: "No",
     isCancel: "No",
-    status: "Expired",
-  },
+    status: "Expired" },
   {
     id: 2,
     name: "Cheese Burger",
@@ -41,8 +40,7 @@ const restaurantRows = [
     subscriptionUsed: 2,
     isTrial: "No",
     isCancel: "No",
-    status: "Expired",
-  },
+    status: "Expired" },
   {
     id: 3,
     name: "Cheesy Restaurant",
@@ -53,8 +51,7 @@ const restaurantRows = [
     subscriptionUsed: 1,
     isTrial: "No",
     isCancel: "No",
-    status: "Expired",
-  },
+    status: "Expired" },
 ];
 
 export default function SubscriberList() {
@@ -71,8 +68,7 @@ export default function SubscriberList() {
     isTrial: true,
     isCancel: true,
     status: true,
-    actions: true,
-  });
+    actions: true });
 
   const filteredRows = useMemo(() => {
     return restaurantRows.filter((row) =>
@@ -103,8 +99,7 @@ export default function SubscriberList() {
       isTrial: true,
       isCancel: true,
       status: true,
-      actions: true,
-    });
+      actions: true });
   };
 
   const columnsConfig = {
@@ -117,8 +112,7 @@ export default function SubscriberList() {
     isTrial: "Is Trial",
     isCancel: "Is Cancel",
     status: "Status",
-    actions: "Actions",
-  };
+    actions: "Actions" };
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">

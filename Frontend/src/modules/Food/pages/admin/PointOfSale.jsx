@@ -55,8 +55,7 @@ export default function PointOfSale() {
           ...restaurant,
           _id: id,
           name: resolvedName,
-          restaurantId: resolvedCode,
-        }
+          restaurantId: resolvedCode }
       })
       .filter(Boolean)
   }

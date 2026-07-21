@@ -79,8 +79,7 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
           .map((dish, index) => ({
             id: dish?.id || dish?._id || `dish-${index}`,
             name: String(dish.name).trim(),
-            image: getImageUrl(dish?.image),
-          }))
+            image: getImageUrl(dish?.image) }))
 
         setAllFoods(normalized)
       } catch {

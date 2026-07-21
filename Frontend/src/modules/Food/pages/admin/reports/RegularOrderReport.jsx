@@ -30,8 +30,7 @@ const statusMeta = {
   Delivered: { label: "Delivered", color: "text-emerald-600", bg: "bg-emerald-50", icon: deliveredIcon },
   Canceled: { label: "Canceled", color: "text-red-600", bg: "bg-red-50", icon: canceledIcon },
   "Payment Failed": { label: "Payment Failed", color: "text-orange-600", bg: "bg-orange-50", icon: paymentFailedIcon },
-  Refunded: { label: "Refunded", color: "text-teal-600", bg: "bg-teal-50", icon: refundedIcon },
-}
+  Refunded: { label: "Refunded", color: "text-teal-600", bg: "bg-teal-50", icon: refundedIcon } }
 
 const PAGE_SIZE = 25
 
@@ -48,8 +47,7 @@ export default function RegularOrderReport() {
     zone: "All Zones",
     restaurant: "All restaurants",
     customer: "All customers",
-    time: "All Time",
-  })
+    time: "All Time" })
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -129,8 +127,7 @@ export default function RegularOrderReport() {
           page: 1,
           limit: 10000, // Fetch all orders for report (can be optimized later)
           startDate: fromDate ? fromDate.toISOString().split('T')[0] : undefined,
-          endDate: toDate ? toDate.toISOString().split('T')[0] : undefined,
-        }
+          endDate: toDate ? toDate.toISOString().split('T')[0] : undefined }
 
         const response = await adminAPI.getOrders(params)
         
@@ -226,8 +223,7 @@ export default function RegularOrderReport() {
               deliveryCharge,
               platformFee,
               totalAmount,
-              orderStatus: displayStatus,
-            }
+              orderStatus: displayStatus }
           })
           setOrders(transformedOrders)
         } else {
@@ -305,8 +301,7 @@ export default function RegularOrderReport() {
       zone: "All Zones",
       restaurant: "All restaurants",
       customer: "All customers",
-      time: "All Time",
-    })
+      time: "All Time" })
     setSearchQuery("")
     setCurrentPage(1)
   }
@@ -339,8 +334,7 @@ export default function RegularOrderReport() {
           Delivered: 0,
           Canceled: 0,
           "Payment Failed": 0,
-          Refunded: 0,
-        }
+          Refunded: 0 }
       ),
     [filteredOrders]
   )
@@ -348,8 +342,7 @@ export default function RegularOrderReport() {
   const formatAmount = (amount) =>
     `₹${Number(amount || 0).toLocaleString("en-IN", {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`
+      maximumFractionDigits: 2 })}`
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }))

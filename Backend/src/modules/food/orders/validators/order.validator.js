@@ -60,6 +60,7 @@ export function validateCalculateOrderDto(body) {
         deliveryAddressId: z.string().optional(),
         zoneId: z.string().optional(),
         couponCode: z.string().optional(),
+        restaurantCouponCode: z.string().optional(),
         deliveryFleet: z.string().optional(),
         orderType: z.enum(['delivery', 'takeaway']).optional().default('delivery')
     });

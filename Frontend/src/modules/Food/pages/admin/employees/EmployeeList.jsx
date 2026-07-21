@@ -13,15 +13,13 @@ const initialEmployees = [
     name: "Jhon",
     phone: "+81234567890",
     email: "jhon@gmail.com",
-    createdAt: "07 Feb, 2023",
-  },
+    createdAt: "07 Feb, 2023" },
   {
     id: 2,
     name: "Monali Khan",
     phone: "+81234567891",
     email: "test@gmail.com",
-    createdAt: "22 Aug, 2021",
-  },
+    createdAt: "22 Aug, 2021" },
 ]
 
 export default function EmployeeList() {
@@ -34,8 +32,7 @@ export default function EmployeeList() {
     phone: true,
     email: true,
     createdAt: true,
-    actions: true,
-  })
+    actions: true })
 
   const filteredEmployees = useMemo(() => {
     if (!searchQuery.trim()) return employees
@@ -89,8 +86,7 @@ export default function EmployeeList() {
       phone: true,
       email: true,
       createdAt: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const columnsConfig = {
@@ -99,8 +95,7 @@ export default function EmployeeList() {
     phone: "Phone",
     email: "Email",
     createdAt: "Created At",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">

@@ -7,8 +7,7 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
-} from "@food/components/ui/card"
+  CardTitle } from "@food/components/ui/card"
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Mail, ArrowLeft, Shield } from "lucide-react"
@@ -196,8 +195,7 @@ export default function AdminForgotPassword() {
       await adminAPI.resetPasswordWithOtp(email, otp.join(""), newPassword)
 
       navigate("/admin/login", {
-        state: { message: "Password reset successfully. Please login with your new password." },
-      })
+        state: { message: "Password reset successfully. Please login with your new password." } })
     } catch (err) {
       const message =
         err?.response?.data?.message ||

@@ -35,8 +35,7 @@ import {
   MessageCircle,
   Send,
   Mail,
-  Tag,
-} from "lucide-react"
+  Tag } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Badge } from "@food/components/ui/badge"
 import { Checkbox } from "@food/components/ui/checkbox"
@@ -55,8 +54,7 @@ import {
   getFoodDisplayPrice,
   getFoodPriceLabel,
   getFoodVariants,
-  hasFoodVariants,
-} from "@food/utils/foodVariants"
+  hasFoodVariants } from "@food/utils/foodVariants"
 import fssaiLogo from "@food/assets/fssai.png"
 import { RestaurantDetailSkeleton } from "@food/components/ui/loading-skeletons"
 import MenuScanAnimation from "@food/components/user/MenuScanAnimation"
@@ -112,7 +110,7 @@ function RestaurantDetailsContent() {
   const navigate = useNavigate()
   const goBack = useAppBackNavigation()
   const [searchParams] = useSearchParams()
-  const showOnlyUnder250 = searchParams.get('under250') === 'true'
+  const showOnlyUnder99 = searchParams.get('under99') === 'true'
   const targetDishId = useMemo(() => String(searchParams.get('dish') || '').trim(), [searchParams])
   const BACKEND_ORIGIN = useMemo(() => API_BASE_URL.replace(/\/api\/?$/, ""), [])
   const { addToCart, updateQuantity, removeFromCart, getCartItem, cart } = useCart()
@@ -169,8 +167,7 @@ function RestaurantDetailsContent() {
     sortBy: null,
     vegNonVeg: null,
     highlyReordered: false,
-    spicy: false,
-  })
+    spicy: false })
 
   // Restaurant data state
   const [restaurant, setRestaurant] = useState(null)
@@ -560,12 +557,10 @@ function RestaurantDetailsContent() {
                 title: normalizedRestaurantOffers?.goldOffer?.title || "Gold exclusive offer",
                 description: apiRestaurant?.restaurantOffers?.goldOffer?.description || "Free delivery above ₹99",
                 unlockText: normalizedRestaurantOffers?.goldOffer?.unlockText || "join Gold to unlock",
-                buttonText: apiRestaurant?.restaurantOffers?.goldOffer?.buttonText || "Add Gold - ₹1",
-              },
+                buttonText: apiRestaurant?.restaurantOffers?.goldOffer?.buttonText || "Add Gold - ₹1" },
               coupons: Array.isArray(normalizedRestaurantOffers?.coupons)
                 ? normalizedRestaurantOffers.coupons
-                : [],
-            },
+                : [] },
             outlets: Array.isArray(actualRestaurant?.outlets) ? actualRestaurant.outlets : (Array.isArray(apiRestaurant?.outlets) ? apiRestaurant.outlets : []),
             categories: Array.isArray(actualRestaurant?.categories) ? actualRestaurant.categories : (Array.isArray(apiRestaurant?.categories) ? apiRestaurant.categories : []),
             menu: Array.isArray(actualRestaurant?.menu) ? actualRestaurant.menu : (Array.isArray(apiRestaurant?.menu) ? apiRestaurant.menu : []),
@@ -580,8 +575,7 @@ function RestaurantDetailsContent() {
               : (Array.isArray(apiRestaurant?.openDays) ? apiRestaurant.openDays : (Array.isArray(onboardingStep2?.openDays) ? onboardingStep2.openDays : [])),
             deliveryTimings: actualRestaurant?.deliveryTimings || apiRestaurant?.deliveryTimings || {
               openingTime: actualRestaurant?.openingTime || apiRestaurant?.openingTime || onboardingStep2?.deliveryTimings?.openingTime || "09:00",
-              closingTime: actualRestaurant?.closingTime || apiRestaurant?.closingTime || onboardingStep2?.deliveryTimings?.closingTime || "22:00",
-            },
+              closingTime: actualRestaurant?.closingTime || apiRestaurant?.closingTime || onboardingStep2?.deliveryTimings?.closingTime || "22:00" },
             outletTimings: actualRestaurant?.outletTimings || apiRestaurant?.outletTimings || null,
             cuisines: Array.isArray(actualRestaurant?.cuisines) ? actualRestaurant.cuisines : (Array.isArray(apiRestaurant?.cuisines) ? apiRestaurant.cuisines : (Array.isArray(onboardingStep2?.cuisines) ? onboardingStep2.cuisines : [])),
             profileImage: normalizedProfileImage,
@@ -599,8 +593,7 @@ function RestaurantDetailsContent() {
             discountRules: Array.isArray(actualRestaurant?.discountRules) ? actualRestaurant.discountRules : (Array.isArray(apiRestaurant?.discountRules) ? apiRestaurant.discountRules : []),
             // Preserve backend-computed road distance so it stays consistent with the Home page listing
             distanceText: apiRestaurant?.distanceText || actualRestaurant?.distanceText || null,
-            distanceInfo: apiRestaurant?.distanceInfo || actualRestaurant?.distanceInfo || null,
-          }
+            distanceInfo: apiRestaurant?.distanceInfo || actualRestaurant?.distanceInfo || null }
 
           debugLog('? Transformed restaurant:', transformedRestaurant)
           debugLog('? Restaurant ID for menu fetch:', transformedRestaurant.id)
@@ -826,8 +819,7 @@ function RestaurantDetailsContent() {
                       isAvailable: item.isAvailable !== false,
                       isRecommended,
                       isSpicy,
-                     description: typeof item.description === "string" ? item.description : "",
-                   }
+                     description: typeof item.description === "string" ? item.description : "" }
                  }
                 const menuSections = toArray(rawSections).map((section, sectionIndex) => ({
                   ...section,
@@ -838,9 +830,7 @@ function RestaurantDetailsContent() {
                     ...subsection,
                     id: String(subsection.id || subsection._id || `subsection-${sectionIndex}-${subsectionIndex}`),
                     name: subsection.name || "Unnamed Subsection",
-                    items: toArray(subsection.items).map(normalizeItem),
-                  })),
-                }))
+                    items: toArray(subsection.items).map(normalizeItem) })) }))
 
                 const menuHasItems = menuSections.some((section) => {
                   const directItems = Array.isArray(section.items) && section.items.length > 0
@@ -930,8 +920,7 @@ function RestaurantDetailsContent() {
 
                 setRestaurant(prev => ({
                   ...prev,
-                  menuSections: finalMenuSections,
-                }))
+                  menuSections: finalMenuSections }))
 
                 setMenuUnavailable(!menuHasItems)
 
@@ -1001,15 +990,12 @@ function RestaurantDetailsContent() {
                     stockQuantity: item.stockQuantity || "Unlimited",
                     unit: item.unit || "piece",
                     expiryDate: item.expiryDate || null,
-                    lastRestocked: item.lastRestocked || null,
-                  })) : [],
-                  order: category.order !== undefined ? category.order : index,
-                }))
+                    lastRestocked: item.lastRestocked || null })) : [],
+                  order: category.order !== undefined ? category.order : index }))
 
                 setRestaurant(prev => ({
                   ...prev,
-                  inventory: normalizedInventory,
-                }))
+                  inventory: normalizedInventory }))
                 debugLog('? Fetched and normalized inventory categories:', normalizedInventory)
               }
             } catch (inventoryError) {
@@ -1222,8 +1208,7 @@ function RestaurantDetailsContent() {
     // Update local state
     setQuantities((prev) => ({
       ...prev,
-      [lineItemId]: newQuantity,
-    }))
+      [lineItemId]: newQuantity }))
 
     // CRITICAL: Validate restaurant data before adding to cart
     if (!restaurant || !(restaurant.name || restaurant.restaurantName)) {
@@ -1280,8 +1265,7 @@ function RestaurantDetailsContent() {
       foodType: item.foodType, // Include foodType for robustness
       preparationTime: item.preparationTime, // Add preparationTime property
       priceOnOtherPlatforms: item.priceOnOtherPlatforms || null, // Include platform pricing for savings display
-      otherPlatformGst: item.otherPlatformGst ?? null,
-    }
+      otherPlatformGst: item.otherPlatformGst ?? null }
 
     // Get source position for animation from event target
     // Prefer currentTarget (the button) over target (might be icon inside button)
@@ -1312,8 +1296,7 @@ function RestaurantDetailsContent() {
           scrollX: scrollX,
           scrollY: scrollY,
           // Store button identifier to potentially find it again
-          itemId: lineItemId,
-        }
+          itemId: lineItemId }
       }
     }
 
@@ -1323,8 +1306,7 @@ function RestaurantDetailsContent() {
       const productInfo = {
         id: lineItemId,
         name: item.name,
-        imageUrl: item.image,
-      }
+        imageUrl: item.image }
       removeFromCart(lineItemId, sourcePosition, productInfo)
     } else {
       const existingCartItem = getCartItem(lineItemId)
@@ -1333,8 +1315,7 @@ function RestaurantDetailsContent() {
         const productInfo = {
           id: lineItemId,
           name: item.name,
-          imageUrl: item.image,
-        }
+          imageUrl: item.image }
 
         // If incrementing quantity, trigger add animation with sourcePosition
         if (newQuantity > existingCartItem.quantity && sourcePosition) {
@@ -1445,8 +1426,7 @@ function RestaurantDetailsContent() {
           name: sectionTitle,
           image: getSectionCategoryImage(section),
           count: totalCount,
-          sectionIndex: index,
-        }
+          sectionIndex: index }
       })
       .filter(Boolean)
   }, [restaurant?.menuSections])
@@ -1507,8 +1487,7 @@ function RestaurantDetailsContent() {
         restaurantSlug: restaurant?.slug || slug || "",
         foodType: item.foodType,
         isSpicy: item.isSpicy,
-        customisable: item.customisable,
-      }
+        customisable: item.customisable }
       addDishFavorite(dishData)
       toast.success("Dish added to favorites")
     }
@@ -1565,8 +1544,7 @@ function RestaurantDetailsContent() {
     const payload = {
       title: restaurantName,
       text: shareText,
-      url: shareUrl,
-    }
+      url: shareUrl }
 
     if (isMobileDevice()) {
       openShareModal(payload)
@@ -1599,8 +1577,7 @@ function RestaurantDetailsContent() {
     const payload = {
       title: `${item.name} - ${restaurant?.name || ""}`,
       text: shareText,
-      url: shareUrl,
-    }
+      url: shareUrl }
 
     if (isMobileDevice()) {
       openShareModal(payload)
@@ -1786,10 +1763,10 @@ function RestaurantDetailsContent() {
     if (!items) return items
 
     return items.filter((item) => {
-      // Under 250 filter (when coming from Under 250 page)
-      if (showOnlyUnder250) {
+      // Under 99 filter (when coming from Under 99 page)
+      if (showOnlyUnder99) {
         const finalPrice = getFinalPrice(item);
-        if (finalPrice > 250) return false;
+        if (finalPrice > 99) return false;
       }
 
       // Search filter
@@ -1862,29 +1839,29 @@ function RestaurantDetailsContent() {
   }
 
   // Helper function to check if a section has any items under Rs 250
-  const sectionHasItemsUnder250 = (section) => {
-    if (!showOnlyUnder250) return true; // If not filtering, show all sections
+  const sectionHasItemsUnder99 = (section) => {
+    if (!showOnlyUnder99) return true; // If not filtering, show all sections
 
     // Check direct items
     if (section.items && section.items.length > 0) {
-      const hasUnder250Items = section.items.some(item => {
+      const hasUnder99Items = section.items.some(item => {
         if (item.isAvailable === false) return false;
         const finalPrice = getFinalPrice(item);
-        return finalPrice <= 250;
+        return finalPrice <= 99;
       });
-      if (hasUnder250Items) return true;
+      if (hasUnder99Items) return true;
     }
 
     // Check subsection items
     if (section.subsections && section.subsections.length > 0) {
       for (const subsection of section.subsections) {
         if (subsection.items && subsection.items.length > 0) {
-          const hasUnder250Items = subsection.items.some(item => {
+          const hasUnder99Items = subsection.items.some(item => {
             if (item.isAvailable === false) return false;
             const finalPrice = getFinalPrice(item);
-            return finalPrice <= 250;
+            return finalPrice <= 99;
           });
-          if (hasUnder250Items) return true;
+          if (hasUnder99Items) return true;
         }
       }
     }
@@ -1912,18 +1889,15 @@ function RestaurantDetailsContent() {
               filterMenuItems(
                 toRenderableArray(subsection?.items).filter((item) => item?.isAvailable !== false)
               )
-            ),
-          }))
+            ) }))
           .filter((subsection) => subsection.items.length > 0)
 
         return {
           section: {
             ...section,
             items: filteredItems,
-            subsections: filteredSubsections,
-          },
-          originalIndex: index,
-        }
+            subsections: filteredSubsections },
+          originalIndex: index }
       })
       .filter(({ section }) => {
         if (selectedMenuCategory !== "all") {
@@ -1958,7 +1932,7 @@ function RestaurantDetailsContent() {
   }
 
   const hasActiveMenuFilters = Boolean(
-    showOnlyUnder250 ||
+    showOnlyUnder99 ||
     searchQuery.trim() ||
     vegMode === true ||
     filters.sortBy ||
@@ -1969,7 +1943,7 @@ function RestaurantDetailsContent() {
 
   const filteredSections = useMemo(
     () => getFilteredSections(),
-    [restaurant?.menuSections, showOnlyUnder250, searchQuery, vegMode, filters, selectedMenuCategory]
+    [restaurant?.menuSections, showOnlyUnder99, searchQuery, vegMode, filters, selectedMenuCategory]
   )
 
   const totalFilteredItems = useMemo(() => {
@@ -2209,28 +2183,17 @@ function RestaurantDetailsContent() {
               const { discountValue, isFlatDiscount, discountAmount } = calculateBestDiscount(item, priceNum);
               
               if (discountAmount > 0) {
-                
                 const discountedPrice = Math.max(0, Math.round(priceNum - discountAmount));
                 
-                // Calculate effective percentage for badge
-                const effectivePercentage = Math.round(((priceNum - discountedPrice) / priceNum) * 100);
-                const discountLabel = isFlatDiscount ? `₹${discountValue} OFF` : `${effectivePercentage}% OFF`;
-                
                 return (
-                  <div className="flex flex-col gap-0.5 mt-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-gray-900 dark:text-white text-[15px]">
-                        {isStartingFrom ? <span className="text-[11px] font-medium text-gray-500 mr-1">Starting from</span> : ''}
-                        ₹{discountedPrice}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-[1px]">
-                      <span className="text-[11px] text-gray-500 line-through">₹{priceNum}</span>
-                      <span className="text-[9px] font-bold text-green-600 bg-green-50 border border-green-200 px-1 py-[1px] rounded uppercase flex items-center">
-                        <Tag size={8} className="mr-[2px]" />
-                        {discountLabel}
-                      </span>
-                    </div>
+                  <div className="flex flex-col gap-0.5 mt-1">
+                    <span className="text-[13px] text-gray-500 line-through">
+                      {isStartingFrom ? <span className="text-[11px] mr-1">Starting from</span> : ''}
+                      ₹{priceNum}
+                    </span>
+                    <span className="font-bold text-blue-600 dark:text-blue-400 text-[15px]">
+                      Get for ₹{discountedPrice}
+                    </span>
                   </div>
                 );
               }
@@ -2385,7 +2348,7 @@ function RestaurantDetailsContent() {
             ]
           }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="flex gap-4 p-4 border-b border-gray-100 dark:border-gray-800 last:border-none relative cursor-pointer transition-all duration-500 rounded-2xl bg-gradient-to-r from-[#7e38660a] to-[#7e386615] dark:from-[#7e386618] dark:to-[#7e386622] ring-2 ring-primary z-10 mx-1 my-2"
+          className="flex gap-4 p-4 border-b border-gray-100 dark:border-gray-800 last:border-none relative cursor-pointer transition-all duration-500 rounded-2xl bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 ring-2 ring-primary z-10 mx-1 my-2"
           onClick={() => handleItemClick(item)}
         >
           {cardContent}
@@ -2552,6 +2515,14 @@ function RestaurantDetailsContent() {
               variant="outline"
               size="icon"
               className="rounded-full h-10 w-10 border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-[#1a1a1a]"
+              onClick={() => navigate(`/food/user/restaurants/${slug}/info`, { state: { restaurant } })}
+            >
+              <Info className="h-5 w-5 text-gray-900 dark:text-white" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full h-10 w-10 border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-[#1a1a1a]"
               onClick={() => setShowMenuOptionsSheet(true)}
             >
               <MoreVertical className="h-5 w-5 text-gray-900 dark:text-white" />
@@ -2566,14 +2537,13 @@ function RestaurantDetailsContent() {
           {/* Restaurant Summary */}
           <div className="relative">
             <div className="relative rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] shadow-[0_16px_40px_rgba(15,23,42,0.08)] p-4 sm:p-5 space-y-4 overflow-hidden">
-              <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-primary via-[#8a4b77] to-[#b36b8f]" />
+              <div className="absolute inset-x-0 top-0 h-1.5 bg-primary" />
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate">
                     {restaurant?.name || "Unknown Restaurant"}
                   </h1>
-                  <Info className="h-5 w-5 text-gray-400" />
                 </div>
                 <div className="mt-1 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <Utensils className="h-4 w-4" />
@@ -2723,8 +2693,7 @@ function RestaurantDetailsContent() {
                       onClick={() =>
                         setFilters((prev) => ({
                           ...prev,
-                          vegNonVeg: prev.vegNonVeg === "veg" ? null : "veg",
-                        }))
+                          vegNonVeg: prev.vegNonVeg === "veg" ? null : "veg" }))
                       }
                     >
                       <div className="h-3 w-3 rounded-full bg-green-600" />
@@ -2743,8 +2712,7 @@ function RestaurantDetailsContent() {
                       onClick={() =>
                         setFilters((prev) => ({
                           ...prev,
-                          vegNonVeg: prev.vegNonVeg === "non-veg" ? null : "non-veg",
-                        }))
+                          vegNonVeg: prev.vegNonVeg === "non-veg" ? null : "non-veg" }))
                       }
                     >
                       <div className="h-3 w-3 rounded-full bg-red-600" />
@@ -3038,8 +3006,7 @@ function RestaurantDetailsContent() {
                     top: -(window.innerHeight - 150),
                     left: -(window.innerWidth - 150),
                     right: 20,
-                    bottom: 50,
-                  }
+                    bottom: 50 }
                 : undefined
             }
             whileDrag={{ scale: 1.1, zIndex: 100 }}
@@ -3206,8 +3173,7 @@ function RestaurantDetailsContent() {
                           onClick={() =>
                             setFilters((prev) => ({
                               ...prev,
-                              sortBy: prev.sortBy === "low-to-high" ? null : "low-to-high",
-                            }))
+                              sortBy: prev.sortBy === "low-to-high" ? null : "low-to-high" }))
                           }
                           className={`text-left px-4 py-2.5 rounded-lg border-2 transition-all ${filters.sortBy === "low-to-high"
                             ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
@@ -3220,8 +3186,7 @@ function RestaurantDetailsContent() {
                           onClick={() =>
                             setFilters((prev) => ({
                               ...prev,
-                              sortBy: prev.sortBy === "high-to-low" ? null : "high-to-low",
-                            }))
+                              sortBy: prev.sortBy === "high-to-low" ? null : "high-to-low" }))
                           }
                           className={`text-left px-4 py-2.5 rounded-lg border-2 transition-all ${filters.sortBy === "high-to-low"
                             ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
@@ -3242,8 +3207,7 @@ function RestaurantDetailsContent() {
                             onClick={() =>
                               setFilters((prev) => ({
                                 ...prev,
-                                vegNonVeg: prev.vegNonVeg === "veg" ? null : "veg",
-                              }))
+                                vegNonVeg: prev.vegNonVeg === "veg" ? null : "veg" }))
                             }
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "veg"
                               ? "border-green-600 dark:border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400"
@@ -3258,8 +3222,7 @@ function RestaurantDetailsContent() {
                               onClick={() =>
                                 setFilters((prev) => ({
                                   ...prev,
-                                  vegNonVeg: prev.vegNonVeg === "non-veg" ? null : "non-veg",
-                                }))
+                                  vegNonVeg: prev.vegNonVeg === "non-veg" ? null : "non-veg" }))
                               }
                               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "non-veg"
                                 ? "border-red-600 dark:border-red-600 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-gray-300"
@@ -3285,8 +3248,7 @@ function RestaurantDetailsContent() {
                           sortBy: null,
                           vegNonVeg: null,
                           highlyReordered: false,
-                          spicy: false,
-                        })
+                          spicy: false })
                       }}
                       className="text-red-600 dark:text-red-400 font-medium text-sm hover:text-red-700 dark:hover:text-red-500"
                     >

@@ -26,8 +26,7 @@ export default function RestaurantNavbar({
   location: propLocation,
   showSearch = true,
   showOfflineOnlineTag = true,
-  showNotifications = true,
-}) {
+  showNotifications = true }) {
   const navigate = useNavigate()
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [searchValue, setSearchValue] = useState("")
@@ -51,8 +50,7 @@ export default function RestaurantNavbar({
       // Dispatch empty search event
       window.dispatchEvent(
         new CustomEvent("restaurantSearchUpdated", {
-          detail: { query: "", results: [], isLoading: false },
-        }),
+          detail: { query: "", results: [], isLoading: false } }),
       )
       return
     }
@@ -60,8 +58,7 @@ export default function RestaurantNavbar({
     // Set loading state
     window.dispatchEvent(
       new CustomEvent("restaurantSearchUpdated", {
-        detail: { query: searchValue, results: [], isLoading: true },
-      }),
+        detail: { query: searchValue, results: [], isLoading: true } }),
     )
 
     // Debounce search API call
@@ -70,8 +67,7 @@ export default function RestaurantNavbar({
         const response = await restaurantAPI.getOrders({
           page: 1,
           limit: 100,
-          search: searchValue,
-        })
+          search: searchValue })
         
         if (response.data.success) {
           window.dispatchEvent(
@@ -79,17 +75,14 @@ export default function RestaurantNavbar({
               detail: {
                 query: searchValue,
                 results: response.data.data.orders || [],
-                isLoading: false,
-              },
-            }),
+                isLoading: false } }),
           )
         }
       } catch (error) {
         debugError("Search error:", error)
         window.dispatchEvent(
           new CustomEvent("restaurantSearchUpdated", {
-            detail: { query: searchValue, results: [], isLoading: false, error },
-          }),
+            detail: { query: searchValue, results: [], isLoading: false, error } }),
         )
       }
     }, 500)

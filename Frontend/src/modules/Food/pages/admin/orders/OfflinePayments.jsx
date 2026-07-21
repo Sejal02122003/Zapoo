@@ -32,8 +32,7 @@ export default function OfflinePayments() {
     handleViewOrder,
     handlePrintOrder,
     toggleColumn,
-    resetColumns,
-  } = useOrdersManagement(offlinePaymentsOrders, "offline-payments", "Offline Payments")
+    resetColumns } = useOrdersManagement(offlinePaymentsOrders, "offline-payments", "Offline Payments")
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen w-full max-w-full overflow-x-hidden">

@@ -2541,8 +2541,47 @@ export async function updateRestaurantById(id, body = {}) {
         }
     }
 
+    if (body.takeawayDiscount !== undefined) {
+        const tdisc = Number(body.takeawayDiscount);
+        if (Number.isFinite(tdisc) && tdisc >= 0 && tdisc <= 100) {
+            doc.takeawayDiscount = tdisc;
+        } else {
+            doc.takeawayDiscount = 0;
+        }
+    }
+
     if (body.itemDiscounts !== undefined) {
-        doc.itemDiscounts = Array.isArray(body.itemDiscounts) ? body.itemDiscounts : [];
+        const incomingDiscounts = Array.isArray(body.itemDiscounts) ? body.itemDiscounts : [];
+        const currentDiscounts = doc.itemDiscounts || [];
+        
+        for (const inc of incomingDiscounts) {
+            const cur = currentDiscounts.find(d => String(d.itemId) === String(inc.itemId));
+            
+            // If the item discount already exists and was applied by the restaurant, prevent override
+            if (cur && cur.appliedBy === 'restaurant' && cur.discountValue !== inc.discountValue) {
+                throw new ValidationError(`Offer is already applied by the restaurant`);
+            }
+            
+            // Preserve ownership if unmodified, otherwise mark as admin
+            if (cur && cur.discountValue === inc.discountValue) {
+                inc.appliedBy = cur.appliedBy;
+                inc.appliedAt = cur.appliedAt;
+            } else {
+                inc.appliedBy = 'admin';
+                inc.appliedAt = new Date();
+            }
+        }
+        
+        // OCC check based on updatedAt if provided (handles millisecond race condition)
+        if (body.updatedAt) {
+            const dbTime = new Date(doc.updatedAt).getTime();
+            const reqTime = new Date(body.updatedAt).getTime();
+            if (dbTime !== reqTime) {
+                throw new ValidationError(`Offer is already applied by the restaurant`);
+            }
+        }
+        
+        doc.itemDiscounts = incomingDiscounts;
     }
     if (body.discountRules !== undefined) {
         doc.discountRules = Array.isArray(body.discountRules) ? body.discountRules : [];

@@ -17,8 +17,7 @@ export default function SubscriptionOrders() {
     restaurant: true,
     customer: true,
     status: true,
-    actions: true,
-  })
+    actions: true })
 
   const {
     searchQuery,
@@ -40,8 +39,7 @@ export default function SubscriptionOrders() {
     handleExport,
     handleViewOrder,
     handlePrintOrder,
-    toggleColumn,
-  } = useGenericTableManagement(
+    toggleColumn } = useGenericTableManagement(
     emptySubscriptionOrders,
     "Subscription Orders",
     ["subscriptionId", "customerName", "restaurant", "customerPhone"]
@@ -69,8 +67,7 @@ export default function SubscriptionOrders() {
       restaurant: true,
       customer: true,
       status: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   return (
@@ -157,8 +154,7 @@ export default function SubscriptionOrders() {
           restaurant: "Restaurant",
           customer: "Customer",
           status: "Status",
-          actions: "Actions",
-        }}
+          actions: "Actions" }}
       />
       <ViewSubscriptionDialog
         isOpen={isViewOrderOpen}

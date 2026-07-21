@@ -10,8 +10,7 @@ import {
   getOrderAlertKey,
   getOrderMongoId,
   getOrderAcceptId,
-  normalizeIncomingOrder,
-} from '@food/utils/orderDispatchId';
+  normalizeIncomingOrder } from '@food/utils/orderDispatchId';
 import { isValidSocketOrigin, resolveSocketOrigin } from '@food/utils/socketOrigin';
 import { DeliveryNotificationContext } from '../context/DeliveryNotificationContext';
 
@@ -143,9 +142,7 @@ const buildDeliveryOrderNotification = (orderData = {}) => {
     tag: `delivery-order-${orderId}`,
     data: {
       orderId,
-      targetUrl: '/delivery',
-    },
-  };
+      targetUrl: '/delivery' } };
 }
 
 const triggerWebViewNativeNotification = async (orderData = {}) => {
@@ -156,8 +153,7 @@ const triggerWebViewNativeNotification = async (orderData = {}) => {
     body: `Order #${orderData?.orderId || orderData?.orderMongoId || orderData?.id || ''}`.trim(),
     orderId: orderData?.orderId || orderData?.order_id || '',
     orderMongoId: orderData?.orderMongoId || orderData?.order_mongo_id || '',
-    targetUrl: '/delivery',
-  };
+    targetUrl: '/delivery' };
 
   try {
     if (
@@ -334,8 +330,7 @@ export const useDeliveryNotifications = () => {
             silent: false,
             vibrate: [200, 100, 200, 100, 300],
             icon: '/logo.png',
-            data: notificationOptions.data,
-          });
+            data: notificationOptions.data });
           return;
         }
       }
@@ -346,8 +341,7 @@ export const useDeliveryNotifications = () => {
         requireInteraction: true,
         silent: false,
         icon: '/logo.png',
-        data: notificationOptions.data,
-      });
+        data: notificationOptions.data });
     } catch (error) {
       debugWarn('Error showing background delivery notification:', error);
     }
@@ -387,8 +381,7 @@ export const useDeliveryNotifications = () => {
         debugLog('Recovered current delivery trip after reconnect/focus:', currentTrip);
         setOrderStatusUpdate({
           ...currentTrip,
-          recoverySource: 'delivery_reconnect',
-        });
+          recoverySource: 'delivery_reconnect' });
         return;
       }
 
@@ -436,8 +429,7 @@ export const useDeliveryNotifications = () => {
 
     debugLog('Joining delivery room', {
       deliveryPartnerId,
-      socketId: socketRef.current?.id,
-    });
+      socketId: socketRef.current?.id });
     socketRef.current.emit('join-delivery', deliveryPartnerId);
     joinedDeliveryRoomRef.current = deliveryPartnerId;
     return true;
@@ -474,10 +466,8 @@ export const useDeliveryNotifications = () => {
           isConnected,
           socketId: socketRef.current?.id || null,
           socketConnected: Boolean(socketRef.current?.connected),
-          socketAuthTokenPresent: Boolean(getDeliveryAuthToken()),
-        };
-      },
-    };
+          socketAuthTokenPresent: Boolean(getDeliveryAuthToken()) };
+      } };
 
     return () => {
       if (window.__deliverySocketDebug) {
@@ -758,8 +748,7 @@ export const useDeliveryNotifications = () => {
       tokenPresent: Boolean(token),
       tokenPreview,
       deliveryPartnerId,
-      socketUrl,
-    });
+      socketUrl });
 
     socketRef.current = io(socketUrl, {
       path: '/socket.io/',
@@ -773,8 +762,7 @@ export const useDeliveryNotifications = () => {
       auth: {
         token: token || ""
       },
-      query: token ? { token } : undefined,
-    });
+      query: token ? { token } : undefined });
 
     debugLog('Socket.IO client created', {
       socketUrl,
@@ -782,15 +770,13 @@ export const useDeliveryNotifications = () => {
       transports: ['polling', 'websocket'],
       tokenPresent: Boolean(token),
       tokenPreview,
-      deliveryPartnerId,
-    });
+      deliveryPartnerId });
 
     socketRef.current.on('connect', () => {
       debugLog('Socket connected', {
         socketId: socketRef.current?.id,
         deliveryPartnerId,
-        transport: socketRef.current?.io?.engine?.transport?.name || 'unknown',
-      });
+        transport: socketRef.current?.io?.engine?.transport?.name || 'unknown' });
       setIsConnected(true);
 
       joinedDeliveryRoomRef.current = null;
@@ -800,8 +786,7 @@ export const useDeliveryNotifications = () => {
       }
       debugLog('Requesting resync after connect', {
         deliveryPartnerId,
-        socketId: socketRef.current?.id,
-      });
+        socketId: socketRef.current?.id });
       socketRef.current.emit('resync');
       void recoverDeliveryState();
     });
@@ -816,13 +801,11 @@ export const useDeliveryNotifications = () => {
 
     socketRef.current.on('active_order', (activeOrderData) => {
       debugLog('Active order recovered via socket resync', {
-        orderId: activeOrderData?.orderId || activeOrderData?.orderMongoId || activeOrderData?._id,
-      });
+        orderId: activeOrderData?.orderId || activeOrderData?.orderMongoId || activeOrderData?._id });
       if (!activeOrderData) return;
       setOrderStatusUpdate({
         ...activeOrderData,
-        recoverySource: 'socket_resync',
-      });
+        recoverySource: 'socket_resync' });
     });
 
     socketRef.current.on('pending_offers', ({ offers = [] } = {}) => {
@@ -832,9 +815,7 @@ export const useDeliveryNotifications = () => {
         window.dispatchEvent(
           new CustomEvent('deliveryPendingOffers', {
             detail: {
-              offers: offers.map((offer) => normalizeIncomingOrder(offer)).filter(Boolean),
-            },
-          }),
+              offers: offers.map((offer) => normalizeIncomingOrder(offer)).filter(Boolean) } }),
         );
       }
     });
@@ -851,8 +832,7 @@ export const useDeliveryNotifications = () => {
         deliveryPartnerId,
         tokenPresent: Boolean(token),
         tokenPreview,
-        transport: socketRef.current?.io?.engine?.transport?.name || 'unknown',
-      });
+        transport: socketRef.current?.io?.engine?.transport?.name || 'unknown' });
       setIsConnected(false);
     });
 
@@ -860,8 +840,7 @@ export const useDeliveryNotifications = () => {
       debugWarn('Socket disconnected', {
         reason,
         socketId: socketRef.current?.id,
-        deliveryPartnerId,
-      });
+        deliveryPartnerId });
       setIsConnected(false);
       joinedDeliveryRoomRef.current = null;
       joinedTrackingOrdersRef.current.clear();
@@ -875,8 +854,7 @@ export const useDeliveryNotifications = () => {
       debugWarn('Reconnection attempt', {
         attemptNumber,
         socketUrl,
-        deliveryPartnerId,
-      });
+        deliveryPartnerId });
     });
 
     socketRef.current.on('reconnect', (attemptNumber) => {
@@ -884,8 +862,7 @@ export const useDeliveryNotifications = () => {
         attemptNumber,
         socketId: socketRef.current?.id,
         deliveryPartnerId,
-        transport: socketRef.current?.io?.engine?.transport?.name || 'unknown',
-      });
+        transport: socketRef.current?.io?.engine?.transport?.name || 'unknown' });
       setIsConnected(true);
 
       joinedDeliveryRoomRef.current = null;
@@ -898,8 +875,7 @@ export const useDeliveryNotifications = () => {
     socketRef.current.on('new_order', (orderData) => {
       debugLog('New order received via socket', {
         orderId: orderData?.orderId || orderData?.orderMongoId || orderData?._id,
-        dispatchStatus: orderData?.dispatch?.status,
-      });
+        dispatchStatus: orderData?.dispatch?.status });
       if (!isRiderOnline()) {
         debugLog('?? Ignored new_order - rider is offline');
         return;
@@ -914,8 +890,7 @@ export const useDeliveryNotifications = () => {
       debugLog('New order available received via socket', {
         orderId: orderData?.orderId || orderData?.orderMongoId || orderData?._id,
         phase: orderData?.phase || 'unknown',
-        dispatchStatus: orderData?.dispatch?.status,
-      });
+        dispatchStatus: orderData?.dispatch?.status });
       if (!isRiderOnline()) {
         debugLog('?? Ignored new_order_available - rider is offline');
         return;
@@ -927,8 +902,7 @@ export const useDeliveryNotifications = () => {
 
     socketRef.current.on('play_notification_sound', (data) => {
       debugLog('play_notification_sound received', {
-        orderId: data?.orderId || data?.orderMongoId || data?.order_id,
-      });
+        orderId: data?.orderId || data?.orderMongoId || data?.order_id });
       if (!isRiderOnline()) {
         debugLog('?? Ignored play_notification_sound - rider is offline');
         return;
@@ -950,8 +924,7 @@ export const useDeliveryNotifications = () => {
 
     socketRef.current.on('order_ready', (orderData) => {
       debugLog('order_ready received via socket', {
-        orderId: orderData?.orderId || orderData?.orderMongoId || orderData?._id,
-      });
+        orderId: orderData?.orderId || orderData?.orderMongoId || orderData?._id });
       setOrderReady(orderData);
       playNotificationSound(orderData);
     });
@@ -1010,8 +983,7 @@ export const useDeliveryNotifications = () => {
         setClaimedOrderId({
           orderId: reassignedId,
           orderMongoId: getOrderMongoId(data) || reassignedId,
-          claimedBy: data?.claimedBy || 'reassigned',
-        });
+          claimedBy: data?.claimedBy || 'reassigned' });
       }
     });
 
@@ -1026,8 +998,7 @@ export const useDeliveryNotifications = () => {
         setClaimedOrderId({
           orderId: claimedId,
           orderMongoId: getOrderMongoId(data) || claimedId,
-          claimedBy: data?.claimedBy,
-        });
+          claimedBy: data?.claimedBy });
       }
     });
 
@@ -1127,8 +1098,7 @@ export const useDeliveryNotifications = () => {
     if (socketRef.current?.connected) {
       debugLog('Requesting resync after deliveryPartnerId resolved', {
         deliveryPartnerId,
-        socketId: socketRef.current?.id,
-      });
+        socketId: socketRef.current?.id });
       socketRef.current.emit('resync');
       void recoverDeliveryState();
     }
@@ -1170,8 +1140,7 @@ export const useDeliveryNotifications = () => {
       ...data,
       orderId,
       userId: data.userId,
-      restaurantId: data.restaurantId,
-    });
+      restaurantId: data.restaurantId });
     return true;
   }, []);
 

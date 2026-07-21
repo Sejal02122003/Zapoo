@@ -35,8 +35,7 @@ const defaultCartContext = {
   },
   replaceCart: () => {
     debugWarn('CartProvider not available - replaceCart called');
-  },
-}
+  } }
 
 const CartContext = createContext(defaultCartContext)
 
@@ -112,8 +111,7 @@ const normalizeCartData = (rawCart) => {
         restaurant: normalizedRestaurantName,
         restaurantId: normalizedRestaurantId,
         image: normalizedImage,
-        imageUrl: normalizedImage,
-      }
+        imageUrl: normalizedImage }
     })
 }
 
@@ -259,10 +257,8 @@ export function CartProvider({ children }) {
             product: {
               id: item.id,
               name: item.name,
-              imageUrl: item.image || item.imageUrl,
-            },
-            sourcePosition,
-          })
+              imageUrl: item.image || item.imageUrl },
+            sourcePosition })
           // Clear after animation completes (increased delay)
           setTimeout(() => setLastAddEvent(null), 1500)
         }
@@ -285,10 +281,8 @@ export function CartProvider({ children }) {
           product: {
             id: item.id,
             name: item.name,
-            imageUrl: item.image || item.imageUrl,
-          },
-          sourcePosition,
-        })
+            imageUrl: item.image || item.imageUrl },
+          sourcePosition })
         // Clear after animation completes (increased delay to allow full animation)
         setTimeout(() => setLastAddEvent(null), 1500)
       }
@@ -310,10 +304,8 @@ export function CartProvider({ children }) {
           product: {
             id: productInfo.id || itemToRemove.id,
             name: productInfo.name || itemToRemove.name,
-            imageUrl: productInfo.imageUrl || productInfo.image || itemToRemove.image || itemToRemove.imageUrl,
-          },
-          sourcePosition,
-        })
+            imageUrl: productInfo.imageUrl || productInfo.image || itemToRemove.image || itemToRemove.imageUrl },
+          sourcePosition })
         // Clear after animation completes
         setTimeout(() => setLastRemoveEvent(null), 1500)
       }
@@ -334,10 +326,8 @@ export function CartProvider({ children }) {
             product: {
               id: productInfo.id || itemToRemove.id,
               name: productInfo.name || itemToRemove.name,
-              imageUrl: productInfo.imageUrl || productInfo.image || itemToRemove.image || itemToRemove.imageUrl,
-            },
-            sourcePosition,
-          })
+              imageUrl: productInfo.imageUrl || productInfo.image || itemToRemove.image || itemToRemove.imageUrl },
+            sourcePosition })
           // Clear after animation completes
           setTimeout(() => setLastRemoveEvent(null), 1500)
         }
@@ -356,10 +346,8 @@ export function CartProvider({ children }) {
           product: {
             id: productInfo.id || existingItem.id,
             name: productInfo.name || existingItem.name,
-            imageUrl: productInfo.imageUrl || productInfo.image || existingItem.image || existingItem.imageUrl,
-          },
-          sourcePosition,
-        })
+            imageUrl: productInfo.imageUrl || productInfo.image || existingItem.image || existingItem.imageUrl },
+          sourcePosition })
         // Clear after animation completes
         setTimeout(() => setLastRemoveEvent(null), 1500)
       }
@@ -503,10 +491,8 @@ export function CartProvider({ children }) {
       product: {
         id: item.id,
         name: item.name,
-        imageUrl: item.image || item.imageUrl,
-      },
-      quantity: item.quantity || 1,
-    }))
+        imageUrl: item.image || item.imageUrl },
+      quantity: item.quantity || 1 }))
     
     const itemCount = safeCart.reduce((total, item) => total + (item.quantity || 0), 0)
     const total = safeCart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0)
@@ -514,8 +500,7 @@ export function CartProvider({ children }) {
     return {
       items,
       itemCount,
-      total,
-    }
+      total }
   }, [cart])
 
   const value = useMemo(
@@ -537,8 +522,7 @@ export function CartProvider({ children }) {
       getCartItem,
       clearCart,
       cleanCartForRestaurant,
-      replaceCart,
-    }),
+      replaceCart }),
     [cart, cartForAnimation, lastAddEvent, lastRemoveEvent]
   )
 

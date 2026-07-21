@@ -40,8 +40,7 @@ export default function Notifications() {
     markAsRead: markBroadcastAsRead,
     dismiss: dismissBroadcastNotification,
     dismissAll: dismissAllBroadcastNotifications,
-    refresh: refreshBroadcastNotifications,
-  } = useNotificationInbox("restaurant", { limit: 100, pollMs: 5 * 60 * 1000 })
+    refresh: refreshBroadcastNotifications } = useNotificationInbox("restaurant", { limit: 100, pollMs: 5 * 60 * 1000 })
 
   const fetchNotifications = async () => {
     try {
@@ -83,10 +82,8 @@ export default function Notifications() {
                 month: "short",
                 hour: "2-digit",
                 minute: "2-digit",
-                hour12: true,
-              })
-            : "N/A",
-        }
+                hour12: true })
+            : "N/A" }
       })
       .filter((item) => item.id && !dismissedIds.includes(item.id))
     const broadcastRows = (broadcastNotifications || []).map((item) => ({
@@ -102,10 +99,8 @@ export default function Notifications() {
             month: "short",
             hour: "2-digit",
             minute: "2-digit",
-            hour12: true,
-          })
-        : "N/A",
-    }))
+            hour12: true })
+        : "N/A" }))
 
     return [...broadcastRows, ...orderNotifications].sort((a, b) => b.timeValue - a.timeValue)
   }, [broadcastNotifications, dismissedIds, orders])

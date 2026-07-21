@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Wallet, Settings } from "lucide-react"
+import {  Settings } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -9,8 +10,7 @@ export default function AddFund() {
   const [formData, setFormData] = useState({
     customer: "",
     amount: "",
-    reference: "",
-  })
+    reference: "" })
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -26,8 +26,7 @@ export default function AddFund() {
     setFormData({
       customer: "",
       amount: "",
-      reference: "",
-    })
+      reference: "" })
   }
 
   return (
@@ -42,7 +41,7 @@ export default function AddFund() {
           {/* Header */}
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-white" />
+              <WalletIcon className="" />
             </div>
             <h1 className="text-2xl font-bold text-slate-900">Add Fund</h1>
           </div>

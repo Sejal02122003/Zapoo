@@ -5,8 +5,7 @@ export default function AnimatedBorder({ children, className = "" }) {
       <div
         style={{
           background: "linear-gradient(45deg, #fbbf24, #7e3866, #fbbf24)",
-          backgroundSize: "200% 200%",
-        }}
+          backgroundSize: "200% 200%" }}
       />
       <div className="absolute inset-[2px] bg-white dark:bg-gray-900 rounded-3xl" />
       <div className="relative z-10">{children}</div>

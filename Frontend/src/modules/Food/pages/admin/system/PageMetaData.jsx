@@ -46,8 +46,7 @@ export default function PageMetaDataPageMetaData() {
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     pages: true,
-    actions: true,
-  })
+    actions: true })
 
   const filteredPages = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -120,15 +119,13 @@ export default function PageMetaDataPageMetaData() {
     setVisibleColumns({
       si: true,
       pages: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const columnsConfig = {
     si: "Serial Number",
     pages: "Pages",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   return (
     <div className="p-2 lg:p-3 bg-slate-50 min-h-screen">

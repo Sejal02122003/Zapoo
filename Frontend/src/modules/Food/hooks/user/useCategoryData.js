@@ -22,8 +22,7 @@ export const useCategoryData = (zoneId) => {
             id: cat.slug || cat._id,
             name: cat.name,
             image: cat.image || foodImages[0],
-            slug: cat.slug || cat.name.toLowerCase().replace(/\s+/g, '-'),
-          }))
+            slug: cat.slug || cat.name.toLowerCase().replace(/\s+/g, '-') }))
         ];
         setCategories(transformed);
 

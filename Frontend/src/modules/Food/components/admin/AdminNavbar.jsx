@@ -18,28 +18,24 @@ import {
   Grid,
   PlusCircle,
   Bell,
-  BellOff,
-} from "lucide-react";
+  BellOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-} from "@food/components/ui/dialog";
+  DialogTitle } from "@food/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@food/components/ui/dropdown-menu";
+  DropdownMenuTrigger } from "@food/components/ui/dropdown-menu";
 import { Input } from "@food/components/ui/input";
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@food/components/ui/popover";
+  PopoverTrigger } from "@food/components/ui/popover";
 import quickSpicyLogo from "@/assets/user_logo.jpeg";
 import { adminAPI } from "@food/api";
 import { clearModuleAuth } from "@food/utils/auth";

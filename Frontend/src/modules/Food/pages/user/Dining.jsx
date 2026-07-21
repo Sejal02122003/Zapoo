@@ -209,8 +209,7 @@ export default function Dining() {
                   id: String(banner?._id || banner?.id || `dining-banner-${index}`),
                   imageUrl,
                   tagline: String(banner?.title || banner?.tagline || "").trim(),
-                  promoCode: String(banner?.ctaText || banner?.promoCode || "").trim(),
-                }
+                  promoCode: String(banner?.ctaText || banner?.promoCode || "").trim() }
               })
               .filter(Boolean)
           : []
@@ -306,8 +305,7 @@ export default function Dining() {
             const uniqueTypes = Array.from(new Set(types.map(t => slugifyValue(t)).filter(Boolean)))
             return uniqueTypes[0] || "family-dining"
           })(),
-          isEnabled: restaurant?.diningSettings?.isEnabled === true,
-        }
+          isEnabled: restaurant?.diningSettings?.isEnabled === true }
       })
   }, [restaurantList, location])
 
@@ -750,8 +748,7 @@ export default function Dining() {
                 className="relative z-10 flex items-center gap-1.5 sm:gap-2 overflow-x-auto overflow-y-visible scrollbar-hide py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 style={{
                   scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                }}
+                  msOverflowStyle: "none" }}
               >
                 {/* Filter Button - Opens Modal */}
                 <Button
@@ -855,8 +852,7 @@ export default function Dining() {
                         y: 0,
                         scale: 1,
                         borderRadius: 22,
-                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                      },
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" },
                       hover: {
                         y: -12,
                         scale: 1.02,
@@ -1094,8 +1090,7 @@ export default function Dining() {
                         y: 0,
                         scale: 1,
                         borderRadius: 22,
-                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                      },
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" },
                       hover: {
                         y: -12,
                         scale: 1.02,

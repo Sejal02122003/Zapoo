@@ -15,8 +15,7 @@ export default function TaxReport() {
   const [filters, setFilters] = useState({
     dateRangeType: "All Time",
     calculateTax: "Percentage",
-    taxRate: "Select Tax Rate",
-  })
+    taxRate: "Select Tax Rate" })
   const [reports, setReports] = useState([])
   const [stats, setStats] = useState({
     totalIncome: "₹0.00",
@@ -89,8 +88,7 @@ export default function TaxReport() {
     setFilters({
       dateRangeType: "All Time",
       calculateTax: "Percentage",
-      taxRate: "Select Tax Rate",
-    })
+      taxRate: "Select Tax Rate" })
   }
 
   const handleSubmit = () => {
@@ -123,8 +121,7 @@ export default function TaxReport() {
 
       const params = {
         fromDate: fromDate ? fromDate.toISOString() : undefined,
-        toDate: toDate ? toDate.toISOString() : undefined,
-      }
+        toDate: toDate ? toDate.toISOString() : undefined }
 
       const response = await adminAPI.getTaxReportDetail(report.id, params)
       if (response?.data?.success) {

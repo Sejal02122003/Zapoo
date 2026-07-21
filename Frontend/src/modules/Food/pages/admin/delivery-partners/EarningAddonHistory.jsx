@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { 
-  Search, 
+import { Search, 
   Settings, 
   ArrowUpDown, 
   Download, 
@@ -16,9 +15,8 @@ import {
   DollarSign, 
   RefreshCw, 
   User, 
-  Package, 
-  Wallet 
-} from "lucide-react"
+  Package } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@food/components/ui/dialog"
 import { adminAPI } from "@food/api"
@@ -45,8 +43,7 @@ export default function EarningAddonHistory() {
     earningAmount: true,
     date: true,
     status: true,
-    actions: true,
-  })
+    actions: true })
 
   useEffect(() => {
     fetchHistory()
@@ -187,8 +184,7 @@ export default function EarningAddonHistory() {
       earningAmount: true,
       date: true,
       status: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const columnsConfig = {
@@ -199,16 +195,14 @@ export default function EarningAddonHistory() {
     earningAmount: "Earning Amount",
     date: "Date",
     status: "Status",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   const getStatusBadge = (status) => {
     const statusConfig = {
       pending: { bg: "bg-blue-100", text: "text-blue-700", label: "Pending", icon: Clock },
       credited: { bg: "bg-green-100", text: "text-green-700", label: "Credited", icon: CheckCircle },
       failed: { bg: "bg-red-100", text: "text-red-700", label: "Failed", icon: XCircle },
-      cancelled: { bg: "bg-gray-100", text: "text-gray-700", label: "Cancelled", icon: XCircle },
-    }
+      cancelled: { bg: "bg-gray-100", text: "text-gray-700", label: "Cancelled", icon: XCircle } }
     const config = statusConfig[status] || statusConfig.pending
     const Icon = config.icon
     return (
@@ -513,7 +507,7 @@ export default function EarningAddonHistory() {
           <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-5 rounded-t-lg">
             <DialogHeader className="mb-0">
               <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-                <Wallet className="w-5 h-5" />
+                <WalletIcon className="" />
                 Credit Earning to Wallet
               </DialogTitle>
             </DialogHeader>
@@ -599,7 +593,7 @@ export default function EarningAddonHistory() {
                   onClick={handleCredit}
                   className="px-5 py-2.5 text-sm font-semibold rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-2"
                 >
-                  <Wallet className="w-4 h-4" />
+                  <WalletIcon className="" />
                   Credit to Wallet
                 </button>
               </DialogFooter>

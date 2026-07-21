@@ -22,8 +22,7 @@ export default function FeedbackExperienceReport() {
     toDate: "",
     rating: "",
     experience: "",
-    module: "",
-  })
+    module: "" })
   const [isFilterOpen, setIsFilterOpen] = useState(true)
 
   // Fetch feedback experiences
@@ -41,8 +40,7 @@ export default function FeedbackExperienceReport() {
         ...(filters.toDate && { endDate: filters.toDate }),
         ...(filters.rating && { rating: filters.rating }),
         ...(filters.experience && { experience: filters.experience }),
-        ...(filters.module && { module: filters.module }),
-      }
+        ...(filters.module && { module: filters.module }) }
       const response = await adminAPI.getFeedbackExperiences(params)
       if (response.data && response.data.data) {
         const rawData = response.data.data.feedbacks || []
@@ -92,8 +90,7 @@ export default function FeedbackExperienceReport() {
       toDate: "",
       rating: "",
       experience: "",
-      module: "",
-    })
+      module: "" })
     setSearchQuery("")
   }
 
@@ -120,8 +117,7 @@ export default function FeedbackExperienceReport() {
       rating: fb.rating,
       experience: fb.experience || 'N/A',
       module: fb.module || 'N/A',
-      createdAt: new Date(fb.createdAt).toLocaleString(),
-    }))
+      createdAt: new Date(fb.createdAt).toLocaleString() }))
     switch (format) {
       case "csv": exportReportsToCSV(exportData, headers, "feedback_experience_report"); break;
       case "excel": exportReportsToExcel(exportData, headers, "feedback_experience_report"); break;

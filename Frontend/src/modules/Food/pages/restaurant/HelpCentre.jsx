@@ -11,8 +11,7 @@ import {
   FileText, 
   Wallet,
   LifeBuoy,
-  ChevronRight,
-} from "lucide-react"
+  ChevronRight } from "lucide-react"
 import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
 
 const helpTopics = [

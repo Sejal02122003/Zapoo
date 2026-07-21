@@ -34,8 +34,7 @@ export default function FoodOnTheWayOrders() {
     handleViewOrder,
     handlePrintOrder,
     toggleColumn,
-    resetColumns,
-  } = useOrdersManagement(foodOnTheWayOrders, "food-on-the-way", "Food On The Way Orders")
+    resetColumns } = useOrdersManagement(foodOnTheWayOrders, "food-on-the-way", "Food On The Way Orders")
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen w-full max-w-full overflow-x-hidden">

@@ -24,8 +24,7 @@ export default function JoinRequest() {
   const [rejectionReason, setRejectionReason] = useState("")
   const [filters, setFilters] = useState({
     zone: "",
-    vehicleType: "",
-  })
+    vehicleType: "" })
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [debouncedSearch, setDebouncedSearch] = useState("")
 
@@ -44,8 +43,7 @@ export default function JoinRequest() {
       const params = {
         status: activeTab === "pending" ? "pending" : "denied",
         page: 1,
-        limit: 1000,
-      }
+        limit: 1000 }
 
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim()

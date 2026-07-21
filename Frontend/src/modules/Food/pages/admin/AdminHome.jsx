@@ -6,8 +6,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@food/components/ui/select"
+  SelectValue } from "@food/components/ui/select"
 import { Switch } from "@food/components/ui/switch"
 import { Label } from "@food/components/ui/label"
 import {
@@ -23,8 +22,7 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis,
-} from "recharts"
+  YAxis } from "recharts"
 import { Activity, ArrowUpRight, ShoppingBag, CreditCard, Truck, Receipt, DollarSign, Store, UserCheck, Package, UserCircle, Clock, CheckCircle, Plus, XCircle } from "lucide-react"
 import { adminAPI } from "@food/api"
 const debugLog = () => {}
@@ -70,8 +68,7 @@ export default function AdminHome() {
         setIsLoading(true)
         const params = {
           period: selectedPeriod,
-          ...(selectedZone !== "all" ? { zoneId: selectedZone } : {}),
-        }
+          ...(selectedZone !== "all" ? { zoneId: selectedZone } : {}) }
         const response = await adminAPI.getDashboardStats(params)
         if (response.data?.success && response.data?.data) {
           setDashboardData(response.data.data)
@@ -155,8 +152,7 @@ export default function AdminHome() {
   const pieData = orderStats.map((item) => ({
     name: item.label,
     value: item.value,
-    fill: item.color,
-  }))
+    fill: item.color }))
 
   const deliveryProfit = dashboardData?.deliveryProfit || 0
   const periodLabel = selectedPeriod === "overall" ? "Overall" : 
@@ -226,7 +222,7 @@ export default function AdminHome() {
             <MetricCard
               title="Gross revenue"
               value={formatCurrency(revenueTotal)}
-              helper={`${periodLabel} transaction volume`}
+              helper={`Net Profit: ${formatCurrency(totalAdminEarnings)}`}
               icon={<ShoppingBag className="h-5 w-5 text-emerald-600" />}
               accent="bg-emerald-200/40"
               path="/admin/food/transaction-report"
@@ -266,18 +262,10 @@ export default function AdminHome() {
             <MetricCard
               title="GST"
               value={formatCurrency(gstTotal)}
-              helper={`Total tax collected: ${periodLabel}`}
+              helper={`${periodLabel} tax collected`}
               icon={<Receipt className="h-5 w-5 text-orange-600" />}
               accent="bg-orange-200/40"
               path="/admin/food/tax-report"
-            />
-            <MetricCard
-              title="Platform Total"
-              value={formatCurrency(totalAdminEarnings, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              helper={totalRevenueHelper}
-              icon={<DollarSign className="h-5 w-5 text-green-600" />}
-              accent="bg-green-200/40"
-              path="/admin/food/transaction-report"
             />
             <MetricCard
               title="Total restaurants"

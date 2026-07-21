@@ -7,8 +7,7 @@ import { restaurantAPI } from "@food/api"
 import {
   clearRestaurantPendingPhone,
   getModuleToken,
-  getRestaurantPendingPhone,
-} from "@food/utils/auth"
+  getRestaurantPendingPhone } from "@food/utils/auth"
 
 export default function VerificationPending() {
   const companyName = useCompanyName()

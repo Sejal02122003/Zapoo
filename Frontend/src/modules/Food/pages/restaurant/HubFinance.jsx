@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { Bell, Menu, ChevronDown, Calendar, Download, ArrowRight, FileText, Wallet, X } from "lucide-react"
+import { Bell, Menu, ChevronDown, Calendar, Download, ArrowRight, FileText, X } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
 import { restaurantAPI } from "@food/api"
 const debugLog = (...args) => {}
@@ -735,7 +736,7 @@ export default function HubFinance() {
               onClick={() => navigate("/restaurant/withdrawal-history")}
               title="Withdrawal History"
             >
-              <Wallet className="w-5 h-5 text-gray-700" />
+              <WalletIcon className="" />
             </button>
             <button
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -811,7 +812,7 @@ export default function HubFinance() {
                           : "bg-gray-200 text-gray-500 cursor-not-allowed"
                       }`}
                     >
-                      <Wallet className="h-5 w-5" />
+                      <WalletIcon className="" />
                       Withdraw
                     </button>
                   </>

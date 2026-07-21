@@ -16,8 +16,7 @@ const EMPTY_FORM = {
   confirmAccountNumber: "",
   ifscCode: "",
   upiId: "",
-  upiQrImage: "",
-}
+  upiQrImage: "" }
 
 export default function UpdateBankDetails() {
   const navigate = useNavigate()
@@ -42,8 +41,7 @@ export default function UpdateBankDetails() {
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      hour12: true,
-    })
+      hour12: true })
   }, [lastUpdated])
 
   const validate = () => {
@@ -102,8 +100,7 @@ export default function UpdateBankDetails() {
         confirmAccountNumber: accountNumber,
         ifscCode: String(doc.ifscCode || "").toUpperCase(),
         upiId: String(doc.upiId || ""),
-        upiQrImage,
-      })
+        upiQrImage })
       setLastUpdated(doc.updatedAt || "")
     } catch (error) {
       alert(error?.response?.data?.message || "Failed to load bank details")
@@ -156,8 +153,7 @@ export default function UpdateBankDetails() {
       accountNumber: String(form.accountNumber || "").replace(/\s|-/g, ""),
       ifscCode: String(form.ifscCode || "").trim().toUpperCase(),
       upiId: String(form.upiId || "").trim(),
-      upiQrImage: String(form.upiQrImage || "").trim(),
-    }
+      upiQrImage: String(form.upiQrImage || "").trim() }
 
     try {
       setSaving(true)

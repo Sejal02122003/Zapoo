@@ -26,8 +26,7 @@ export default function NewRefundRequests() {
     restaurant: true,
     totalAmount: true,
     orderStatus: true,
-    actions: true,
-  })
+    actions: true })
 
   // Fetch refund requests from backend
   useEffect(() => {
@@ -36,8 +35,7 @@ export default function NewRefundRequests() {
         setIsLoading(true)
         const params = {
           page: 1,
-          limit: 1000,
-        }
+          limit: 1000 }
         
         const response = await adminAPI.getRefundRequests(params)
         
@@ -87,8 +85,7 @@ export default function NewRefundRequests() {
     handleExport,
     handleViewOrder,
     handlePrintOrder,
-    toggleColumn,
-  } = useGenericTableManagement(
+    toggleColumn } = useGenericTableManagement(
     orders,
     "New Refund Requests",
     ["orderId", "customerName", "restaurant", "customerPhone"]
@@ -137,8 +134,7 @@ export default function NewRefundRequests() {
       restaurant: true,
       totalAmount: true,
       orderStatus: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   return (

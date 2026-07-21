@@ -11,8 +11,7 @@ import {
   Copy,
   ChevronRight,
   HelpCircle,
-  X,
-} from "lucide-react"
+  X } from "lucide-react"
 import { DateRangeCalendar } from "@food/components/ui/date-range-calendar"
 import { restaurantAPI } from "@food/api"
 import { useRestaurantNotifications } from "@food/hooks/useRestaurantNotifications"

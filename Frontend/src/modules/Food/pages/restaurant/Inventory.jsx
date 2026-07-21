@@ -61,21 +61,18 @@ const getApprovalDisplayMeta = (approvalStatus) => {
   if (normalizedStatus === "rejected") {
     return {
       label: "Rejected",
-      className: "bg-red-50 text-red-700 border border-red-200",
-    }
+      className: "bg-red-50 text-red-700 border border-red-200" }
   }
 
   if (normalizedStatus === "pending") {
     return {
       label: "Pending",
-      className: "bg-amber-50 text-amber-700 border border-amber-200",
-    }
+      className: "bg-amber-50 text-amber-700 border border-amber-200" }
   }
 
   return {
     label: "Approved",
-    className: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  }
+    className: "bg-emerald-50 text-emerald-700 border border-emerald-200" }
 }
 
 const normalizeDayName = (value) =>
@@ -92,8 +89,7 @@ const parseRestaurantTimeToParts = (value) => {
   if (hhmmMatch) {
     return {
       hours: Math.max(0, Math.min(23, Number(hhmmMatch[1]))),
-      minutes: Math.max(0, Math.min(59, Number(hhmmMatch[2]))),
-    }
+      minutes: Math.max(0, Math.min(59, Number(hhmmMatch[2]))) }
   }
 
   const meridiemMatch = raw.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i)
@@ -105,8 +101,7 @@ const parseRestaurantTimeToParts = (value) => {
     if (period === "am" && hours === 12) hours = 0
     return {
       hours: Math.max(0, Math.min(23, hours)),
-      minutes: Math.max(0, Math.min(59, minutes)),
-    }
+      minutes: Math.max(0, Math.min(59, minutes)) }
   }
 
   return { hours: 9, minutes: 0 }
@@ -169,8 +164,7 @@ const buildStockRule = ({
   hours,
   selectedDate,
   selectedTime,
-  restaurantProfile,
-}) => {
+  restaurantProfile }) => {
   const createdAt = new Date().toISOString()
 
   if (selectedOption === "manual") {
@@ -181,8 +175,7 @@ const buildStockRule = ({
     return {
       mode: "next-business-day",
       createdAt,
-      resumeAt: buildNextBusinessDayResumeAt(restaurantProfile),
-    }
+      resumeAt: buildNextBusinessDayResumeAt(restaurantProfile) }
   }
 
   if (selectedOption === "custom-date-time") {
@@ -190,16 +183,14 @@ const buildStockRule = ({
     return {
       mode: "custom-date-time",
       createdAt,
-      resumeAt,
-    }
+      resumeAt }
   }
 
   return {
     mode: "specific-time",
     createdAt,
     durationHours: Math.max(1, Number(hours) || 1),
-    resumeAt: buildSpecificTimeResumeAt(hours),
-  }
+    resumeAt: buildSpecificTimeResumeAt(hours) }
 }
 
 const getRuleStatusLabel = (rule) => {
@@ -218,8 +209,7 @@ const getRuleStatusLabel = (rule) => {
     month: "short",
     hour: "numeric",
     minute: "2-digit",
-    hour12: true,
-  })
+    hour12: true })
 
   if (rule.mode === "specific-time") return `Out of stock until ${formatted}`
   if (rule.mode === "next-business-day") return `Back next business day at ${formatted}`
@@ -1095,8 +1085,7 @@ export default function Inventory() {
                   stockQuantity: item.stock || "Unlimited",
                   unit: item.itemSizeUnit || "piece",
                   expiryDate: null,
-                  lastRestocked: null,
-                })
+                  lastRestocked: null })
               })
             }
             
@@ -1125,8 +1114,7 @@ export default function Inventory() {
                   stockQuantity: item.stock || "Unlimited",
                   unit: item.itemSizeUnit || "piece",
                   expiryDate: null,
-                  lastRestocked: null,
-                })
+                  lastRestocked: null })
                   })
                 }
               })
@@ -1145,8 +1133,7 @@ export default function Inventory() {
               itemCount: itemCount,
               inStock: categoryInStock,
               items: allItems,
-              order: section.order !== undefined ? section.order : sectionIndex,
-            }
+              order: section.order !== undefined ? section.order : sectionIndex }
           })
 
           const nowMs = Date.now()
@@ -1163,16 +1150,14 @@ export default function Inventory() {
                 ...item,
                 inStock: false,
                 isAvailable: false,
-                stockRule: rule,
-              }
+                stockRule: rule }
             })
 
             return {
               ...category,
               items: ruledItems,
               itemCount: ruledItems.length,
-              inStock: ruledItems.length > 0 ? ruledItems.every((item) => item.inStock) : true,
-            }
+              inStock: ruledItems.length > 0 ? ruledItems.every((item) => item.inStock) : true }
           })
           
           setCategories(withStockRules)
@@ -1217,7 +1202,7 @@ export default function Inventory() {
           .find((ms) => Number.isFinite(ms) && ms > 0)
         if (candidates) return candidates
         const rawId = String(addon.id || "")
-        const match = rawId.match(/\d{10,}/)
+        const match = rawId.match(/\d{10 }/)
         if (!match) return 0
         const fromId = Number(match[0])
         return Number.isFinite(fromId) ? fromId : 0
@@ -1344,8 +1329,7 @@ export default function Inventory() {
         description: addonDescription.trim(),
         price: parsedPrice,
         image: imageUrl,
-        images: imageUrl ? [imageUrl] : [],
-      }
+        images: imageUrl ? [imageUrl] : [] }
       
       if (editingAddonId) {
         await restaurantAPI.updateAddon(editingAddonId, { draft: payload })
@@ -1529,16 +1513,14 @@ export default function Inventory() {
               ...item,
               inStock: true,
               isAvailable: true,
-              stockRule: null,
-            }
+              stockRule: null }
           })
 
           if (!changed) return category
           return {
             ...category,
             items: updatedItems,
-            inStock: updatedItems.every((item) => item.inStock),
-          }
+            inStock: updatedItems.every((item) => item.inStock) }
         }),
       )
 
@@ -1636,8 +1618,7 @@ export default function Inventory() {
           ...category,
           items: filteredItems,
           itemCount: filteredItems.length,
-          inStock: filteredItems.every((item) => item.inStock),
-        }
+          inStock: filteredItems.every((item) => item.inStock) }
       })
       .filter(Boolean)
   }, [categories, selectedFilter])
@@ -1666,8 +1647,7 @@ export default function Inventory() {
           ...category,
           items: matchingItems.length > 0 ? matchingItems : items,
           itemCount: matchingItems.length > 0 ? matchingItems.length : items.length,
-          inStock: (matchingItems.length > 0 ? matchingItems : items).every((item) => item.inStock),
-        }
+          inStock: (matchingItems.length > 0 ? matchingItems : items).every((item) => item.inStock) }
       })
       .filter(Boolean)
   }, [statusFilteredCategories, searchQuery])
@@ -1770,13 +1750,11 @@ export default function Inventory() {
               ...item,
               inStock: true,
               isAvailable: true,
-              stockRule: null,
-            }))
+              stockRule: null }))
             return {
               ...category,
               inStock: true,
-              items: updatedItems,
-            }
+              items: updatedItems }
           }
 
           const updatedItems = items.map(item =>
@@ -1788,8 +1766,7 @@ export default function Inventory() {
           // Category toggle should be independent
           return {
             ...category,
-            items: updatedItems,
-          }
+            items: updatedItems }
         })
       )
 
@@ -1835,8 +1812,7 @@ export default function Inventory() {
       hours,
       selectedDate,
       selectedTime,
-      restaurantProfile,
-    })
+      restaurantProfile })
 
     if (selectedOption === "custom-date-time") {
       if (!nextRule.resumeAt) {
@@ -1861,13 +1837,11 @@ export default function Inventory() {
             ...item,
             inStock: false,
             isAvailable: false,
-            stockRule: nextRule,
-          }))
+            stockRule: nextRule }))
           return {
             ...category,
             inStock: false,
-            items: updatedItems,
-          }
+            items: updatedItems }
         }
 
         const updatedItems = items.map(item =>
@@ -1879,8 +1853,7 @@ export default function Inventory() {
         // Category toggle should be independent
         return {
           ...category,
-          items: updatedItems,
-        }
+          items: updatedItems }
       })
     )
 
@@ -1958,8 +1931,7 @@ export default function Inventory() {
         )
         return {
           ...category,
-          items: updatedItems,
-        }
+          items: updatedItems }
       })
     )
 
@@ -2016,13 +1988,10 @@ export default function Inventory() {
           ...item,
           category: category?.name || "",
           categoryId: category?.id || category?.categoryId || "",
-          isAvailable: item.inStock,
-        },
+          isAvailable: item.inStock },
         category: category?.name || "",
         categoryId: category?.id || category?.categoryId || "",
-        groupId: category?.id || category?.categoryId || "",
-      },
-    })
+        groupId: category?.id || category?.categoryId || "" } })
   }
 
   return (
@@ -2047,8 +2016,7 @@ export default function Inventory() {
                 : "border-[#ead6e3] bg-white/90 text-[#6d6470] shadow-[0_16px_40px_-34px_rgba(109,100,112,0.35)]"
             }`}
             animate={{
-              scale: activeTab === "all-items" ? 1.02 : 1,
-            }}
+              scale: activeTab === "all-items" ? 1.02 : 1 }}
             transition={{ duration: 0.2 }}
           >
             {activeTab === "all-items" && (
@@ -2081,8 +2049,7 @@ export default function Inventory() {
                 : "border-[#ead6e3] bg-white/90 text-[#6d6470] shadow-[0_16px_40px_-34px_rgba(109,100,112,0.35)]"
             }`}
             animate={{
-              scale: activeTab === "add-ons" ? 1.02 : 1,
-            }}
+              scale: activeTab === "add-ons" ? 1.02 : 1 }}
             transition={{ duration: 0.2 }}
           >
             {activeTab === "add-ons" && (
@@ -3052,9 +3019,7 @@ export default function Inventory() {
                       setIsAddPopupOpen(false)
                       navigate(`/food/restaurant/hub-menu/item/new`, {
                         state: {
-                          backTo: "/food/restaurant/inventory",
-                        },
-                      })
+                          backTo: "/food/restaurant/inventory" } })
                     }}
                     className="w-full group flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-100 transition-all"
                   >

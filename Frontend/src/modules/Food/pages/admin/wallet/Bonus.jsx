@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
-import { Search, Wallet, Info, Calendar, Edit, Trash2 } from "lucide-react"
+import { Search, Info, Calendar, Edit, Trash2 } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import { emptyWalletBonuses } from "@food/utils/adminFallbackData"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -18,15 +19,14 @@ export default function Bonus() {
     minAddMoney: "",
     maxBonus: "",
     startDate: "",
-    expireDate: "",
-  })
+    expireDate: "" })
 
   const languageTabs = [
     { key: "default", label: "Default" },
     { key: "en", label: "English(EN)" },
     { key: "bn", label: "Bengali - বাংলা(BN)" },
     { key: "ar", label: "Arabic - العربية (AR)" },
-    { key: "es", label: "Spanish - espa�ol(ES)" },
+    { key: "es", label: "Spanish - espa�ol(ES)" },
   ]
 
   const filteredBonuses = useMemo(() => {
@@ -59,8 +59,7 @@ export default function Bonus() {
       minAddMoney: "",
       maxBonus: "",
       startDate: "",
-      expireDate: "",
-    })
+      expireDate: "" })
   }
 
   const handleToggleStatus = (sl) => {
@@ -82,7 +81,7 @@ export default function Bonus() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-white" />
+              <WalletIcon className="" />
             </div>
             <h1 className="text-2xl font-bold text-slate-900">Wallet Bonus Setup</h1>
           </div>

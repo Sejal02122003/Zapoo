@@ -16,8 +16,7 @@ export default function SignIn() {
 
   const [formData, setFormData] = useState({
     phone: "",
-    countryCode: "+91",
-  })
+    countryCode: "+91" })
 
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -39,8 +38,7 @@ export default function SignIn() {
 
       setFormData((prev) => ({
         ...prev,
-        phone: phoneDigits || prev.phone,
-      }))
+        phone: phoneDigits || prev.phone }))
     } catch (err) {
       debugError("Error parsing stored auth data:", err)
     }
@@ -91,8 +89,7 @@ export default function SignIn() {
         name: null,
         referralCode: ref || null,
         isSignUp: false,
-        module: "user",
-      }
+        module: "user" }
 
       sessionStorage.setItem("userAuthData", JSON.stringify(authData))
       navigate("/food/user/auth/otp")
@@ -116,9 +113,7 @@ export default function SignIn() {
       repeat: Infinity,
       repeatType: "reverse",
       ease: "easeInOut",
-      delay,
-    },
-  })
+      delay } })
 
   return (
     <AnimatedPage className="min-h-screen bg-[#FFFBF5] dark:bg-[#121212] flex items-center justify-center relative overflow-hidden">

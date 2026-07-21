@@ -253,7 +253,6 @@ export function useGenericTableManagement(data, title, searchFields = []) {
     handleViewOrder,
     handlePrintOrder,
     toggleColumn,
-    resetColumns,
-  }
+    resetColumns }
 }
 

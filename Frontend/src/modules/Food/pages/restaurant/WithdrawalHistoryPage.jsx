@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, Wallet } from "lucide-react"
+import { ArrowLeft } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
 import { restaurantAPI } from "@food/api"
 const debugLog = (...args) => {}
@@ -101,7 +102,7 @@ export default function WithdrawalHistoryPage() {
                   .filter(req => req.status === 'Pending')
                   .length === 0 ? (
                   <div className="text-center py-12">
-                    <Wallet className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <WalletIcon className="" />
                     <p className="text-gray-500 text-lg font-medium">No pending withdrawal requests</p>
                   </div>
                 ) : (
@@ -141,7 +142,7 @@ export default function WithdrawalHistoryPage() {
                   .filter(req => req.status === 'Approved' || req.status === 'Processed')
                   .length === 0 ? (
                   <div className="text-center py-12">
-                    <Wallet className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <WalletIcon className="" />
                     <p className="text-gray-500 text-lg font-medium">No successful withdrawals</p>
                   </div>
                 ) : (

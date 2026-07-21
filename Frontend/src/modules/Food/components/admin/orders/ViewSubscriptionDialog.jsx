@@ -4,8 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@food/components/ui/dialog"
+  DialogDescription } from "@food/components/ui/dialog"
 
 const getStatusColor = (status) => {
   if (status === "Expired") return "bg-blue-100 text-blue-700"

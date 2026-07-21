@@ -10,35 +10,30 @@ export function patchOrderFromSocketPayload(prev, payload = {}) {
 
   const next = {
     ...(prev || {}),
-    ...(orderStatus ? { status: orderStatus, orderStatus } : {}),
-  };
+    ...(orderStatus ? { status: orderStatus, orderStatus } : {}) };
 
   if (payload.deliveryState && typeof payload.deliveryState === 'object') {
     next.deliveryState = {
       ...(prev?.deliveryState || {}),
-      ...payload.deliveryState,
-    };
+      ...payload.deliveryState };
   }
 
   if (payload.deliveryVerification && typeof payload.deliveryVerification === 'object') {
     next.deliveryVerification = {
       ...(prev?.deliveryVerification || {}),
-      ...payload.deliveryVerification,
-    };
+      ...payload.deliveryVerification };
   }
 
   if (payload.dispatch && typeof payload.dispatch === 'object') {
     next.dispatch = {
       ...(prev?.dispatch || {}),
-      ...payload.dispatch,
-    };
+      ...payload.dispatch };
   }
 
   if (payload.deliveryPartner) {
     next.deliveryPartner = {
       ...(prev?.deliveryPartner || {}),
-      ...payload.deliveryPartner,
-    };
+      ...payload.deliveryPartner };
   }
 
   if (payload.deliveryPartnerId) {

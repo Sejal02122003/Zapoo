@@ -36,8 +36,7 @@ import { useOrders } from "@food/context/OrdersContext";
 import { orderAPI } from "@food/api";
 import {
   patchOrderFromSocketPayload,
-  socketPayloadNeedsRefetch,
-} from "@food/utils/orderSocketPatch";
+  socketPayloadNeedsRefetch } from "@food/utils/orderSocketPatch";
 
 const getOrderKey = (order) => order?.id || order?._id || order?.orderId || null;
 

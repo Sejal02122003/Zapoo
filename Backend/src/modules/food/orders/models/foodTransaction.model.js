@@ -32,8 +32,11 @@ const foodTransactionSchema = new mongoose.Schema({
         restaurantCommission: { type: Number, default: 0 },
         discount: { type: Number, default: 0 },
         restaurantCouponDiscount: { type: Number, default: 0 },
-        total: { type: Number, default: 0 },
+        itemDiscountTotal: { type: Number, default: 0 },
         couponCode: { type: String, default: null },
+        restaurantCouponCode: { type: String, default: null },
+        couponDiscountTotal: { type: Number, default: 0 },
+        total: { type: Number, default: 0 },
         currency: { type: String, default: 'INR', trim: true },
     },
 

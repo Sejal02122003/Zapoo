@@ -9,8 +9,7 @@ export default function HeroBanner({
   images = [],
   bannersData = [],
   loading = false,
-  shellRef,
-}) {
+  shellRef }) {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const autoSlideIntervalRef = useRef(null);
@@ -178,8 +177,7 @@ export default function HeroBanner({
                 opacity: currentIndex === index ? 1 : 0,
                 zIndex: currentIndex === index ? 2 : 1,
                 transition: `opacity ${FADE_MS}ms ease-in-out`,
-                pointerEvents: "none",
-              }}
+                pointerEvents: "none" }}
             >
               <img
                 src={image}

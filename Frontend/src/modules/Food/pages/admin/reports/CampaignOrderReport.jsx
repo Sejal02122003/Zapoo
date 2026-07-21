@@ -16,8 +16,7 @@ import {
   Settings,
   FileText,
   FileSpreadsheet,
-  Code,
-} from "lucide-react";
+  Code } from "lucide-react";
 import { emptyCampaignOrderReports, emptyCampaignOrderStats } from "@food/utils/adminFallbackData";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@food/components/ui/dialog"
@@ -28,8 +27,7 @@ export default function CampaignOrderReport() {
     campaign: "All Campaignes",
     restaurant: "All restaurants",
     customer: "All customers",
-    time: "All Time",
-  })
+    time: "All Time" })
   const [searchQuery, setSearchQuery] = useState("")
   const [orders] = useState(emptyCampaignOrderReports)
 
@@ -93,8 +91,7 @@ export default function CampaignOrderReport() {
       campaign: "All Campaignes",
       restaurant: "All restaurants",
       customer: "All customers",
-      time: "All Time",
-    })
+      time: "All Time" })
   }
 
   const activeFiltersCount = (filters.campaign !== "All Campaignes" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
@@ -105,8 +102,7 @@ export default function CampaignOrderReport() {
       Pending: "bg-blue-100 text-blue-800",
       Canceled: "bg-red-100 text-red-800",
       "In Progress": "bg-yellow-100 text-yellow-800",
-      Failed: "bg-orange-100 text-orange-800",
-    }
+      Failed: "bg-orange-100 text-orange-800" }
     return statusColors[status] || "bg-gray-100 text-gray-800"
   }
 
@@ -152,7 +148,7 @@ export default function CampaignOrderReport() {
                 >
                   <option value="All restaurants">All restaurants</option>
                   <option value="Hungry Puppets">Hungry Puppets</option>
-                  <option value="Café Monarch">Café Monarch</option>
+                  <option value="Cafï¿½ Monarch">Cafï¿½ Monarch</option>
                 </select>
                 <ChevronDown className="absolute right-2 bottom-2.5 w-4 h-4 text-slate-500 pointer-events-none" />
               </div>

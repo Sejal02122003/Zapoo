@@ -24,8 +24,7 @@ export default function SearchingDeliveryMan() {
     restaurant: true,
     total: true,
     status: true,
-    actions: true,
-  })
+    actions: true })
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
 
@@ -120,8 +119,7 @@ export default function SearchingDeliveryMan() {
     handleExport,
     handleViewOrder,
     handlePrintOrder,
-    toggleColumn,
-  } = useGenericTableManagement(
+    toggleColumn } = useGenericTableManagement(
     orders,
     "Searching For Deliverymen Orders",
     ["id", "customerName", "restaurant", "customerPhone"]
@@ -136,8 +134,7 @@ export default function SearchingDeliveryMan() {
       restaurant: true,
       total: true,
       status: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   if (loading) {
@@ -200,8 +197,7 @@ export default function SearchingDeliveryMan() {
           restaurant: "Restaurant",
           total: "Total Amount",
           status: "Order Status",
-          actions: "Actions",
-        }}
+          actions: "Actions" }}
       />
       <ViewOrderDialog
         isOpen={isViewOrderOpen}

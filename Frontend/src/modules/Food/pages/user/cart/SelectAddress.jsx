@@ -57,8 +57,7 @@ export default function SelectAddress() {
     city: defaultAddress?.city || "",
     state: defaultAddress?.state || "",
     zipCode: defaultAddress?.zipCode || "",
-    phone: defaultAddress?.phone || "",
-  }))
+    phone: defaultAddress?.phone || "" }))
 
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -82,8 +81,7 @@ export default function SelectAddress() {
       city: addr?.city || "",
       state: addr?.state || "",
       zipCode: addr?.zipCode || "",
-      phone: addr?.phone || "",
-    })
+      phone: addr?.phone || "" })
     const normalizedLabel = String(addr?.label || "")
     if (normalizedLabel.toLowerCase() === "office") setLabel("Work")
     else if (normalizedLabel) setLabel(normalizedLabel)
@@ -119,8 +117,7 @@ export default function SelectAddress() {
         city,
         state,
         zipCode: String(form.zipCode || "").trim(),
-        phone: String(form.phone || "").trim(),
-      }
+        phone: String(form.phone || "").trim() }
       const created = await addAddress(payload)
       const newId = getAddressId(created)
       if (newId) {

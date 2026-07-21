@@ -10,8 +10,7 @@ const normalizeInboxItems = (rows = []) =>
     link: String(item?.link || "").trim(),
     read: Boolean(item?.isRead),
     createdAt: item?.createdAt || item?.updatedAt || new Date().toISOString(),
-    category: String(item?.category || "broadcast"),
-  }));
+    category: String(item?.category || "broadcast") }));
 
 const REFRESH_EVENT = "foodNotificationInboxRefresh";
 
@@ -120,8 +119,7 @@ export default function useNotificationInbox(module, options = {}) {
       refresh: fetchInbox,
       markAsRead,
       dismiss,
-      dismissAll,
-    }),
+      dismissAll }),
     [dismiss, dismissAll, fetchInbox, items, loading, markAsRead, unreadCount]
   );
 }

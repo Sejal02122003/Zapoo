@@ -32,8 +32,7 @@ export default function AcceptedOrders() {
     handleViewOrder,
     handlePrintOrder,
     toggleColumn,
-    resetColumns,
-  } = useOrdersManagement(acceptedOrders, "accepted", "Accepted Orders")
+    resetColumns } = useOrdersManagement(acceptedOrders, "accepted", "Accepted Orders")
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen w-full max-w-full overflow-x-hidden">

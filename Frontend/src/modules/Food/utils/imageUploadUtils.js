@@ -3,8 +3,7 @@ import { toast } from "sonner"
 const openTransientImageInput = ({
   onSelectFile,
   accept = "image/*",
-  capture = undefined,
-}) => {
+  capture = undefined }) => {
   if (typeof document === "undefined") {
     throw new Error("Document is not available")
   }
@@ -109,8 +108,7 @@ export const openBrowserCameraFallback = (onSelectFile) => {
     openTransientImageInput({
       onSelectFile,
       accept: "image/*",
-      capture: "environment",
-    })
+      capture: "environment" })
   } catch (error) {
     console.error("Browser camera fallback failed:", error)
     // Only show toast for actual errors, not for user cancellation
@@ -156,8 +154,7 @@ export const openCamera = async ({ onSelectFile, fileNamePrefix = "camera-photo"
         source: "camera",
         accept: "image/*",
         multiple: false,
-        quality: quality,
-      })
+        quality: quality })
 
       const isSuccess = result?.success === true || Boolean(result?.base64 || result?.base64String || result?.data?.base64)
       if (!result || !isSuccess) {
@@ -219,8 +216,7 @@ export const openGallery = async ({ onSelectFile, fileNamePrefix = "gallery-phot
     // The bridge "openCamera" seems to force camera even for gallery source.
     openTransientImageInput({
       onSelectFile,
-      accept: "image/*",
-    })
+      accept: "image/*" })
   } catch (error) {
     console.error("Gallery pick failed:", error)
     // Only show error if it's not just a user cancellation

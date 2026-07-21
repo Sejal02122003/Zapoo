@@ -16,8 +16,7 @@ export default function AdRequests() {
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [filters, setFilters] = useState({
     adsType: "",
-    restaurant: "",
-  })
+    restaurant: "" })
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     adsId: true,
@@ -25,8 +24,7 @@ export default function AdRequests() {
     restaurantInfo: true,
     adsType: true,
     duration: true,
-    actions: true,
-  })
+    actions: true })
 
   const columnsConfig = {
     si: "Serial Number",
@@ -35,8 +33,7 @@ export default function AdRequests() {
     restaurantInfo: "Restaurant Info",
     adsType: "Ads Type",
     duration: "Duration",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   const filteredRequests = useMemo(() => {
     let result = [...requests]
@@ -124,8 +121,7 @@ export default function AdRequests() {
       restaurantInfo: true,
       adsType: true,
       duration: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const handleApplyFilters = () => {
@@ -135,8 +131,7 @@ export default function AdRequests() {
   const handleResetFilters = () => {
     setFilters({
       adsType: "",
-      restaurant: "",
-    })
+      restaurant: "" })
   }
 
   const restaurants = [...new Set(requests.map(r => r.restaurantName))].filter(Boolean)

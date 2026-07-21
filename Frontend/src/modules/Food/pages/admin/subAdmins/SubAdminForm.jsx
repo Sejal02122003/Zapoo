@@ -13,8 +13,7 @@ export default function SubAdminForm({ subAdmin, onClose }) {
     email: "",
     phone: "",
     password: "",
-    isActive: true,
-  });
+    isActive: true });
 
   const [accessibleModules, setAccessibleModules] = useState([]);
 
@@ -25,8 +24,7 @@ export default function SubAdminForm({ subAdmin, onClose }) {
         email: subAdmin.email || "",
         phone: subAdmin.phone || "",
         password: "", // Empty for edit, only sent if changed
-        isActive: subAdmin.isActive !== false,
-      });
+        isActive: subAdmin.isActive !== false });
       setAccessibleModules(subAdmin.accessibleModules || []);
     }
   }, [subAdmin]);
@@ -69,8 +67,7 @@ export default function SubAdminForm({ subAdmin, onClose }) {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+      [name]: type === "checkbox" ? checked : value }));
   };
 
   const handleSubmit = async (e) => {
@@ -85,8 +82,7 @@ export default function SubAdminForm({ subAdmin, onClose }) {
     setLoading(true);
     const payload = {
       ...formData,
-      accessibleModules,
-    };
+      accessibleModules };
 
     if (isEditing && !payload.password) {
       delete payload.password;

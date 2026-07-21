@@ -49,8 +49,7 @@ export default function RestaurantCommission() {
     restaurantId: true,
     defaultCommission: true,
     status: true,
-    actions: true,
-  })
+    actions: true })
 
   const combinedList = useMemo(() => {
     return approvedRestaurants.map((restaurant, index) => {
@@ -70,8 +69,7 @@ export default function RestaurantCommission() {
           type: 'percentage',
           value: globalSettings.globalRestaurantCommission
         },
-        status: commission ? commission.status : true,
-      };
+        status: commission ? commission.status : true };
     });
   }, [approvedRestaurants, commissions, globalSettings.globalRestaurantCommission]);
 
@@ -403,8 +401,7 @@ export default function RestaurantCommission() {
     restaurantId: "Restaurant ID",
     defaultCommission: "Default Commission",
     status: "Status",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">

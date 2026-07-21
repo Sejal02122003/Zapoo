@@ -30,25 +30,21 @@ export const emptyCampaignOrderStats = {
   deliveredOrders: 0,
   failedOrders: 0,
   refundedOrders: 0,
-  canceledOrders: 0,
-};
+  canceledOrders: 0 };
 
 
 export const emptyRestaurantVATStats = {
   totalOrders: 0,
   totalOrderAmount: 0,
-  totalTaxAmount: 0,
-};
+  totalTaxAmount: 0 };
 
 export const emptyTaxStats = {
   totalIncome: 0,
-  totalTax: 0,
-};
+  totalTax: 0 };
 
 export const emptyYearlySalesData = {
   averageYearlySales: 0,
-  chartData: [],
-};
+  chartData: [] };
 
 export const emptyDisbursementReportRestaurants = [];
 export const emptyDisbursementReportDeliverymen = [];
@@ -56,5 +52,4 @@ export const emptyDisbursementReportDeliverymen = [];
 export const emptyDisbursementStats = {
   pending: 0,
   completed: 0,
-  canceled: 0,
-};
+  canceled: 0 };

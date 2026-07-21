@@ -13,7 +13,7 @@ const DiningCategory = lazy(() => import("@food/pages/user/DiningCategory"))
 const DiningExplore50 = lazy(() => import("@food/pages/user/DiningExplore50"))
 const DiningExploreNear = lazy(() => import("@food/pages/user/DiningExploreNear"))
 const Coffee = lazy(() => import("@food/pages/user/Coffee"))
-const Under250 = lazy(() => import("@food/pages/user/Under250"))
+const Under99 = lazy(() => import("@food/pages/user/Under99"))
 const CollectionPage = lazy(() => import("@food/pages/user/CollectionPage"))
 const Categories = lazy(() => import("@food/pages/user/Categories"))
 const CategoryPage = lazy(() => import("@food/pages/user/CategoryPage"))
@@ -21,6 +21,7 @@ const MomoPage = lazy(() => import("@food/pages/user/MomoPage"))
 const TakeawayPage = lazy(() => import("@food/pages/user/TakeawayPage"))
 const Restaurants = lazy(() => import("@food/pages/user/restaurants/Restaurants"))
 const RestaurantDetails = lazy(() => import("@food/pages/user/restaurants/RestaurantDetails"))
+const RestaurantInfo = lazy(() => import("@food/pages/user/restaurants/RestaurantInfo"))
 const DiningRestaurantDetails = lazy(() => import("@food/pages/user/dining/DiningRestaurantDetails"))
 const TableBooking = lazy(() => import("@food/pages/user/dining/TableBooking"))
 const TableBookingConfirmation = lazy(() => import("@food/pages/user/dining/TableBookingConfirmation"))
@@ -122,7 +123,7 @@ export default function UserRouter() {
               </ProtectedRoute>
             }
           />
-          <Route path="under-250" element={<Under250 />} />
+          <Route path="under99" element={<Under99 />} />
           <Route path="collection/:category" element={<CollectionPage />} />
           <Route path="categories" element={<Categories />} />
           <Route path="category/momo" element={<MomoPage />} />
@@ -130,6 +131,7 @@ export default function UserRouter() {
           <Route path="takeaway" element={<TakeawayPage />} />
           <Route path="restaurants" element={<Restaurants />} />
           <Route path="restaurants/:slug" element={<RestaurantDetails />} />
+          <Route path="restaurants/:slug/info" element={<RestaurantInfo />} />
           <Route path="search" element={<SearchResults />} />
           <Route path="product/:id" element={<ProductDetail />} />
 

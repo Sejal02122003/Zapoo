@@ -45,8 +45,7 @@ import {
   Phone,
   IndianRupee,
   PiggyBank,
-  Lock,
-} from "lucide-react"
+  Lock } from "lucide-react"
 import { cn } from "@food/utils/utils"
 import { Input } from "@food/components/ui/input"
 import { adminSidebarMenu } from "@food/utils/adminSidebarMenu"
@@ -100,8 +99,7 @@ const iconMap = {
   IndianRupee,
   PiggyBank,
   Lock,
-  X,
-}
+  X }
 
 export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange }) {
   const location = useLocation()
@@ -377,8 +375,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             if (matchesLabel || matchingSubItems.length > 0) {
               filteredItems.push({
                 ...subItem,
-                subItems: matchesLabel ? subItem.subItems : matchingSubItems,
-              })
+                subItems: matchesLabel ? subItem.subItems : matchingSubItems })
             }
           }
         })
@@ -386,8 +383,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
         if (filteredItems.length > 0) {
           filtered.push({
             ...item,
-            items: filteredItems,
-          })
+            items: filteredItems })
         }
       }
     })
@@ -471,8 +467,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
       if (isCurrentlyOpen) {
         return {
           ...prev,
-          [sectionKey]: false,
-        }
+          [sectionKey]: false }
       }
 
       const next = {}

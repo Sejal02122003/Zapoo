@@ -8,8 +8,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
-} from "@food/components/ui/card";
+  CardTitle } from "@food/components/ui/card";
 import { toast } from "sonner";
 import { Lock, Eye, EyeOff, Save, Loader2, Shield, User, Mail, Truck } from "lucide-react";
 const debugLog = (...args) => {}
@@ -22,8 +21,7 @@ export default function AdminSettings() {
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
-    confirmPassword: "",
-  });
+    confirmPassword: "" });
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -50,8 +48,7 @@ export default function AdminSettings() {
             setAdminInfo({
               name: local.name || "Admin User",
               email: local.email || "",
-              role: local.role || "admin",
-            });
+              role: local.role || "admin" });
           }
         } catch (_) {}
       }
@@ -64,8 +61,7 @@ export default function AdminSettings() {
   const handlePasswordChange = (field, value) => {
     setPasswordForm((prev) => ({
       ...prev,
-      [field]: value,
-    }));
+      [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => {
@@ -121,8 +117,7 @@ export default function AdminSettings() {
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
-        confirmPassword: "",
-      });
+        confirmPassword: "" });
 
       toast.success("Password changed successfully");
     } catch (error) {

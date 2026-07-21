@@ -12,8 +12,7 @@ import {
   Calendar,
   MapPin,
   RotateCcw,
-  FileText,
-} from "lucide-react"
+  FileText } from "lucide-react"
 import { orderAPI, restaurantAPI } from "@food/api"
 import { useCart } from "@food/context/CartContext"
 import { toast } from "sonner"
@@ -185,8 +184,7 @@ export default function UserOrderDetails() {
       day: "numeric",
       year: "numeric",
       hour: "numeric",
-      minute: "2-digit",
-    })
+      minute: "2-digit" })
     : ""
 
   const deliveryAddressObj = order.deliveryAddress || order.address || {}
@@ -351,16 +349,13 @@ export default function UserOrderDetails() {
           headStyles: {
             fillColor: primaryColor,
             textColor: 255,
-            fontStyle: "bold",
-          },
+            fontStyle: "bold" },
           styles: { fontSize: 9, cellPadding: 4 },
           columnStyles: {
             0: { cellWidth: 15, halign: "center" },
             2: { cellWidth: 15, halign: "center" },
             3: { cellWidth: 35, halign: "right" },
-            4: { cellWidth: 35, halign: "right" },
-          },
-        });
+            4: { cellWidth: 35, halign: "right" } } });
 
         yPos = doc.lastAutoTable.finalY + 10;
       }
@@ -462,8 +457,7 @@ export default function UserOrderDetails() {
           description: item.description || "",
           isVeg: item.isVeg === true || item.foodType === 'Veg',
           quantity: Math.max(1, Number(item.quantity || item.qty) || 1),
-          reorderIndex: index,
-        }
+          reorderIndex: index }
       })
       .filter(Boolean)
 

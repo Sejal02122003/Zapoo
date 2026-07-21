@@ -48,8 +48,7 @@ const getDefaultDays = () => ({
   Thursday: { isOpen: true, openingTime: "09:00", closingTime: "22:00" },
   Friday: { isOpen: true, openingTime: "09:00", closingTime: "22:00" },
   Saturday: { isOpen: true, openingTime: "09:00", closingTime: "22:00" },
-  Sunday: { isOpen: true, openingTime: "09:00", closingTime: "22:00" },
-})
+  Sunday: { isOpen: true, openingTime: "09:00", closingTime: "22:00" } })
 
 export default function OutletTimings() {
   const companyName = useCompanyName()
@@ -106,8 +105,7 @@ export default function OutletTimings() {
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    })
+      smoothWheel: true })
 
     function raf(time) {
       lenis.raf(time)
@@ -290,22 +288,14 @@ export default function OutletTimings() {
                                             fontSize: "12px",
                                             backgroundColor: "white",
                                             "& fieldset": {
-                                              borderColor: "#e5e7eb",
-                                            },
+                                              borderColor: "#e5e7eb" },
                                             "&:hover fieldset": {
-                                              borderColor: "#d1d5db",
-                                            },
+                                              borderColor: "#d1d5db" },
                                             "&.Mui-focused fieldset": {
-                                              borderColor: "#000",
-                                            },
-                                          },
+                                              borderColor: "#000" } },
                                           "& .MuiInputBase-input": {
                                             padding: "8px 12px",
-                                            fontSize: "12px",
-                                          },
-                                        },
-                                      },
-                                    }}
+                                            fontSize: "12px" } } } }}
                                     format="hh:mm a"
                                   />
                                 </div>
@@ -346,22 +336,14 @@ export default function OutletTimings() {
                                             fontSize: "12px",
                                             backgroundColor: "white",
                                             "& fieldset": {
-                                              borderColor: "#e5e7eb",
-                                            },
+                                              borderColor: "#e5e7eb" },
                                             "&:hover fieldset": {
-                                              borderColor: "#d1d5db",
-                                            },
+                                              borderColor: "#d1d5db" },
                                             "&.Mui-focused fieldset": {
-                                              borderColor: "#000",
-                                            },
-                                          },
+                                              borderColor: "#000" } },
                                           "& .MuiInputBase-input": {
                                             padding: "8px 12px",
-                                            fontSize: "12px",
-                                          },
-                                        },
-                                      },
-                                    }}
+                                            fontSize: "12px" } } } }}
                                     format="hh:mm a"
                                   />
                                 </div>

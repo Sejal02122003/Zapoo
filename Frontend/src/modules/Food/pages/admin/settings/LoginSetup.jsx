@@ -58,8 +58,7 @@ export default function LoginSetup() {
     panelName: true,
     loginUrl: true,
     status: true,
-    actions: true,
-  })
+    actions: true })
 
   const handleLoginOptionChange = (option) => {
     setLoginOptions(prev => ({
@@ -148,8 +147,7 @@ export default function LoginSetup() {
       panelName: true,
       loginUrl: true,
       status: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const columnsConfig = {
@@ -157,8 +155,7 @@ export default function LoginSetup() {
     panelName: "Panel Name",
     loginUrl: "Login Page URL",
     status: "Status",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">

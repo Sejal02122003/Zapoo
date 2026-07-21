@@ -6,8 +6,7 @@ import { toast } from "sonner"
 import { restaurantAPI } from "@food/api"
 import {
   setAuthData as setRestaurantAuthData,
-  setRestaurantPendingPhone,
-} from "@food/utils/auth"
+  setRestaurantPendingPhone } from "@food/utils/auth"
 import { checkOnboardingStatus, isRestaurantOnboardingComplete } from "@food/utils/onboardingUtils"
 
 export default function RestaurantOTP() {
@@ -157,8 +156,7 @@ export default function RestaurantOTP() {
             phone: pendingPhone,
             isRejected: data.isRejected,
             rejectionReason: data.rejectionReason
-          },
-        })
+          } })
         return
       }
 
@@ -195,8 +193,7 @@ export default function RestaurantOTP() {
         setRestaurantPendingPhone(pendingPhone)
         navigate("/food/restaurant/pending-verification", {
           replace: true,
-          state: { phone: pendingPhone || "" },
-        })
+          state: { phone: pendingPhone || "" } })
         return
       }
 

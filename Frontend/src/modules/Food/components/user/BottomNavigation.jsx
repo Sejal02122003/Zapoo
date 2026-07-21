@@ -8,7 +8,7 @@ export default function BottomNavigation() {
   const location = useLocation()
   const pathname = location.pathname
   const { zoneId } = useAppLocation()
-  const [under250PriceLimit, setUnder250PriceLimit] = useState(250)
+  const [under99PriceLimit, setUnder99PriceLimit] = useState(99)
   const [showDining, setShowDining] = useState(true)
 
   // Fetch landing settings to get dynamic price limit and features
@@ -17,8 +17,8 @@ export default function BottomNavigation() {
     getPublicLandingSettings(zoneId || null)
       .then((settings) => {
         if (cancelled || !settings) return
-        if (typeof settings.under250PriceLimit === 'number') {
-          setUnder250PriceLimit(settings.under250PriceLimit)
+        if (typeof settings.under99PriceLimit === 'number') {
+          setUnder99PriceLimit(settings.under99PriceLimit)
         }
         if (typeof settings.showDining === 'boolean') {
           setShowDining(settings.showDining)
@@ -26,7 +26,7 @@ export default function BottomNavigation() {
       })
       .catch(() => {
         if (!cancelled) {
-          setUnder250PriceLimit(250)
+          setUnder99PriceLimit(99)
           setShowDining(true)
         }
       })
@@ -35,13 +35,13 @@ export default function BottomNavigation() {
 
   // Check active routes - support both /user/* and /* paths
   const isDining = pathname === "/food/dining" || pathname.startsWith("/food/user/dining")
-  const isUnder250 = pathname === "/food/under-250" || pathname.startsWith("/food/user/under-250")
+  const isUnder99 = pathname === "/food/under-99" || pathname.startsWith("/food/user/under-99")
   const isOrders = pathname === "/food/orders" || pathname.startsWith("/food/user/orders")
   const isTakeaway = pathname === "/food/user/takeaway"
   const isProfile = pathname === "/food/profile" || pathname.startsWith("/food/user/profile")
   const isHome =
     !isDining &&
-    !isUnder250 &&
+    !isUnder99 &&
     !isOrders &&
     !isTakeaway &&
     !isProfile &&
@@ -50,7 +50,7 @@ export default function BottomNavigation() {
       pathname === "/food/user" ||
       (pathname.startsWith("/food/user") &&
         !pathname.includes("/dining") &&
-        !pathname.includes("/under-250") &&
+        !pathname.includes("/under-99") &&
         !pathname.includes("/profile")))
 
   return (
@@ -70,17 +70,17 @@ export default function BottomNavigation() {
           </span>
         </Link>
 
-        {/* Under 250 Tab */}
+        {/* Under 99 Tab */}
         <Link
-          to="/food/user/under-250"
-          className={`flex flex-col items-center justify-center gap-1 w-[22%] py-2 rounded-[1.5rem] transition-all duration-300 ${isUnder250
+          to="/food/user/under-99"
+          className={`flex flex-col items-center justify-center gap-1 w-[22%] py-2 rounded-[1.5rem] transition-all duration-300 ${isUnder99
             ? "bg-[#ffeef2] dark:bg-primary/20 text-primary"
             : "text-slate-500 dark:text-gray-400"
             }`}
         >
-          <Tag className={`h-5 w-5 ${isUnder250 ? "text-primary" : "text-slate-500 dark:text-gray-400"}`} strokeWidth={isUnder250 ? 2.5 : 2} />
-          <span className={`text-[10px] sm:text-xs font-bold ${isUnder250 ? "text-primary" : "text-slate-500 dark:text-gray-400 font-semibold"}`}>
-            ₹{under250PriceLimit}
+          <Tag className={`h-5 w-5 ${isUnder99 ? "text-primary" : "text-slate-500 dark:text-gray-400"}`} strokeWidth={isUnder99 ? 2.5 : 2} />
+          <span className={`text-[10px] sm:text-xs font-bold ${isUnder99 ? "text-primary" : "text-slate-500 dark:text-gray-400 font-semibold"}`}>
+            ₹{under99PriceLimit}
           </span>
         </Link>
 

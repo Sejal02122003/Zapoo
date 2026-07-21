@@ -4,8 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@food/components/ui/dialog"
+  DialogDescription } from "@food/components/ui/dialog"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -25,8 +24,7 @@ const getStatusColor = (orderStatus) => {
     "Payment Failed": "bg-red-100 text-red-700",
     "Refunded": "bg-sky-100 text-sky-700",
     "Dine In": "bg-indigo-100 text-indigo-700",
-    "Offline Payments": "bg-slate-100 text-slate-700",
-  }
+    "Offline Payments": "bg-slate-100 text-slate-700" }
   return colors[orderStatus] || "bg-slate-100 text-slate-700"
 }
 
@@ -465,6 +463,12 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Tax (GST)</span>
                   <span className="font-medium text-slate-900">₹{order.vatTax.toFixed(2)}</span>
+                </div>
+              )}
+              {order.platformNetProfit !== undefined && (
+                <div className="flex justify-between text-sm mt-1 pt-1 border-t border-slate-100 border-dashed">
+                  <span className="text-emerald-700 font-medium">Platform Net Profit</span>
+                  <span className="font-bold text-emerald-700">₹{order.platformNetProfit.toFixed(2)}</span>
                 </div>
               )}
               <div className="pt-2 border-t border-slate-200">

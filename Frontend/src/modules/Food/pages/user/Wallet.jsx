@@ -18,8 +18,7 @@ const TRANSACTION_TYPES = {
   ALL: "all",
   ADDITIONS: "additions",
   DEDUCTIONS: "deductions",
-  REFUNDS: "refunds",
-}
+  REFUNDS: "refunds" }
 
 export default function Wallet() {
   const companyName = useCompanyName()
@@ -107,13 +106,11 @@ export default function Wallet() {
     const formattedDate = date.toLocaleDateString("en-IN", {
       year: "numeric",
       month: "2-digit",
-      day: "2-digit",
-    })
+      day: "2-digit" })
     const formattedTime = date.toLocaleTimeString("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
-      hour12: true,
-    })
+      hour12: true })
 
     return `${formattedDate} | ${formattedTime}`
   }
@@ -302,8 +299,7 @@ export default function Wallet() {
                         key={i}
                         className="flex items-center gap-3 md:gap-4 bg-gray-100 dark:bg-gray-800 rounded-xl px-4 md:px-5 lg:px-6 py-3 md:py-4"
                         style={{
-                          opacity: 0.3 + i * 0.15,
-                        }}
+                          opacity: 0.3 + i * 0.15 }}
                       >
                         <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-200 dark:bg-gray-700 rounded-lg flex-shrink-0" />
                         <div className="flex-1 space-y-2">

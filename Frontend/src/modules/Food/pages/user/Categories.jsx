@@ -85,8 +85,7 @@ export default function Categories() {
             name: cat?.name || "",
             slug: cat?.slug || String(cat?.name || "").toLowerCase().replace(/\s+/g, "-"),
             image: normalizeImageUrl(cat?.image || cat?.imageUrl) || foodImages[idx % foodImages.length],
-            type: cat?.type || "",
-          }));
+            type: cat?.type || "" }));
           
           /*
           transformed.forEach(cat => {

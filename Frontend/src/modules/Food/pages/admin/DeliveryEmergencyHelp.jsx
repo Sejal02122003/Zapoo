@@ -15,8 +15,7 @@ export default function DeliveryEmergencyHelp() {
     accidentHelpline: "",
     contactPolice: "",
     insurance: "",
-    teamLeader: "",
-  })
+    teamLeader: "" })
   const [formErrors, setFormErrors] = useState({})
 
   const fieldLimits = {
@@ -24,8 +23,7 @@ export default function DeliveryEmergencyHelp() {
     accidentHelpline: 3,
     contactPolice: 3,
     insurance: 10,
-    teamLeader: 10,
-  }
+    teamLeader: 10 }
 
   // Fetch emergency help numbers on component mount
   useEffect(() => {
@@ -44,8 +42,7 @@ export default function DeliveryEmergencyHelp() {
           accidentHelpline: data.accidentHelpline || "",
           contactPolice: data.contactPolice || "",
           insurance: data.insurance || "",
-          teamLeader: data.teamLeader || "",
-        })
+          teamLeader: data.teamLeader || "" })
       }
     } catch (error) {
       debugError("Error fetching emergency help:", error)
@@ -127,8 +124,7 @@ export default function DeliveryEmergencyHelp() {
         accidentHelpline: formData.accidentHelpline.trim(),
         contactPolice: formData.contactPolice.trim(),
         insurance: formData.insurance.trim(),
-        teamLeader: formData.teamLeader.trim(),
-      })
+        teamLeader: formData.teamLeader.trim() })
 
       if (response?.data?.success) {
         toast.success("Emergency help numbers saved successfully!")

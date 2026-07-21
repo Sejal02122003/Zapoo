@@ -11,8 +11,7 @@ export default function ShimmerCard({ children, className = "", delay = 0 }) {
       className={`relative overflow-hidden ${className}`}
       style={{
         opacity: 1,
-        transform: 'scale(1)',
-      }}
+        transform: 'scale(1)' }}
     >
       {/* Simple shimmer effect using CSS */}
       {isHovered && (
@@ -21,8 +20,7 @@ export default function ShimmerCard({ children, className = "", delay = 0 }) {
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(255, 193, 7, 0.1), transparent)',
             backgroundSize: '200% 100%',
-            animation: 'shimmer 1.5s ease-in-out infinite',
-          }}
+            animation: 'shimmer 1.5s ease-in-out infinite' }}
         />
       )}
       {children}

@@ -35,8 +35,7 @@ export default function BusinessSetup() {
     supportPhone: "",
     supportHours: "",
     fssai: "",
-    gstin: "",
-  });
+    gstin: "" });
 
   // Fetch business settings on mount
   useEffect(() => {
@@ -63,8 +62,7 @@ export default function BusinessSetup() {
           supportPhone: settings.supportPhone || "",
           supportHours: settings.supportHours || "",
           fssai: settings.fssai || "",
-          gstin: settings.gstin || "",
-        });
+          gstin: settings.gstin || "" });
 
         // Set logo and favicon previews if they exist
         if (settings.logo?.url) {
@@ -88,8 +86,7 @@ export default function BusinessSetup() {
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: value,
-    }));
+      [field]: value }));
   };
 
   const handleSave = async () => {
@@ -109,7 +106,7 @@ export default function BusinessSetup() {
         return;
       }
       
-      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2 }$/;
       if (!emailRegex.test(formData.email.trim())) {
         toast.error("Please enter a valid email address");
         return;
@@ -187,8 +184,7 @@ export default function BusinessSetup() {
         supportPhone: formData.supportPhone?.trim(),
         supportHours: formData.supportHours?.trim(),
         fssai: formData.fssai?.trim(),
-        gstin: formData.gstin?.trim(),
-      };
+        gstin: formData.gstin?.trim() };
 
       // Prepare files
       const files = {};

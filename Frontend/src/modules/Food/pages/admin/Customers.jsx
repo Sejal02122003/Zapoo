@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
-import { Search, Download, ChevronDown, Eye, FileDown, FileSpreadsheet, FileText, X, Mail, Phone, MapPin, Package, IndianRupee, Calendar as CalendarIcon, User, CheckCircle, XCircle, Wallet } from "lucide-react"
+import { Search, Download, ChevronDown, Eye, FileDown, FileSpreadsheet, FileText, X, Mail, Phone, MapPin, Package, IndianRupee, Calendar as CalendarIcon, User, CheckCircle, XCircle } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { exportCustomersToCSV, exportCustomersToExcel, exportCustomersToPDF } from "@food/components/admin/customers/customersExportUtils"
 import { adminAPI } from "@food/api"
@@ -32,8 +33,7 @@ export default function Customers() {
     joiningDate: "",
     status: "",
     sortBy: "",
-    chooseFirst: "",
-  })
+    chooseFirst: "" })
 
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -119,8 +119,7 @@ export default function Customers() {
       const time = d.toLocaleString("en-GB", {
         hour: "2-digit",
         minute: "2-digit",
-        hour12: true,
-      })
+        hour12: true })
       return `${day} ${month} ${year}, ${time}`
     } catch {
       return String(value)
@@ -140,8 +139,7 @@ export default function Customers() {
           ...(filters.status && { status: filters.status }),
           ...(filters.joiningDate && { joiningDate: filters.joiningDate }),
           ...(filters.sortBy && { sortBy: filters.sortBy }),
-          ...(filters.chooseFirst && { chooseFirst: filters.chooseFirst }),
-        }
+          ...(filters.chooseFirst && { chooseFirst: filters.chooseFirst }) }
 
         const response = await adminAPI.getCustomers(params)
         const data = response?.data?.data || response?.data?.data || response?.data
@@ -415,8 +413,7 @@ export default function Customers() {
                     joiningDate: "",
                     status: "",
                     sortBy: "",
-                    chooseFirst: "",
-                  })
+                    chooseFirst: "" })
                 }}
                 className="px-6 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all"
               >
@@ -594,7 +591,7 @@ export default function Customers() {
                             }}
                             className="p-1.5 rounded text-green-600 hover:bg-green-50 transition-colors"
                           >
-                            <Wallet className="w-4 h-4" />
+                            <WalletIcon className="" />
                           </button>
                           <button
                             title="View Details"
@@ -859,7 +856,7 @@ export default function Customers() {
         <DialogContent className="max-w-md mx-auto p-0 gap-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200 bg-slate-50">
             <DialogTitle className="pr-12 text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-blue-600" />
+              <WalletIcon className="" />
               Wallet Top-up
             </DialogTitle>
           </DialogHeader>
@@ -908,7 +905,7 @@ export default function Customers() {
                 "Processing..."
               ) : (
                 <>
-                  <Wallet className="w-4 h-4" />
+                  <WalletIcon className="" />
                   Top-up Wallet
                 </>
               )}

@@ -30,8 +30,7 @@ export default function SubmitComplaint() {
   const [formData, setFormData] = useState({
     complaintType: '',
     subject: '',
-    description: '',
-  })
+    description: '' })
 
   useEffect(() => {
     if (!orderId) {
@@ -118,8 +117,7 @@ export default function SubmitComplaint() {
         orderId: orderIdString,
         complaintType: formData.complaintType,
         subject: formData.subject,
-        description: formData.description,
-      })
+        description: formData.description })
 
       if (response?.data?.success) {
         toast.success("Complaint submitted successfully")

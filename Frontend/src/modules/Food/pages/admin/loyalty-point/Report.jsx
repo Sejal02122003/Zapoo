@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
-import { Search, Download, ChevronDown, Filter, Calendar, Settings, TrendingUp, Wallet, Utensils, FileText, FileSpreadsheet, Code, Check, Columns } from "lucide-react"
+import { Search, Download, ChevronDown, Filter, Calendar, Settings, TrendingUp, Utensils, FileText, FileSpreadsheet, Code, Check, Columns } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import { emptyLoyaltyPointTransactions } from "@food/utils/adminFallbackData"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@food/components/ui/dialog"
@@ -11,8 +12,7 @@ export default function Report() {
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
-    customer: "All",
-  })
+    customer: "All" })
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
@@ -23,8 +23,7 @@ export default function Report() {
     balance: true,
     transactionType: true,
     reference: true,
-    createdAt: true,
-  })
+    createdAt: true })
 
   const filteredTransactions = useMemo(() => {
     let result = [...transactions]
@@ -78,8 +77,7 @@ export default function Report() {
     setFilters({
       startDate: "",
       endDate: "",
-      customer: "All",
-    })
+      customer: "All" })
   }
 
   const handleExport = (format) => {
@@ -123,8 +121,7 @@ export default function Report() {
       balance: true,
       transactionType: true,
       reference: true,
-      createdAt: true,
-    })
+      createdAt: true })
   }
 
   const columnsConfig = {
@@ -136,8 +133,7 @@ export default function Report() {
     balance: "Balance",
     transactionType: "Transaction Type",
     reference: "Reference",
-    createdAt: "Created At",
-  }
+    createdAt: "Created At" }
 
   const activeFiltersCount = (filters.startDate ? 1 : 0) + (filters.endDate ? 1 : 0) + (filters.customer !== "All" ? 1 : 0)
 
@@ -238,7 +234,7 @@ export default function Report() {
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-red-800">Credit</h3>
               <div className="w-10 h-10 rounded-lg bg-red-200 flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-red-700" />
+                <WalletIcon className="" />
               </div>
             </div>
             <p className="text-2xl font-bold text-red-900">{totalCredit.toFixed(3)}</p>

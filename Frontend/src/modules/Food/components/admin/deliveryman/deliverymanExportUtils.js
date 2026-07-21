@@ -107,16 +107,13 @@ export const exportDeliverymenToPDF = (deliverymen, filename = "deliverymen") =>
           startY: 28,
           styles: {
             fontSize: 8,
-            cellPadding: 2,
-          },
+            cellPadding: 2 },
           headStyles: {
             fillColor: [241, 245, 249],
             textColor: [15, 23, 42],
-            fontStyle: 'bold',
-          },
+            fontStyle: 'bold' },
           alternateRowStyles: {
-            fillColor: [248, 250, 252],
-          },
+            fillColor: [248, 250, 252] },
           columnStyles: {
             0: { cellWidth: 15 }, // SI
             1: { cellWidth: 35 }, // Name
@@ -126,8 +123,7 @@ export const exportDeliverymenToPDF = (deliverymen, filename = "deliverymen") =>
             5: { cellWidth: 25 }, // Total Orders
             6: { cellWidth: 25 }, // Status
           },
-          margin: { top: 28, left: 14, right: 14 },
-        })
+          margin: { top: 28, left: 14, right: 14 } })
 
         // Save the PDF instantly (like Excel)
         const fileTimestamp = new Date().toISOString().split("T")[0]
@@ -318,8 +314,8 @@ const formatBonusForExport = (transaction) => {
   if (transaction.bonus) {
     // Remove all superscript/special characters and unwanted text
     let cleaned = transaction.bonus.toString()
-      .replace(/¹/g, '') // Remove superscript 1
-      .replace(/[¹²³45678?°]/g, '') // Remove all superscript numbers
+      .replace(/ï¿½/g, '') // Remove superscript 1
+      .replace(/[ï¿½ï¿½ï¿½45678?ï¿½]/g, '') // Remove all superscript numbers
       .replace(/[\u2070-\u207F\u2080-\u208F]/g, '') // Remove all superscript Unicode ranges
       .replace(/[^\d.-]/g, '') // Keep only digits, dots, and minus signs
       .trim()
@@ -465,16 +461,13 @@ export const exportBonusToPDF = (transactions, filename = "deliveryman_bonus") =
           startY: 28,
           styles: {
             fontSize: 7,
-            cellPadding: 2,
-          },
+            cellPadding: 2 },
           headStyles: {
             fillColor: [241, 245, 249],
             textColor: [15, 23, 42],
-            fontStyle: 'bold',
-          },
+            fontStyle: 'bold' },
           alternateRowStyles: {
-            fillColor: [248, 250, 252],
-          },
+            fillColor: [248, 250, 252] },
           columnStyles: {
             0: { cellWidth: 12 }, // SI
             1: { cellWidth: 40 }, // Transaction ID
@@ -484,8 +477,7 @@ export const exportBonusToPDF = (transactions, filename = "deliveryman_bonus") =
             5: { cellWidth: 35 }, // Reference
             6: { cellWidth: 35 }, // Created At
           },
-          margin: { top: 28, left: 14, right: 14 },
-        })
+          margin: { top: 28, left: 14, right: 14 } })
 
         // Save the PDF instantly
         const fileTimestamp = new Date().toISOString().split("T")[0]

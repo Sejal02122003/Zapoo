@@ -84,8 +84,7 @@ export default function AuthCallback() {
           // Store auth success in sessionStorage
           sessionStorage.setItem("oauthSuccess", JSON.stringify({
             provider: providerParam,
-            timestamp: Date.now(),
-          }))
+            timestamp: Date.now() }))
 
           // Redirect to home after short delay
           setTimeout(() => {

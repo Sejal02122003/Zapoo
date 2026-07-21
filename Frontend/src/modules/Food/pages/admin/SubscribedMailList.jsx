@@ -8,8 +8,7 @@ export default function SubscribedMailList() {
   const [filters, setFilters] = useState({
     subscriptionDate: "",
     sortBy: "",
-    chooseFirst: "",
-  })
+    chooseFirst: "" })
 
   const filteredEmails = useMemo(() => {
     if (!searchQuery.trim()) {

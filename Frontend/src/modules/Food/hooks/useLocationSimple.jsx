@@ -180,8 +180,7 @@ export function useLocationSimple() {
         area: area || "", // Primary: Area/subLocality name
         city: city || "",
         state: state || "",
-        formattedAddress: formattedAddress || "",
-      }
+        formattedAddress: formattedAddress || "" }
     } catch (err) {
       debugError("Reverse geocoding error:", err)
       throw err
@@ -222,8 +221,7 @@ export function useLocationSimple() {
               area: "",
               city: "",
               state: "",
-              formattedAddress: "",
-            }
+              formattedAddress: "" }
             localStorage.setItem("userLocation", JSON.stringify(locationData))
             resolve(locationData)
           }
@@ -330,8 +328,7 @@ export function useLocationSimple() {
     loading,
     error,
     permissionGranted,
-    requestLocation,
-  }
+    requestLocation }
 }
 
 

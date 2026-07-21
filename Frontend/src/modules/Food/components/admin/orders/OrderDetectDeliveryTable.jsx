@@ -9,8 +9,7 @@ const getStatusColor = (status) => {
     "Delivery Boy Assigned": "bg-purple-100 text-purple-700",
     "Reached Pickup": "bg-orange-100 text-orange-700",
     "Reached Drop": "bg-amber-100 text-amber-700",
-    "Ordered Delivered": "bg-emerald-100 text-emerald-700",
-  }
+    "Ordered Delivered": "bg-emerald-100 text-emerald-700" }
   return colors[status] || "bg-slate-100 text-slate-700"
 }
 

@@ -45,8 +45,7 @@ export default function OrdersPage() {
         ...newOrder,
         orderMongoId: newOrder.orderMongoId || newOrder._id || newOrder.id,
         total: newOrder.total ?? newOrder.pricing?.total ?? 0,
-        customerAddress: newOrder.customerAddress || newOrder.deliveryAddress || newOrder.address,
-      }
+        customerAddress: newOrder.customerAddress || newOrder.deliveryAddress || newOrder.address }
     : null
 
   // Lenis smooth scrolling
@@ -54,8 +53,7 @@ export default function OrdersPage() {
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    })
+      smoothWheel: true })
 
     function raf(time) {
       lenis.raf(time)

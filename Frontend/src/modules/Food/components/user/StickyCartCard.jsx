@@ -54,8 +54,7 @@ export default function StickyCartCard() {
       opacity: 1,
       scale: 1,
       y: 0,
-      rotate: 0,
-    },
+      rotate: 0 },
     animate: {
       opacity: 1,
       scale: 1,
@@ -65,9 +64,7 @@ export default function StickyCartCard() {
         type: "spring",
         stiffness: 300,
         damping: 25,
-        mass: 0.8,
-      },
-    },
+        mass: 0.8 } },
     exit: {
       opacity: 0,
       scale: 0.8,
@@ -75,10 +72,7 @@ export default function StickyCartCard() {
       rotate: -5,
       transition: {
         duration: 0.4,
-        ease: [0.4, 0, 0.2, 1],
-      },
-    },
-  }
+        ease: [0.4, 0, 0.2, 1] } } }
 
   // Don't render if cart is empty
   if (cartCount === 0) return null

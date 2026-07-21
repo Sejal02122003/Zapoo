@@ -8,7 +8,7 @@ export default function LocationCouponForm({ initialData, onBack }) {
     code: "",
     title: "",
     description: "",
-    restaurantId: "",
+    restaurantName: "",
     minimumOrderAmount: 0,
     minimumItems: 1,
     discountType: "percentage",
@@ -25,7 +25,7 @@ export default function LocationCouponForm({ initialData, onBack }) {
     if (initialData) {
       setFormData({
         ...initialData,
-        restaurantId: initialData.restaurantId?._id || initialData.restaurantId,
+        restaurantName: initialData.restaurantId?.restaurantName || "",
         startDate: initialData.startDate ? new Date(initialData.startDate).toISOString().slice(0, 16) : "",
         endDate: initialData.endDate ? new Date(initialData.endDate).toISOString().slice(0, 16) : ""
       });
@@ -50,8 +50,7 @@ export default function LocationCouponForm({ initialData, onBack }) {
         minimumItems: Number(formData.minimumItems),
         discountValue: Number(formData.discountValue),
         maximumDiscount: Number(formData.maximumDiscount),
-        maximumDistance: Number(formData.maximumDistance),
-      };
+        maximumDistance: Number(formData.maximumDistance) };
 
       if (!payload.startDate) delete payload.startDate;
       if (!payload.endDate) delete payload.endDate;
@@ -115,15 +114,15 @@ export default function LocationCouponForm({ initialData, onBack }) {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Restaurant ID</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Restaurant Name</label>
             <input
               type="text"
-              name="restaurantId"
+              name="restaurantName"
               required
-              value={formData.restaurantId}
+              value={formData.restaurantName}
               onChange={handleChange}
               className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              placeholder="Paste Restaurant Object ID"
+              placeholder="Enter Restaurant Name"
             />
           </div>
 

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
-import { Search, Download, ChevronDown, Eye, Settings, Wallet, ArrowUpDown, FileText, FileSpreadsheet, Code, Check, Columns } from "lucide-react"
+import { Search, Download, ChevronDown, Eye, Settings, ArrowUpDown, FileText, FileSpreadsheet, Code, Check, Columns } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import { emptyCollectCashTransactions } from "@food/utils/adminFallbackData"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter as DialogFooterComponent } from "@food/components/ui/dialog"
@@ -12,8 +13,7 @@ export default function CollectCash() {
     restaurant: "",
     deliveryman: "",
     amount: "",
-    reference: "",
-  })
+    reference: "" })
   const [formErrors, setFormErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
@@ -30,8 +30,7 @@ export default function CollectCash() {
     collectedAmount: true,
     paymentMethod: true,
     reference: true,
-    actions: true,
-  })
+    actions: true })
 
   const filteredTransactions = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -80,8 +79,7 @@ export default function CollectCash() {
         collectedAt: new Date().toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }),
         collectedAmount: parseFloat(formData.amount),
         paymentMethod: formData.method,
-        reference: formData.reference || "N/A",
-      }
+        reference: formData.reference || "N/A" }
       setTransactions([newTransaction, ...transactions])
       setIsSubmitting(false)
       setShowSuccessDialog(true)
@@ -96,8 +94,7 @@ export default function CollectCash() {
       restaurant: "",
       deliveryman: "",
       amount: "",
-      reference: "",
-    })
+      reference: "" })
     setFormErrors({})
   }
 
@@ -142,8 +139,7 @@ export default function CollectCash() {
       collectedAmount: true,
       paymentMethod: true,
       reference: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   return (
@@ -152,7 +148,7 @@ export default function CollectCash() {
         {/* Cash Collection Form */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
           <div className="flex items-center gap-3 mb-6">
-            <Wallet className="w-5 h-5 text-blue-600" />
+            <WalletIcon className="" />
             <h1 className="text-2xl font-bold text-slate-900">Cash Collection</h1>
           </div>
 
@@ -281,7 +277,7 @@ export default function CollectCash() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div className="flex items-center gap-3">
-              <Wallet className="w-5 h-5 text-slate-600" />
+              <WalletIcon className="" />
               <h2 className="text-xl font-bold text-slate-900">Transaction Table</h2>
               <span className="px-3 py-1 rounded-full text-sm font-semibold bg-slate-100 text-slate-700">
                 {filteredTransactions.length}
@@ -441,8 +437,7 @@ export default function CollectCash() {
                           <span className="text-sm font-medium text-slate-700">
                             $ {transaction.collectedAmount.toLocaleString("en-US", {
                               minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
+                              maximumFractionDigits: 2 })}
                           </span>
                         </td>
                       )}
@@ -573,8 +568,7 @@ export default function CollectCash() {
                 <p className="text-sm font-medium text-slate-900 mt-1">
                   $ {selectedTransaction.collectedAmount.toLocaleString("en-US", {
                     minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                    maximumFractionDigits: 2 })}
                 </p>
               </div>
               <div>

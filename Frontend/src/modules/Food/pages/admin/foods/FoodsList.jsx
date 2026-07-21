@@ -22,14 +22,12 @@ const createFoodForm = () => ({
   image: "",
   foodType: "Non-Veg",
   isAvailable: true,
-  preparationTime: "",
-})
+  preparationTime: "" })
 
 const createVariantDraft = (variant = {}) => ({
   id: String(variant?.id || variant?._id || `variant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
   name: String(variant?.name || ""),
-  price: variant?.price != null ? String(variant.price) : "",
-})
+  price: variant?.price != null ? String(variant.price) : "" })
 
 export default function FoodsList() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -63,7 +61,7 @@ export default function FoodsList() {
     if (direct) return direct
 
     const rawId = String(item.id || "")
-    const match = rawId.match(/\d{10,}/)
+    const match = rawId.match(/\d{10 }/)
     if (match) {
       const fromId = Number(match[0])
       if (Number.isFinite(fromId) && fromId > 0) return fromId
@@ -106,8 +104,7 @@ export default function FoodsList() {
         restaurants
           .map((restaurant) => ({
             id: String(restaurant?._id || restaurant?.id || ""),
-            name: restaurant?.name || restaurant?.restaurantName || "Unknown Restaurant",
-          }))
+            name: restaurant?.name || restaurant?.restaurantName || "Unknown Restaurant" }))
           .filter((restaurant) => restaurant.id)
           .sort((a, b) => a.name.localeCompare(b.name))
       )
@@ -142,8 +139,7 @@ export default function FoodsList() {
               preparationTime: f.preparationTime || "",
               isAvailable: f.isAvailable !== false,
               createdAt: f.createdAt,
-              updatedAt: f.updatedAt,
-            }))
+              updatedAt: f.updatedAt }))
           : []
       )
       setImageVersion(Date.now())
@@ -256,8 +252,7 @@ export default function FoodsList() {
     setEditingFood(null)
     setFoodForm({
       ...createFoodForm(),
-      restaurantId: selectedRestaurant !== "all" ? selectedRestaurant : "",
-    })
+      restaurantId: selectedRestaurant !== "all" ? selectedRestaurant : "" })
     setSelectedImageFile(null)
     setImagePreviewUrl("")
     setCategorySearch("")
@@ -279,8 +274,7 @@ export default function FoodsList() {
       image: String(food.image || ""),
       foodType: String(food.foodType || "Non-Veg"),
       isAvailable: food.isAvailable !== false,
-      preparationTime: String(food.preparationTime || ""),
-    })
+      preparationTime: String(food.preparationTime || "") })
     setSelectedImageFile(null)
     setImagePreviewUrl(String(food.image || ""))
     setCategorySearch("")
@@ -325,22 +319,19 @@ export default function FoodsList() {
       ...prev,
       variants: (Array.isArray(prev.variants) ? prev.variants : []).map((variant) =>
         variant.id === variantId ? { ...variant, [field]: value } : variant,
-      ),
-    }))
+      ) }))
   }
 
   const handleAddVariant = () => {
     setFoodForm((prev) => ({
       ...prev,
-      variants: [...(Array.isArray(prev.variants) ? prev.variants : []), createVariantDraft()],
-    }))
+      variants: [...(Array.isArray(prev.variants) ? prev.variants : []), createVariantDraft()] }))
   }
 
   const handleRemoveVariant = (variantId) => {
     setFoodForm((prev) => ({
       ...prev,
-      variants: (Array.isArray(prev.variants) ? prev.variants : []).filter((variant) => variant.id !== variantId),
-    }))
+      variants: (Array.isArray(prev.variants) ? prev.variants : []).filter((variant) => variant.id !== variantId) }))
   }
 
   const handleFoodFormSubmit = async () => {
@@ -361,8 +352,7 @@ export default function FoodsList() {
       .map((variant) => ({
         id: String(variant?.id || variant?._id || "").trim(),
         name: String(variant?.name || "").trim(),
-        price: Number(variant?.price),
-      }))
+        price: Number(variant?.price) }))
       .filter((variant) => variant.id || variant.name || variant.price)
 
     const hasVariants = normalizedVariants.length > 0
@@ -389,8 +379,7 @@ export default function FoodsList() {
 
       if (selectedImageFile) {
         const uploadResponse = await uploadAPI.uploadMedia(selectedImageFile, {
-          folder: "foods",
-        })
+          folder: "foods" })
         imageUrl =
           uploadResponse?.data?.data?.url ||
           uploadResponse?.data?.url ||
@@ -406,14 +395,12 @@ export default function FoodsList() {
         variants: normalizedVariants.map((variant) => ({
           ...(variant.id && !variant.id.startsWith("variant-") ? { _id: variant.id } : {}),
           name: variant.name,
-          price: variant.price,
-        })),
+          price: variant.price })),
         description: foodForm.description.trim(),
         image: imageUrl,
         foodType: foodForm.foodType === "Veg" ? "Veg" : "Non-Veg",
         isAvailable: foodForm.isAvailable !== false,
-        preparationTime: String(foodForm.preparationTime || "").trim(),
-      }
+        preparationTime: String(foodForm.preparationTime || "").trim() }
 
       if (foodFormMode === "edit") {
         await adminAPI.updateFood(editingFood?._id || editingFood?.id, payload)

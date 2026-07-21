@@ -69,8 +69,7 @@ export default function AboutUs() {
           setAboutData((prev) => ({
             ...prev,
             ...data,
-            features: Array.isArray(data.features) ? data.features : [],
-          }))
+            features: Array.isArray(data.features) ? data.features : [] }))
         }
       }
     } catch (error) {
@@ -92,8 +91,7 @@ export default function AboutUs() {
           setAboutData((prev) => ({
             ...prev,
             ...data,
-            features: Array.isArray(data.features) ? data.features : [],
-          }))
+            features: Array.isArray(data.features) ? data.features : [] }))
         }
       }
     } catch (error) {
@@ -141,8 +139,7 @@ export default function AboutUs() {
           setAboutData((prev) => ({
             ...prev,
             ...data,
-            features: Array.isArray(data.features) ? data.features : [],
-          }))
+            features: Array.isArray(data.features) ? data.features : [] }))
         }
       }
     } catch (error) {

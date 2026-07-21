@@ -5,8 +5,7 @@ import OptimizedImage from "@food/components/OptimizedImage";
 export default function ExploreMoreSection({
   heading = "Explore More",
   items = [],
-  showSkeleton = false,
-}) {
+  showSkeleton = false }) {
   return (
     <section className="content-auto pt-2 sm:pt-3 lg:pt-4">
       <div className="px-4 mb-6 flex items-center gap-2">
@@ -31,8 +30,7 @@ export default function ExploreMoreSection({
                   key={item.id}
                   className="flex-shrink-0 w-20 sm:w-24 md:w-28 transition-transform duration-300 hover:-translate-y-2 active:scale-95"
                   style={{
-                    animation: `fade-in-up 0.4s ease-out ${index * 0.08}s backwards`,
-                  }}
+                    animation: `fade-in-up 0.4s ease-out ${index * 0.08}s backwards` }}
                 >
                   <Link to={item.href} className="block w-full">
                     <div className="flex flex-col items-center gap-2 w-full group">

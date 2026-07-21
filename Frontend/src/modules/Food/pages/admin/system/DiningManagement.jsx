@@ -50,8 +50,7 @@ export default function DiningManagement() {
             ...additionalConfig,
             headers: {
                 ...additionalConfig.headers,
-                Authorization: `Bearer ${adminToken.trim()}`,
-            }
+                Authorization: `Bearer ${adminToken.trim()}` }
         }
     }
 
@@ -142,12 +141,10 @@ export default function DiningManagement() {
             const response = editingCategoryId
                 ? await adminAPI.updateDiningCategory(editingCategoryId, {
                     name: trimmedCategoryName,
-                    ...(imageUrl ? { imageUrl } : {}),
-                })
+                    ...(imageUrl ? { imageUrl } : {}) })
                 : await adminAPI.createDiningCategory({
                     name: trimmedCategoryName,
-                    imageUrl,
-                })
+                    imageUrl })
 
             if (response.data.success) {
                 setSuccess(editingCategoryId ? "Category updated successfully" : "Category created successfully")

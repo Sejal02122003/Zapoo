@@ -304,8 +304,7 @@ export default function NotificationChannels() {
     topics: true,
     pushNotification: true,
     mail: true,
-    sms: true,
-  })
+    sms: true })
   
   const getNotificationsForTab = (tab) => {
     switch(tab) {
@@ -380,8 +379,7 @@ export default function NotificationChannels() {
       topics: true,
       pushNotification: true,
       mail: true,
-      sms: true,
-    })
+      sms: true })
   }
 
   const columnsConfig = {
@@ -389,8 +387,7 @@ export default function NotificationChannels() {
     topics: "Topics",
     pushNotification: "Push Notification",
     mail: "Mail",
-    sms: "SMS",
-  }
+    sms: "SMS" }
 
   return (
     <div className="p-2 lg:p-3 bg-slate-50 min-h-screen">

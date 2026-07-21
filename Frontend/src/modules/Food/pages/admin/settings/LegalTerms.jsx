@@ -11,8 +11,7 @@ export default function TermsAndCondition() {
   const [activeRole, setActiveRole] = useState("user"); // "user" | "restaurant" | "delivery"
   const [termsData, setTermsData] = useState({
     title: "Terms and Conditions",
-    content: "",
-  });
+    content: "" });
 
   useEffect(() => {
     fetchTermsData();
@@ -29,20 +28,17 @@ export default function TermsAndCondition() {
         const textContent = legalHtmlToPlainText(content);
         setTermsData({
           title: response.data.data.title || `Terms and Conditions - ${activeRole.charAt(0).toUpperCase() + activeRole.slice(1)}`,
-          content: textContent,
-        });
+          content: textContent });
       } else {
         setTermsData({
           title: `Terms and Conditions - ${activeRole.charAt(0).toUpperCase() + activeRole.slice(1)}`,
-          content: "",
-        });
+          content: "" });
       }
     } catch (error) {
       console.error("Error fetching terms data:", error);
       setTermsData({
         title: `Terms and Conditions - ${activeRole.charAt(0).toUpperCase() + activeRole.slice(1)}`,
-        content: "",
-      });
+        content: "" });
     } finally {
       setLoading(false);
     }
@@ -67,8 +63,7 @@ export default function TermsAndCondition() {
         const textContent = legalHtmlToPlainText(content);
         setTermsData({
           ...response.data.data,
-          content: textContent,
-        });
+          content: textContent });
       }
     } catch (error) {
       console.error("Error saving terms:", error);

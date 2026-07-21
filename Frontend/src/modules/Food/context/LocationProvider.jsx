@@ -8,8 +8,7 @@ import {
   readDeliveryAddressMode,
   readStoredUserLocation,
   notifyLocationUpdated,
-  notifyDeliveryModeUpdated,
-} from '@food/utils/locationPersistence';
+  notifyDeliveryModeUpdated } from '@food/utils/locationPersistence';
 
 export function LocationProvider({ children }) {
   const engine = useLocationEngine();
@@ -20,8 +19,7 @@ export function LocationProvider({ children }) {
     permissionGranted,
     requestLocation: engineRequestLocation,
     startWatchingLocation,
-    stopWatchingLocation,
-  } = engine;
+    stopWatchingLocation } = engine;
 
   const [deliveryAddressMode, setDeliveryAddressModeState] = useState(readDeliveryAddressMode);
   const [savedLocationOverride, setSavedLocationOverride] = useState(null);
@@ -45,8 +43,7 @@ export function LocationProvider({ children }) {
     error: zoneError,
     isInService,
     isOutOfService,
-    refreshZone,
-  } = useZone(location);
+    refreshZone } = useZone(location);
 
   useEffect(() => {
     const onMode = (e) => {
@@ -136,8 +133,7 @@ export function LocationProvider({ children }) {
     setDeliveryAddressMode,
     refreshZone,
     startWatchingLocation,
-    stopWatchingLocation,
-  }), [
+    stopWatchingLocation }), [
     location,
     effectiveLocation,
     deliveryAddressMode,

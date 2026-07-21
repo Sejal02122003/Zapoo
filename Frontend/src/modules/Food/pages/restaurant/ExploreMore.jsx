@@ -30,8 +30,7 @@ import {
   MapPin,
   LogOut,
   Ticket,
-  Award,
-} from "lucide-react"
+  Award } from "lucide-react"
 import { Card, CardContent } from "@food/components/ui/card"
 import { DateRangeCalendar } from "@food/components/ui/date-range-calendar"
 import { clearModuleAuth, clearAuthData, getCurrentUser } from "@food/utils/auth"
@@ -169,8 +168,7 @@ function TimePickerWheel({
     const snapPosition = padding + clampedIndex * itemHeight
     container.scrollTo({
       top: snapPosition,
-      behavior: "smooth",
-    })
+      behavior: "smooth" })
 
     if (values[clampedIndex] !== undefined) {
       setValue(values[clampedIndex])
@@ -743,8 +741,7 @@ export default function ExploreMore() {
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    })
+      smoothWheel: true })
 
     function raf(time) {
       lenis.raf(time)

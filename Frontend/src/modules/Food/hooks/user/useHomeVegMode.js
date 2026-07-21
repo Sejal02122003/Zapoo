@@ -4,8 +4,7 @@ export const useHomeVegMode = ({
   vegMode,
   setVegMode,
   setShowVegModePopup,
-  setShowSwitchOffPopup,
-}) => {
+  setShowSwitchOffPopup }) => {
   const handleVegModeToggle = useCallback((e) => {
     // If e is an event, prevent propagation if needed, but here we just need to know the next state
     // If it's becoming true, show popup. If it's becoming false, show confirmation.

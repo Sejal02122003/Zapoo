@@ -13,9 +13,7 @@ const getAuthConfig = (additionalConfig = {}) => {
     ...additionalConfig,
     headers: {
       ...additionalConfig.headers,
-      Authorization: `Bearer ${adminToken}`,
-    },
-  };
+      Authorization: `Bearer ${adminToken}` } };
 };
 
 export default function AppIntroAds() {
@@ -31,8 +29,7 @@ export default function AppIntroAds() {
     title: "",
     duration: 3,
     type: "intro",
-    isActive: true,
-  });
+    isActive: true });
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -68,8 +65,7 @@ export default function AppIntroAds() {
         title: ad.title || "",
         duration: ad.duration || 3,
         type: ad.type || "intro",
-        isActive: ad.isActive,
-      });
+        isActive: ad.isActive });
       setPreviewUrl(ad.mediaUrl || "");
       setSelectedFile(null);
     } else {
@@ -79,8 +75,7 @@ export default function AppIntroAds() {
         title: "",
         duration: 3,
         type: tab,
-        isActive: true,
-      });
+        isActive: true });
       setPreviewUrl("");
       setSelectedFile(null);
     }

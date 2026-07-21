@@ -6,8 +6,7 @@ import { UserNotificationContext } from '../context/UserNotificationContext';
 import {
   acquireUserSocket,
   releaseUserSocket,
-  subscribeUserSocketConnection,
-} from '@food/utils/userSocketManager';
+  subscribeUserSocketConnection } from '@food/utils/userSocketManager';
 
 const debugLog = (...args) => {
   if (import.meta.env.DEV) {
@@ -89,8 +88,7 @@ export const useUserNotifications = () => {
         toast.message(title, {
           id: ORDER_STATUS_TOAST_ID,
           description: message,
-          duration: 6000,
-        });
+          duration: 6000 });
       }
 
       window.dispatchEvent(
@@ -107,9 +105,7 @@ export const useUserNotifications = () => {
             dispatch: data.dispatch,
             deliveryPartner: data.deliveryPartner,
             deliveryPartnerId: data.deliveryPartnerId,
-            timestamp: new Date().toISOString(),
-          },
-        }),
+            timestamp: new Date().toISOString() } }),
       );
     };
 
@@ -126,9 +122,7 @@ export const useUserNotifications = () => {
             deliveryVerification: activeOrder.deliveryVerification,
             dispatch: activeOrder.dispatch,
             resynced: true,
-            timestamp: new Date().toISOString(),
-          },
-        }),
+            timestamp: new Date().toISOString() } }),
       );
     };
 
@@ -154,9 +148,7 @@ export const useUserNotifications = () => {
             orderMongoId: payload?.orderMongoId,
             orderId,
             otp,
-            message,
-          },
-        }),
+            message } }),
       );
 
       const title = orderId ? `Order ${orderId}` : 'Delivery OTP';
@@ -166,15 +158,13 @@ export const useUserNotifications = () => {
       toast.message(title, {
         id: DROP_OTP_TOAST_ID,
         description: parts.join(' — ') || 'Handover OTP from your delivery partner.',
-        duration: 12_000,
-      });
+        duration: 12_000 });
     };
 
     const onAdminNotification = (payload) => {
       toast.message(payload?.title || 'Notification', {
         description: payload?.message || 'New broadcast notification received.',
-        duration: 8000,
-      });
+        duration: 8000 });
       dispatchNotificationInboxRefresh();
     };
 

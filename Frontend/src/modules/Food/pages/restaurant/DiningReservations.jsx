@@ -26,8 +26,7 @@ const normalizeImageEntry = (entry) => {
     if (!url) return null
     return {
         url,
-        publicId: entry?.publicId || null,
-    }
+        publicId: entry?.publicId || null }
 }
 
 const getProfilePhotoUrl = (restaurant) => {
@@ -251,10 +250,8 @@ export default function DiningReservations() {
             const response = await restaurantAPI.updateProfile({
                 coverImages: nextCoverImages.map((photo) => ({
                     url: photo.url,
-                    ...(photo.publicId ? { publicId: photo.publicId } : {}),
-                })),
-                ...(shouldClearProfileImage ? { profileImage: "" } : {}),
-            })
+                    ...(photo.publicId ? { publicId: photo.publicId } : {}) })),
+                ...(shouldClearProfileImage ? { profileImage: "" } : {}) })
 
             const updatedRestaurant = getRestaurantFromResponse(response)
             if (updatedRestaurant) {
@@ -285,9 +282,7 @@ export default function DiningReservations() {
             const response = await restaurantAPI.updateProfile({
                 menuImages: nextMenuPhotos.map((photo) => ({
                     url: photo.url,
-                    ...(photo.publicId ? { publicId: photo.publicId } : {}),
-                })),
-            })
+                    ...(photo.publicId ? { publicId: photo.publicId } : {}) })) })
 
             const updatedRestaurant = getRestaurantFromResponse(response)
             if (updatedRestaurant) {
@@ -326,8 +321,7 @@ export default function DiningReservations() {
         const nextDiningSettings = {
             isEnabled: Boolean(diningEnabled),
             maxGuests: nextMaxGuests,
-            diningType: Array.isArray(diningType) ? [...new Set(diningType)] : [diningType],
-        }
+            diningType: Array.isArray(diningType) ? [...new Set(diningType)] : [diningType] }
 
         setDiningSettingsError("")
         setDiningSettingsMessage("")

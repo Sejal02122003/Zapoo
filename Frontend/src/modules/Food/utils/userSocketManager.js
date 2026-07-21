@@ -79,8 +79,7 @@ function createUserSocket(userId, token) {
     transports: ['websocket', 'polling'],
     reconnection: true,
     auth: { token },
-    query: { token },
-  });
+    query: { token } });
 
   attachCoreListeners(socket);
   return socket;

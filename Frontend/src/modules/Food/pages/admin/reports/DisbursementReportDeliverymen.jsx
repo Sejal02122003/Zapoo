@@ -18,8 +18,7 @@ export default function DisbursementReportDeliverymen() {
     deliveryMan: "All delivery mans",
     paymentMethod: "All Payment Method",
     status: "All status",
-    time: "All Time",
-  })
+    time: "All Time" })
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -87,8 +86,7 @@ export default function DisbursementReportDeliverymen() {
       deliveryMan: "All delivery mans",
       paymentMethod: "All Payment Method",
       status: "All status",
-      time: "All Time",
-    })
+      time: "All Time" })
   }
 
   const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.deliveryMan !== "All delivery mans" ? 1 : 0) + (filters.paymentMethod !== "All Payment Method" ? 1 : 0) + (filters.status !== "All status" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)

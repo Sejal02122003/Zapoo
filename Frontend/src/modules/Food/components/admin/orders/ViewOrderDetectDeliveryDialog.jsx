@@ -11,8 +11,7 @@ const getStatusColor = (status) => {
     "Reached Pickup": "bg-orange-100 text-orange-700 border-orange-200", // Keep for backward compatibility
     "Order ID Accepted": "bg-indigo-100 text-indigo-700 border-indigo-200",
     "Reached Drop": "bg-amber-100 text-amber-700 border-amber-200",
-    "Ordered Delivered": "bg-emerald-100 text-emerald-700 border-emerald-200",
-  }
+    "Ordered Delivered": "bg-emerald-100 text-emerald-700 border-emerald-200" }
   return colors[status] || "bg-slate-100 text-slate-700 border-slate-200"
 }
 

@@ -20,8 +20,7 @@ export default function ThemeSettings() {
     user_app: { primaryColor: '#e11d48', secondaryColor: '#be123c', logoUrl: '', logoHistory: [], fontFamily: "'Poppins', sans-serif", buttonHoverColor: '#3b82f6', sidebarFontColor: '#ffffff' },
     delivery_app: { primaryColor: '#0ea5e9', secondaryColor: '#0284c7', logoUrl: '', logoHistory: [], fontFamily: "'Poppins', sans-serif", buttonHoverColor: '#3b82f6', sidebarFontColor: '#ffffff' },
     restaurant_app: { primaryColor: '#B80B3D', secondaryColor: '#66001D', logoUrl: '', logoHistory: [], fontFamily: "'Poppins', sans-serif", buttonHoverColor: '#3b82f6', sidebarFontColor: '#ffffff' },
-    admin_app: { primaryColor: '#2563eb', secondaryColor: '#1d4ed8', logoUrl: '', logoHistory: [], fontFamily: "'Poppins', sans-serif", buttonHoverColor: '#3b82f6', sidebarFontColor: '#ffffff' },
-  });
+    admin_app: { primaryColor: '#2563eb', secondaryColor: '#1d4ed8', logoUrl: '', logoHistory: [], fontFamily: "'Poppins', sans-serif", buttonHoverColor: '#3b82f6', sidebarFontColor: '#ffffff' } });
 
   const fontOptions = [
     { label: 'Poppins', value: "'Poppins', sans-serif" },

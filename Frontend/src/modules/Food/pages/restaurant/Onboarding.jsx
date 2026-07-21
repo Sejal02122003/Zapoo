@@ -11,8 +11,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@food/components/ui/select"
+  SelectValue } from "@food/components/ui/select"
 import { restaurantAPI, zoneAPI, uploadAPI, api } from "@food/api"
 import { TimePicker } from "@mui/x-date-pickers/TimePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
@@ -49,14 +48,11 @@ let onboardingFileCache = {
   step2: {
     menuImages: [],
     profileImage: null,
-    menuPdf: null,
-  },
+    menuPdf: null },
   step3: {
     panImage: null,
     gstImage: null,
-    fssaiImage: null,
-  },
-}
+    fssaiImage: null } }
 
 // IndexedDB helpers for persistent file storage
 const ONBOARDING_FILES_DB = "RestaurantOnboardingFiles"
@@ -305,8 +301,7 @@ const saveOnboardingToLocalStorage = (step1, step2, step3, currentStep) => {
         !isUploadableFile(step2.menuPdf) &&
           (step2.menuPdf?.url || (typeof step2.menuPdf === "string" && step2.menuPdf.trim()))
           ? step2.menuPdf
-          : null,
-    }
+          : null }
 
     const serializableStep3 = {
       ...step3,
@@ -324,8 +319,7 @@ const saveOnboardingToLocalStorage = (step1, step2, step3, currentStep) => {
         !isUploadableFile(step3.fssaiImage) &&
           (step3.fssaiImage?.url || (typeof step3.fssaiImage === "string" && step3.fssaiImage.trim()))
           ? step3.fssaiImage
-          : null,
-    }
+          : null }
 
     const dataToSave = {
       step1,
@@ -333,8 +327,7 @@ const saveOnboardingToLocalStorage = (step1, step2, step3, currentStep) => {
       step3: serializableStep3,
       currentStep,
       timestamp: Date.now(),
-      loginPhone: getVerifiedPhoneFromStoredRestaurant(),
-    }
+      loginPhone: getVerifiedPhoneFromStoredRestaurant() }
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(dataToSave))
   } catch (error) {
     debugError("Failed to save onboarding data to localStorage:", error)
@@ -366,14 +359,11 @@ const syncOnboardingFileCache = (step2, step3) => {
     step2: {
       menuImages: (step2?.menuImages || []).filter((img) => isUploadableFile(img)),
       profileImage: isUploadableFile(step2?.profileImage) ? step2.profileImage : null,
-      menuPdf: isUploadableFile(step2?.menuPdf) ? step2.menuPdf : null,
-    },
+      menuPdf: isUploadableFile(step2?.menuPdf) ? step2.menuPdf : null },
     step3: {
       panImage: isUploadableFile(step3?.panImage) ? step3.panImage : null,
       gstImage: isUploadableFile(step3?.gstImage) ? step3.gstImage : null,
-      fssaiImage: isUploadableFile(step3?.fssaiImage) ? step3.fssaiImage : null,
-    },
-  }
+      fssaiImage: isUploadableFile(step3?.fssaiImage) ? step3.fssaiImage : null } }
 }
 
 const clearOnboardingFileCache = () => {
@@ -381,14 +371,11 @@ const clearOnboardingFileCache = () => {
     step2: {
       menuImages: [],
       profileImage: null,
-      menuPdf: null,
-    },
+      menuPdf: null },
     step3: {
       panImage: null,
       gstImage: null,
-      fssaiImage: null,
-    },
-  }
+      fssaiImage: null } }
 }
 
 // Helper function to convert "HH:mm" string to Date object
@@ -545,22 +532,14 @@ function TimeSelector({ label, value, onChange }) {
                 fontSize: "12px",
                 backgroundColor: "white",
                 "& fieldset": {
-                  borderColor: "#e5e7eb",
-                },
+                  borderColor: "#e5e7eb" },
                 "&:hover fieldset": {
-                  borderColor: "#d1d5db",
-                },
+                  borderColor: "#d1d5db" },
                 "&.Mui-focused fieldset": {
-                  borderColor: "#000",
-                },
-              },
+                  borderColor: "#000" } },
               "& .MuiInputBase-input": {
                 padding: "8px 12px",
-                fontSize: "12px",
-              },
-            },
-          },
-        }}
+                fontSize: "12px" } } } }}
         format="hh:mm a"
       />
     </div>
@@ -688,9 +667,7 @@ export default function RestaurantOnboarding() {
       pincode: "",
       landmark: "",
       latitude: "",
-      longitude: "",
-    },
-  })
+      longitude: "" } })
 
   const [step2, setStep2] = useState({
     menuImages: [],
@@ -700,8 +677,7 @@ export default function RestaurantOnboarding() {
     estimatedDeliveryTime: "",
     openingTime: "",
     closingTime: "",
-    openDays: [],
-  })
+    openDays: [] })
 
   const [step3, setStep3] = useState({
     panNumber: "",
@@ -719,8 +695,7 @@ export default function RestaurantOnboarding() {
     confirmAccountNumber: "",
     ifscCode: "",
     accountHolderName: "",
-    accountType: "",
-  })
+    accountType: "" })
 
   const previewUrlCacheRef = useRef(new Map())
   const locationSearchInputRef = useRef(null)
@@ -740,8 +715,7 @@ export default function RestaurantOnboarding() {
     title: "",
     onSelectFile: null,
     fileNamePrefix: "camera-image",
-    fallbackInputRef: null,
-  })
+    fallbackInputRef: null })
 
   // Manual search states for fallback
   const [locationSearchValue, setLocationSearchValue] = useState("")
@@ -771,9 +745,7 @@ export default function RestaurantOnboarding() {
         state: parsed.state || prev.location.state,
         pincode: parsed.pincode || prev.location.pincode,
         latitude: parsed.latitude !== "" ? parsed.latitude : prev.location.latitude,
-        longitude: parsed.longitude !== "" ? parsed.longitude : prev.location.longitude,
-      },
-    }))
+        longitude: parsed.longitude !== "" ? parsed.longitude : prev.location.longitude } }))
 
     setLocationSearchValue(parsed.formattedAddress)
     setLocationSuggestions([])
@@ -806,8 +778,7 @@ export default function RestaurantOnboarding() {
       title: title || "Select image source",
       onSelectFile,
       fileNamePrefix: fileNamePrefix || "camera-image",
-      fallbackInputRef: fallbackInputRef || null,
-    })
+      fallbackInputRef: fallbackInputRef || null })
   }
 
   const closeImageSourcePicker = () => {
@@ -819,8 +790,7 @@ export default function RestaurantOnboarding() {
     const nextMenuImages = [...(step2.menuImages || []), ...files]
     setStep2((prev) => ({
       ...prev,
-      menuImages: nextMenuImages,
-    }))
+      menuImages: nextMenuImages }))
     void persistMenuImagesToDB(nextMenuImages)
   }
 
@@ -851,8 +821,7 @@ export default function RestaurantOnboarding() {
     if (!file) return
     setStep2((prev) => ({
       ...prev,
-      profileImage: file,
-    }))
+      profileImage: file }))
     void saveFileToDB("profileImage", file)
   }
 
@@ -884,8 +853,7 @@ export default function RestaurantOnboarding() {
     if (value?.url && typeof value.url === "string" && value.url.trim()) {
       return {
         url: value.url.trim(),
-        publicId: value.publicId || null,
-      }
+        publicId: value.publicId || null }
     }
 
     return null
@@ -899,8 +867,7 @@ export default function RestaurantOnboarding() {
           ? img
           : {
             url: img.url,
-            publicId: img.publicId || null,
-          },
+            publicId: img.publicId || null },
       )
 
   const handleRemoveMenuImage = async (indexToRemove) => {
@@ -910,8 +877,7 @@ export default function RestaurantOnboarding() {
 
     setStep2((prev) => ({
       ...prev,
-      menuImages: nextMenuImages,
-    }))
+      menuImages: nextMenuImages }))
     await persistMenuImagesToDB(nextMenuImages)
 
     if (!isPersistedImageValue(imageToRemove)) {
@@ -920,14 +886,12 @@ export default function RestaurantOnboarding() {
 
     try {
       await restaurantAPI.updateProfile({
-        menuImages: toPersistedMenuImagesPayload(nextMenuImages),
-      })
+        menuImages: toPersistedMenuImagesPayload(nextMenuImages) })
       toast.success("Menu image removed")
     } catch (error) {
       setStep2((prev) => ({
         ...prev,
-        menuImages: currentMenuImages,
-      }))
+        menuImages: currentMenuImages }))
       await persistMenuImagesToDB(currentMenuImages)
       toast.error(error?.response?.data?.message || "Failed to remove menu image")
     }
@@ -937,8 +901,7 @@ export default function RestaurantOnboarding() {
     const currentProfileImage = step2.profileImage
     setStep2((prev) => ({
       ...prev,
-      profileImage: null,
-    }))
+      profileImage: null }))
 
     if (!isPersistedImageValue(currentProfileImage)) {
       return
@@ -950,8 +913,7 @@ export default function RestaurantOnboarding() {
     } catch (error) {
       setStep2((prev) => ({
         ...prev,
-        profileImage: currentProfileImage,
-      }))
+        profileImage: currentProfileImage }))
       toast.error(error?.response?.data?.message || "Failed to remove profile image")
     }
   }
@@ -1077,8 +1039,7 @@ export default function RestaurantOnboarding() {
               pincode: loc.pincode || apiData.pincode || "",
               landmark: loc.landmark || "",
               latitude: loc.latitude || "",
-              longitude: loc.longitude || "",
-            }
+              longitude: loc.longitude || "" }
           }))
 
           setStep2(prev => ({
@@ -1090,8 +1051,7 @@ export default function RestaurantOnboarding() {
             estimatedDeliveryTime: s2.estimatedDeliveryTime || apiData.estimatedDeliveryTime || "",
             openingTime: normalizeTimeValue(s2.openingTime || apiData.openingTime),
             closingTime: normalizeTimeValue(s2.closingTime || apiData.closingTime),
-            openDays: Array.isArray(s2.openDays) ? s2.openDays : (Array.isArray(apiData.openDays) ? apiData.openDays : []),
-          }))
+            openDays: Array.isArray(s2.openDays) ? s2.openDays : (Array.isArray(apiData.openDays) ? apiData.openDays : []) }))
 
           setStep3(prev => ({
             ...prev,
@@ -1110,8 +1070,7 @@ export default function RestaurantOnboarding() {
             confirmAccountNumber: pay.accountNumber || apiData.accountNumber || "",
             ifscCode: normalizeIFSC(pay.ifscCode || apiData.ifscCode),
             accountHolderName: pay.accountHolderName || apiData.accountHolderName || "",
-            accountType: normalizeAccountTypeValue(pay.accountType || apiData.accountType),
-          }))
+            accountType: normalizeAccountTypeValue(pay.accountType || apiData.accountType) }))
         }
 
         // 3. APPLY LOCAL OVERRIDES (The "Persistence" fix)
@@ -1135,8 +1094,7 @@ export default function RestaurantOnboarding() {
                 ...prev,
                 ...localData.step2,
                 openingTime: normalizeTimeValue(localData.step2.openingTime),
-                closingTime: normalizeTimeValue(localData.step2.closingTime),
-              }));
+                closingTime: normalizeTimeValue(localData.step2.closingTime) }));
             }
             if (localData.step3) {
               setStep3(prev => ({ ...prev, ...localData.step3 }));
@@ -1201,8 +1159,7 @@ export default function RestaurantOnboarding() {
     if (!verifiedPhoneNumber) return
     setStep1((prev) => ({
       ...prev,
-      ownerPhone: verifiedPhoneNumber,
-    }))
+      ownerPhone: verifiedPhoneNumber }))
   }, [verifiedPhoneNumber])
 
   useEffect(() => {
@@ -1543,8 +1500,7 @@ export default function RestaurantOnboarding() {
     if (validationErrors.length > 0) {
       // Surface only the first error so validation proceeds top-to-bottom.
       toast.error(validationErrors[0], {
-        duration: 4000,
-      })
+        duration: 4000 })
       debugLog('? Validation failed:', validationErrors)
       return
     }
@@ -1591,8 +1547,7 @@ export default function RestaurantOnboarding() {
               pincode: step1.location?.pincode || "",
               landmark: step1.location?.landmark || "",
               latitude: step1.location?.latitude || "",
-              longitude: step1.location?.longitude || "",
-            },
+              longitude: step1.location?.longitude || "" },
             cuisines: Array.isArray(step2.cuisines) ? step2.cuisines : [],
             estimatedDeliveryTime: (step2.estimatedDeliveryTime || "").trim(),
             openingTime: normalizeTimeValue(step2.openingTime) || "",
@@ -1613,8 +1568,7 @@ export default function RestaurantOnboarding() {
             accountNumber: step3.accountNumber || "",
             ifscCode: (step3.ifscCode || "").toUpperCase(),
             accountHolderName: step3.accountHolderName || "",
-            accountType: step3.accountType || "",
-          }
+            accountType: step3.accountType || "" }
 
           await restaurantAPI.updateProfile(updatePayload)
 
@@ -1709,9 +1663,7 @@ export default function RestaurantOnboarding() {
         navigate("/food/restaurant/pending-verification", {
           replace: true,
           state: {
-            phone: normalizePhoneDigits(step1.ownerPhone),
-          },
-        })
+            phone: normalizePhoneDigits(step1.ownerPhone) } })
       }
     } catch (err) {
       const msg =
@@ -1796,8 +1748,7 @@ export default function RestaurantOnboarding() {
               onChange={(e) =>
                 setStep1({
                   ...step1,
-                  ownerName: formatNameToCapital(e.target.value.replace(/[^A-Za-z ]/g, "")),
-                })
+                  ownerName: formatNameToCapital(e.target.value.replace(/[^A-Za-z ]/g, "")) })
               }
               className="mt-1 bg-white text-sm"
               placeholder="Owner full name"
@@ -1965,8 +1916,7 @@ export default function RestaurantOnboarding() {
             onChange={(e) =>
               setStep1({
                 ...step1,
-                location: { ...step1.location, addressLine1: e.target.value },
-              })
+                location: { ...step1.location, addressLine1: e.target.value } })
             }
             className="bg-white text-sm"
             placeholder="Shop no. / building no. (optional)"
@@ -1977,8 +1927,7 @@ export default function RestaurantOnboarding() {
             onChange={(e) =>
               setStep1({
                 ...step1,
-                location: { ...step1.location, addressLine2: e.target.value },
-              })
+                location: { ...step1.location, addressLine2: e.target.value } })
             }
             className="bg-white text-sm"
             placeholder="Floor / tower (optional)"
@@ -1989,8 +1938,7 @@ export default function RestaurantOnboarding() {
             onChange={(e) =>
               setStep1({
                 ...step1,
-                location: { ...step1.location, landmark: e.target.value },
-              })
+                location: { ...step1.location, landmark: e.target.value } })
             }
             className="bg-white text-sm"
             placeholder="Nearby landmark (optional)"
@@ -2001,8 +1949,7 @@ export default function RestaurantOnboarding() {
             onChange={(e) =>
               setStep1({
                 ...step1,
-                location: { ...step1.location, area: e.target.value },
-              })
+                location: { ...step1.location, area: e.target.value } })
             }
             className="bg-white text-sm"
             placeholder="Area / Sector / Locality*"
@@ -2013,8 +1960,7 @@ export default function RestaurantOnboarding() {
             onChange={(e) =>
               setStep1({
                 ...step1,
-                location: { ...step1.location, city: e.target.value },
-              })
+                location: { ...step1.location, city: e.target.value } })
             }
             className="bg-white text-sm"
             placeholder="City*"
@@ -2026,8 +1972,7 @@ export default function RestaurantOnboarding() {
               onChange={(e) =>
                 setStep1({
                   ...step1,
-                  location: { ...step1.location, state: e.target.value },
-                })
+                  location: { ...step1.location, state: e.target.value } })
               }
               className="bg-white text-sm"
               placeholder="State"
@@ -2038,8 +1983,7 @@ export default function RestaurantOnboarding() {
               onChange={(e) =>
                 setStep1({
                   ...step1,
-                  location: { ...step1.location, pincode: normalizePincode(e.target.value) },
-                })
+                  location: { ...step1.location, pincode: normalizePincode(e.target.value) } })
               }
               className="bg-white text-sm"
               placeholder="Pincode"
@@ -2344,8 +2288,7 @@ export default function RestaurantOnboarding() {
                 title: "Upload profile image",
                 fileNamePrefix: "profile-image",
                 fallbackInputRef: profileImageInputRef,
-                onSelectFile: handleProfileImageSelected,
-              })
+                onSelectFile: handleProfileImageSelected })
             }
           >
             <Upload className="w-4 h-4 mr-1.5" />
@@ -2457,8 +2400,7 @@ export default function RestaurantOnboarding() {
               onChange={(e) =>
                 setStep3({
                   ...step3,
-                  nameOnPan: formatNameToCapital(e.target.value.replace(/[^A-Za-z ]/g, "")),
-                })
+                  nameOnPan: formatNameToCapital(e.target.value.replace(/[^A-Za-z ]/g, "")) })
               }
               className="mt-1 bg-white text-sm"
             />
@@ -2475,8 +2417,7 @@ export default function RestaurantOnboarding() {
                 title: "Upload PAN image",
                 fileNamePrefix: "pan-image",
                 fallbackInputRef: panImageInputRef,
-                onSelectFile: handlePanImageSelected,
-              })
+                onSelectFile: handlePanImageSelected })
             }
           >
             <Upload className="w-4 h-4 mr-1.5" />
@@ -2555,8 +2496,7 @@ export default function RestaurantOnboarding() {
               onChange={(e) =>
                 setStep3({
                   ...step3,
-                  gstLegalName: formatNameToCapital(e.target.value.replace(/[^A-Za-z ]/g, "")),
-                })
+                  gstLegalName: formatNameToCapital(e.target.value.replace(/[^A-Za-z ]/g, "")) })
               }
               className="bg-white text-sm"
               placeholder="Legal name"
@@ -2576,8 +2516,7 @@ export default function RestaurantOnboarding() {
                   title: "Upload GST image",
                   fileNamePrefix: "gst-image",
                   fallbackInputRef: gstImageInputRef,
-                  onSelectFile: handleGstImageSelected,
-                })
+                  onSelectFile: handleGstImageSelected })
               }
             >
               <Upload className="w-4 h-4 mr-1.5" />
@@ -2648,8 +2587,7 @@ export default function RestaurantOnboarding() {
                       ? parseLocalYMDDate(step3.fssaiExpiry)?.toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
-                        day: "numeric",
-                      })
+                        day: "numeric" })
                       : "Select expiry date"}
                   </span>
                   <CalendarIcon className="w-4 h-4 text-gray-500" />
@@ -2687,8 +2625,7 @@ export default function RestaurantOnboarding() {
               title: "Upload FSSAI image",
               fileNamePrefix: "fssai-image",
               fallbackInputRef: fssaiImageInputRef,
-              onSelectFile: handleFssaiImageSelected,
-            })
+              onSelectFile: handleFssaiImageSelected })
           }
         >
           <Upload className="w-4 h-4 mr-1.5" />
@@ -2773,8 +2710,7 @@ export default function RestaurantOnboarding() {
           onChange={(e) =>
             setStep3({
               ...step3,
-              accountHolderName: formatNameToCapital(e.target.value.replace(/[^A-Za-z ]/g, "")),
-            })
+              accountHolderName: formatNameToCapital(e.target.value.replace(/[^A-Za-z ]/g, "")) })
           }
           className="bg-white text-sm"
           placeholder="Account holder name"

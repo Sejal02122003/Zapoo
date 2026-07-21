@@ -43,8 +43,7 @@ export default function HomeHeader({
   const {
     items: broadcastNotifications,
     unreadCount: broadcastUnreadCount,
-    dismiss: dismissBroadcastNotification,
-  } = useNotificationInbox("user", { limit: 20 });
+    dismiss: dismissBroadcastNotification } = useNotificationInbox("user", { limit: 20 });
 
   useEffect(() => {
     const syncNotifications = () => {
@@ -70,13 +69,11 @@ export default function HomeHeader({
           month: "short",
           hour: "2-digit",
           minute: "2-digit",
-          hour12: true,
-        })
+          hour12: true })
         : "Just now",
       type: "broadcast",
       icon: "Bell",
-      iconColor: "text-blue-600",
-    }));
+      iconColor: "text-blue-600" }));
 
     return [...broadcastItems, ...localItems].sort(
       (a, b) =>

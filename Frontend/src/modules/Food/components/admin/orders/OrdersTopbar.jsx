@@ -5,8 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@food/components/ui/dropdown-menu"
+  DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { FileSpreadsheet, FileText } from "lucide-react"
 
 export default function OrdersTopbar({
@@ -17,8 +16,7 @@ export default function OrdersTopbar({
   onFilterClick,
   activeFiltersCount,
   onExport,
-  onSettingsClick,
-}) {
+  onSettingsClick }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

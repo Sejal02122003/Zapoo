@@ -16,15 +16,13 @@ export default function AddPayment() {
     expiryMonth: "",
     expiryYear: "",
     cvv: "",
-    type: "visa",
-  })
+    type: "visa" })
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData({
       ...formData,
-      [name]: value,
-    })
+      [name]: value })
 
     // Auto-detect card type based on first digit
     if (name === "cardNumber" && value.length > 0) {

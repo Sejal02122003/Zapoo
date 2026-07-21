@@ -56,8 +56,8 @@ const resolveBackPath = ({ pathname, search, state }) => {
   }
 
   if (/^\/user\/restaurants\/[^/]+$/.test(normalizedPath)) {
-    if (searchParams.get("under250") === "true") {
-      return "/food/user/under-250"
+    if (searchParams.get("under99") === "true") {
+      return "/food/user/under99"
     }
     return explicitBackPath || "/food/user"
   }

@@ -4,8 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@food/components/ui/dialog"
+  DialogDescription } from "@food/components/ui/dialog"
 
 export default function ViewZoneDialog({ isOpen, onOpenChange, zone }) {
   return (

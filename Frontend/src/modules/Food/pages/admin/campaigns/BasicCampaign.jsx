@@ -19,16 +19,14 @@ export default function BasicCampaign() {
   const [filters, setFilters] = useState({
     status: "",
     fromDate: "",
-    toDate: "",
-  })
+    toDate: "" })
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     title: true,
     dateDuration: true,
     timeDuration: true,
     status: true,
-    actions: true,
-  })
+    actions: true })
 
   const filteredCampaigns = useMemo(() => {
     let result = [...campaigns]
@@ -106,8 +104,7 @@ export default function BasicCampaign() {
       const newCampaign = {
         sl: campaigns.length > 0 ? Math.max(...campaigns.map(c => c.sl)) + 1 : 1,
         ...formData,
-        status: true,
-      }
+        status: true }
       setCampaigns([...campaigns, newCampaign])
     }
   }
@@ -151,8 +148,7 @@ export default function BasicCampaign() {
       dateDuration: true,
       timeDuration: true,
       status: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const columnConfig = {
@@ -161,8 +157,7 @@ export default function BasicCampaign() {
     dateDuration: "Date Duration",
     timeDuration: "Time Duration",
     status: "Status",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">

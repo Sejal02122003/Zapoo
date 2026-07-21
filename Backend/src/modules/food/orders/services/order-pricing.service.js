@@ -267,11 +267,14 @@ export async function calculateOrderPricing(userId, dto) {
   // --- Location Coupon Service Execution ---
   let restaurantCouponDiscount = 0;
   let appliedRestaurantCoupon = null;
+  const restaurantCodeRaw = dto.restaurantCouponCode
+    ? String(dto.restaurantCouponCode).trim().toUpperCase()
+    : "";
 
-  if (codeRaw) {
+  if (restaurantCodeRaw) {
     const itemsCount = items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
     const locationRes = await validateLocationCoupon({
-        couponCode: codeRaw,
+        couponCode: restaurantCodeRaw,
         restaurantId: dto.restaurantId,
         subtotal,
         itemsCount,
@@ -282,13 +285,6 @@ export async function calculateOrderPricing(userId, dto) {
         // We found a valid location coupon!
         restaurantCouponDiscount = locationRes.discount;
         appliedRestaurantCoupon = locationRes.appliedCoupon;
-        
-        // Since it's mutually exclusive and we use the same coupon code field:
-        // Override global coupon if the location coupon matches.
-        // Or if both matched somehow, location coupon takes precedence (or we can just clear global)
-        discount = 0;
-        appliedCoupon = null;
-        couponError = null; 
     } else if (locationRes.error && !appliedCoupon) {
         // If neither global nor location coupon was valid, show the location coupon error
         // ONLY if the global coupon error was generic "Invalid or expired"
@@ -325,7 +321,8 @@ export async function calculateOrderPricing(userId, dto) {
       restaurantCouponDiscount: restaurantCouponDiscount > 0 ? restaurantCouponDiscount : undefined,
       total,
       currency: "INR",
-      couponCode: appliedCoupon?.code || appliedRestaurantCoupon?.code || codeRaw || null,
+      couponCode: appliedCoupon?.code || codeRaw || null,
+      restaurantCouponCode: appliedRestaurantCoupon?.code || restaurantCodeRaw || null,
       appliedCoupon,
       appliedRestaurantCoupon,
       couponError,

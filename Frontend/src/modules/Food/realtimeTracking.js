@@ -103,8 +103,7 @@ export async function writeDeliveryLocation({
   isOnline = true,
   activeOrderId = null,
   accuracy = null,
-  timestamp = Date.now(),
-}) {
+  timestamp = Date.now() }) {
   if (!deliveryId) return false;
   ensureFirebaseInitialized({ enableAuth: false, enableRealtimeDb: true });
   const payload = {
@@ -116,8 +115,7 @@ export async function writeDeliveryLocation({
     timestamp: toFiniteNumber(timestamp) || Date.now(),
     last_updated: Date.now(),
     isOnline: Boolean(isOnline),
-    activeOrderId: activeOrderId ? String(activeOrderId) : null,
-  };
+    activeOrderId: activeOrderId ? String(activeOrderId) : null };
   await set(ref(firebaseRealtimeDb, getDeliveryLocationPath(deliveryId)), payload);
   return true;
 }
@@ -135,8 +133,7 @@ export async function writeOrderTracking(orderId, payload = {}) {
     lat: toFiniteNumber(payload.lat),
     lng: toFiniteNumber(payload.lng),
     heading: toFiniteNumber(payload.heading ?? payload.bearing) || 0,
-    last_updated: Date.now(),
-  };
+    last_updated: Date.now() };
   if (payload.timestamp != null) {
     toWrite.timestamp = toFiniteNumber(payload.timestamp) || Date.now();
   }

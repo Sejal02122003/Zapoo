@@ -25,8 +25,7 @@ export default function EarningAddon() {
     endDate: true,
     status: true,
     redemptions: true,
-    actions: true,
-  })
+    actions: true })
 
   // Form state
   const [formData, setFormData] = useState({
@@ -35,8 +34,7 @@ export default function EarningAddon() {
     earningAmount: "",
     startDate: "",
     endDate: "",
-    maxRedemptions: "",
-  })
+    maxRedemptions: "" })
 
   useEffect(() => {
     fetchEarningAddons()
@@ -98,8 +96,7 @@ export default function EarningAddon() {
         earningAmount: addon.earningAmount?.toString() || "",
         startDate: addon.startDate ? new Date(addon.startDate).toISOString().split('T')[0] : "",
         endDate: addon.endDate ? new Date(addon.endDate).toISOString().split('T')[0] : "",
-        maxRedemptions: addon.maxRedemptions?.toString() || "",
-      })
+        maxRedemptions: addon.maxRedemptions?.toString() || "" })
     } else {
       setSelectedAddon(null)
       setIsEditMode(false)
@@ -109,8 +106,7 @@ export default function EarningAddon() {
         earningAmount: "",
         startDate: "",
         endDate: "",
-        maxRedemptions: "",
-      })
+        maxRedemptions: "" })
     }
     setIsDialogOpen(true)
   }
@@ -125,8 +121,7 @@ export default function EarningAddon() {
       earningAmount: "",
       startDate: "",
       endDate: "",
-      maxRedemptions: "",
-    })
+      maxRedemptions: "" })
   }
 
   const handleSubmit = async (e) => {
@@ -168,8 +163,7 @@ export default function EarningAddon() {
         earningAmount: parseFloat(formData.earningAmount),
         startDate: formData.startDate,
         endDate: formData.endDate,
-        maxRedemptions: formData.maxRedemptions && formData.maxRedemptions.trim() ? parseInt(formData.maxRedemptions) : null,
-      }
+        maxRedemptions: formData.maxRedemptions && formData.maxRedemptions.trim() ? parseInt(formData.maxRedemptions) : null }
 
       debugLog('Submitting earning addon:', { isEditMode, payload })
 
@@ -255,8 +249,7 @@ export default function EarningAddon() {
       endDate: true,
       status: true,
       redemptions: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const columnsConfig = {
@@ -267,16 +260,14 @@ export default function EarningAddon() {
     endDate: "End Date",
     status: "Status",
     redemptions: "Redemptions",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   const getStatusBadge = (status, isValid) => {
     const statusConfig = {
       active: { bg: "bg-green-100", text: "text-green-700", label: "Active" },
       inactive: { bg: "bg-gray-100", text: "text-gray-700", label: "Inactive" },
       expired: { bg: "bg-red-100", text: "text-red-700", label: "Expired" },
-      completed: { bg: "bg-blue-100", text: "text-blue-700", label: "Completed" },
-    }
+      completed: { bg: "bg-blue-100", text: "text-blue-700", label: "Completed" } }
     const config = statusConfig[status] || statusConfig.inactive
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>

@@ -29,8 +29,7 @@ export default function RestaurantWithdraws() {
     restaurantAddress: false,
     requestTime: true,
     status: true,
-    actions: true,
-  })
+    actions: true })
 
   // Fetch withdrawal requests
   useEffect(() => {
@@ -229,8 +228,7 @@ export default function RestaurantWithdraws() {
       restaurantAddress: false,
       requestTime: true,
       status: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   return (

@@ -17,8 +17,7 @@ export default function AddDeliveryman() {
     birthdate: "",
     phone: "+1",
     password: "",
-    confirmPassword: "",
-  })
+    confirmPassword: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
@@ -80,8 +79,7 @@ export default function AddDeliveryman() {
       birthdate: "",
       phone: "+1",
       password: "",
-      confirmPassword: "",
-    })
+      confirmPassword: "" })
   }
 
   return (

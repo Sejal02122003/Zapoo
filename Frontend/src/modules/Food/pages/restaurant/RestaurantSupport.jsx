@@ -47,8 +47,7 @@ export default function RestaurantSupport() {
     subject: "",
     orderRef: "",
     priority: "medium",
-    description: "",
-  })
+    description: "" })
 
   const stats = useMemo(() => {
     const total = tickets.length
@@ -64,8 +63,7 @@ export default function RestaurantSupport() {
       const response = await restaurantAPI.getSupportTickets({
         status: statusFilter || undefined,
         limit: 100,
-        page: 1,
-      })
+        page: 1 })
       const list = response?.data?.data?.tickets || []
       setTickets(list)
     } catch (error) {
@@ -94,8 +92,7 @@ export default function RestaurantSupport() {
         subject: form.subject.trim(),
         orderRef: form.orderRef.trim(),
         priority: form.priority,
-        description: form.description.trim(),
-      })
+        description: form.description.trim() })
       toast.success("Support ticket submitted")
       setForm((prev) => ({ ...prev, issueType: "", subject: "", orderRef: "", description: "" }))
       await loadTickets()

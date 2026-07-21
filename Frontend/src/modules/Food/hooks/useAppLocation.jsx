@@ -16,8 +16,7 @@ export function useAppLocation() {
       zoneStatus: 'loading',
       loading: true,
       isOutOfService: false,
-      deliveryAddressMode: 'saved',
-    };
+      deliveryAddressMode: 'saved' };
   }
 
   return {
@@ -33,6 +32,5 @@ export function useAppLocation() {
     requestLocation: ctx.requestLocation,
     setSavedLocation: ctx.setSavedLocation,
     setDeliveryAddressMode: ctx.setDeliveryAddressMode,
-    refreshZone: ctx.refreshZone,
-  };
+    refreshZone: ctx.refreshZone };
 }

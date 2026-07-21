@@ -50,8 +50,7 @@ export default function TakeawayRestaurantRow({ restaurant }) {
             restaurantName: restaurant.name,
             restaurantSlug: restaurant.slug,
             restaurantRaw: restaurant,
-            isClosed: !getRestaurantAvailabilityStatus(restaurant).isOpen,
-          }))
+            isClosed: !getRestaurantAvailabilityStatus(restaurant).isOpen }))
 
         setMenuItems(formattedItems)
       } catch (error) {

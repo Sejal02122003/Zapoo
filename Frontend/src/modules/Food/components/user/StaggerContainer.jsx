@@ -44,8 +44,7 @@ export default function StaggerContainer({ children, className = "" }) {
       ref={ref}
       className={className}
       style={{
-        opacity: isVisible ? 1 : 0,
-      }}
+        opacity: isVisible ? 1 : 0 }}
     >
       {isVisible && children}
     </div>

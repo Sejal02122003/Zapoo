@@ -224,8 +224,7 @@ export default function DeliveryBoyViewMap() {
       fullscreenControl: true,
       scrollwheel: true,
       gestureHandling: 'greedy',
-      disableDoubleClickZoom: false,
-    })
+      disableDoubleClickZoom: false })
 
     mapInstanceRef.current = map
     setMapLoading(false)

@@ -9,8 +9,7 @@ import { Input } from "@food/components/ui/input"
 import {
   CategoryChipRowSkeleton,
   LoadingSkeletonRegion,
-  RestaurantGridSkeleton,
-} from "@food/components/ui/loading-skeletons"
+  RestaurantGridSkeleton } from "@food/components/ui/loading-skeletons"
 
 // Import shared food images - prevents duplication
 import { foodImages } from "@food/constants/images"
@@ -31,7 +30,7 @@ const filterOptions = [
   { id: 'under-30-mins', label: 'Under 30 mins' },
   { id: 'price-match', label: 'Price Match', hasIcon: true },
   { id: 'flat-50-off', label: 'Flat 50% OFF', hasIcon: true },
-  { id: 'under-250', label: 'Under ₹250' },
+  { id: 'under-99', label: 'Under ₹99' },
   { id: 'rating-4-plus', label: 'Rating 4.0+' },
 ]
 
@@ -208,19 +207,14 @@ export default function CategoryPage() {
         name: section?.name || section?.title || "Unnamed Section",
         items: toArray(section?.items).map((item, itemIndex) => ({
           ...item,
-          id: String(item?.id || item?._id || `${sectionIndex}-${itemIndex}`),
-        })),
+          id: String(item?.id || item?._id || `${sectionIndex}-${itemIndex}`) })),
         subsections: toArray(section?.subsections).map((subsection, subsectionIndex) => ({
           ...subsection,
           id: String(subsection?.id || subsection?._id || `subsection-${sectionIndex}-${subsectionIndex}`),
           name: subsection?.name || "Unnamed Subsection",
           items: toArray(subsection?.items).map((item, itemIndex) => ({
             ...item,
-            id: String(item?.id || item?._id || `${sectionIndex}-${subsectionIndex}-${itemIndex}`),
-          })),
-        })),
-      })),
-    }
+            id: String(item?.id || item?._id || `${sectionIndex}-${subsectionIndex}-${itemIndex}`) })) })) })) }
   }
 
   const fetchApprovedFoods = async () => {
@@ -310,8 +304,7 @@ export default function CategoryPage() {
           id: sectionKey || `section-${index}`,
           name: sectionName,
           items: [],
-          subsections: [],
-        })
+          subsections: [] })
       }
 
       sectionsMap.get(sectionKey).items.push({
@@ -327,13 +320,11 @@ export default function CategoryPage() {
         categoryName: food?.categoryName || sectionName,
         category: food?.categoryName || sectionName,
         preparationTime: food?.preparationTime || "",
-        approvalStatus: food?.approvalStatus || "approved",
-      })
+        approvalStatus: food?.approvalStatus || "approved" })
     })
 
     return {
-      sections: Array.from(sectionsMap.values()),
-    }
+      sections: Array.from(sectionsMap.values()) }
   }
 
   const getCategoryFallbackDishesFromApprovedFoods = (categoryId, restaurants) => {
@@ -413,8 +404,7 @@ export default function CategoryPage() {
           categoryDishName: food?.name || "Unnamed Item",
           categoryDishPrice: Number(food?.price || 0),
           categoryDishImage: fallbackImage,
-          categoryDishFoodType: food?.foodType || "Non-Veg",
-        }
+          categoryDishFoodType: food?.foodType || "Non-Veg" }
       })
   }
 
@@ -516,7 +506,7 @@ export default function CategoryPage() {
       })
     }
 
-    if (activeFilters.has('under-250')) {
+    if (activeFilters.has('under-99')) {
       nextRows = nextRows.filter((row) => {
         const price = getComparablePrice(row)
         return price != null && price <= 250
@@ -604,8 +594,7 @@ export default function CategoryPage() {
               name: cat.name,
               image: cat.image || foodImages[0],
               slug: cat.slug || cat.name.toLowerCase().replace(/\s+/g, '-'),
-              type: cat.type,
-            }))
+              type: cat.type }))
           ]
 
           setCategories(transformedCategories)
@@ -808,8 +797,7 @@ export default function CategoryPage() {
                 image: dishImage,
                 originalPrice: originalPrice,
                 itemId: item?._id || item?.id || `${item?.name}-${finalPrice}`,
-                foodType: item?.foodType,
-              })
+                foodType: item?.foodType })
             }
           }
         }
@@ -923,8 +911,7 @@ export default function CategoryPage() {
                 restaurantId: restaurantId,
                 pureVegRestaurant: restaurant.pureVegRestaurant || false,
                 hasPaneer: false,
-                category: 'all',
-              }
+                category: 'all' }
             }).filter(Boolean)
 
           startTransition(() => {
@@ -1003,8 +990,7 @@ export default function CategoryPage() {
                           hasPaneer: hasPaneer,
                           featuredDish: featuredDish || null,
                           featuredPrice: featuredPrice || null,
-                          categoryMatches: {},
-                        }
+                          categoryMatches: {} }
                       }
                     } catch (error) {
                       debugWarn(`Failed to fetch menu for restaurant ${restaurant.restaurantId}:`, error)
@@ -1014,8 +1000,7 @@ export default function CategoryPage() {
                       ...restaurant,
                       menu: null,
                       hasPaneer: false,
-                      categoryMatches: {},
-                    }
+                      categoryMatches: {} }
                   })
                 )
 
@@ -1099,8 +1084,7 @@ export default function CategoryPage() {
       const stored = raw ? JSON.parse(raw) : {}
       stored[currentFilterStorageKey] = {
         sortBy,
-        activeFilters: Array.from(activeFilters),
-      }
+        activeFilters: Array.from(activeFilters) }
       window.localStorage.setItem(CATEGORY_PAGE_FILTERS_STORAGE_KEY, JSON.stringify(stored))
     } catch {
       // Ignore storage failures and keep in-memory filters working.
@@ -1117,8 +1101,7 @@ export default function CategoryPage() {
     selectedButton.scrollIntoView({
       behavior: "smooth",
       inline: "center",
-      block: "nearest",
-    })
+      block: "nearest" })
   }, [selectedCategory, categories])
 
   const toggleFilter = (filterId) => {
@@ -1208,8 +1191,7 @@ export default function CategoryPage() {
                 categoryDishName: dishForCard.name,
                 categoryDishPrice: dishForCard.price,
                 categoryDishImage: dishForCard.image,
-                categoryDishFoodType: dishForCard.foodType,
-              })
+                categoryDishFoodType: dishForCard.foodType })
             })
           }
         }
@@ -1295,8 +1277,7 @@ export default function CategoryPage() {
             className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-4 md:px-6 py-3 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800"
             style={{
               scrollbarWidth: "none",
-              msOverflowStyle: "none",
-            }}
+              msOverflowStyle: "none" }}
           >
             {showCategorySkeleton ? (
               <CategoryChipRowSkeleton className="py-3" />
@@ -1358,8 +1339,7 @@ export default function CategoryPage() {
               className="flex items-center gap-2 overflow-x-auto md:overflow-x-visible scrollbar-hide pb-1 md:pb-0"
               style={{
                 scrollbarWidth: "none",
-                msOverflowStyle: "none",
-              }}
+                msOverflowStyle: "none" }}
             >
               <Button
                 variant="outline"
@@ -1397,14 +1377,13 @@ export default function CategoryPage() {
               className="flex items-center gap-2 overflow-x-auto md:overflow-x-visible scrollbar-hide pb-1 md:pb-0"
               style={{
                 scrollbarWidth: "none",
-                msOverflowStyle: "none",
-              }}
+                msOverflowStyle: "none" }}
             >
               {[
                 { id: 'distance-under-1km', label: 'Under 1km', icon: MapPin },
                 { id: 'distance-under-2km', label: 'Under 2km', icon: MapPin },
                 { id: 'flat-50-off', label: 'Flat 50% OFF' },
-                { id: 'under-250', label: 'Under ₹250' },
+                { id: 'under-99', label: 'Under ₹99' },
               ].map((filter) => {
                 const Icon = filter.icon
                 const isActive = activeFilters.has(filter.id)
@@ -1437,8 +1416,7 @@ export default function CategoryPage() {
               titlePrefix: "FRESH & TASTY",
               titleMain: String(categoryName).toUpperCase(),
               description: `Discover delicious ${categoryName} from our top restaurants!`,
-              emojis: ["😋", "✨", "🍽️", "🔥"],
-            };
+              emojis: ["😋", "✨", "🍽️", "🔥"] };
             const collection = COLLECTION_DATA[selectedCategory] || fallbackCollection;
 
             return (
@@ -1998,13 +1976,13 @@ export default function CategoryPage() {
                             <span className={`text-sm md:text-base font-medium ${activeFilters.has('price-under-200') ? 'text-primary' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹200</span>
                           </button>
                           <button
-                            onClick={() => toggleFilter('under-250')}
-                            className={`px-4 md:px-5 py-3 md:py-4 rounded-xl border text-left transition-colors ${activeFilters.has('under-250')
+                            onClick={() => toggleFilter('under-99')}
+                            className={`px-4 md:px-5 py-3 md:py-4 rounded-xl border text-left transition-colors ${activeFilters.has('under-99')
                               ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
                               : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
                               }`}
                           >
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('under-250') ? 'text-primary' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹250</span>
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('under-99') ? 'text-primary' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹99</span>
                           </button>
                           <button
                             onClick={() => toggleFilter('price-under-500')}

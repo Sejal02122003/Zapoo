@@ -1,11 +1,11 @@
-import { FoodUnder250Banner } from '../models/under250Banner.model.js';
+import { FoodUnder99Banner } from '../models/under99Banner.model.js';
 import { v2 as cloudinary } from 'cloudinary';
 
-export const listUnder250Banners = async () => {
-    return FoodUnder250Banner.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
+export const listUnder99Banners = async () => {
+    return FoodUnder99Banner.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
 };
 
-export const createUnder250BannersFromFiles = async (files, meta = {}) => {
+export const createUnder99BannersFromFiles = async (files, meta = {}) => {
     if (!files || !files.length) {
         return [];
     }
@@ -16,7 +16,7 @@ export const createUnder250BannersFromFiles = async (files, meta = {}) => {
         try {
             const uploadResult = await new Promise((resolve, reject) => {
                 const stream = cloudinary.uploader.upload_stream(
-                    { folder: 'food/under-250-banners', resource_type: 'image' },
+                    { folder: 'food/under-99-banners', resource_type: 'image' },
                     (error, result) => {
                         if (error) return reject(error);
                         return resolve(result);
@@ -25,7 +25,7 @@ export const createUnder250BannersFromFiles = async (files, meta = {}) => {
                 stream.end(file.buffer);
             });
 
-            const banner = await FoodUnder250Banner.create({
+            const banner = await FoodUnder99Banner.create({
                 imageUrl: uploadResult.secure_url,
                 publicId: uploadResult.public_id,
                 title: meta.title,
@@ -45,8 +45,8 @@ export const createUnder250BannersFromFiles = async (files, meta = {}) => {
     return results;
 };
 
-export const deleteUnder250Banner = async (id) => {
-    const doc = await FoodUnder250Banner.findById(id);
+export const deleteUnder99Banner = async (id) => {
+    const doc = await FoodUnder99Banner.findById(id);
     if (!doc) {
         return { deleted: false };
     }
@@ -63,8 +63,8 @@ export const deleteUnder250Banner = async (id) => {
     return { deleted: true };
 };
 
-export const updateUnder250BannerOrder = async (id, sortOrder) => {
-    const updated = await FoodUnder250Banner.findByIdAndUpdate(
+export const updateUnder99BannerOrder = async (id, sortOrder) => {
+    const updated = await FoodUnder99Banner.findByIdAndUpdate(
         id,
         { sortOrder },
         { new: true }
@@ -72,8 +72,8 @@ export const updateUnder250BannerOrder = async (id, sortOrder) => {
     return updated;
 };
 
-export const toggleUnder250BannerStatus = async (id, isActive) => {
-    const updated = await FoodUnder250Banner.findByIdAndUpdate(
+export const toggleUnder99BannerStatus = async (id, isActive) => {
+    const updated = await FoodUnder99Banner.findByIdAndUpdate(
         id,
         { isActive },
         { new: true }

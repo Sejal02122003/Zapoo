@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom"
-import { Home, ShoppingBag, Store, Wallet, Menu } from "lucide-react"
+import { Home, ShoppingBag, Store, Menu } from "lucide-react"
+import WalletIcon from "@food/components/ui/WalletIcon";
 
 export default function BottomNavbar({ onMenuClick }) {
   const navigate = useNavigate()
@@ -57,7 +58,7 @@ export default function BottomNavbar({ onMenuClick }) {
             isActive("/food/restaurant/wallet") ? "text-primary" : "text-gray-600"
           }`}
         >
-          <Wallet className="w-6 h-6" />
+          <WalletIcon className="w-6 h-6 object-contain" />
         </button>
         <button
           type="button"

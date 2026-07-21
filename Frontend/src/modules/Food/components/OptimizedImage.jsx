@@ -74,6 +74,7 @@ const OptimizedImage = React.memo(({
   placeholder = 'blur',
   placeholderType = 'food',
   blurDataURL,
+  fallbackSrc,
   onLoad,
   onError,
   ...props
@@ -227,8 +228,7 @@ const OptimizedImage = React.memo(({
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             filter: 'blur(20px)',
-            transform: 'scale(1.1)',
-          }}
+            transform: 'scale(1.1)' }}
         />
       )}
 

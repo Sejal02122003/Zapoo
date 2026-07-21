@@ -14,8 +14,7 @@ import {
   Plus,
   Trash2,
   Upload,
-  X,
-} from "lucide-react"
+  X } from "lucide-react"
 import { restaurantAPI, uploadAPI } from "@food/api"
 import { toast } from "sonner"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
@@ -27,8 +26,7 @@ const defaultFormData = {
   image: "",
   isActive: true,
   sortOrder: 0,
-  foodTypeScope: "Veg",
-}
+  foodTypeScope: "Veg" }
 
 const approvalBadgeClass = (status) => {
   const value = String(status || "pending").toLowerCase()
@@ -122,8 +120,7 @@ export default function MenuCategoriesPage() {
       image: category?.image || "",
       isActive: category?.isActive !== false,
       sortOrder: Number.isFinite(Number(category?.sortOrder)) ? Number(category.sortOrder) : 0,
-      foodTypeScope: category?.foodTypeScope || "Veg",
-    })
+      foodTypeScope: category?.foodTypeScope || "Veg" })
     setSelectedImageFile(null)
     setImagePreview(category?.image || null)
     setShowModal(true)
@@ -173,8 +170,7 @@ export default function MenuCategoriesPage() {
         image: imageUrl,
         isActive: formData.isActive !== false,
         sortOrder: Number.isFinite(Number(formData.sortOrder)) ? Number(formData.sortOrder) : 0,
-        foodTypeScope: formData.foodTypeScope,
-      }
+        foodTypeScope: formData.foodTypeScope }
 
       if (editingCategory) {
         await restaurantAPI.updateCategory(editingCategory._id || editingCategory.id, payload)
@@ -216,8 +212,7 @@ export default function MenuCategoriesPage() {
     }
     try {
       await restaurantAPI.updateCategory(category._id || category.id, {
-        isActive: !(category?.isActive !== false),
-      })
+        isActive: !(category?.isActive !== false) })
       toast.success("Category updated and sent for admin approval")
       fetchCategories()
     } catch (error) {

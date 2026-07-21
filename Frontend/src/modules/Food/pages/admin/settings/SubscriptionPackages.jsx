@@ -25,8 +25,7 @@ export default function SubscriptionPackages() {
     duration: true,
     subscribers: true,
     status: true,
-    actions: true,
-  });
+    actions: true });
 
   const filtered = useMemo(() => {
     return packages.filter((pkg) =>
@@ -54,8 +53,7 @@ export default function SubscriptionPackages() {
       duration: true,
       subscribers: true,
       status: true,
-      actions: true,
-    });
+      actions: true });
   };
 
   const columnsConfig = {
@@ -65,8 +63,7 @@ export default function SubscriptionPackages() {
     duration: "Duration",
     subscribers: "Current Subscriber",
     status: "Status",
-    actions: "Actions",
-  };
+    actions: "Actions" };
 
   const toggleStatus = (id) => {
     setPackages((prev) =>

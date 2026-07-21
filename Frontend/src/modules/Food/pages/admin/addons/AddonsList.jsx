@@ -57,8 +57,7 @@ export default function AddonsList() {
           approvalStatus: "approved",
           search: searchQuery?.trim() ? searchQuery.trim() : undefined,
           limit: 200,
-          page: 1,
-        })
+          page: 1 })
         const data = response?.data?.data?.addons || response?.data?.addons || []
         const approvedOnly = Array.isArray(data)
           ? data.filter((addon) => String(addon.approvalStatus || "").toLowerCase() === "approved")
@@ -108,8 +107,7 @@ export default function AddonsList() {
       name: addon?.draft?.name || addon?.name || "",
       price: addon?.draft?.price ?? addon?.price ?? "",
       description: addon?.draft?.description || addon?.description || "",
-      isAvailable: addon?.isAvailable !== false,
-    })
+      isAvailable: addon?.isAvailable !== false })
     const img =
       addon?.draft?.image ||
       (Array.isArray(addon?.draft?.images) && addon.draft.images[0]) ||
@@ -148,8 +146,7 @@ export default function AddonsList() {
         description: editForm.description.trim(),
         isAvailable: editForm.isAvailable,
         image: imageUrl,
-        images: imageUrl ? [imageUrl] : [],
-      })
+        images: imageUrl ? [imageUrl] : [] })
       setAddons((prev) =>
         (prev || []).map((a) =>
           String(a.id || a._id) === String(id)
@@ -160,8 +157,7 @@ export default function AddonsList() {
                 name: editForm.name.trim(),
                 description: editForm.description.trim(),
                 image: imageUrl || a.image,
-                images: imageUrl ? [imageUrl] : a.images,
-              }
+                images: imageUrl ? [imageUrl] : a.images }
             : a,
         ),
       )

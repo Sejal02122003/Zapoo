@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react"
-import { Search, Download, ChevronDown, Filter, Wallet, RefreshCw, Calendar, Plus, ArrowUpDown, Settings, FileText, FileSpreadsheet, Code, Loader2 } from "lucide-react"
+import { Search, Download, ChevronDown, Filter, RefreshCw, Calendar, Plus, ArrowUpDown, Settings, FileText, FileSpreadsheet, Code, Loader2 } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@food/components/ui/dialog"
 import { exportReportsToCSV, exportReportsToExcel, exportReportsToPDF, exportReportsToJSON } from "@food/components/admin/reports/reportsExportUtils"
@@ -29,8 +30,7 @@ export default function CustomerWalletReport() {
     fromDate: "",
     toDate: "",
     all: "All",
-    customer: "Select Customer",
-  })
+    customer: "Select Customer" })
   const [isFilterOpen, setIsFilterOpen] = useState(true)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -87,8 +87,7 @@ export default function CustomerWalletReport() {
       fromDate: "",
       toDate: "",
       all: "All",
-      customer: "Select Customer",
-    })
+      customer: "Select Customer" })
     setSearchQuery("")
   }
 
@@ -140,7 +139,7 @@ export default function CustomerWalletReport() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-white" />
+              <WalletIcon className="" />
             </div>
             <h1 className="text-2xl font-bold text-slate-900">Customer Wallet Report</h1>
           </div>

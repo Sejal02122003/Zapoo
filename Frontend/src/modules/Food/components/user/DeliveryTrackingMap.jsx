@@ -136,8 +136,7 @@ const DeliveryTrackingMap = ({
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries: MAP_LIBRARIES,
-  });
+    libraries: MAP_LIBRARIES });
 
   if (loadError) {
     return (
@@ -192,8 +191,7 @@ const DeliveryTrackingMap = ({
       const nextPos = {
         lat,
         lng,
-        heading: Number(data?.heading ?? data?.bearing ?? data?.location?.heading ?? 0),
-      };
+        heading: Number(data?.heading ?? data?.bearing ?? data?.location?.heading ?? 0) };
       const now = Date.now();
       const delta = Math.max(300, Math.min(now - (lastUpdateAtRef.current || now), 4000));
       lastUpdateAtRef.current = now;
@@ -202,8 +200,7 @@ const DeliveryTrackingMap = ({
         lastPos: interpStateRef.current.nextPos || nextPos,
         nextPos,
         startTime: now,
-        durationMs: delta,
-      };
+        durationMs: delta };
 
       setRiderLocation(nextPos);
 
@@ -302,8 +299,7 @@ const DeliveryTrackingMap = ({
     lastLiveRouteAtRef.current = now;
     liveRouteOriginRef.current = {
       lat: displayRiderLocation.lat,
-      lng: displayRiderLocation.lng,
-    };
+      lng: displayRiderLocation.lng };
     setLiveRouteRequestKey((key) => key + 1);
     debugLog('🔁 Rider off-route — requesting fresh directions');
     return undefined;
@@ -364,8 +360,7 @@ const DeliveryTrackingMap = ({
     return {
       origin: restaurantCoords,
       destination: customerCoords,
-      travelMode: 'DRIVING',
-    };
+      travelMode: 'DRIVING' };
   }, [
     restaurantCoords?.lat,
     restaurantCoords?.lng,
@@ -380,8 +375,7 @@ const DeliveryTrackingMap = ({
     return {
       origin,
       destination: routeDestination,
-      travelMode: 'DRIVING',
-    };
+      travelMode: 'DRIVING' };
   }, [
     routeDestination?.lat,
     routeDestination?.lng,
@@ -503,11 +497,9 @@ const DeliveryTrackingMap = ({
                     path: 'M 0,-1 0,1',  // vertical line = dash segment
                     strokeOpacity: 0.85,
                     strokeWeight: 5,
-                    scale: 4,
-                  },
+                    scale: 4 },
                   offset: '0',
-                  repeat: '14px',
-                }
+                  repeat: '14px' }
               ]
             }}
           />
@@ -521,8 +513,7 @@ const DeliveryTrackingMap = ({
               strokeColor: remainingColor,
               strokeOpacity: 0.95,
               strokeWeight: 6,
-              zIndex: 8,
-            }}
+              zIndex: 8 }}
           />
         )}
 
@@ -584,8 +575,7 @@ const DeliveryTrackingMap = ({
               style={{
                 transform: `translate(-50%, -50%) rotate(${displayRiderLocation.heading || 0}deg)`,
                 transition: 'transform 0.2s linear',
-                willChange: 'transform',
-              }}
+                willChange: 'transform' }}
               className="relative w-16 h-16"
             >
               <img

@@ -43,13 +43,13 @@ export default function LandingPageManagement() {
   const [exploreIconsUploading, setExploreIconsUploading] = useState({})
   const exploreMoreFileInputRef = useRef(null)
 
-  // Under 250 Banners
-  const [under250Banners, setUnder250Banners] = useState([])
-  const [under250BannersLoading, setUnder250BannersLoading] = useState(true)
-  const [under250BannersUploading, setUnder250BannersUploading] = useState(false)
-  const [under250BannersUploadProgress, setUnder250BannersUploadProgress] = useState({ current: 0, total: 0 })
-  const [under250BannersDeleting, setUnder250BannersDeleting] = useState(null)
-  const under250BannersFileInputRef = useRef(null)
+  // Under 99 Banners
+  const [under99Banners, setUnder99Banners] = useState([])
+  const [under99BannersLoading, setUnder99BannersLoading] = useState(true)
+  const [under99BannersUploading, setUnder99BannersUploading] = useState(false)
+  const [under99BannersUploadProgress, setUnder99BannersUploadProgress] = useState({ current: 0, total: 0 })
+  const [under99BannersDeleting, setUnder99BannersDeleting] = useState(null)
+  const under99BannersFileInputRef = useRef(null)
 
   // Dining Banners
   const [diningBanners, setDiningBanners] = useState([])
@@ -62,7 +62,7 @@ export default function LandingPageManagement() {
   const [settings, setSettings] = useState({ 
     exploreMoreHeading: "Explore More", 
     recommendedRestaurantIds: [], 
-    under250PriceLimit: 250, 
+    under99PriceLimit: 99, 
     festBannerImages: [],
     stats: { restaurants: '3,00,000+', cities: '800+', orders: '3 billion+' },
     appLinks: { playStore: 'https://play.google.com/store/apps/details?id=com.indian.bite.user', appStore: '' },
@@ -159,19 +159,17 @@ export default function LandingPageManagement() {
     // Merge headers properly - ensure Authorization is always set
     const mergedHeaders = {
       ...additionalConfig.headers,
-      Authorization: `Bearer ${adminToken.trim()}`,
-    }
+      Authorization: `Bearer ${adminToken.trim()}` }
 
     return {
       ...additionalConfig,
-      headers: mergedHeaders,
-    }
+      headers: mergedHeaders }
   }
 
   // Fetch data on mount (authentication is handled by ProtectedRoute)
   useEffect(() => {
     fetchBanners()
-    fetchUnder250Banners()
+    fetchUnder99Banners()
     fetchDiningBanners()
     fetchAllRestaurants()
     fetchSettings()
@@ -450,8 +448,7 @@ export default function LandingPageManagement() {
         ...prev,
         recommendedRestaurantIds: alreadySelected
           ? previousIds.filter((id) => id !== restaurantId)
-          : [...previousIds, restaurantId],
-      }
+          : [...previousIds, restaurantId] }
     })
   }
 
@@ -502,8 +499,7 @@ export default function LandingPageManagement() {
           id: `${Date.now()}-${index}`,
           file,
           label: prettyName || '',
-          previewUrl: URL.createObjectURL(file),
-        }
+          previewUrl: URL.createObjectURL(file) }
       })
 
     if (!newItems.length) return
@@ -560,8 +556,7 @@ export default function LandingPageManagement() {
 
         try {
           const response = await api.post('/food/hero-banners/landing/categories', formData, getAuthConfig({
-            headers: { 'Content-Type': 'multipart/form-data' },
-          }))
+            headers: { 'Content-Type': 'multipart/form-data' } }))
           if (response.data.success) {
             successCount++
           } else {
@@ -710,8 +705,7 @@ export default function LandingPageManagement() {
       formData.append('label', exploreMoreLabel.trim())
       formData.append('link', exploreMoreLink.trim())
       const response = await api.post('/food/hero-banners/landing/explore-more', formData, getAuthConfig({
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }))
+        headers: { 'Content-Type': 'multipart/form-data' } }))
       if (response.data.success) {
         setSuccess('Explore more item created successfully!')
         setExploreMoreLabel("")
@@ -823,42 +817,42 @@ export default function LandingPageManagement() {
   }
 
   // ==================== UNDER 250 BANNERS ====================
-  const fetchUnder250Banners = async () => {
+  const fetchUnder99Banners = async () => {
     try {
-      setUnder250BannersLoading(true)
+      setUnder99BannersLoading(true)
       setError(null)
-      const response = await api.get('/food/hero-banners/under-250', getAuthConfig())
+      const response = await api.get('/food/hero-banners/under-99', getAuthConfig())
       if (response.data.success) {
-        setUnder250Banners(response.data.data.banners || [])
+        setUnder99Banners(response.data.data.banners || [])
       }
     } catch (err) {
       // Handle 401/404 errors gracefully - don't show error messages
       if (err.response?.status === 401) {
-        setUnder250Banners([])
+        setUnder99Banners([])
         setError(null)
       } else if (err.response?.status === 404) {
-        setUnder250Banners([])
+        setUnder99Banners([])
         setError(null)
       } else {
         const errorMessage = err.response?.data?.message || 'Failed to load under 250 banners'
         setErrorSafely(errorMessage)
       }
     } finally {
-      setUnder250BannersLoading(false)
+      setUnder99BannersLoading(false)
     }
   }
 
-  const handleUnder250BannerFileSelect = (e) => {
+  const handleUnder99BannerFileSelect = (e) => {
     const files = Array.from(e.target?.files || e.files || [])
     if (files.length === 0) return
     if (files.length > 25) {
       setError('You can upload a maximum of 25 images at once')
       return
     }
-    uploadUnder250Banners(files)
+    uploadUnder99Banners(files)
   }
 
-  const uploadUnder250Banners = async (files) => {
+  const uploadUnder99Banners = async (files) => {
     try {
       // Check token first before proceeding
       const adminToken = getModuleToken('admin')
@@ -867,10 +861,10 @@ export default function LandingPageManagement() {
         return
       }
 
-      setUnder250BannersUploading(true)
+      setUnder99BannersUploading(true)
       setError(null)
       setSuccess(null)
-      setUnder250BannersUploadProgress({ current: 0, total: files.length })
+      setUnder99BannersUploadProgress({ current: 0, total: files.length })
 
       const formData = new FormData()
       files.forEach((file) => {
@@ -878,52 +872,51 @@ export default function LandingPageManagement() {
         formData.append('files', file)
       })
 
-      const response = await api.post('/food/hero-banners/under-250/multiple', formData, getAuthConfig({
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }))
+      const response = await api.post('/food/hero-banners/under-99/multiple', formData, getAuthConfig({
+        headers: { 'Content-Type': 'multipart/form-data' } }))
 
       if (response.data.success) {
         setSuccess(`${response.data.data.banners?.length || files.length} under 250 banner(s) uploaded successfully!`)
-        await fetchUnder250Banners()
+        await fetchUnder99Banners()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Failed to upload under 250 banners'
       setErrorSafely(errorMessage)
 
-      setUnder250BannersUploadProgress({ current: 0, total: 0 })
+      setUnder99BannersUploadProgress({ current: 0, total: 0 })
     } finally {
-      setUnder250BannersUploading(false)
+      setUnder99BannersUploading(false)
     }
   }
 
-  const handleDeleteUnder250Banner = async (id) => {
+  const handleDeleteUnder99Banner = async (id) => {
     if (!window.confirm('Are you sure you want to delete this under 250 banner?')) return
     try {
-      setUnder250BannersDeleting(id)
+      setUnder99BannersDeleting(id)
       setError(null)
       setSuccess(null)
-      const response = await api.delete(`/food/hero-banners/under-250/${id}`, getAuthConfig())
+      const response = await api.delete(`/food/hero-banners/under-99/${id}`, getAuthConfig())
       if (response.data.success) {
-        setSuccess('Under 250 banner deleted successfully!')
-        await fetchUnder250Banners()
+        setSuccess('Under 99 banner deleted successfully!')
+        await fetchUnder99Banners()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
       setErrorSafely(err.response?.data?.message || 'Failed to delete banner.')
     } finally {
-      setUnder250BannersDeleting(null)
+      setUnder99BannersDeleting(null)
     }
   }
 
-  const handleToggleUnder250BannerStatus = async (id, currentStatus) => {
+  const handleToggleUnder99BannerStatus = async (id, currentStatus) => {
     try {
       setError(null)
       setSuccess(null)
-      const response = await api.patch(`/food/hero-banners/under-250/${id}/status`, {}, getAuthConfig())
+      const response = await api.patch(`/food/hero-banners/under-99/${id}/status`, {}, getAuthConfig())
       if (response.data.success) {
         setSuccess(`Banner ${currentStatus ? 'deactivated' : 'activated'} successfully!`)
-        await fetchUnder250Banners()
+        await fetchUnder99Banners()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
@@ -931,19 +924,19 @@ export default function LandingPageManagement() {
     }
   }
 
-  const handleUnder250BannerOrderChange = async (id, direction) => {
-    const banner = under250Banners.find(b => b._id === id)
+  const handleUnder99BannerOrderChange = async (id, direction) => {
+    const banner = under99Banners.find(b => b._id === id)
     if (!banner) return
     const newOrder = direction === 'up' ? banner.order - 1 : banner.order + 1
-    const otherBanner = under250Banners.find(b => b.order === newOrder && b._id !== id)
+    const otherBanner = under99Banners.find(b => b.order === newOrder && b._id !== id)
     if (!otherBanner && newOrder < 0) return
     try {
       setError(null)
-      await api.patch(`/food/hero-banners/under-250/${id}/order`, { order: newOrder }, getAuthConfig())
+      await api.patch(`/food/hero-banners/under-99/${id}/order`, { order: newOrder }, getAuthConfig())
       if (otherBanner) {
-        await api.patch(`/food/hero-banners/under-250/${otherBanner._id}/order`, { order: banner.order }, getAuthConfig())
+        await api.patch(`/food/hero-banners/under-99/${otherBanner._id}/order`, { order: banner.order }, getAuthConfig())
       }
-      await fetchUnder250Banners()
+      await fetchUnder99Banners()
     } catch (err) {
       setErrorSafely('Failed to update banner order.')
     }
@@ -1003,8 +996,7 @@ export default function LandingPageManagement() {
       })
 
       const response = await api.post('/food/hero-banners/ads/multiple', formData, getAuthConfig({
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }))
+        headers: { 'Content-Type': 'multipart/form-data' } }))
 
       if (response.data.success) {
         setSuccess(`${response.data.data.banners?.length || files.length} ads banner(s) uploaded successfully!`)
@@ -1083,7 +1075,7 @@ export default function LandingPageManagement() {
         setSettings({
           exploreMoreHeading: nextSettings.exploreMoreHeading || "Explore More",
           recommendedRestaurantIds: Array.isArray(nextSettings.recommendedRestaurantIds) ? nextSettings.recommendedRestaurantIds : [],
-          under250PriceLimit: Number(nextSettings.under250PriceLimit) || 250,
+          under99PriceLimit: Number(nextSettings.under99PriceLimit) || 99,
           festBannerImages: Array.isArray(nextSettings.festBannerImages) ? nextSettings.festBannerImages : [],
           stats: nextSettings.stats || { restaurants: '3,00,000+', cities: '800+', orders: '3 billion+' },
           appLinks: nextSettings.appLinks || { playStore: 'https://play.google.com/store/apps/details?id=com.indian.bite.user', appStore: '' },
@@ -1134,7 +1126,7 @@ export default function LandingPageManagement() {
       const response = await api.patch('/food/hero-banners/landing/settings', {
         exploreMoreHeading: settings.exploreMoreHeading,
         recommendedRestaurantIds: Array.isArray(settings.recommendedRestaurantIds) ? settings.recommendedRestaurantIds : [],
-        under250PriceLimit: Number(settings.under250PriceLimit) || 250,
+        under99PriceLimit: Number(settings.under99PriceLimit) || 99,
         festBannerImages: settings.festBannerImages || [],
         stats: settings.stats,
         appLinks: settings.appLinks,
@@ -1151,7 +1143,7 @@ export default function LandingPageManagement() {
           recommendedRestaurantIds: Array.isArray(savedSettings.recommendedRestaurantIds)
             ? savedSettings.recommendedRestaurantIds
             : prev.recommendedRestaurantIds,
-          under250PriceLimit: Number(savedSettings.under250PriceLimit) || prev.under250PriceLimit,
+          under99PriceLimit: Number(savedSettings.under99PriceLimit) || prev.under99PriceLimit,
           festBannerImages: Array.isArray(savedSettings.festBannerImages)
             ? savedSettings.festBannerImages
             : prev.festBannerImages,
@@ -1213,7 +1205,7 @@ export default function LandingPageManagement() {
       await api.patch('/food/hero-banners/landing/settings', {
         exploreMoreHeading: settings.exploreMoreHeading,
         recommendedRestaurantIds: Array.isArray(settings.recommendedRestaurantIds) ? settings.recommendedRestaurantIds : [],
-        under250PriceLimit: Number(settings.under250PriceLimit) || 250,
+        under99PriceLimit: Number(settings.under99PriceLimit) || 99,
         festBannerImages: updatedImages
       }, getAuthConfig())
 
@@ -1239,7 +1231,7 @@ export default function LandingPageManagement() {
       await api.patch('/food/hero-banners/landing/settings', {
         exploreMoreHeading: settings.exploreMoreHeading,
         recommendedRestaurantIds: Array.isArray(settings.recommendedRestaurantIds) ? settings.recommendedRestaurantIds : [],
-        under250PriceLimit: Number(settings.under250PriceLimit) || 250,
+        under99PriceLimit: Number(settings.under99PriceLimit) || 99,
         festBannerImages: updatedImages
       }, getAuthConfig())
       
@@ -1376,7 +1368,7 @@ export default function LandingPageManagement() {
   // ==================== RENDER ====================
   const tabs = [
     { id: 'banners', label: 'Hero Banners', icon: ImageIcon },
-    { id: 'under-250', label: '250 Banner', icon: Tag },
+    { id: 'under-99', label: '250 Banner', icon: Tag },
     { id: 'dining', label: 'Ads Banner', icon: Megaphone },
     { id: 'explore-more', label: 'Explore More', icon: Layout },
     { id: 'brand-landing', label: 'Brand Landing Page', icon: Layout },
@@ -1586,8 +1578,8 @@ export default function LandingPageManagement() {
           </>
         )}
 
-        {/* Under 250 Banner Tab */}
-        {activeTab === 'under-250' && (
+        {/* Under 99 Banner Tab */}
+        {activeTab === 'under-99' && (
           <>
             {/* Upload Section */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
@@ -1600,31 +1592,31 @@ export default function LandingPageManagement() {
                   e.preventDefault()
                   e.stopPropagation()
                   const files = Array.from(e.dataTransfer.files)
-                  if (files.length > 0) handleUnder250BannerFileSelect({ files })
+                  if (files.length > 0) handleUnder99BannerFileSelect({ files })
                 }}
-                onClick={() => under250BannersFileInputRef.current?.click()}
+                onClick={() => under99BannersFileInputRef.current?.click()}
               >
                 <input
-                  ref={under250BannersFileInputRef}
+                  ref={under99BannersFileInputRef}
                   type="file"
                   accept="image/*"
                   multiple
-                  onChange={handleUnder250BannerFileSelect}
+                  onChange={handleUnder99BannerFileSelect}
                   className="hidden"
-                  disabled={under250BannersUploading}
+                  disabled={under99BannersUploading}
                 />
-                {under250BannersUploading ? (
+                {under99BannersUploading ? (
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
                     <p className="text-blue-600 font-medium">
-                      Uploading image {under250BannersUploadProgress.current} of {under250BannersUploadProgress.total}...
+                      Uploading image {under99BannersUploadProgress.current} of {under99BannersUploadProgress.total}...
                     </p>
-                    {under250BannersUploadProgress.total > 0 && (
+                    {under99BannersUploadProgress.total > 0 && (
                       <div className="w-full max-w-xs">
                         <div className="w-full bg-blue-200 rounded-full h-2">
                           <div
                             className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${(under250BannersUploadProgress.current / under250BannersUploadProgress.total) * 100}%` }}
+                            style={{ width: `${(under99BannersUploadProgress.current / under99BannersUploadProgress.total) * 100}%` }}
                           />
                         </div>
                       </div>
@@ -1636,7 +1628,7 @@ export default function LandingPageManagement() {
                     <div>
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); under250BannersFileInputRef.current?.click(); }}
+                        onClick={(e) => { e.stopPropagation(); under99BannersFileInputRef.current?.click(); }}
                         className="text-blue-600 font-medium hover:text-blue-700 underline"
                       >
                         Click to upload
@@ -1651,22 +1643,22 @@ export default function LandingPageManagement() {
 
             {/* Banners List */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-4">Banner List ({under250Banners.length})</h2>
-              {under250BannersLoading ? (
+              <h2 className="text-lg font-bold text-slate-900 mb-4">Banner List ({under99Banners.length})</h2>
+              {under99BannersLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
                 </div>
-              ) : under250Banners.length === 0 ? (
+              ) : under99Banners.length === 0 ? (
                 <div className="text-center py-12 text-slate-500">
                   <Tag className="w-12 h-12 mx-auto mb-3 text-slate-400" />
                   <p>No under 250 banners uploaded yet.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {under250Banners.map((banner, index) => (
+                  {under99Banners.map((banner, index) => (
                     <div key={banner._id} className="border border-slate-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                       <div className="relative aspect-video bg-slate-100">
-                        <img src={banner.imageUrl} alt={`Under 250 Banner ${index + 1}`} className="w-full h-full object-cover" />
+                        <img src={banner.imageUrl} alt={`Under 99 Banner ${index + 1}`} className="w-full h-full object-cover" />
                         <div className="absolute top-2 right-2">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${banner.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                             {banner.isActive ? 'Active' : 'Inactive'}
@@ -1679,18 +1671,18 @@ export default function LandingPageManagement() {
                       <div className="p-4 bg-white">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1">
-                            <button onClick={() => handleUnder250BannerOrderChange(banner._id, 'up')} disabled={index === 0} className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-50">
+                            <button onClick={() => handleUnder99BannerOrderChange(banner._id, 'up')} disabled={index === 0} className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-50">
                               <ArrowUp className="w-4 h-4 text-slate-600" />
                             </button>
-                            <button onClick={() => handleUnder250BannerOrderChange(banner._id, 'down')} disabled={index === under250Banners.length - 1} className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-50">
+                            <button onClick={() => handleUnder99BannerOrderChange(banner._id, 'down')} disabled={index === under99Banners.length - 1} className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-50">
                               <ArrowDown className="w-4 h-4 text-slate-600" />
                             </button>
                           </div>
-                          <button onClick={() => handleToggleUnder250BannerStatus(banner._id, banner.isActive)} className={`px-3 py-1.5 rounded text-sm font-medium ${banner.isActive ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                          <button onClick={() => handleToggleUnder99BannerStatus(banner._id, banner.isActive)} className={`px-3 py-1.5 rounded text-sm font-medium ${banner.isActive ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
                             {banner.isActive ? 'Deactivate' : 'Activate'}
                           </button>
-                          <button onClick={() => handleDeleteUnder250Banner(banner._id)} disabled={under250BannersDeleting === banner._id} className="p-1.5 rounded hover:bg-red-100 text-red-600 disabled:opacity-50">
-                            {under250BannersDeleting === banner._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          <button onClick={() => handleDeleteUnder99Banner(banner._id)} disabled={under99BannersDeleting === banner._id} className="p-1.5 rounded hover:bg-red-100 text-red-600 disabled:opacity-50">
+                            {under99BannersDeleting === banner._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                           </button>
                         </div>
                       </div>
@@ -1852,18 +1844,18 @@ export default function LandingPageManagement() {
                   </div>
 
                   <div>
-                    <Label htmlFor="under-250-price">Under Price Limit (₹)</Label>
+                    <Label htmlFor="under-99-price">Under Price Limit (₹)</Label>
                     <Input
-                      id="under-250-price"
+                      id="under-99-price"
                       type="number"
                       min="1"
                       max="10000"
-                      value={settings.under250PriceLimit || 250}
-                      onChange={(e) => setSettings((prev) => ({ ...prev, under250PriceLimit: Math.max(1, Number(e.target.value)) }))}
+                      value={settings.under99PriceLimit || 99}
+                      onChange={(e) => setSettings((prev) => ({ ...prev, under99PriceLimit: Math.max(1, Number(e.target.value)) }))}
                       className="mt-2"
                       placeholder="250"
                     />
-                    <p className="text-xs text-slate-500 mt-1">Button will show "Under ₹{settings.under250PriceLimit || 250}" on user home page</p>
+                    <p className="text-xs text-slate-500 mt-1">Button will show "Under ₹{settings.under99PriceLimit || 99}" on user home page</p>
                   </div>
 
                   <div>

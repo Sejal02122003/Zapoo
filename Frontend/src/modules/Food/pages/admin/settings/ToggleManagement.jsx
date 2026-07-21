@@ -13,8 +13,7 @@ export default function ToggleManagement() {
     maintenanceMode: false,
     customerRegistration: true,
     restaurantRegistration: true,
-    deliveryRegistration: true,
-  });
+    deliveryRegistration: true });
 
   useEffect(() => {
     fetchBusinessSettings();
@@ -34,8 +33,7 @@ export default function ToggleManagement() {
           maintenanceMode: settings.maintenanceMode || false,
           customerRegistration: settings.customerRegistration !== false,
           restaurantRegistration: settings.restaurantRegistration !== false,
-          deliveryRegistration: settings.deliveryRegistration !== false,
-        }));
+          deliveryRegistration: settings.deliveryRegistration !== false }));
       }
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to load toggle settings");
@@ -47,15 +45,13 @@ export default function ToggleManagement() {
   const handleToggleChange = (field) => {
     setToggles((prev) => ({
       ...prev,
-      [field]: !prev[field],
-    }));
+      [field]: !prev[field] }));
   };
 
   const handleInputChange = (field, value) => {
     setToggles((prev) => ({
       ...prev,
-      [field]: value,
-    }));
+      [field]: value }));
   };
 
   const handleSave = async () => {
@@ -68,8 +64,7 @@ export default function ToggleManagement() {
         maintenanceMode: toggles.maintenanceMode,
         customerRegistration: toggles.customerRegistration,
         restaurantRegistration: toggles.restaurantRegistration,
-        deliveryRegistration: toggles.deliveryRegistration,
-      };
+        deliveryRegistration: toggles.deliveryRegistration };
 
       await adminAPI.updateBusinessSettings(dataToSend);
       toast.success("Toggle settings saved successfully");

@@ -27,8 +27,7 @@ export default function AddToCartAnimation({
   pillClassName = '',
   hideOnPages = true,
   linkTo = '/food/user/cart',
-  dynamicBottom = null,
-}) {
+  dynamicBottom = null }) {
   const { cart, items, itemCount, total, lastAddEvent, lastRemoveEvent, clearCart } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
@@ -136,8 +135,7 @@ export default function AddToCartAnimation({
             height: '32px',
             borderRadius: '50%',
             x: 0,
-            y: 0,
-          });
+            y: 0 });
 
           // Calculate relative movement from pill to source position
           // Both positions are now viewport-relative
@@ -148,15 +146,13 @@ export default function AddToCartAnimation({
           const tl = gsap.timeline({
             onComplete: () => {
               setRemovedProduct(null);
-            },
-          });
+            } });
 
           // Step 1: Pop out from pill (scale up slightly)
           tl.to(thumbnail, {
             scale: 1.3,
             duration: 0.15,
-            ease: 'power2.out',
-          })
+            ease: 'power2.out' })
             // Step 2: Fly towards source with rotation
             .to(thumbnail, {
               x: deltaX * 0.98, // Slight overshoot for bounce
@@ -164,29 +160,25 @@ export default function AddToCartAnimation({
               rotation: -360,
               scale: 1.1,
               duration: 0.4,
-              ease: 'power2.inOut',
-            })
+              ease: 'power2.inOut' })
             // Step 3: Bounce back slightly
             .to(thumbnail, {
               x: deltaX,
               y: deltaY,
               scale: 0.9,
               duration: 0.15,
-              ease: 'power2.out',
-            })
+              ease: 'power2.out' })
             // Step 4: Final bounce into position
             .to(thumbnail, {
               scale: 0.85,
               duration: 0.1,
-              ease: 'power2.in',
-            })
+              ease: 'power2.in' })
             // Step 5: Fade out smoothly
             .to(thumbnail, {
               scale: 0.7,
               opacity: 0,
               duration: 0.15,
-              ease: 'power2.in',
-            });
+              ease: 'power2.in' });
         }
       }, 10);
     }
@@ -276,15 +268,13 @@ export default function AddToCartAnimation({
             height: '32px',
             borderRadius: '50%', // Ensure circular
             x: 0,
-            y: 0,
-          });
+            y: 0 });
 
           // Fly to cart animation with bounce
           const tl = gsap.timeline({
             onComplete: () => {
               setFlyingProduct(null);
-            },
-          });
+            } });
 
           // Calculate relative movement from source center to target center
           // Both positions are now viewport-relative, so delta is direct
@@ -295,8 +285,7 @@ export default function AddToCartAnimation({
           tl.to(thumbnail, {
             scale: 1.3,
             duration: 0.15,
-            ease: 'power2.out',
-          })
+            ease: 'power2.out' })
             // Step 2: Fly towards cart with rotation (no Y overshoot to prevent going below)
             .to(thumbnail, {
               x: deltaX * 0.98, // Slight X overshoot for bounce
@@ -304,29 +293,25 @@ export default function AddToCartAnimation({
               rotation: 360,
               scale: 1.1,
               duration: 0.4,
-              ease: 'power2.inOut',
-            })
+              ease: 'power2.inOut' })
             // Step 3: Bounce back slightly on X only (overshoot correction)
             .to(thumbnail, {
               x: deltaX,
               y: deltaY, // Keep Y at exact target
               scale: 0.9,
               duration: 0.15,
-              ease: 'power2.out',
-            })
+              ease: 'power2.out' })
             // Step 4: Final bounce into position
             .to(thumbnail, {
               scale: 0.85,
               duration: 0.1,
-              ease: 'power2.in',
-            })
+              ease: 'power2.in' })
             // Step 5: Fade out smoothly
             .to(thumbnail, {
               scale: 0.7,
               opacity: 0,
               duration: 0.15,
-              ease: 'power2.in',
-            });
+              ease: 'power2.in' });
         }
       }, 150); // Increased delay to ensure pill animation completes
     }
@@ -348,26 +333,22 @@ export default function AddToCartAnimation({
         duration: 0.15,
         ease: 'power2.out',
         transformOrigin: 'center center',
-        force3D: true,
-      })
+        force3D: true })
         // Step 2: Bounce back
         .to(linkRef.current, {
           scale: 1.0,
           boxShadow: '0 4px 12px rgba(126, 56, 102, 0.3)',
           duration: 0.2,
-          ease: 'power2.inOut',
-        })
+          ease: 'power2.inOut' })
         // Step 3: Subtle second pulse
         .to(linkRef.current, {
           scale: 1.04,
           duration: 0.1,
-          ease: 'power1.out',
-        })
+          ease: 'power1.out' })
         .to(linkRef.current, {
           scale: 1.0,
           duration: 0.15,
-          ease: 'power1.in',
-        });
+          ease: 'power1.in' });
     }
   }, [itemCount, total, removedProduct, flyingProduct, lastRemoveEvent]);
 
@@ -388,8 +369,7 @@ export default function AddToCartAnimation({
           className="w-8 h-8 rounded-full border-2 border-white overflow-hidden bg-white flex-shrink-0 shadow-lg"
           style={{
             borderRadius: '50%',
-            objectFit: 'cover',
-          }}
+            objectFit: 'cover' }}
         >
           {removedProduct.product?.imageUrl ? (
             <img
@@ -412,8 +392,7 @@ export default function AddToCartAnimation({
           className="w-8 h-8 rounded-full border-2 border-white overflow-hidden bg-white flex-shrink-0 shadow-lg"
           style={{
             borderRadius: '50%',
-            objectFit: 'cover',
-          }}
+            objectFit: 'cover' }}
         >
           {flyingProduct?.product?.imageUrl ? (
             <img
@@ -436,20 +415,17 @@ export default function AddToCartAnimation({
             animate={{
               y: 0,
               opacity: 1,
-              scale: 1,
-            }}
+              scale: 1 }}
             exit={{ y: 60, opacity: 0, scale: 0.8 }}
             transition={{
               type: 'spring',
               stiffness: 400,
               damping: 30,
-              mass: 0.8,
-            }}
+              mass: 0.8 }}
             style={{
               position: 'fixed',
               bottom: dynamicBottom ? undefined : `${bottomOffset || 20}px`,
-              pointerEvents: 'none',
-            }}
+              pointerEvents: 'none' }}
             className={`left-0 right-0 z-[9999] flex justify-center px-4 pb-4 md:pb-6 transition-all duration-300 ease-in-out bg-transparent pointer-events-none ${dynamicBottom || ''}`}
           >
             {/* The main container - New Design (StickyCartCard style) */}

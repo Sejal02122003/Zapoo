@@ -13,8 +13,7 @@ export default function FoodReport() {
     restaurant: "All restaurants",
     category: "All Categories",
     type: "All types",
-    time: "All Time",
-  })
+    time: "All Time" })
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -84,8 +83,7 @@ export default function FoodReport() {
       restaurant: "All restaurants",
       category: "All Categories",
       type: "All types",
-      time: "All Time",
-    })
+      time: "All Time" })
   }
 
   const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.category !== "All Categories" ? 1 : 0) + (filters.type !== "All types" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)

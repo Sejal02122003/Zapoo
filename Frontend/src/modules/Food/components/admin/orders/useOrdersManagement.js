@@ -101,8 +101,7 @@ export function useOrdersManagement(orders, statusKey, title) {
     maxAmount: "",
     fromDate: "",
     toDate: "",
-    restaurant: "",
-  })
+    restaurant: "" })
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     orderId: true,
@@ -118,8 +117,7 @@ export function useOrdersManagement(orders, statusKey, title) {
     paymentCollectionStatus: true,
     paymentMethodDetail: true,
     orderStatus: true,
-    actions: true,
-  })
+    actions: true })
 
   // Get unique restaurants from orders
   const restaurants = useMemo(() => {
@@ -255,8 +253,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       maxAmount: "",
       fromDate: "",
       toDate: "",
-      restaurant: "",
-    })
+      restaurant: "" })
   }
 
   const handleExport = (format) => {
@@ -292,8 +289,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        format: "a4",
-      })
+        format: "a4" })
 
       const pageWidth = doc.internal.pageSize.getWidth()
       const orderId = order.orderId || order.id || order.subscriptionId || "N/A"
@@ -483,16 +479,13 @@ export function useOrdersManagement(orders, statusKey, title) {
           cellPadding: { top: 3.5, right: 4, bottom: 3.5, left: 4 },
           lineColor: [226, 232, 240],
           lineWidth: 0.25,
-          fontStyle: "bold",
-        },
+          fontStyle: "bold" },
         columnStyles: {
           0: { cellWidth: 45 },
           1: { cellWidth: 45 },
           2: { cellWidth: 50 },
-          3: { cellWidth: 42, halign: "right", textColor: [15, 118, 110] },
-        },
-        margin: { left: 14, right: 14 },
-      })
+          3: { cellWidth: 42, halign: "right", textColor: [15, 118, 110] } },
+        margin: { left: 14, right: 14 } })
 
       const tableBody = items.length > 0
         ? items.map((item) => {
@@ -513,28 +506,22 @@ export function useOrdersManagement(orders, statusKey, title) {
           fillColor: [15, 118, 110],
           textColor: 255,
           fontSize: 9,
-          fontStyle: "bold",
-        },
+          fontStyle: "bold" },
         bodyStyles: {
           fontSize: 9,
-          textColor: [30, 41, 59],
-        },
+          textColor: [30, 41, 59] },
         alternateRowStyles: {
-          fillColor: [248, 250, 252],
-        },
+          fillColor: [248, 250, 252] },
         styles: {
           cellPadding: 3.2,
           lineColor: [226, 232, 240],
-          lineWidth: 0.3,
-        },
+          lineWidth: 0.3 },
         columnStyles: {
           0: { halign: "center", cellWidth: 18 },
           1: { cellWidth: 94 },
           2: { halign: "right", cellWidth: 36 },
-          3: { halign: "right", cellWidth: 38 },
-        },
-        margin: { left: 14, right: 14 },
-      })
+          3: { halign: "right", cellWidth: 38 } },
+        margin: { left: 14, right: 14 } })
 
       const summaryStartY = (doc.lastAutoTable?.finalY || 130) + 10
       doc.setDrawColor(226, 232, 240)
@@ -553,12 +540,10 @@ export function useOrdersManagement(orders, statusKey, title) {
         styles: {
           fontSize: 10,
           textColor: [30, 41, 59],
-          cellPadding: 1.8,
-        },
+          cellPadding: 1.8 },
         columnStyles: {
           0: { cellWidth: 34, fontStyle: "bold" },
-          1: { cellWidth: 40, halign: "right" },
-        },
+          1: { cellWidth: 40, halign: "right" } },
         margin: { left: pageWidth - 88 },
         didParseCell: (hookData) => {
           if (hookData.row.index === 4) {
@@ -566,8 +551,7 @@ export function useOrdersManagement(orders, statusKey, title) {
             hookData.cell.styles.fontSize = 11
             hookData.cell.styles.textColor = [15, 118, 110]
           }
-        },
-      })
+        } })
 
       const footerY = Math.max((doc.lastAutoTable?.finalY || summaryStartY) + 18, 262)
       doc.setDrawColor(226, 232, 240)
@@ -608,8 +592,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       paymentCollectionStatus: true,
       paymentMethodDetail: true,
       orderStatus: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   return {
@@ -635,7 +618,6 @@ export function useOrdersManagement(orders, statusKey, title) {
     handleViewOrder,
     handlePrintOrder,
     toggleColumn,
-    resetColumns,
-  }
+    resetColumns }
 }
 

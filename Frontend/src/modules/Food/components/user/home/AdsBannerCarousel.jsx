@@ -66,8 +66,7 @@ export default function AdsBannerCarousel({ banners = [], data = [] }) {
         <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden rounded-2xl">
           <motion.div
             animate={{
-              x: ['-200%', '200%'],
-            }}
+              x: ['-200%', '200%'] }}
             transition={{
               duration: 2.5,
               repeat: Infinity,

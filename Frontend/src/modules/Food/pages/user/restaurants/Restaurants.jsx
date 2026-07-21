@@ -92,8 +92,7 @@ export default function Restaurants() {
             deliveryTime: restaurant?.estimatedDeliveryTime || (restaurant?.estimatedDeliveryTimeMinutes ? `${restaurant.estimatedDeliveryTimeMinutes} mins` : "25-30 mins"),
             distance: restaurant?.distance ? (typeof restaurant.distance === 'number' ? `${restaurant.distance.toFixed(1)} km` : restaurant.distance) : "1.2 km",
             priceRange: restaurant?.priceRange || "$$",
-            image: pickRestaurantImage(restaurant),
-          }
+            image: pickRestaurantImage(restaurant) }
         })
 
         setRestaurants(transformed)
@@ -272,8 +271,7 @@ export default function Restaurants() {
                     deliveryTime: restaurant.deliveryTime,
                     distance: restaurant.distance,
                     priceRange: restaurant.priceRange,
-                    image: restaurant.image,
-                  })
+                    image: restaurant.image })
                 }
               }
 

@@ -304,8 +304,7 @@ export const exportToPDF = async (orders, filename = "orders") => {
       startY: 28,
       styles: {
         fontSize: 7,
-        cellPadding: 2,
-      },
+        cellPadding: 2 },
       headStyles: {
         fillColor: [59, 130, 246],
         textColor: 255,
@@ -322,8 +321,7 @@ export const exportToPDF = async (orders, filename = "orders") => {
       columnStyles: {
         0: { cellWidth: 12 }, // SI
       },
-      margin: { top: 28, left: 10, right: 10 },
-    })
+      margin: { top: 28, left: 10, right: 10 } })
 
     // Save the PDF instantly
     const fileTimestamp = new Date().toISOString().split("T")[0]

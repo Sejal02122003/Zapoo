@@ -54,8 +54,7 @@ export default function SubAdminsList() {
 
     try {
       const response = await adminAPI.updateSubAdmin(admin._id, {
-        isActive: newStatus,
-      });
+        isActive: newStatus });
       if (response.data.success) {
         toast.success(`Sub admin ${newStatus ? 'activated' : 'deactivated'} successfully`);
       } else {

@@ -30,8 +30,7 @@ export default function DeliveryBoyWallet() {
       const res = await adminAPI.getDeliveryWallets({
         search: q.trim() || undefined,
         page: p,
-        limit,
-      })
+        limit })
       if (res?.data?.success) {
         const data = res.data.data
         setWallets(data?.wallets || [])

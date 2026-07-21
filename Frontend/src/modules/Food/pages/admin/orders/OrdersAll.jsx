@@ -28,8 +28,7 @@ export default function OrdersAll() {
     handleViewOrder,
     handlePrintOrder,
     toggleColumn,
-    resetColumns,
-  } = useOrdersManagement([], "all", "All Orders")
+    resetColumns } = useOrdersManagement([], "all", "All Orders")
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen w-full max-w-full overflow-x-hidden">

@@ -195,8 +195,7 @@ export default function Orders() {
     const fetchAllOrders = async () => {
       const firstResponse = await orderAPI.getOrders({
         limit: FETCH_LIMIT,
-        page: 1,
-      })
+        page: 1 })
 
       // Check multiple possible response structures
       let firstPageOrders = []
@@ -473,8 +472,7 @@ export default function Orders() {
           description: item.description || "",
           isVeg: item.isVeg !== false,
           quantity: Math.max(1, Number(item.quantity) || 1),
-          reorderIndex: index,
-        }
+          reorderIndex: index }
       })
       .filter(Boolean)
 
@@ -594,8 +592,7 @@ Order again from this restaurant in the ${companyName} app.`
     const payload = {
       title: order.restaurant,
       text: shareText,
-      url: shareUrl,
-    }
+      url: shareUrl }
 
     try {
       const shared = await tryNativeShare(payload)
@@ -662,8 +659,7 @@ Order again from this restaurant in the ${companyName} app.`
         restaurantRating: selectedRestaurantRating,
         deliveryPartnerRating: hasDeliveryPartner ? selectedDeliveryRating : undefined,
         restaurantComment: restaurantFeedbackText || undefined,
-        deliveryPartnerComment: hasDeliveryPartner ? (deliveryFeedbackText || undefined) : undefined,
-      })
+        deliveryPartnerComment: hasDeliveryPartner ? (deliveryFeedbackText || undefined) : undefined })
       const updatedOrder = response?.data?.data?.order || response?.data?.order || null
 
       // Update local state so UI shows "You rated"

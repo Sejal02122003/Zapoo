@@ -9,8 +9,7 @@ const DEFAULT_FIREBASE_CONFIG = {
   authDomain: "",
   projectId: "",
   appId: "",
-  messagingSenderId: "",
-};
+  messagingSenderId: "" };
 
 const tokenCachePrefix = "fcm_web_registered_token_";
 const pushSoundEnabledStorageKey = "push_sound_enabled";
@@ -216,8 +215,7 @@ async function triggerWebViewNativeNotification(payload = {}) {
     body: payload?.notification?.body || payload?.data?.body || "",
     notificationId: payload?.data?.notificationId || payload?.messageId || "",
     targetUrl: payload?.data?.targetUrl || payload?.data?.link || "",
-    imageUrl: payload?.notification?.image || payload?.data?.image || payload?.data?.imageUrl || "",
-  };
+    imageUrl: payload?.notification?.image || payload?.data?.image || payload?.data?.imageUrl || "" };
 
   try {
     if (
@@ -254,8 +252,7 @@ async function playPushSound(payload = {}) {
       notificationKey: getNotificationKey(payload),
       pushSoundUnlocked,
       notificationPermission: typeof Notification !== "undefined" ? Notification.permission : "unsupported",
-      payload,
-    });
+      payload });
     const usedNativeBridge = await triggerWebViewNativeNotification(payload);
 
     if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
@@ -283,8 +280,7 @@ async function playPushSound(payload = {}) {
       } catch (error) {
         pushDebugWarn(PUSH_DEBUG_PREFIX, "Audio playback failed", {
           source: audio.src,
-          error: error?.message || error,
-        });
+          error: error?.message || error });
         // Try next fallback sound source.
       }
     }
@@ -320,8 +316,7 @@ function setupPushSoundUnlock() {
       window.dispatchEvent(new CustomEvent("push-sound-enabled"));
     } catch (error) {
       pushDebugWarn(PUSH_DEBUG_PREFIX, "Passive push sound unlock failed", {
-        error: error?.message || error,
-      });
+        error: error?.message || error });
     } finally {
       if (audio) {
         audio.muted = false;
@@ -367,8 +362,7 @@ export async function enablePushNotificationSound() {
       } catch (error) {
         pushDebugWarn(PUSH_DEBUG_PREFIX, "Manual sound preview failed", {
           source: previewAudio.src,
-          error: error?.message || error,
-        });
+          error: error?.message || error });
         // Try next preview source.
       }
     }
@@ -377,8 +371,7 @@ export async function enablePushNotificationSound() {
     return true;
   } catch (error) {
     pushDebugWarn(PUSH_DEBUG_PREFIX, "Manual push sound enable failed, trying synth beep", {
-      error: error?.message || error,
-    });
+      error: error?.message || error });
     try {
       await playSynthNotificationBeep();
       pushSoundUnlocked = true;
@@ -387,8 +380,7 @@ export async function enablePushNotificationSound() {
       }
     catch (beepError) {
       pushDebugWarn(PUSH_DEBUG_PREFIX, "Synth beep fallback failed", {
-        error: beepError?.message || beepError,
-      });
+        error: beepError?.message || beepError });
       return false;
     }
     return true;
@@ -413,15 +405,13 @@ async function getFirebasePublicEnv() {
           sanitize(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID) || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
         storageBucket: sanitize(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
         measurementId: sanitize(import.meta.env.VITE_FIREBASE_MEASUREMENT_ID),
-        vapidKey: sanitize(import.meta.env.VITE_FIREBASE_VAPID_KEY),
-      };
+        vapidKey: sanitize(import.meta.env.VITE_FIREBASE_VAPID_KEY) };
     } catch {
       return {
         ...DEFAULT_FIREBASE_CONFIG,
         storageBucket: sanitize(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
         measurementId: sanitize(import.meta.env.VITE_FIREBASE_MEASUREMENT_ID),
-        vapidKey: sanitize(import.meta.env.VITE_FIREBASE_VAPID_KEY),
-      };
+        vapidKey: sanitize(import.meta.env.VITE_FIREBASE_VAPID_KEY) };
     } finally {
       publicEnvPromise = null;
     }
@@ -438,8 +428,7 @@ function getMessagingFirebaseApp(config) {
     appId: config.appId,
     messagingSenderId: config.messagingSenderId,
     ...(config.storageBucket ? { storageBucket: config.storageBucket } : {}),
-    ...(config.measurementId ? { measurementId: config.measurementId } : {}),
-  };
+    ...(config.measurementId ? { measurementId: config.measurementId } : {}) };
 
   if (!appConfig.apiKey || !appConfig.projectId || !appConfig.appId || !appConfig.messagingSenderId) {
     return null;
@@ -497,8 +486,7 @@ async function registerNativeWebViewFcmToken(moduleName) {
       pushDebugLog(PUSH_DEBUG_PREFIX, "Registered native WebView FCM token", {
         moduleName,
         handlerName,
-        tokenPreview: `${normalizedToken.slice(0, 12)}...`,
-      });
+        tokenPreview: `${normalizedToken.slice(0, 12)}...` });
       return;
     } catch {
       // Try next handler.
@@ -554,8 +542,7 @@ function showForegroundNotification(payload = {}, options = {}) {
         title,
         body,
         image,
-        notificationKey,
-      });
+        notificationKey });
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistration().then(registration => {
           if (registration) {
@@ -582,21 +569,18 @@ function showForegroundNotification(payload = {}, options = {}) {
             body,
             icon: "/logo.png",
             image,
-            tag: notificationKey || undefined,
-          });
+            tag: notificationKey || undefined });
         });
       } else {
         new Notification(title, {
           body,
           icon: "/logo.png",
           image,
-          tag: notificationKey || undefined,
-        });
+          tag: notificationKey || undefined });
       }
     } catch (error) {
       pushDebugWarn(PUSH_DEBUG_PREFIX, "Browser notification creation failed", {
-        error: error?.message || error,
-      });
+        error: error?.message || error });
     }
   }
 
@@ -711,8 +695,7 @@ export function initPushNotificationClient() {
   pushDebugLog(PUSH_DEBUG_PREFIX, "Initializing push notification client", {
     path: window.location.pathname,
     moduleName,
-    soundEnabled: isPushSoundEnabled(),
-  });
+    soundEnabled: isPushSoundEnabled() });
 
   if (moduleName === "admin") {
     return;
@@ -788,20 +771,17 @@ export async function registerWebPushForCurrentModule(pathname = window.location
       const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
       pushDebugLog(PUSH_DEBUG_PREFIX, "Service worker registered for push", {
         scope: registration.scope,
-        moduleName,
-      });
+        moduleName });
       const messaging = getMessaging(app);
 
       const token = await getToken(messaging, {
         vapidKey: firebasePublicEnv.vapidKey,
-        serviceWorkerRegistration: registration,
-      });
+        serviceWorkerRegistration: registration });
 
       if (!token) return;
       pushDebugLog(PUSH_DEBUG_PREFIX, "FCM token resolved", {
         moduleName,
-        tokenPreview: `${token.slice(0, 12)}...`,
-      });
+        tokenPreview: `${token.slice(0, 12)}...` });
 
       const lastSavedToken = getSavedToken(moduleName);
       if (lastSavedToken === token) {

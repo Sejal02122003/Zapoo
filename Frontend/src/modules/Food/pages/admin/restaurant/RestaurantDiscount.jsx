@@ -21,6 +21,7 @@ export default function RestaurantDiscount() {
 
   // Form State
   const [globalDiscount, setGlobalDiscount] = useState(0);
+  const [takeawayDiscount, setTakeawayDiscount] = useState(0);
   const [itemDiscounts, setItemDiscounts] = useState([]);
   const [discountRules, setDiscountRules] = useState([]);
   const [activeTab, setActiveTab] = useState("global"); // global, items, rules
@@ -69,6 +70,7 @@ export default function RestaurantDiscount() {
   const openDiscountModal = async (restaurant) => {
     setSelectedRestaurant(restaurant);
     setGlobalDiscount(restaurant.discount || 0);
+    setTakeawayDiscount(restaurant.takeawayDiscount || 0);
     setItemDiscounts(restaurant.itemDiscounts || []);
     setDiscountRules(restaurant.discountRules || []);
     setActiveTab("global");
@@ -94,8 +96,10 @@ export default function RestaurantDiscount() {
       const id = selectedRestaurant.id || selectedRestaurant._id;
       const payload = {
         discount: Number(globalDiscount) || 0,
+        takeawayDiscount: Number(takeawayDiscount) || 0,
         itemDiscounts: itemDiscounts,
-        discountRules: discountRules
+        discountRules: discountRules,
+        updatedAt: selectedRestaurant.updatedAt
       };
       const response = await adminAPI.updateRestaurant(id, payload);
       if (response?.data?.success || response?.status === 200) {
@@ -299,29 +303,67 @@ export default function RestaurantDiscount() {
           <div className="flex flex-1 overflow-hidden">
             {/* Sidebar Tabs */}
             <div className="w-48 bg-slate-50 border-r border-slate-100 flex flex-col">
-              <button 
-                onClick={() => setActiveTab('global')}
-                className={`text-left px-4 py-3 text-sm font-medium border-l-2 transition-colors ${activeTab === 'global' ? 'border-blue-600 bg-blue-50/50 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-100'}`}
-              >
-                Global Discount
-              </button>
-              <button 
-                onClick={() => setActiveTab('items')}
-                className={`text-left px-4 py-3 text-sm font-medium border-l-2 transition-colors ${activeTab === 'items' ? 'border-blue-600 bg-blue-50/50 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-100'}`}
-              >
-                Item Specific
-              </button>
-              <button 
-                onClick={() => setActiveTab('rules')}
-                className={`text-left px-4 py-3 text-sm font-medium border-l-2 transition-colors ${activeTab === 'rules' ? 'border-blue-600 bg-blue-50/50 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-100'}`}
-              >
-                Smart Rules
-              </button>
+              <div className="flex flex-col space-y-1">
+                <button 
+                  onClick={() => setActiveTab('takeaway')}
+                  className={`text-left px-4 py-3 text-sm font-medium border-l-2 transition-colors ${activeTab === 'takeaway' ? 'border-blue-600 bg-blue-50/50 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-100'}`}
+                >
+                  Takeaway Discount
+                </button>
+                <button 
+                  onClick={() => setActiveTab('global')}
+                  className={`text-left px-4 py-3 text-sm font-medium border-l-2 transition-colors ${activeTab === 'global' ? 'border-blue-600 bg-blue-50/50 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-100'}`}
+                >
+                  Global Discount
+                </button>
+                <button 
+                  onClick={() => setActiveTab('items')}
+                  className={`text-left px-4 py-3 text-sm font-medium border-l-2 transition-colors ${activeTab === 'items' ? 'border-blue-600 bg-blue-50/50 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-100'}`}
+                >
+                  Item Specific
+                </button>
+                <button 
+                  onClick={() => setActiveTab('rules')}
+                  className={`text-left px-4 py-3 text-sm font-medium border-l-2 transition-colors ${activeTab === 'rules' ? 'border-blue-600 bg-blue-50/50 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-100'}`}
+                >
+                  Smart Rules
+                </button>
+              </div>
             </div>
             
             {/* Main Content Area */}
             <div className="flex-1 overflow-y-auto p-6 bg-white">
               
+              {/* TAKEAWAY TAB */}
+              {activeTab === 'takeaway' && (
+                <div className="space-y-4 max-w-sm">
+                  {!selectedRestaurant?.isTakeawayEnabled && (
+                    <div className="bg-amber-50 text-amber-800 p-3 rounded-lg text-sm flex gap-2 items-start">
+                      <Tag className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <p>This restaurant currently does not have takeaway enabled. This discount will only apply if takeaway is enabled.</p>
+                    </div>
+                  )}
+                  <h3 className="font-semibold text-slate-800">Takeaway Order Discount</h3>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={takeawayDiscount}
+                      onChange={(e) => setTakeawayDiscount(e.target.value)}
+                      className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 font-medium"
+                      placeholder="e.g. 15"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                      %
+                    </div>
+                  </div>
+                  <p className="text-sm text-slate-500">
+                    This percentage discount will apply to the entire order if the user selects Takeaway.
+                  </p>
+                </div>
+              )}
+
               {/* GLOBAL TAB */}
               {activeTab === 'global' && (
                 <div className="space-y-4 max-w-sm">

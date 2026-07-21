@@ -22,8 +22,7 @@ export default function CreateTaxes() {
     name: true,
     rate: true,
     status: true,
-    actions: true,
-  });
+    actions: true });
 
   const filtered = useMemo(() => {
     return taxes.filter((tax) =>
@@ -49,8 +48,7 @@ export default function CreateTaxes() {
       name: true,
       rate: true,
       status: true,
-      actions: true,
-    });
+      actions: true });
   };
 
   const columnsConfig = {
@@ -58,8 +56,7 @@ export default function CreateTaxes() {
     name: "Tax Name",
     rate: "Tax Rate",
     status: "Status",
-    actions: "Actions",
-  };
+    actions: "Actions" };
 
   const toggleStatus = (id) => {
     setTaxes((prev) =>

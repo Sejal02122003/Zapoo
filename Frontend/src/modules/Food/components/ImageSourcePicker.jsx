@@ -4,8 +4,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
-} from "@food/components/ui/dialog"
+  DialogTitle } from "@food/components/ui/dialog"
 import { isFlutterBridgeAvailable, openCamera, openGallery } from "@food/utils/imageUploadUtils"
 
 /**

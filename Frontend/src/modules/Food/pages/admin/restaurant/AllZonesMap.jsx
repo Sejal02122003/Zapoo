@@ -153,8 +153,7 @@ export default function AllZonesMap() {
       fullscreenControl: true,
       scrollwheel: true,
       gestureHandling: 'greedy',
-      disableDoubleClickZoom: false,
-    })
+      disableDoubleClickZoom: false })
 
     mapInstanceRef.current = map
     setMapLoading(false)
@@ -322,8 +321,7 @@ export default function AllZonesMap() {
         fillColor: "#ef4444", // Red color
         fillOpacity: 1,
         strokeColor: "#ffffff",
-        strokeWeight: 2,
-      }
+        strokeWeight: 2 }
 
       // Create marker
       const marker = new google.maps.Marker({

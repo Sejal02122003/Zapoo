@@ -3,8 +3,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-} from "@food/components/ui/dialog"
+  DialogTitle } from "@food/components/ui/dialog"
 
 export default function SettingsDialog({ isOpen, onOpenChange, visibleColumns, toggleColumn, resetColumns, columnsConfig }) {
   const defaultColumnsConfig = {
@@ -21,8 +20,7 @@ export default function SettingsDialog({ isOpen, onOpenChange, visibleColumns, t
     paymentType: "Payment Type",
     paymentCollectionStatus: "Payment Status",
     orderStatus: "Order Status",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   const columnLabels = columnsConfig || defaultColumnsConfig
 

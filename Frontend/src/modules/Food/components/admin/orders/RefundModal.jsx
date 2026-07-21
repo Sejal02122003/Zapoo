@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react"
-import { Wallet, X } from "lucide-react"
+import {  X } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@food/components/ui/dialog"
+  DialogDescription } from "@food/components/ui/dialog"
 import { Button } from "@food/components/ui/button"
 
 export default function RefundModal({ isOpen, onOpenChange, order, onConfirm, isProcessing }) {
@@ -70,7 +70,7 @@ export default function RefundModal({ isOpen, onOpenChange, order, onConfirm, is
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-            <Wallet className="w-5 h-5 text-purple-600" />
+            <WalletIcon className="" />
             Wallet Refund
           </DialogTitle>
           <DialogDescription className="text-slate-600">

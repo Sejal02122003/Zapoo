@@ -48,8 +48,7 @@ export default function TextReveal({ children, delay = 0, className = "" }) {
       className={className}
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
-      }}
+        transform: isVisible ? 'translateY(0)' : 'translateY(20px)' }}
     >
       {children}
     </div>

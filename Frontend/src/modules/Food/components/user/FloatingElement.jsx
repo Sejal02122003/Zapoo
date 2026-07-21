@@ -44,8 +44,7 @@ export default function FloatingElement({ children, delay = 0, className = "" })
       ref={ref}
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
-      }}
+        transform: isVisible ? 'translateY(0)' : 'translateY(20px)' }}
     >
       {children}
     </div>

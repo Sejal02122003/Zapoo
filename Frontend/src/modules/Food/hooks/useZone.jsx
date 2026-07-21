@@ -212,6 +212,5 @@ export function useZone(location) {
     error,
     isInService: zoneStatus === "IN_SERVICE",
     isOutOfService: zoneStatus === "OUT_OF_SERVICE",
-    refreshZone,
-  };
+    refreshZone };
 }

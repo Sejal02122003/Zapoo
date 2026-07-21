@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Share2, Users, Wallet, CircleCheck, Clock3, CircleX } from "lucide-react";
+import { ArrowLeft, Share2, Users, CircleCheck, Clock3, CircleX } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import AnimatedPage from "@food/components/user/AnimatedPage";
 import { Button } from "@food/components/ui/button";
 import { Card, CardContent } from "@food/components/ui/card";
@@ -13,19 +14,15 @@ const statusMeta = {
   credited: {
     label: "Credited",
     icon: CircleCheck,
-    className: "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300",
-  },
+    className: "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300" },
   pending: {
     label: "Pending",
     icon: Clock3,
-    className: "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300",
-  },
+    className: "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300" },
   rejected: {
     label: "Rejected",
     icon: CircleX,
-    className: "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300",
-  },
-};
+    className: "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300" } };
 
 export default function ReferEarn() {
   const { userProfile } = useProfile();
@@ -38,8 +35,7 @@ export default function ReferEarn() {
     totalInvited: 0,
     creditedCount: 0,
     pendingCount: 0,
-    rejectedCount: 0,
-  });
+    rejectedCount: 0 });
   const [invitedFriends, setInvitedFriends] = useState([]);
 
   useEffect(() => {
@@ -58,8 +54,7 @@ export default function ReferEarn() {
             totalInvited: Number(nextStats.totalInvited) || 0,
             creditedCount: Number(nextStats.creditedCount) || 0,
             pendingCount: Number(nextStats.pendingCount) || 0,
-            rejectedCount: Number(nextStats.rejectedCount) || 0,
-          });
+            rejectedCount: Number(nextStats.rejectedCount) || 0 });
           setInvitedFriends(Array.isArray(nextInvited) ? nextInvited : []);
         }
       } catch (error) {
@@ -98,8 +93,7 @@ export default function ReferEarn() {
         await navigator.share({
           title: `${companyName} referral`,
           text: shareText,
-          url: referralLink,
-        });
+          url: referralLink });
         return;
       }
 
@@ -180,7 +174,7 @@ export default function ReferEarn() {
           <Card className="border-0 shadow-sm bg-white dark:bg-[#1a1a1a]">
             <CardContent className="p-3">
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-[11px]">
-                <Wallet className="h-3.5 w-3.5" />
+                <WalletIcon className="" />
                 Total
               </div>
               <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">{"\u20B9"}{stats.totalReferralEarnings}</p>

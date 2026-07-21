@@ -18,8 +18,7 @@ export default function RestaurantReport() {
     zone: "All Zones",
     all: "All",
     type: "All types",
-    time: "All Time",
-  })
+    time: "All Time" })
   const [zones, setZones] = useState([])
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -85,8 +84,7 @@ export default function RestaurantReport() {
       zone: "All Zones",
       all: "All",
       type: "All types",
-      time: "All Time",
-    })
+      time: "All Time" })
     setSearchQuery("")
   }
 

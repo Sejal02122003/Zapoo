@@ -5,8 +5,7 @@ import {
   FileText,
   Package,
   MessageSquare,
-  Compass,
-} from "lucide-react"
+  Compass } from "lucide-react"
 import useNotificationInbox from "@food/hooks/useNotificationInbox"
 import { useRestaurantNotifications } from "@food/hooks/useRestaurantNotifications"
 

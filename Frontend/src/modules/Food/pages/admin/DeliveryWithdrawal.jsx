@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
-import { Search, Wallet, Eye, CheckCircle, XCircle, Loader2, Package, QrCode } from "lucide-react"
+import { Search, Eye, CheckCircle, XCircle, Loader2, Package, QrCode } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import { adminAPI } from "@food/api"
 import { toast } from "sonner"
 import {
@@ -7,8 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-} from "@food/components/ui/dialog"
+  DialogFooter } from "@food/components/ui/dialog"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -43,8 +43,7 @@ export default function DeliveryWithdrawal() {
         status: activeTab,
         page: 1,
         limit: 200,
-        search: searchQuery.trim() || undefined,
-      })
+        search: searchQuery.trim() || undefined })
       if (response?.data?.success) {
         setRequests(response.data.data?.requests || [])
       } else {
@@ -117,8 +116,7 @@ export default function DeliveryWithdrawal() {
       setProcessingAction(id)
       const response = await adminAPI.updateDeliveryWithdrawalStatus(id, {
         status: "Rejected",
-        rejectionReason: rejectionReason,
-      })
+        rejectionReason: rejectionReason })
       if (response?.data?.success) {
         toast.success("Withdrawal request rejected successfully")
         setShowRejectModal(false)
@@ -146,8 +144,7 @@ export default function DeliveryWithdrawal() {
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
-        hour12: true,
-      })
+        hour12: true })
     } catch {
       return String(dateString)
     }
@@ -163,7 +160,7 @@ export default function DeliveryWithdrawal() {
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
           <div className="flex items-center gap-3">
-            <Wallet className="w-5 h-5 text-emerald-600" />
+            <WalletIcon className="" />
             <h1 className="text-2xl font-bold text-slate-900">Delivery Withdrawal</h1>
           </div>
           <p className="text-sm text-slate-600 mt-1">

@@ -11,8 +11,7 @@ export default function SubscriptionReport() {
   const [filters, setFilters] = useState({
     restaurant: "All restaurants",
     package: "All packages",
-    all: "All",
-  })
+    all: "All" })
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -76,8 +75,7 @@ export default function SubscriptionReport() {
     setFilters({
       restaurant: "All restaurants",
       package: "All packages",
-      all: "All",
-    })
+      all: "All" })
   }
 
   const activeFiltersCount = (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.package !== "All packages" ? 1 : 0) + (filters.all !== "All" ? 1 : 0)

@@ -5,8 +5,7 @@ import {
   releaseUserSocket,
   joinOrderTrackingRooms,
   leaveOrderTrackingRooms,
-  subscribeLocationUpdates,
-} from '@food/utils/userSocketManager';
+  subscribeLocationUpdates } from '@food/utils/userSocketManager';
 
 function useFoodUserId(enabled) {
   const [userId, setUserId] = useState(null);

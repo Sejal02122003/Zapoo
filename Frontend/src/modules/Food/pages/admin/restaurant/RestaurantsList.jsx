@@ -19,8 +19,7 @@ const getDefaultDays = () => ({
   Thursday: { isOpen: true, openingTime: "11:00", closingTime: "23:00" },
   Friday: { isOpen: true, openingTime: "11:00", closingTime: "23:00" },
   Saturday: { isOpen: true, openingTime: "11:00", closingTime: "23:00" },
-  Sunday: { isOpen: true, openingTime: "11:00", closingTime: "23:00" },
-})
+  Sunday: { isOpen: true, openingTime: "11:00", closingTime: "23:00" } })
 
 // Inline placeholder (no external request, avoids referrer policy / 500 from via.placeholder)
 const PLACEHOLDER_40 = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect fill='%23e2e8f0' width='40' height='40'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='12' font-family='sans-serif'%3E?%3C/text%3E%3C/svg%3E"
@@ -146,8 +145,7 @@ export default function RestaurantsList() {
     openingTime: "",
     closingTime: "",
     outletTimings: getDefaultDays(),
-    isActive: true,
-  })
+    isActive: true })
   const [profileImageFile, setProfileImageFile] = useState(null)
   const [profileImagePreview, setProfileImagePreview] = useState("")
   const [isEditingLocation, setIsEditingLocation] = useState(false)
@@ -166,8 +164,7 @@ export default function RestaurantsList() {
     city: "",
     state: "",
     landmark: "",
-    pincode: "",
-  })
+    pincode: "" })
   const locationSearchInputRef = useRef(null)
   const placesAutocompleteRef = useRef(null)
 
@@ -273,8 +270,7 @@ export default function RestaurantsList() {
             isActive: restaurant.isActive !== false,
             rating: restaurant.ratings?.average || restaurant.rating || 0,
             logo: getPrimaryRestaurantImage(restaurant, PLACEHOLDER_40),
-            originalData: restaurant,
-          }))
+            originalData: restaurant }))
           if (!cancelled) setRestaurants(mappedRestaurants)
         } else {
           if (!cancelled) setRestaurants([])
@@ -319,8 +315,7 @@ export default function RestaurantsList() {
   const [filters, setFilters] = useState({
     all: "All",
     businessModel: "",
-    zone: "",
-  })
+    zone: "" })
 
   const filteredRestaurants = useMemo(() => {
     let result = [...restaurants]
@@ -480,8 +475,7 @@ export default function RestaurantsList() {
       city: loc.city || "",
       state: loc.state || "",
       landmark: loc.landmark || "",
-      pincode: loc.pincode || loc.zipCode || loc.postalCode || "",
-    }
+      pincode: loc.pincode || loc.zipCode || loc.postalCode || "" }
   }
 
   const loadGoogleMapsScript = async () => {
@@ -542,8 +536,7 @@ export default function RestaurantsList() {
       locationSearchInputRef.current,
       {
         fields: ["formatted_address", "address_components", "geometry"],
-        componentRestrictions: { country: "in" },
-      }
+        componentRestrictions: { country: "in" } }
     )
 
     const parsePlace = (place) => {
@@ -567,8 +560,7 @@ export default function RestaurantsList() {
         state,
         pincode,
         latitude: Number.isFinite(lat) ? Number(lat.toFixed(6)) : "",
-        longitude: Number.isFinite(lng) ? Number(lng.toFixed(6)) : "",
-      }
+        longitude: Number.isFinite(lng) ? Number(lng.toFixed(6)) : "" }
     }
 
     placesAutocompleteRef.current.addListener("place_changed", () => {
@@ -583,8 +575,7 @@ export default function RestaurantsList() {
         state: parsed.state || prev.state,
         pincode: parsed.pincode || prev.pincode,
         latitude: parsed.latitude !== "" ? parsed.latitude : prev.latitude,
-        longitude: parsed.longitude !== "" ? parsed.longitude : prev.longitude,
-      }))
+        longitude: parsed.longitude !== "" ? parsed.longitude : prev.longitude }))
     })
   }
 
@@ -667,8 +658,7 @@ export default function RestaurantsList() {
         landmark: locationForm.landmark || "",
         pincode: locationForm.pincode || "",
         zipCode: locationForm.pincode || "",
-        postalCode: locationForm.pincode || "",
-      }
+        postalCode: locationForm.pincode || "" }
 
       const response = await adminAPI.updateRestaurantLocation(restaurantId, locationPayload)
       const updatedRestaurant = response?.data?.data?.restaurant
@@ -682,10 +672,7 @@ export default function RestaurantsList() {
             ...(prev?.onboarding || {}),
             step1: {
               ...(prev?.onboarding?.step1 || {}),
-              location: updatedRestaurant.location,
-            },
-          },
-        }))
+              location: updatedRestaurant.location } } }))
 
         setRestaurants((prev) =>
           prev.map((item) =>
@@ -698,9 +685,7 @@ export default function RestaurantsList() {
                   item.zone,
                 originalData: {
                   ...(item.originalData || {}),
-                  location: updatedRestaurant.location,
-                },
-              }
+                  location: updatedRestaurant.location } }
               : item,
           ),
         )
@@ -760,8 +745,7 @@ export default function RestaurantsList() {
         openingTime: "",
         closingTime: "",
         outletTimings: getDefaultDays(),
-        isActive: true,
-      }
+        isActive: true }
     }
 
     const openingTimeValue =
@@ -794,8 +778,7 @@ export default function RestaurantsList() {
       openingTime: openingTimeValue,
       closingTime: closingTimeValue,
       outletTimings: getDefaultDays(),
-      isActive: restaurant.isActive !== false,
-    }
+      isActive: restaurant.isActive !== false }
   }
 
   const handleStartEditDetails = async () => {
@@ -833,8 +816,7 @@ export default function RestaurantsList() {
       let profileImage = undefined
       if (profileImageFile) {
         const uploadRes = await uploadAPI.uploadMedia(profileImageFile, {
-          folder: "zapoo/restaurant/profile",
-        })
+          folder: "zapoo/restaurant/profile" })
         const media = uploadRes?.data?.data?.file || uploadRes?.data?.data || uploadRes?.data?.file
         if (media?.url) {
           profileImage = { url: media.url, publicId: media.publicId || media.public_id }
@@ -855,8 +837,7 @@ export default function RestaurantsList() {
         estimatedDeliveryTime: detailsForm.estimatedDeliveryTime.trim(),
         openingTime: normalizedOpeningTime,
         closingTime: normalizedClosingTime,
-        isActive: detailsForm.isActive,
-      }
+        isActive: detailsForm.isActive }
 
       if (profileImage) {
         payload.profileImage = profileImage
@@ -886,9 +867,7 @@ export default function RestaurantsList() {
                 logo: getPrimaryRestaurantImage(updatedRestaurant, item.logo),
                 originalData: {
                   ...(item.originalData || {}),
-                  ...updatedRestaurant,
-                },
-              }
+                  ...updatedRestaurant } }
               : item,
           ),
         )

@@ -1,12 +1,13 @@
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { isModuleAuthenticated } from "@food/utils/auth";
 import React, {
   useRef,
   useEffect,
   useState,
   useMemo,
   useCallback,
-  startTransition,
-} from "react";
+  startTransition } from "react";
 import { createPortal } from "react-dom";
 import {
   Star,
@@ -36,8 +37,7 @@ import {
   Loader2,
   Plus,
   Check,
-  Share2,
-} from "lucide-react";
+  Share2 } from "lucide-react";
 import outOfZoneBg from "@food/assets/out-of-zone-bg.png";
 import { motion, AnimatePresence } from "framer-motion";
 import Footer from "@food/components/user/Footer";
@@ -47,8 +47,7 @@ import OrderTrackingCard from "@food/components/user/OrderTrackingCard";
 import {
   CategoryChipRowSkeleton,
   HeroBannerSkeleton,
-  LoadingSkeletonRegion,
-} from "@food/components/ui/loading-skeletons";
+  LoadingSkeletonRegion } from "@food/components/ui/loading-skeletons";
 import { useProfile } from "@food/context/ProfileContext";
 import { useCart } from "@food/context/CartContext";
 import { HorizontalCarousel } from "@food/components/ui/horizontal-carousel";
@@ -57,8 +56,7 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardContent,
-} from "@food/components/ui/card";
+  CardContent } from "@food/components/ui/card";
 import { Button } from "@food/components/ui/button";
 import { Badge } from "@food/components/ui/badge";
 import { Input } from "@food/components/ui/input";
@@ -66,8 +64,7 @@ import { Switch } from "@food/components/ui/switch";
 import { Checkbox } from "@food/components/ui/checkbox";
 import {
   useSearchOverlay,
-  useLocationSelector,
-} from "@food/components/user/UserLayout";
+  useLocationSelector } from "@food/components/user/UserLayout";
 import { COLLECTION_DATA } from "./collectionData";
 import PageNavbar from "@food/components/user/PageNavbar";
 
@@ -83,8 +80,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@food/components/ui/dropdown-menu";
+  DropdownMenuTrigger } from "@food/components/ui/dropdown-menu";
 import { useAppLocation } from "@food/hooks/useAppLocation";
 import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png";
 import offerImage from "@food/assets/offerimage.png";
@@ -104,7 +100,7 @@ import chefMascot from "@food/assets/chef-mascot.png";
 import AdsBannerCarousel from "@food/components/user/home/AdsBannerCarousel";
 import { getRestaurantDisplayName } from "@food/utils/restaurantDisplayName";
 import { primeOutletTimingsCache } from "@food/utils/outletTimingsCache";
-import pricePromo from "@food/assets/category-icons/price_promo.png";
+import pricePromo from "@food/assets/under99Promo.png";
 
 // Explore More Icons
 import exploreOffers from "@/assets/offer.avif";
@@ -147,7 +143,7 @@ const homePageCache = {
   landingExploreFetched: false,
   exploreMoreHeading: null,
   recommendedRestaurantIds: null,
-  under250PriceLimit: null,
+  under99PriceLimit: null,
   recommendedRestaurantsFromSettings: null,
   festBannerImages: null,
   heroBannerImages: null,
@@ -155,8 +151,7 @@ const homePageCache = {
   heroBannersFetched: false,
   adsBannerImages: null,
   adsBannersData: null,
-  adsBannersFetched: false,
-};
+  adsBannersFetched: false };
 
 const roundCoord = (value) =>
   Number.isFinite(Number(value))
@@ -278,6 +273,7 @@ export default function Home() {
   const vegModeToggleRef = useRef(null);
   const [isStickyHeaderVisible, setIsStickyHeaderVisible] = useState(false);
   const [showStickySearch, setShowStickySearch] = useState(false);
+  const [isSearchSticky, setIsSearchSticky] = useState(false);
   const [isCategoryStuck, setIsCategoryStuck] = useState(false);
   const categoryAnchorRef = useRef(null);
   const lastScrollY = useRef(0);
@@ -295,6 +291,7 @@ export default function Home() {
         setIsStickyHeaderVisible(currentScrollY > sectionBottom);
         setShowStickySearch(currentScrollY < lastScrollY.current);
       }
+      setIsSearchSticky(currentScrollY > 90);
 
       const heroShell = heroShellRef.current;
       const stickyHeader = stickyHeaderRef.current;
@@ -340,7 +337,7 @@ export default function Home() {
   const [festBannerImages, setFestBannerImages] = useState(() => homePageCache.festBannerImages ?? []);
   const [bgIndex, setBgIndex] = useState(0);
   const [recommendedRestaurantIds, setRecommendedRestaurantIds] = useState(() => homePageCache.recommendedRestaurantIds || []);
-  const [under250PriceLimit, setUnder250PriceLimit] = useState(() => homePageCache.under250PriceLimit || 250);
+  const [under99PriceLimit, setUnder99PriceLimit] = useState(() => homePageCache.under99PriceLimit || 99);
   const [
     recommendedRestaurantsFromSettings,
     setRecommendedRestaurantsFromSettings,
@@ -570,20 +567,17 @@ export default function Home() {
         id: "offers",
         label: "Offers",
         image: exploreOffers,
-        href: "/food/user/offers",
-      },
+        href: "/food/user/offers" },
       {
         id: "gourmet",
         label: "Gourmet",
         image: exploreGourmet,
-        href: "/food/user/gourmet",
-      },
+        href: "/food/user/gourmet" },
       {
         id: "collection",
         label: "Collections",
         image: exploreCollection,
-        href: "/food/user/profile/favorites",
-      },
+        href: "/food/user/profile/favorites" },
     ];
 
     if (!landingExploreMore || landingExploreMore.length === 0) return fallback;
@@ -604,8 +598,7 @@ export default function Home() {
             normalizeImageUrl(apiItem.imageUrl || apiItem.image || "") ||
             item.image,
           fallbackImage: item.image,
-          href,
-        };
+          href };
       }
       return { ...item, fallbackImage: item.image };
     });
@@ -621,8 +614,7 @@ export default function Home() {
         foodImages[0],
       slug:
         category.slug || slugifyCategory(category.label || category.name || ""),
-      label: category.label || category.name || "Category",
-    }));
+      label: category.label || category.name || "Category" }));
   }, [landingCategories, normalizeImageUrl, slugifyCategory]);
 
   const displayCategories = useMemo(() => {
@@ -759,8 +751,7 @@ export default function Home() {
   const [appliedFilters, setAppliedFilters] = useState({
     activeFilters: new Set(),
     sortBy: null,
-    selectedCuisine: null,
-  });
+    selectedCuisine: null });
   const [isLoadingFilterResults, setIsLoadingFilterResults] = useState(false);
   const [activeFilterTab, setActiveFilterTab] = useState("sort");
   const categoryScrollRef = useRef(null);
@@ -782,8 +773,7 @@ export default function Home() {
       removeFavorite: () => debugWarn("ProfileProvider not available"),
       isFavorite: () => false,
       getFavorites: () => [],
-      getDefaultAddress: () => null,
-    };
+      getDefaultAddress: () => null };
   }
 
   const {
@@ -791,8 +781,7 @@ export default function Home() {
     removeFavorite,
     isFavorite,
     getFavorites,
-    getDefaultAddress,
-  } = profileContext;
+    getDefaultAddress } = profileContext;
   const { addToCart, cart } = useCart();
   const { location, loading: effectiveZoneLoading, requestLocation, zoneId: effectiveZoneId, zoneStatus: effectiveZoneStatus, isOutOfService: isEffectiveLocationOutOfService } = useAppLocation();
   
@@ -956,8 +945,7 @@ export default function Home() {
           resolvedAddress ||
           defaultSavedAddress?.formattedAddress ||
           location?.formattedAddress ||
-          "",
-      };
+          "" };
     }
 
     return location;
@@ -993,8 +981,7 @@ export default function Home() {
               normalizeImageUrl(cat?.image || cat?.imageUrl) ||
               foodImages[idx % foodImages.length] ||
               foodImages[0],
-            type: cat?.type || "",
-          }))
+            type: cat?.type || "" }))
           : [];
 
         setRealCategories(categories);
@@ -1035,15 +1022,14 @@ export default function Home() {
         const exploreMoreData = items.map((it) => ({
           ...it,
           imageUrl: it.imageUrl || it.iconUrl,
-          label: it.label || it.name,
-        }));
+          label: it.label || it.name }));
         setLandingExploreMore(exploreMoreData);
 
         const settingsData = settings || {};
         const heading = settingsData.exploreMoreHeading || "Explore More";
         setExploreMoreHeading(heading);
         setRecommendedRestaurantIds(settingsData.recommendedRestaurantIds || []);
-        setUnder250PriceLimit(Number(settingsData.under250PriceLimit) || 250);
+        setUnder99PriceLimit(Number((settingsData.under99PriceLimit )) || 99);
 
         const recRest = settingsData.recommendedRestaurants || [];
         setRecommendedRestaurantsFromSettings(recRest);
@@ -1055,7 +1041,7 @@ export default function Home() {
         homePageCache.landingExploreMore = exploreMoreData;
         homePageCache.exploreMoreHeading = heading;
         homePageCache.recommendedRestaurantIds = settingsData.recommendedRestaurantIds || [];
-        homePageCache.under250PriceLimit = Number(settingsData.under250PriceLimit) || 250;
+        homePageCache.under99PriceLimit = Number((settingsData.under99PriceLimit )) || 99;
         homePageCache.recommendedRestaurantsFromSettings = recRest;
         homePageCache.festBannerImages = images;
         homePageCache.landingExploreFetched = true;
@@ -1193,8 +1179,7 @@ export default function Home() {
       },
       {
         threshold: 0,
-        rootMargin: "-72px 0px 0px 0px",
-      }
+        rootMargin: "-72px 0px 0px 0px" }
     );
 
     if (categoryAnchorRef.current) {
@@ -1270,8 +1255,7 @@ export default function Home() {
     const observerOptions = {
       root: rightContentRef.current,
       rootMargin: "-20% 0px -70% 0px",
-      threshold: 0,
-    };
+      threshold: 0 };
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -1584,8 +1568,7 @@ export default function Home() {
                 zoneRank: restaurant.zoneRank || null,
                 discount: restaurant.discount || 0,
                 distanceText: restaurant.distanceText || null,
-                distanceInfo: restaurant.distanceInfo || null,
-              };
+                distanceInfo: restaurant.distanceInfo || null };
             },
             );
 
@@ -1702,8 +1685,7 @@ export default function Home() {
       const nextFilterState = {
         activeFilters: new Set(nextActiveFilters),
         sortBy: nextSortBy,
-        selectedCuisine: nextSelectedCuisine,
-      };
+        selectedCuisine: nextSelectedCuisine };
 
       setAppliedFilters(nextFilterState);
       setIsLoadingFilterResults(true);
@@ -1927,8 +1909,7 @@ export default function Home() {
                 name: categoryName,
                 slug,
                 label: categoryName,
-                image: image || "",
-              });
+                image: image || "" });
             } else if (image && !categoryMap.get(slug).image) {
               categoryMap.get(slug).image = image;
             }
@@ -1942,8 +1923,7 @@ export default function Home() {
             image:
               category.image ||
               foodImages[index % foodImages.length] ||
-              foodImages[0],
-          }));
+              foodImages[0] }));
 
         setMenuCategories(categories);
       } finally {
@@ -2018,8 +1998,7 @@ export default function Home() {
         offer: null,
         pureVegRestaurant: restaurant?.pureVegRestaurant === true,
         isActive: true,
-        isAcceptingOrders: true,
-      };
+        isAcceptingOrders: true };
     });
 
     // Keep admin-selected order when IDs exist.
@@ -2110,8 +2089,7 @@ export default function Home() {
           deliveryTime: restaurant.deliveryTime,
           distance: restaurant.distance,
           priceRange: restaurant.priceRange,
-          image: restaurant.image,
-        });
+          image: restaurant.image });
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       }
@@ -2162,15 +2140,13 @@ export default function Home() {
             <div
               style={{
                 animation: "blob 8s ease-in-out infinite",
-                willChange: "transform",
-              }}
+                willChange: "transform" }}
             />
             {/* Bottom left blob - CSS animation */}
             <div
               style={{
                 animation: "blob-reverse 10s ease-in-out infinite",
-                willChange: "transform",
-              }}
+                willChange: "transform" }}
             />
           </div>
           {/* CSS keyframes for animations */}
@@ -2401,20 +2377,20 @@ export default function Home() {
 
                     {/* Categories Horizontal Slider */}
                     <div className="flex overflow-x-auto gap-1.5 pb-2 pt-2 mt-2 scrollbar-hide -mx-4 px-4 mask-edge-fade">
-                      {/* Meals Under 250 Explore Card */}
+                      {/* Meals Under 99 Explore Card */}
                       <Link
-                        to="/food/user/under250"
+                        to="/food/user/under99"
                         className="flex-shrink-0 flex flex-col items-center gap-1.5 group w-[76px]"
                       >
                         <div className="relative w-[68px] h-[68px] sm:w-[84px] sm:h-[84px] rounded-full overflow-hidden shadow-md border-2 border-gray-100 dark:border-gray-800 bg-[#E8F1F9] dark:bg-[#1E293B] group-active:scale-95 transition-all duration-300">
                           <OptimizedImage
                             src={pricePromo}
-                            alt="Meals Under 250"
+                            alt="Meals Under 99"
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                           />
                         </div>
                         <span className="text-[11px] font-extrabold text-gray-900 dark:text-gray-100 text-center leading-tight line-clamp-1 w-full px-0.5">
-                          Under ₹250
+                          Under ₹99
                         </span>
                       </Link>
 
@@ -2431,8 +2407,7 @@ export default function Home() {
                             <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
                               <motion.div
                                 animate={{
-                                  x: ['-200%', '200%'],
-                                }}
+                                  x: ['-200%', '200%'] }}
                                 transition={{
                                   duration: 2,
                                   repeat: Infinity,
@@ -2468,14 +2443,46 @@ export default function Home() {
                   />
 
 
-                  {/* Filters Sticky Sidebar Header */}
-                  <section className="bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md sticky top-0 z-[40] -mx-4 w-[calc(100%+2rem)] border-b border-gray-100 dark:border-white/5 shadow-sm transition-colors duration-300">
+                  {/* Sticky Search Bar */}
+                  <AnimatePresence>
+                    {isSearchSticky && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="sticky top-0 z-[40] bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md -mx-4 w-[calc(100%+2rem)] px-4 py-2.5 overflow-hidden border-b border-gray-100 dark:border-white/5 shadow-sm"
+                      >
+                        <div
+                          className="relative bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl flex items-center px-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-transparent cursor-pointer transition-all duration-300 w-full h-[40px]"
+                          onClick={handleSearchFocus}
+                        >
+                          <Search className="h-[18px] w-[18px] text-[#ef4f5f] mr-3 shrink-0" strokeWidth={2.5} />
+                          <span className="flex-1 text-[13px] font-bold text-gray-500 truncate flex items-center">
+                            {placeholders?.[placeholderIndex] || 'Search'}
+                          </span>
+                          <div className="flex items-center gap-3 pl-3">
+                            <div className="h-5 w-[1.5px] bg-gray-200 dark:bg-gray-700" />
+                            <Mic 
+                              className="h-[18px] w-[18px] text-[#ef4f5f]" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleVoiceSearchClick?.();
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Filters Header (No longer sticky) */}
+                  <section className="bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md relative z-[30] -mx-4 w-[calc(100%+2rem)] border-b border-gray-100 dark:border-white/5 shadow-sm transition-colors duration-300 flex flex-col">
                     <div
                       className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-4 py-2.5"
                       style={{
                         scrollbarWidth: "none",
-                        msOverflowStyle: "none",
-                      }}
+                        msOverflowStyle: "none" }}
                     >
                       <button
                         type="button"
@@ -2556,8 +2563,7 @@ export default function Home() {
                               style={
                                 index < 6
                                   ? {
-                                    animation: `fade-in-up 0.35s ease-out ${index * 0.05}s backwards`,
-                                  }
+                                    animation: `fade-in-up 0.35s ease-out ${index * 0.05}s backwards` }
                                   : undefined
                               }
                             >
@@ -2635,9 +2641,22 @@ export default function Home() {
                                 <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-1">{food.restaurantName}</p>
                                 <div className="mt-auto pt-2 flex items-center justify-between">
                                   <span className="text-sm font-bold">₹{food.price}</span>
-                                  <div className="h-6 w-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-primary">
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (!isModuleAuthenticated("user")) {
+                                        toast.error("Please login to add items to cart");
+                                        navigate("/user/signin", { state: { from: window.location.pathname } });
+                                        return;
+                                      }
+                                      addToCart(food);
+                                      toast.success("Added to cart");
+                                    }}
+                                    className="h-6 w-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                                  >
                                     <Plus className="h-3 w-3" />
-                                  </div>
+                                  </button>
                                 </div>
                               </div>
                             </div>
@@ -2676,16 +2695,14 @@ export default function Home() {
                             <motion.div
                               animate={{
                                 scale: [1, 1.4, 1],
-                                opacity: [0.15, 0.35, 0.15],
-                              }}
+                                opacity: [0.15, 0.35, 0.15] }}
                               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                               className="absolute inset-0 bg-primary rounded-full blur-[70px]"
                             />
                             <motion.div
                               animate={{
                                 scale: [1.3, 1, 1.3],
-                                opacity: [0.1, 0.25, 0.1],
-                              }}
+                                opacity: [0.1, 0.25, 0.1] }}
                               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                               className="absolute inset-0 bg-rose-400 rounded-full blur-[50px]"
                             />
@@ -2824,8 +2841,7 @@ export default function Home() {
                   type: "spring",
                   damping: 30,
                   stiffness: 400,
-                  duration: 0.3,
-                }}>
+                  duration: 0.3 }}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-4 border-b dark:border-gray-800">
                   <h2 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -2868,8 +2884,7 @@ export default function Home() {
                             if (section) {
                               section.scrollIntoView({
                                 behavior: "smooth",
-                                block: "start",
-                              });
+                                block: "start" });
                             }
                           }}
                           className={`flex flex-col items-center gap-1 py-4 px-2 text-center relative transition-colors ${isActive
@@ -3219,8 +3234,7 @@ export default function Home() {
                   type: "spring",
                   damping: 25,
                   stiffness: 300,
-                  mass: 0.8,
-                }}
+                  mass: 0.8 }}
                 className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl p-6 w-[calc(100%-2rem)] max-w-xs"
                 onClick={(e) => e.stopPropagation()}>
 
@@ -3337,8 +3351,7 @@ export default function Home() {
                   type: "spring",
                   damping: 25,
                   stiffness: 300,
-                  mass: 0.8,
-                }}
+                  mass: 0.8 }}
                 className="fixed inset-0 z-[9999] flex dark:bg-[#lalala] dark:text-white items-center justify-center p-4"
                 onClick={(e) => e.stopPropagation()}>
                 <div className="bg-white dark:bg-[#lalala] dark:text-white rounded-2xl shadow-2xl w-[85%] max-w-sm p-6">
@@ -3420,8 +3433,7 @@ export default function Home() {
                 transition={{
                   type: "spring",
                   damping: 30,
-                  stiffness: 300,
-                }}
+                  stiffness: 300 }}
                 className="fixed inset-x-0 bottom-0 top-12 sm:top-16 md:top-20 z-[9999] bg-white dark:bg-[#1a1a1a] rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
@@ -3444,8 +3456,7 @@ export default function Home() {
                       const categoryData = {
                         name: category.name || category.label,
                         image: category.image || category.imageUrl,
-                        slug: category.slug,
-                      };
+                        slug: category.slug };
                       return (
                         <motion.div
                           key={category.id || index}
@@ -3455,8 +3466,7 @@ export default function Home() {
                             duration: 0.3,
                             delay: index * 0.02,
                             type: "spring",
-                            stiffness: 100,
-                          }}
+                            stiffness: 100 }}
                           whileTap={{ scale: 0.95 }}>
                           <Link
                             to={
@@ -3511,23 +3521,19 @@ export default function Home() {
                       key={i}
                       initial={{
                         scale: 1,
-                        opacity: 0,
-                      }}
+                        opacity: 0 }}
                       animate={{
                         scale: maxSize / baseSize,
-                        opacity: [0, 0.4, 0.2, 0],
-                      }}
+                        opacity: [0, 0.4, 0.2, 0] }}
                       transition={{
                         duration: 2.5,
                         repeat: Number.POSITIVE_INFINITY,
                         ease: "easeOut",
-                        delay: i * 0.15,
-                      }}
+                        delay: i * 0.15 }}
                       className="absolute rounded-full border border-green-300 dark:border-green-600"
                       style={{
                         width: baseSize,
-                        height: baseSize,
-                      }}
+                        height: baseSize }}
                     />
                   );
                 })}
@@ -3540,8 +3546,7 @@ export default function Home() {
                     type: "spring",
                     stiffness: 200,
                     damping: 15,
-                    delay: 0.1,
-                  }}
+                    delay: 0.1 }}
                   className="absolute z-10 w-28 h-28 rounded-full border-2 border-green-600 dark:border-green-500 bg-white dark:bg-[#1a1a1a] flex flex-col items-center justify-center shadow-sm"
                 >
                   <motion.div
@@ -3589,8 +3594,7 @@ export default function Home() {
                     type: "spring",
                     stiffness: 200,
                     damping: 15,
-                    delay: 0.1,
-                  }}
+                    delay: 0.1 }}
                   className="relative w-16 h-16 flex items-center justify-center">
                   {/* Outer Circle - Spins Clockwise */}
                   <motion.div
@@ -3599,9 +3603,7 @@ export default function Home() {
                       rotate: {
                         duration: 1.5,
                         repeat: Infinity,
-                        ease: "linear",
-                      },
-                    }}
+                        ease: "linear" } }}
                     className="absolute w-16 h-16 border-[4px] border-transparent border-t-pink-500 dark:border-t-pink-400 border-r-pink-500 dark:border-r-pink-400 rounded-full"
                   />
 
@@ -3612,9 +3614,7 @@ export default function Home() {
                       rotate: {
                         duration: 1,
                         repeat: Infinity,
-                        ease: "linear",
-                      },
-                    }}
+                        ease: "linear" } }}
                     className="absolute w-12 h-12 border-[4px] border-transparent border-r-pink-500 dark:border-r-pink-400 rounded-full"
                   />
                 </motion.div>
@@ -3689,8 +3689,7 @@ export default function Home() {
                       duration: 0.2,
                       type: "spring",
                       damping: 30,
-                      stiffness: 400,
-                    }}>
+                      stiffness: 400 }}>
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 pt-6 pb-4 border-b border-gray-200">
                       <h2 className="text-lg font-bold text-gray-900">

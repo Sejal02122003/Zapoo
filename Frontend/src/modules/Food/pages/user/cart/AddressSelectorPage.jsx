@@ -59,8 +59,7 @@ export default function AddressSelectorPage() {
     zipCode: "",
     additionalDetails: "",
     label: "Home",
-    phone: "",
-  })
+    phone: "" })
   const [loadingAddress, setLoadingAddress] = useState(false)
   const [mapLoading, setMapLoading] = useState(false)
   const mapContainerRef = useRef(null)
@@ -145,8 +144,7 @@ export default function AddressSelectorPage() {
           display: r.display_name || "",
           lat: Number(r.lat),
           lng: Number(r.lon),
-          address: r.address || {},
-        }))
+          address: r.address || {} }))
         const withDistance = mapped
           .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lng))
           .map(x => ({ ...x, distanceMeters: calculateDistance(refLat, refLng, x.lat, x.lng) }))
@@ -266,8 +264,7 @@ export default function AddressSelectorPage() {
       zipCode: addr.zipCode || "",
       additionalDetails: addr.additionalDetails || "",
       label: addr.label || "Home",
-      phone: addr.phone || "",
-    })
+      phone: addr.phone || "" })
     
     let lat = 22.7196, lng = 75.8577
     if (addr.location?.coordinates) {
@@ -311,8 +308,7 @@ export default function AddressSelectorPage() {
       zipCode: "",
       additionalDetails: "",
       label: "Home",
-      phone: "",
-    })
+      phone: "" })
     setShowAddressForm(true)
   }
 
@@ -341,16 +337,14 @@ export default function AddressSelectorPage() {
         if (overBy > 0) {
           scrollHost.scrollTo({
             top: scrollHost.scrollTop + overBy + 24,
-            behavior: "smooth",
-          })
+            behavior: "smooth" })
           return
         }
         if (elRect.top < hostRect.top + 70) {
           const upBy = hostRect.top + 70 - elRect.top
           scrollHost.scrollTo({
             top: Math.max(0, scrollHost.scrollTop - upBy - 12),
-            behavior: "smooth",
-          })
+            behavior: "smooth" })
           return
         }
         el.scrollIntoView({ behavior: "smooth", block: "center" })
@@ -428,8 +422,7 @@ export default function AddressSelectorPage() {
           street: street || formatted.split(",")[0] || prev.street,
           city: city || prev.city,
           state: state || prev.state,
-          zipCode: postcode || prev.zipCode,
-        }))
+          zipCode: postcode || prev.zipCode }))
       }
     } catch (error) {
       debugError("? Reverse geocoding failed:", error)
@@ -601,8 +594,7 @@ export default function AddressSelectorPage() {
                             street: display || prev.street,
                             city: city || prev.city,
                             state: state || prev.state,
-                            zipCode: zipCode || prev.zipCode,
-                          }))
+                            zipCode: zipCode || prev.zipCode }))
                           setKeywordAddressSuggestions([])
                         }}
                         className="w-full px-4 py-3 flex items-start gap-3 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors text-left border-b border-gray-50 dark:border-gray-800 last:border-none"

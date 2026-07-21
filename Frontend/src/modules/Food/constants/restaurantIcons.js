@@ -19,6 +19,5 @@ export {
   refundedIcon,
   scheduledIcon,
   allIcon,
-  promoIcon,
-}
+  promoIcon }
 

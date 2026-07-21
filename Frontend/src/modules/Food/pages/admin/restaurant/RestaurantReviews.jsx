@@ -26,8 +26,7 @@ export default function RestaurantReviews() {
     customer: true,
     review: true,
     rating: true,
-    date: true,
-  })
+    date: true })
 
   const filteredReviews = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -80,8 +79,7 @@ export default function RestaurantReviews() {
       customer: true,
       review: true,
       rating: true,
-      date: true,
-    })
+      date: true })
   }
 
   const columnsConfig = {
@@ -91,8 +89,7 @@ export default function RestaurantReviews() {
     customer: "Customer",
     review: "Review",
     rating: "Rating",
-    date: "Date & Time",
-  }
+    date: "Date & Time" }
 
   const getRatingBadge = (rating) => {
     const stars = []
@@ -126,8 +123,7 @@ export default function RestaurantReviews() {
       month: "short",
       day: "numeric",
       hour: "2-digit",
-      minute: "2-digit",
-    })
+      minute: "2-digit" })
   }
 
   useEffect(() => {

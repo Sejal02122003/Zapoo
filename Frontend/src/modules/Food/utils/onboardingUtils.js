@@ -109,10 +109,8 @@ const buildOnboardingLikeDataFromRestaurant = (restaurant) => {
               addressLine2: restaurant?.addressLine2,
               area: restaurant?.area,
               city: restaurant?.city,
-              landmark: restaurant?.landmark,
-            }
-          : null),
-    },
+              landmark: restaurant?.landmark }
+          : null) },
     step2: onboarding.step2 || {
       cuisines: restaurant?.cuisines,
       deliveryTimings:
@@ -120,8 +118,7 @@ const buildOnboardingLikeDataFromRestaurant = (restaurant) => {
         (openingTime || closingTime ? { openingTime, closingTime } : null),
       openDays: restaurant?.openDays,
       menuImageUrls: restaurant?.menuImages,
-      profileImageUrl: restaurant?.profileImage,
-    },
+      profileImageUrl: restaurant?.profileImage },
     step3:
       onboarding.step3 ||
       (restaurant?.panNumber ||
@@ -132,29 +129,23 @@ const buildOnboardingLikeDataFromRestaurant = (restaurant) => {
             pan: {
               panNumber: restaurant?.panNumber,
               nameOnPan: restaurant?.nameOnPan,
-              image: restaurant?.panImage,
-            },
+              image: restaurant?.panImage },
             gst: {
               isRegistered: Boolean(restaurant?.gstRegistered),
               gstNumber: restaurant?.gstNumber,
               legalName: restaurant?.gstLegalName,
               address: restaurant?.gstAddress,
-              image: restaurant?.gstImage,
-            },
+              image: restaurant?.gstImage },
             fssai: {
               registrationNumber: restaurant?.fssaiNumber,
               expiryDate: restaurant?.fssaiExpiry,
-              image: restaurant?.fssaiImage,
-            },
+              image: restaurant?.fssaiImage },
             bank: {
               accountNumber: restaurant?.accountNumber,
               ifscCode: restaurant?.ifscCode,
               accountHolderName: restaurant?.accountHolderName,
-              accountType: restaurant?.accountType,
-            },
-          }
-        : null),
-  }
+              accountType: restaurant?.accountType } }
+        : null) }
 }
 
 export const isRestaurantOnboardingComplete = (restaurant) => {

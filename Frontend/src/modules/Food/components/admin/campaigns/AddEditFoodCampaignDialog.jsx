@@ -5,8 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@food/components/ui/dialog"
+  DialogDescription } from "@food/components/ui/dialog"
 
 export default function AddEditFoodCampaignDialog({ isOpen, onOpenChange, campaign, onSave }) {
   const [formData, setFormData] = useState({
@@ -15,8 +14,7 @@ export default function AddEditFoodCampaignDialog({ isOpen, onOpenChange, campai
     dateEnd: "",
     timeStart: "",
     timeEnd: "",
-    price: "",
-  })
+    price: "" })
   const [errors, setErrors] = useState({})
 
   useEffect(() => {
@@ -27,8 +25,7 @@ export default function AddEditFoodCampaignDialog({ isOpen, onOpenChange, campai
         dateEnd: campaign.dateEnd || "",
         timeStart: campaign.timeStart || "",
         timeEnd: campaign.timeEnd || "",
-        price: campaign.price ? campaign.price.toString() : "",
-      })
+        price: campaign.price ? campaign.price.toString() : "" })
     } else {
       setFormData({
         title: "",
@@ -36,8 +33,7 @@ export default function AddEditFoodCampaignDialog({ isOpen, onOpenChange, campai
         dateEnd: "",
         timeStart: "",
         timeEnd: "",
-        price: "",
-      })
+        price: "" })
     }
     setErrors({})
   }, [campaign, isOpen])

@@ -24,8 +24,7 @@ export default function FeeSettings() {
     gstOnTakeawayPlatformFee: "",
     gstOnPackagingFee: "",
     deliveryBonusAmount: "",
-    dispatchRadiusTiers: "2, 4, 6, 8, 10",
-  })
+    dispatchRadiusTiers: "2, 4, 6, 8, 10" })
   const [loadingFeeSettings, setLoadingFeeSettings] = useState(false)
   const [savingFeeSettings, setSavingFeeSettings] = useState(false)
   const [editingRangeIndex, setEditingRangeIndex] = useState(null)
@@ -51,8 +50,7 @@ export default function FeeSettings() {
           gstOnTakeawayPlatformFee: response.data.data.feeSettings.gstOnTakeawayPlatformFee ?? "",
           gstOnPackagingFee: response.data.data.feeSettings.gstOnPackagingFee ?? "",
           deliveryBonusAmount: response.data.data.feeSettings.deliveryBonusAmount ?? "",
-          dispatchRadiusTiers: response.data.data.feeSettings.dispatchRadiusTiers?.join(", ") ?? "2, 4, 6, 8, 10",
-        })
+          dispatchRadiusTiers: response.data.data.feeSettings.dispatchRadiusTiers?.join(", ") ?? "2, 4, 6, 8, 10" })
       } else if (response.data.success && response.data.data.feeSettings === null) {
         // Not configured yet - keep empty fields (no defaults).
         setFeeSettings({
@@ -69,8 +67,7 @@ export default function FeeSettings() {
           gstOnTakeawayPlatformFee: "",
           gstOnPackagingFee: "",
           deliveryBonusAmount: "",
-          dispatchRadiusTiers: "2, 4, 6, 8, 10",
-        })
+          dispatchRadiusTiers: "2, 4, 6, 8, 10" })
       }
     } catch (error) {
       debugError('Error fetching fee settings:', error)
@@ -104,8 +101,7 @@ export default function FeeSettings() {
         gstOnPackagingFee: feeSettings.gstOnPackagingFee === "" ? undefined : Number(feeSettings.gstOnPackagingFee),
         deliveryBonusAmount: feeSettings.deliveryBonusAmount === "" ? undefined : Number(feeSettings.deliveryBonusAmount),
         dispatchRadiusTiers: feeSettings.dispatchRadiusTiers ? feeSettings.dispatchRadiusTiers.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n)) : undefined,
-        isActive: true,
-      })
+        isActive: true })
 
       if (response.data.success) {
         toast.success('Fee settings saved successfully')
@@ -126,8 +122,7 @@ export default function FeeSettings() {
             gstOnTakeawayPlatformFee: saved.gstOnTakeawayPlatformFee ?? "",
             gstOnPackagingFee: saved.gstOnPackagingFee ?? "",
             deliveryBonusAmount: saved.deliveryBonusAmount ?? "",
-            dispatchRadiusTiers: saved.dispatchRadiusTiers?.join(", ") ?? "2, 4, 6, 8, 10",
-          })
+            dispatchRadiusTiers: saved.dispatchRadiusTiers?.join(", ") ?? "2, 4, 6, 8, 10" })
         }
       } else {
         toast.error(response.data.message || 'Failed to save fee settings')

@@ -57,8 +57,7 @@ export function normalizeIncomingOrder(order) {
     ...order,
     orderMongoId: mongoId || order.orderMongoId || order.order_mongo_id || undefined,
     _id: mongoId || order._id || order.id || undefined,
-    orderId: displayId || order.orderId || order.order_id,
-  };
+    orderId: displayId || order.orderId || order.order_id };
 }
 
 export function getOrderAlertKey(order = {}) {

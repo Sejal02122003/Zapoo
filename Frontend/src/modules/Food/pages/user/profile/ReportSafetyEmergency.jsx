@@ -13,8 +13,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
-} from "@food/components/ui/dialog"
+  DialogTitle } from "@food/components/ui/dialog"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -60,8 +59,7 @@ export default function ReportSafetyEmergency() {
       unread: "bg-blue-100 text-blue-700",
       read: "bg-slate-100 text-slate-700",
       urgent: "bg-red-100 text-red-700",
-      resolved: "bg-green-100 text-green-700",
-    }
+      resolved: "bg-green-100 text-green-700" }
     const cls = map[String(status)] || map.unread
     const label = String(status || "unread").replace(/^\w/, (c) => c.toUpperCase())
     return <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${cls}`}>{label}</span>
@@ -72,8 +70,7 @@ export default function ReportSafetyEmergency() {
       low: "bg-gray-100 text-gray-700",
       medium: "bg-yellow-100 text-yellow-700",
       high: "bg-orange-100 text-orange-700",
-      critical: "bg-red-100 text-red-700 font-bold",
-    }
+      critical: "bg-red-100 text-red-700 font-bold" }
     const cls = map[String(priority)] || map.medium
     const label = String(priority || "medium").replace(/^\w/, (c) => c.toUpperCase())
     return <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${cls}`}>{label}</span>

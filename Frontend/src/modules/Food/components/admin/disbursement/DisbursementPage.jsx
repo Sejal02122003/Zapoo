@@ -20,8 +20,7 @@ export default function DisbursementPage({
   const [filters, setFilters] = useState({
     status: "",
     dateRange: { start: "", end: "" },
-    amountRange: { min: "", max: "" },
-  })
+    amountRange: { min: "", max: "" } })
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   const filteredDisbursements = useMemo(() => {
@@ -90,8 +89,7 @@ export default function DisbursementPage({
     setFilters({
       status: "",
       dateRange: { start: "", end: "" },
-      amountRange: { min: "", max: "" },
-    })
+      amountRange: { min: "", max: "" } })
   }
 
   const activeFiltersCount = (filters.status ? 1 : 0) + (filters.dateRange.start ? 1 : 0) + (filters.dateRange.end ? 1 : 0) + (filters.amountRange.min ? 1 : 0) + (filters.amountRange.max ? 1 : 0)
@@ -271,8 +269,7 @@ export default function DisbursementPage({
                       <p className="text-lg font-bold text-slate-900">
                         ₹ {disbursement.totalAmount.toLocaleString("en-IN", {
                           minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                          maximumFractionDigits: 2 })}
                       </p>
                     </div>
                     <div className="flex gap-2">

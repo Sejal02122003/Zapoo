@@ -10,16 +10,14 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@food/components/ui/select"
+  SelectValue } from "@food/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@food/components/ui/avatar"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
-} from "@food/components/ui/dialog"
+  DialogTitle } from "@food/components/ui/dialog"
 import { useProfile } from "@food/context/ProfileContext"
 import { userAPI } from "@food/api"
 import { toast } from "sonner"
@@ -86,8 +84,7 @@ const buildFormDataFromProfile = (profile = {}) => ({
       ? dayjs(profile.anniversary)
       : dayjs(profile.anniversary))
     : null,
-  gender: profile.gender || "",
-})
+  gender: profile.gender || "" })
 
 const loadEditProfileDraft = () => {
   try {
@@ -138,8 +135,7 @@ export default function EditProfile() {
   const [fieldErrors, setFieldErrors] = useState({
     mobile: "",
     email: "",
-    dateOfBirth: "",
-  })
+    dateOfBirth: "" })
   const fileInputRef = useRef(null)
   const hydratedFromDraftRef = useRef(Boolean(draftProfile))
 
@@ -168,8 +164,7 @@ export default function EditProfile() {
       profileImage,
       dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : null,
       anniversary: formData.anniversary ? formData.anniversary.format('YYYY-MM-DD') : null,
-      gender: formData.gender || "",
-    })
+      gender: formData.gender || "" })
   }, [formData, profileImage])
 
   // Get avatar initial
@@ -275,8 +270,7 @@ export default function EditProfile() {
           dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : null,
           anniversary: formData.anniversary ? formData.anniversary.format('YYYY-MM-DD') : null,
           gender: formData.gender || "",
-          profileImage: imageUrl,
-        }
+          profileImage: imageUrl }
 
         // Update context + local persistence with current form values so refresh keeps all fields
         updateUserProfile(mergedProfile)
@@ -317,8 +311,7 @@ export default function EditProfile() {
     const nextErrors = {
       mobile: validateMobile(formData.mobile),
       email: validateEmail(formData.email),
-      dateOfBirth: validateDateOfBirth(formData.dateOfBirth),
-    }
+      dateOfBirth: validateDateOfBirth(formData.dateOfBirth) }
     setFieldErrors(nextErrors)
     return !Object.values(nextErrors).some(Boolean)
   }
@@ -352,8 +345,7 @@ export default function EditProfile() {
         updateUserProfile({
           ...updatedUser,
           phone: updatedUser.phone || formData.mobile,
-          profileImage: updatedUser.profileImage || profileImage,
-        })
+          profileImage: updatedUser.profileImage || profileImage })
 
         // Save to localStorage with complete data
         saveProfileToStorage({
@@ -364,8 +356,7 @@ export default function EditProfile() {
           profileImage: updatedUser.profileImage || profileImage,
           dateOfBirth: updatedUser.dateOfBirth || formData.dateOfBirth?.format('YYYY-MM-DD'),
           anniversary: updatedUser.anniversary || formData.anniversary?.format('YYYY-MM-DD'),
-          gender: updatedUser.gender || formData.gender,
-        })
+          gender: updatedUser.gender || formData.gender })
         clearEditProfileDraft()
 
         // Dispatch event to refresh profile from API
@@ -535,31 +526,22 @@ export default function EditProfile() {
                           borderRadius: '8px',
                           color: 'inherit',
                           '& fieldset': {
-                            borderColor: '#d1d5db',
-                          },
+                            borderColor: '#d1d5db' },
                           '&:hover fieldset': {
-                            borderColor: '#9ca3af',
-                          },
+                            borderColor: '#9ca3af' },
                           '&.Mui-focused fieldset': {
                             borderColor: '#7e3866',
-                            borderWidth: '1px',
-                          },
+                            borderWidth: '1px' },
                           '& .MuiSvgIcon-root': {
-                            color: 'inherit',
-                          },
-                        },
+                            color: 'inherit' } },
                         '& .MuiInputBase-input': {
                           padding: '12px 14px',
                           fontSize: '16px',
                           color: 'inherit',
                           '&::placeholder': {
                             color: 'inherit',
-                            opacity: 0.5,
-                          }
-                        },
-                      },
-                    },
-                  }}
+                            opacity: 0.5 }
+                        } } } }}
                 />
               </LocalizationProvider>
               {fieldErrors.dateOfBirth && (
@@ -585,31 +567,22 @@ export default function EditProfile() {
                           borderRadius: '8px',
                           color: 'inherit',
                           '& fieldset': {
-                            borderColor: '#d1d5db',
-                          },
+                            borderColor: '#d1d5db' },
                           '&:hover fieldset': {
-                            borderColor: '#9ca3af',
-                          },
+                            borderColor: '#9ca3af' },
                           '&.Mui-focused fieldset': {
                             borderColor: '#7e3866',
-                            borderWidth: '1px',
-                          },
+                            borderWidth: '1px' },
                           '& .MuiSvgIcon-root': {
-                            color: 'inherit',
-                          },
-                        },
+                            color: 'inherit' } },
                         '& .MuiInputBase-input': {
                           padding: '12px 14px',
                           fontSize: '16px',
                           color: 'inherit',
                           '&::placeholder': {
                             color: 'inherit',
-                            opacity: 0.5,
-                          }
-                        },
-                      },
-                    },
-                  }}
+                            opacity: 0.5 }
+                        } } } }}
                 />
               </LocalizationProvider>
             </div>

@@ -367,5 +367,4 @@ export {
   RestaurantGridSkeleton,
   SkeletonLines,
   TableSkeleton,
-  WalletSkeleton,
-}
+  WalletSkeleton }

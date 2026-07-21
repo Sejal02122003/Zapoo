@@ -11,8 +11,7 @@ import {
   Search,
   Trash2,
   Upload,
-  X,
-} from "lucide-react"
+  X } from "lucide-react"
 import { adminAPI, uploadAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
 import { toast } from "sonner"
@@ -25,8 +24,7 @@ const defaultFormData = {
   status: true,
   type: "",
   zoneId: "global",
-  foodTypeScope: "Both",
-}
+  foodTypeScope: "Both" }
 
 const approvalBadgeClass = (status) => {
   const value = String(status || "pending").toLowerCase()
@@ -186,8 +184,7 @@ export default function Category() {
       status: category?.status !== false,
       type: category?.type || "",
       zoneId: zoneIdValue || "global",
-      foodTypeScope: category?.foodTypeScope || "Both",
-    })
+      foodTypeScope: category?.foodTypeScope || "Both" })
     setSelectedImageFile(null)
     setImagePreview(category?.image || null)
     setIsModalOpen(true)
@@ -315,13 +312,10 @@ export default function Category() {
           fillColor: [59, 130, 246],
           textColor: 255,
           fontStyle: "bold",
-          fontSize: 10,
-        },
+          fontSize: 10 },
         bodyStyles: {
           fontSize: 9,
-          textColor: [30, 30, 30],
-        },
-      })
+          textColor: [30, 30, 30] } })
 
       doc.save(`Categories_${new Date().toISOString().split("T")[0]}.pdf`)
       toast.success("PDF exported successfully!")
@@ -349,8 +343,7 @@ export default function Category() {
         status: Boolean(formData.status),
         image: imageUrl || undefined,
         zoneId: formData.zoneId || "global",
-        foodTypeScope: formData.foodTypeScope,
-      }
+        foodTypeScope: formData.foodTypeScope }
 
       if (editingCategory) {
         const response = await adminAPI.updateCategory(editingCategory.id, payload)

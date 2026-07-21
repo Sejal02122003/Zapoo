@@ -34,8 +34,7 @@ export default function ScheduledOrders() {
     handleViewOrder,
     handlePrintOrder,
     toggleColumn,
-    resetColumns,
-  } = useOrdersManagement(scheduledOrders, "scheduled", "Scheduled Orders")
+    resetColumns } = useOrdersManagement(scheduledOrders, "scheduled", "Scheduled Orders")
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen w-full max-w-full overflow-x-hidden">

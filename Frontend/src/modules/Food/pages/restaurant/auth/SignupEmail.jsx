@@ -18,8 +18,7 @@ export default function RestaurantSignupEmail() {
     name: "",
     email: "",
     password: "",
-    confirmPassword: "",
-  })
+    confirmPassword: "" })
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)

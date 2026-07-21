@@ -32,8 +32,7 @@ function RestaurantGrid({
   showSkeleton = false,
   isLoading = false,
   isFavorite,
-  onToggleFavorite,
-}) {
+  onToggleFavorite }) {
   if (restaurants.length === 0) {
     return null;
   }

@@ -20,8 +20,7 @@ export default function FinanceDetailsPage() {
     additions: true,
     orderLevelDeductions: true,
     taxDeductions: true,
-    investmentsInGrowth: true,
-  })
+    investmentsInGrowth: true })
   const topTabBarRef = useRef(null)
 
   const tabs = [
@@ -43,8 +42,7 @@ export default function FinanceDetailsPage() {
 
         container.scrollTo({
           left: scrollLeft,
-          behavior: "smooth",
-        })
+          behavior: "smooth" })
       }
     }
   }
@@ -176,12 +174,10 @@ export default function FinanceDetailsPage() {
                 }`}
                 animate={{
                   scale: isActive ? 1.05 : 1,
-                  opacity: isActive ? 1 : 0.7,
-                }}
+                  opacity: isActive ? 1 : 0.7 }}
                 transition={{
                   duration: 0.3,
-                  ease: [0.25, 0.1, 0.25, 1],
-                }}
+                  ease: [0.25, 0.1, 0.25, 1] }}
                 whileTap={{ scale: 0.95 }}
               >
                 {isActive && (
@@ -192,8 +188,7 @@ export default function FinanceDetailsPage() {
                     transition={{
                       type: "spring",
                       stiffness: 500,
-                      damping: 30,
-                    }}
+                      damping: 30 }}
                   />
                 )}
                 <span className="relative z-10">{tab.label}</span>

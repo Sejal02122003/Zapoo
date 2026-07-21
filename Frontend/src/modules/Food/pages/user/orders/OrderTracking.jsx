@@ -29,8 +29,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-} from "@food/components/ui/dialog"
+  DialogTitle } from "@food/components/ui/dialog"
 import { Textarea } from "@food/components/ui/textarea"
 import { useOrders } from "@food/context/OrdersContext"
 import { useProfile } from "@food/context/ProfileContext"
@@ -42,8 +41,7 @@ import { isModuleAuthenticated } from "@food/utils/auth"
 import { useUserNotifications } from "@food/hooks/useUserNotifications"
 import {
   patchOrderFromSocketPayload,
-  socketPayloadNeedsRefetch,
-} from "@food/utils/orderSocketPatch"
+  socketPayloadNeedsRefetch } from "@food/utils/orderSocketPatch"
 import { RESTAURANT_PIN_SVG, CUSTOMER_PIN_SVG, RIDER_BIKE_SVG } from "@food/constants/mapIcons"
 
 // Fallback definitions in case imports fail at runtime or are shadowed
@@ -430,8 +428,7 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
     cancellationReason: apiOrder?.cancellationReason || previousOrder?.cancellationReason || null,
     ratings: apiOrder?.ratings || previousOrder?.ratings || {},
     restaurantRating: apiOrder?.ratings?.restaurant?.rating || apiOrder?.restaurantRating || previousOrder?.restaurantRating || null,
-    deliveryPartnerRating: apiOrder?.ratings?.deliveryPartner?.rating || apiOrder?.deliveryPartnerRating || previousOrder?.deliveryPartnerRating || null,
-  }
+    deliveryPartnerRating: apiOrder?.ratings?.deliveryPartner?.rating || apiOrder?.deliveryPartnerRating || previousOrder?.deliveryPartnerRating || null }
 }
 
 /**
@@ -581,8 +578,7 @@ export default function OrderTracking() {
         restaurantRating: selectedRestaurantRating,
         deliveryPartnerRating: deliveryPartnerCheck ? selectedDeliveryRating : undefined,
         restaurantComment: restaurantFeedbackText || undefined,
-        deliveryPartnerComment: deliveryPartnerCheck ? (deliveryFeedbackText || undefined) : undefined,
-      })
+        deliveryPartnerComment: deliveryPartnerCheck ? (deliveryFeedbackText || undefined) : undefined })
       
       const updatedOrderData = response?.data?.data?.order || response?.data?.order
       if (updatedOrderData) {
@@ -1164,8 +1160,7 @@ export default function OrderTracking() {
         const next = mapOrderToTrackingUiStatus({
           status,
           orderStatus: payload.orderStatus || status,
-          deliveryState: payload.deliveryState,
-        });
+          deliveryState: payload.deliveryState });
         setOrderStatus(next);
 
         setOrder((prev) => {
@@ -1273,8 +1268,7 @@ export default function OrderTracking() {
 
       const payload = {
         reason: cancellationReason.trim(),
-        ...(isRazorpayPaid ? { refundDestination } : {}),
-      }
+        ...(isRazorpayPaid ? { refundDestination } : {}) }
 
       const response = await orderAPI.cancelOrder(cancelLookupId, payload);
       if (response.data?.success) {
@@ -1335,8 +1329,7 @@ export default function OrderTracking() {
         await navigator.share({
           title: `Track my order from ${order?.restaurant || companyName}`,
           text: `Hey! Track my order from ${order?.restaurant || companyName} with ID #${order?.orderId || order?.id}.`,
-          url: window.location.href,
-        });
+          url: window.location.href });
       } else {
         await navigator.clipboard.writeText(window.location.href);
         toast.success("Tracking link copied to clipboard!");
@@ -1513,8 +1506,7 @@ export default function OrderTracking() {
         month: "short",
         day: "numeric",
         hour: "2-digit",
-        minute: "2-digit",
-      })
+        minute: "2-digit" })
     : null
   const isDeliveredOrder =
     orderStatus === "delivered" ||

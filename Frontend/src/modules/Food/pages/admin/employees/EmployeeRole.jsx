@@ -44,14 +44,12 @@ const initialEmployeeRoles = [
     id: 1,
     roleName: "Manager",
     modules: ["Addon", "Banner", "Campaign", "Category", "Coupon", "Custom Role", "CustomerList", "Deliveryman", "Employee", "Food", "Notification", "Order", "Report", "Settings", "Pos", "Contact Message"],
-    createdAt: "07 Feb 2023",
-  },
+    createdAt: "07 Feb 2023" },
   {
     id: 2,
     roleName: "Customer Care Executive",
     modules: ["CustomerList", "Deliveryman", "Order", "Restaurant"],
-    createdAt: "22 Aug 2021",
-  },
+    createdAt: "22 Aug 2021" },
 ]
 
 export default function EmployeeRole() {
@@ -66,15 +64,14 @@ export default function EmployeeRole() {
     roleName: true,
     modules: true,
     createdAt: true,
-    actions: true,
-  })
+    actions: true })
 
   const languageTabs = [
     { key: "default", label: "Default" },
     { key: "en", label: "English(EN)" },
     { key: "bn", label: "Bengali - বাংলা(BN)" },
     { key: "ar", label: "Arabic - العربية(AR)" },
-    { key: "es", label: "Spanish - espa�ol(ES)" },
+    { key: "es", label: "Spanish - espa�ol(ES)" },
   ]
 
   const handlePermissionChange = (permissionId, checked) => {
@@ -139,8 +136,7 @@ export default function EmployeeRole() {
       roleName: true,
       modules: true,
       createdAt: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const columnsConfig = {
@@ -148,8 +144,7 @@ export default function EmployeeRole() {
     roleName: "Role Name",
     modules: "Modules",
     createdAt: "Created At",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   // Split permissions into 4 columns
   const column1 = modulePermissions.slice(0, 7)

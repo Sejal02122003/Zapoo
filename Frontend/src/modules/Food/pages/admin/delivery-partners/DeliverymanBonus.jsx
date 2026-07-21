@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react"
-import { Search, Wallet, Settings, Folder, Download, ChevronDown, FileText, FileSpreadsheet, Check, Columns, Loader2 } from "lucide-react"
+import { Search, Settings, Folder, Download, ChevronDown, FileText, FileSpreadsheet, Check, Columns, Loader2 } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@food/components/ui/dialog"
 import { exportBonusToExcel, exportBonusToPDF } from "@food/components/admin/deliveryman/deliverymanExportUtils"
@@ -21,7 +22,7 @@ const formatBonusAmount = (transaction) => {
   
   // Clean the bonus string - remove superscript characters
   let cleaned = transaction.bonus.toString()
-    .replace(/¹/g, '') // Remove superscript 1
+    .replace(/ï¿½/g, '') // Remove superscript 1
     .replace(/[\u2070-\u207F\u2080-\u208F]/g, '') // Remove all superscript characters
     .trim()
   
@@ -38,8 +39,7 @@ const formatBonusAmount = (transaction) => {
 export default function DeliverymanBonus() {
   const [formData, setFormData] = useState({
     deliveryPartnerId: "",
-    amount: "",
-  })
+    amount: "" })
   const [searchQuery, setSearchQuery] = useState("")
   const [transactions, setTransactions] = useState([])
   const [deliveryPartners, setDeliveryPartners] = useState([])
@@ -55,8 +55,7 @@ export default function DeliverymanBonus() {
     deliveryBoyId: true,
     deliveryman: true,
     bonus: true,
-    createdAt: true,
-  })
+    createdAt: true })
 
   // Fetch delivery partners on mount
   useEffect(() => {
@@ -235,8 +234,7 @@ export default function DeliverymanBonus() {
   const handleReset = () => {
     setFormData({
       deliveryPartnerId: "",
-      amount: "",
-    })
+      amount: "" })
     setFormErrors({})
     setError("")
   }
@@ -264,8 +262,7 @@ export default function DeliverymanBonus() {
       deliveryBoyId: true,
       deliveryman: true,
       bonus: true,
-      createdAt: true,
-    })
+      createdAt: true })
   }
 
   const columnsConfig = {
@@ -274,8 +271,7 @@ export default function DeliverymanBonus() {
     deliveryBoyId: "Delivery Boy ID",
     deliveryman: "Deliveryman",
     bonus: "Bonus",
-    createdAt: "Created At",
-  }
+    createdAt: "Created At" }
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
@@ -290,7 +286,7 @@ export default function DeliverymanBonus() {
           </button>
 
           <div className="flex items-center gap-3 mb-6">
-            <Wallet className="w-5 h-5 text-blue-600" />
+            <WalletIcon className="" />
             <h1 className="text-2xl font-bold text-slate-900">Bonus</h1>
           </div>
 

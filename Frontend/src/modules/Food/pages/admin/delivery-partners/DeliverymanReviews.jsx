@@ -27,8 +27,7 @@ export default function DeliverymanReviews() {
     customer: true,
     review: true,
     rating: true,
-    date: true,
-  })
+    date: true })
 
   const filteredReviews = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -82,8 +81,7 @@ export default function DeliverymanReviews() {
       customer: true,
       review: true,
       rating: true,
-      date: true,
-    })
+      date: true })
   }
 
   const columnsConfig = {
@@ -94,8 +92,7 @@ export default function DeliverymanReviews() {
     customer: "Customer",
     review: "Review",
     rating: "Rating",
-    date: "Date & Time",
-  }
+    date: "Date & Time" }
 
   const getRatingBadge = (rating) => {
     const stars = []

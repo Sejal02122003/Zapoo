@@ -19,8 +19,7 @@ import {
   Volume2,
   FileText,
   ChevronDown,
-  ChevronUp,
-} from "lucide-react"
+  ChevronUp } from "lucide-react"
 import ResendNotificationButton from "@food/components/restaurant/ResendNotificationButton"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -305,8 +304,7 @@ export default function OrderDetails() {
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    })
+      smoothWheel: true })
 
     function raf(time) {
       lenis.raf(time)

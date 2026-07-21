@@ -19,8 +19,7 @@ const normalizeItem = (item = {}, sectionName = "", subsectionName = "") => ({
   approvalStatus: item?.approvalStatus || "pending",
   isAvailable: item?.isAvailable !== false,
   variants: getFoodVariants(item),
-  variations: getFoodVariants(item),
-})
+  variations: getFoodVariants(item) })
 
 export const flattenMenuItems = (menu) => {
   if (!menu || !Array.isArray(menu.sections)) return []
@@ -70,8 +69,7 @@ export const findItemInSections = (sections = [], targetId) => {
             sectionIndex: sIdx,
             subsectionIndex: ssIdx,
             itemIndex: iIdx,
-            inSubsection: true,
-          }
+            inSubsection: true }
         }
       }
     }

@@ -29,9 +29,7 @@ const buildRestaurantOrderNotification = (orderData = {}) => {
     tag: `restaurant-order-${orderId}`,
     data: {
       orderId,
-      targetUrl: `/restaurant/orders/${orderData.orderMongoId || orderData.orderId || ''}`,
-    },
-  };
+      targetUrl: `/restaurant/orders/${orderData.orderMongoId || orderData.orderId || ''}` } };
 }
 
 const triggerWebViewNativeNotification = async (orderData = {}) => {
@@ -42,8 +40,7 @@ const triggerWebViewNativeNotification = async (orderData = {}) => {
     body: `Order #${orderData?.orderId || orderData?.orderMongoId || orderData?.id || ''}`.trim(),
     orderId: orderData?.orderId || orderData?.order_id || '',
     orderMongoId: orderData?.orderMongoId || orderData?.order_mongo_id || '',
-    targetUrl: `/restaurant/orders/${orderData?.orderMongoId || orderData?.orderId || ''}`,
-  };
+    targetUrl: `/restaurant/orders/${orderData?.orderMongoId || orderData?.orderId || ''}` };
 
   try {
     if (
@@ -195,8 +192,7 @@ export const useRestaurantNotifications = () => {
             silent: false,
             vibrate: [200, 100, 200, 100, 300],
             icon: '/logo.png',
-            data: notificationOptions.data,
-          });
+            data: notificationOptions.data });
           return;
         }
       }
@@ -207,8 +203,7 @@ export const useRestaurantNotifications = () => {
         requireInteraction: true,
         silent: false,
         icon: '/logo.png',
-        data: notificationOptions.data,
-      });
+        data: notificationOptions.data });
     } catch (error) {
       debugWarn('Error showing background restaurant notification:', error);
     }
@@ -383,8 +378,7 @@ export const useRestaurantNotifications = () => {
               if (typeof window !== 'undefined') {
                 window.dispatchEvent(
                   new CustomEvent('restaurantOrderStatusUpdate', {
-                    detail: matchingOrderInPoll,
-                  }),
+                    detail: matchingOrderInPoll }),
                 );
               }
             }
@@ -506,8 +500,7 @@ export const useRestaurantNotifications = () => {
                     if (typeof window !== 'undefined') {
                       window.dispatchEvent(
                         new CustomEvent('restaurantOrderStatusUpdate', {
-                          detail: matchingOrderInPoll,
-                        }),
+                          detail: matchingOrderInPoll }),
                       );
                     }
                   }
@@ -658,10 +651,8 @@ export const useRestaurantNotifications = () => {
       forceNew: false,
       autoConnect: true,
       auth: {
-        token: restaurantToken,
-      },
-      query: { token: restaurantToken },
-    });
+        token: restaurantToken },
+      query: { token: restaurantToken } });
 
     socketRef.current.on('connect', () => {
       debugLog('? Restaurant Socket connected, restaurantId:', restaurantId);
@@ -756,8 +747,7 @@ export const useRestaurantNotifications = () => {
       const normalizedOrder = {
         ...orderData,
         orderMongoId: orderData?.orderMongoId || orderData?._id || orderData?.order_mongo_id,
-        orderId: orderData?.orderId || orderData?.order_id || orderData?._id,
-      };
+        orderId: orderData?.orderId || orderData?.order_id || orderData?._id };
 
       // Filter scheduled orders here as well to prevent "red dot" from showing up too early
       if (normalizedOrder.scheduledAt) {
@@ -813,8 +803,7 @@ export const useRestaurantNotifications = () => {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('restaurantOrderStatusUpdate', {
-            detail: data || {},
-          }),
+            detail: data || {} }),
         );
       }
     });

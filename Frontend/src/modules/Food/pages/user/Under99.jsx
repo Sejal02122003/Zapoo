@@ -24,43 +24,39 @@ const debugLog = (...args) => { }
 const debugWarn = (...args) => { }
 const debugError = (...args) => { }
 const RUPEE_SYMBOL = "\u20B9"
-const UNDER_250_FILTERS_STORAGE_KEY = "food-under-250-filters"
+const UNDER_99_FILTERS_STORAGE_KEY = "food-under-99-filters"
 
-const readUnder250Filters = () => {
+const readUnder99Filters = () => {
   if (typeof window === "undefined") {
     return {
       selectedSort: null,
       activeCategory: null,
-      under30MinsFilter: false,
-    }
+      under30MinsFilter: false }
   }
 
   try {
-    const raw = window.localStorage.getItem(UNDER_250_FILTERS_STORAGE_KEY)
+    const raw = window.localStorage.getItem(UNDER_99_FILTERS_STORAGE_KEY)
     if (!raw) {
       return {
         selectedSort: null,
         activeCategory: null,
-        under30MinsFilter: false,
-      }
+        under30MinsFilter: false }
     }
 
     const parsed = JSON.parse(raw)
     return {
       selectedSort: typeof parsed?.selectedSort === "string" ? parsed.selectedSort : null,
       activeCategory: typeof parsed?.activeCategory === "string" ? parsed.activeCategory : null,
-      under30MinsFilter: parsed?.under30MinsFilter === true,
-    }
+      under30MinsFilter: parsed?.under30MinsFilter === true }
   } catch {
     return {
       selectedSort: null,
       activeCategory: null,
-      under30MinsFilter: false,
-    }
+      under30MinsFilter: false }
   }
 }
 
-const MOCK_UNDER250_RESTAURANTS = [
+const MOCK_UNDER99_RESTAURANTS = [
   {
     id: "mock-1",
     name: "Gunjan's Caffe",
@@ -73,7 +69,7 @@ const MOCK_UNDER250_RESTAURANTS = [
       {
         id: "mock-item-1",
         name: "veg thali",
-        price: 150,
+        price: 85,
         isVeg: true,
         image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop"
       }
@@ -91,7 +87,7 @@ const MOCK_UNDER250_RESTAURANTS = [
       {
         id: "mock-item-2",
         name: "cheese special burger",
-        price: 120,
+        price: 90,
         isVeg: true,
         image: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?q=80&w=800&auto=format&fit=crop"
       },
@@ -117,14 +113,14 @@ const MOCK_UNDER250_RESTAURANTS = [
       {
         id: "mock-item-4",
         name: "Avocado Quinoa Salad",
-        price: 189,
+        price: 95,
         isVeg: true,
         image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=800&auto=format&fit=crop"
       },
       {
         id: "mock-item-5",
         name: "Mediterranean Salad",
-        price: 159,
+        price: 89,
         isVeg: true,
         image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=800&auto=format&fit=crop"
       }
@@ -142,7 +138,7 @@ const MOCK_UNDER250_RESTAURANTS = [
       {
         id: "mock-item-6",
         name: "special Thali",
-        price: 149,
+        price: 99,
         isVeg: true,
         image: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?q=80&w=800&auto=format&fit=crop"
       }
@@ -215,8 +211,7 @@ const HorizontalMenuScroller = ({ restaurant, quantities, isClosed, handleItemCl
         scrollbarWidth: "none",
         msOverflowStyle: "none",
         touchAction: "pan-x pan-y pinch-zoom",
-        overflowY: "hidden",
-      }}
+        overflowY: "hidden" }}
     >
       {visibleItems.map((item, itemIndex) => {
         const quantity = quantities[item.id] || 0
@@ -375,15 +370,14 @@ const pageCache = {
   zoneId: null,
   categories: null,
   bannerImages: null,
-  under250Restaurants: null,
+  under99Restaurants: null,
   allRawRestaurants: null,
   visibleRestaurantCount: 0,
   hasMore: true,
-  fetchedIds: null,
-};
+  fetchedIds: null };
 
-export default function Under250() {
-  const initialFiltersRef = useRef(readUnder250Filters())
+export default function Under99() {
+  const initialFiltersRef = useRef(readUnder99Filters())
   const { location, zoneId, zoneStatus, isInService, isOutOfService } = useAppLocation()
   // Initialize state from cache if zoneId matches
   const isCacheValid = pageCache.zoneId === zoneId;
@@ -409,16 +403,15 @@ export default function Under250() {
   const itemDetailContentRef = useRef(null)
   const itemDetailGestureRef = useRef({
     startY: 0,
-    dragging: false,
-  })
+    dragging: false })
   const [categories, setCategories] = useState(() => isCacheValid ? (pageCache.categories || []) : [])
   const [loadingCategories, setLoadingCategories] = useState(() => !(isCacheValid && pageCache.categories))
   const [bannerImages, setBannerImages] = useState(() => isCacheValid ? (pageCache.bannerImages || []) : [])
   const [loadingBanner, setLoadingBanner] = useState(() => !(isCacheValid && pageCache.bannerImages))
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
-  const [under250Restaurants, setUnder250Restaurants] = useState(() => isCacheValid ? (pageCache.under250Restaurants || []) : [])
+  const [under99Restaurants, setUnder99Restaurants] = useState(() => isCacheValid ? (pageCache.under99Restaurants || []) : [])
   const [loadingRestaurants, setLoadingRestaurants] = useState(() => !(isCacheValid && pageCache.allRawRestaurants))
-  const [under250PriceLimit, setUnder250PriceLimit] = useState(250)
+  const [under99PriceLimit, setUnder99PriceLimit] = useState(99)
   const [allRawRestaurants, setAllRawRestaurants] = useState(() => isCacheValid ? (pageCache.allRawRestaurants || []) : [])
   const [visibleRestaurantCount, setVisibleRestaurantCount] = useState(() => isCacheValid ? (pageCache.visibleRestaurantCount || 0) : 0)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -473,7 +466,7 @@ export default function Under250() {
     setUnder30MinsFilter(false)
     setActiveCategory(null)
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem(UNDER_250_FILTERS_STORAGE_KEY)
+      window.localStorage.removeItem(UNDER_99_FILTERS_STORAGE_KEY)
     }
   }
 
@@ -528,7 +521,7 @@ export default function Under250() {
 
   // Sort and filter restaurants based on selected sort and filters
   const sortedAndFilteredRestaurants = useMemo(() => {
-    const baseRestaurants = under250Restaurants;
+    const baseRestaurants = under99Restaurants;
 
     let filtered = baseRestaurants.map(r => ({ ...r, menuItems: [...(r.menuItems || [])] }))
 
@@ -620,7 +613,7 @@ export default function Under250() {
     }
 
     return filtered
-  }, [under250Restaurants, loadingRestaurants, selectedSort, under30MinsFilter, activeCategory, categories, searchQuery])
+  }, [under99Restaurants, loadingRestaurants, selectedSort, under30MinsFilter, activeCategory, categories, searchQuery])
 
   // Fetch under-50 banner from public API
   useEffect(() => {
@@ -631,7 +624,7 @@ export default function Under250() {
     }
     let cancelled = false
     setLoadingBanner(true)
-    api.get('/food/hero-banners/under-250/public', { params: { zoneId } })
+    api.get('/food/hero-banners/under-99/public', { params: { zoneId } })
       .then((res) => {
         if (cancelled) return
         const data = res?.data?.data
@@ -658,12 +651,12 @@ export default function Under250() {
     getPublicLandingSettings(zoneId)
       .then((settings) => {
         if (cancelled || !settings) return
-        if (typeof settings.under250PriceLimit === 'number') {
-          setUnder250PriceLimit(settings.under250PriceLimit)
+        if (typeof (settings.under99PriceLimit !== undefined ? settings.under99PriceLimit : 99) === 'number') {
+          setUnder99PriceLimit((settings.under99PriceLimit !== undefined ? settings.under99PriceLimit : 99))
         }
       })
       .catch(() => {
-        setUnder250PriceLimit(250)
+        setUnder99PriceLimit(99)
       })
     return () => { cancelled = true }
   }, [zoneId])
@@ -756,7 +749,7 @@ export default function Under250() {
     if (pageCache.zoneId === zoneId && pageCache.allRawRestaurants?.length > 0) {
       setAllRawRestaurants(pageCache.allRawRestaurants);
       setVisibleRestaurantCount(pageCache.visibleRestaurantCount || 5);
-      setUnder250Restaurants(pageCache.under250Restaurants || []);
+      setUnder99Restaurants(pageCache.under99Restaurants || []);
       fetchedIdsRef.current = new Set(pageCache.fetchedIds);
       setHasMore(pageCache.hasMore !== undefined ? pageCache.hasMore : true);
       setLoadingRestaurants(false);
@@ -774,13 +767,13 @@ export default function Under250() {
         if (!cancelled) {
           setAllRawRestaurants(restaurantsRaw)
           setVisibleRestaurantCount(5) // Load first 5 immediately
-          setUnder250Restaurants([]) // Reset
+          setUnder99Restaurants([]) // Reset
           fetchedIdsRef.current.clear()
           setHasMore(restaurantsRaw.length > 0)
 
           pageCache.allRawRestaurants = restaurantsRaw;
           pageCache.visibleRestaurantCount = 5;
-          pageCache.under250Restaurants = [];
+          pageCache.under99Restaurants = [];
           pageCache.fetchedIds = new Set();
           pageCache.hasMore = restaurantsRaw.length > 0;
           pageCache.zoneId = zoneId;
@@ -827,7 +820,7 @@ export default function Under250() {
         const userLat = Number(location?.latitude)
         const userLng = Number(location?.longitude)
 
-        const newRestaurantsWithUnder250Dishes = await Promise.all(
+        const newRestaurantsWithUnder99Dishes = await Promise.all(
           newRestaurantsToFetch.map(async (restaurant) => {
             const restaurantId = restaurant?.restaurantId || restaurant?._id
             if (!restaurantId) return null
@@ -836,7 +829,7 @@ export default function Under250() {
               const menuResponse = await restaurantAPI.getMenuByRestaurantId(restaurantId)
               const menu = getMenuFromResponse(menuResponse)
               const menuItems = flattenMenuItems(menu)
-                .filter((item) => Number(item?.price || 0) <= under250PriceLimit && item?.isAvailable !== false)
+                .filter((item) => Number(item?.price || 0) <= under99PriceLimit && item?.isAvailable !== false)
                 .map((item) => {
                   const foodType = String(item?.foodType || "").toLowerCase()
                   const isVeg = foodType.includes("veg") && !foodType.includes("non")
@@ -852,8 +845,7 @@ export default function Under250() {
                       restaurant?.menuImages?.[0]?.url ||
                       restaurant?.menuImages?.[0] ||
                       restaurant?.profileImage?.url ||
-                      "",
-                  }
+                      "" }
                 })
 
               if (menuItems.length === 0) return null
@@ -913,8 +905,7 @@ export default function Under250() {
                 openingTime: restaurant?.openingTime || restaurant?.deliveryTimings?.openingTime || null,
                 closingTime: restaurant?.closingTime || restaurant?.deliveryTimings?.closingTime || null,
                 originalIndex: allRawRestaurants.findIndex(r => String(r?.restaurantId || r?._id) === String(restaurantId)),
-                menuItems,
-              }
+                menuItems }
             } catch {
               return null
             }
@@ -922,7 +913,7 @@ export default function Under250() {
         )
 
         if (!cancelled) {
-          const validNewRestaurants = newRestaurantsWithUnder250Dishes.filter(Boolean)
+          const validNewRestaurants = newRestaurantsWithUnder99Dishes.filter(Boolean)
 
           // Mark IDs as fetched ONLY after successful completion (not before async call)
           // This prevents React StrictMode double-mount from skipping restaurants
@@ -930,9 +921,9 @@ export default function Under250() {
             fetchedIdsRef.current.add(String(r?.restaurantId || r?._id))
           })
 
-          setUnder250Restaurants(prev => {
+          setUnder99Restaurants(prev => {
             const updated = [...prev, ...validNewRestaurants];
-            pageCache.under250Restaurants = updated;
+            pageCache.under99Restaurants = updated;
             return updated;
           })
           setHasMore(visibleRestaurantCount < allRawRestaurants.length)
@@ -951,7 +942,7 @@ export default function Under250() {
     fetchMenusForChunk()
 
     return () => { cancelled = true }
-  }, [allRawRestaurants, visibleRestaurantCount, location?.latitude, location?.longitude, under250PriceLimit])
+  }, [allRawRestaurants, visibleRestaurantCount, location?.latitude, location?.longitude, under99PriceLimit])
 
   // 3. Intersection Observer for Infinite Scroll
   useEffect(() => {
@@ -1010,8 +1001,7 @@ export default function Under250() {
                 cat?.imageUrl ||
                 cat?.image ||
                 cat?.icon ||
-                "",
-            }
+                "" }
           })
           .filter(Boolean)
 
@@ -1021,7 +1011,7 @@ export default function Under250() {
           pageCache.zoneId = zoneId
         }
       } catch (error) {
-        debugError("Error fetching under-250 categories:", error)
+        debugError("Error fetching under-99 categories:", error)
         if (!cancelled) setCategories([])
       } finally {
         if (!cancelled) setLoadingCategories(false)
@@ -1088,17 +1078,16 @@ export default function Under250() {
     if (typeof window === "undefined") return
 
     if (!selectedSort && !activeCategory && !under30MinsFilter) {
-      window.localStorage.removeItem(UNDER_250_FILTERS_STORAGE_KEY)
+      window.localStorage.removeItem(UNDER_99_FILTERS_STORAGE_KEY)
       return
     }
 
     window.localStorage.setItem(
-      UNDER_250_FILTERS_STORAGE_KEY,
+      UNDER_99_FILTERS_STORAGE_KEY,
       JSON.stringify({
         selectedSort,
         activeCategory,
-        under30MinsFilter,
-      })
+        under30MinsFilter })
     )
   }, [selectedSort, activeCategory, under30MinsFilter])
 
@@ -1120,14 +1109,13 @@ export default function Under250() {
     // Update local state
     setQuantities((prev) => ({
       ...prev,
-      [item.id]: newQuantity,
-    }))
+      [item.id]: newQuantity }))
 
     // Find restaurant name from the item or use provided parameter
-    const restaurant = restaurantName || item.restaurant || "Under 250"
+    const restaurant = restaurantName || item.restaurant || "Under 99"
 
     // Find restaurant to get its discount
-    const restaurantObj = under250Restaurants.find(r =>
+    const restaurantObj = under99Restaurants.find(r =>
       r.menuItems?.some(m => m.id === item.id)
     );
 
@@ -1160,8 +1148,7 @@ export default function Under250() {
       priceOnOtherPlatforms: item.priceOnOtherPlatforms || null, // Include platform pricing for savings display
       otherPlatformGst: item.otherPlatformGst ?? null,
       isVeg: item.isVeg,
-      foodType: item.foodType,
-    }
+      foodType: item.foodType }
 
     // Get source position for animation from event target
     let sourcePosition = null
@@ -1181,8 +1168,7 @@ export default function Under250() {
           viewportY: rect.top + rect.height / 2,
           scrollX: scrollX,
           scrollY: scrollY,
-          itemId: item.id,
-        }
+          itemId: item.id }
       }
     }
 
@@ -1191,8 +1177,7 @@ export default function Under250() {
       const productInfo = {
         id: item.id,
         name: item.name,
-        imageUrl: item.image,
-      }
+        imageUrl: item.image }
       removeFromCart(item.id, sourcePosition, productInfo)
     } else {
       const existingCartItem = getCartItem(item.id)
@@ -1200,8 +1185,7 @@ export default function Under250() {
         const productInfo = {
           id: item.id,
           name: item.name,
-          imageUrl: item.image,
-        }
+          imageUrl: item.image }
 
         if (newQuantity > existingCartItem.quantity && sourcePosition) {
           const result = addToCart(cartItem, sourcePosition)
@@ -1243,8 +1227,7 @@ export default function Under250() {
       restaurantSlug: restaurant.slug || restaurant.restaurantId || "",
       description: item.description || `${item.name} from ${restaurant.name}`,
       customisable: item.customisable || false,
-      notEligibleForCoupons: item.notEligibleForCoupons || false,
-    }
+      notEligibleForCoupons: item.notEligibleForCoupons || false }
     const existingQuantity = quantities[item.id] || 0
     setItemDetailQuantity(existingQuantity > 0 ? existingQuantity : 1)
     setSelectedItem(itemWithRestaurant)
@@ -1277,9 +1260,8 @@ export default function Under250() {
       if (navigator.share) {
         await navigator.share({
           title: item.name || "Dish",
-          text: `Check out ${item.name || "this dish"} from ${item.restaurant || "Under 250"}`,
-          url: shareUrl,
-        })
+          text: `Check out ${item.name || "this dish"} from ${item.restaurant || "Under 99"}`,
+          url: shareUrl })
         return
       }
     } catch (error) {
@@ -1297,7 +1279,7 @@ export default function Under250() {
     const shareUrl = selectedItem.restaurantSlug
       ? `${window.location.origin}/user/restaurants/${restaurantSlug}${itemId ? `?dish=${encodeURIComponent(itemId)}` : ""}`
       : window.location.href
-    const shareText = `Check out ${selectedItem.name || "this dish"} from ${selectedItem.restaurant || "Under 250"}`
+    const shareText = `Check out ${selectedItem.name || "this dish"} from ${selectedItem.restaurant || "Under 99"}`
     const encodedUrl = encodeURIComponent(shareUrl)
     const encodedText = encodeURIComponent(`${shareText} ${shareUrl}`)
 
@@ -1324,8 +1306,7 @@ export default function Under250() {
     if (!showItemDetail) return
     itemDetailGestureRef.current = {
       startY: e.touches?.[0]?.clientY || 0,
-      dragging: true,
-    }
+      dragging: true }
   }
 
   const handleItemDetailTouchEnd = (e) => {
@@ -1375,7 +1356,7 @@ export default function Under250() {
 
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5 cursor-pointer">
-              <span className="text-xs md:text-sm font-black text-white tracking-wider drop-shadow-sm">UNDER ₹250</span>
+              <span className="text-xs md:text-sm font-black text-white tracking-wider drop-shadow-sm">UNDER ₹99</span>
               <ChevronDown className="w-3 h-3 text-white" />
             </div>
             <span className="text-[10px] md:text-xs text-white/90 font-medium truncate max-w-[120px] md:max-w-[200px]">
@@ -1467,7 +1448,7 @@ export default function Under250() {
                     <div key={`${bannerImage}-${index}`} className="relative h-full w-full shrink-0">
                       <OptimizedImage
                         src={bannerImage}
-                        alt={`Under 250 Banner ${index + 1}`}
+                        alt={`Under 99 Banner ${index + 1}`}
                         className="w-full h-full"
                         objectFit="cover"
                         priority={index === 0}
@@ -1512,7 +1493,7 @@ export default function Under250() {
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black italic tracking-tighter drop-shadow-lg mb-2 sm:mb-3 flex items-center justify-center flex-wrap gap-2 sm:gap-4 w-full">
                 <span className="text-yellow-300">EVERYTHING</span>
                 <span className="relative inline-block mt-2 sm:mt-0">
-                  <span className="relative z-10">UNDER ₹250</span>
+                  <span className="relative z-10">UNDER ₹99</span>
                   <motion.div
                     className="absolute -inset-2 sm:-inset-3 border-2 sm:border-[3px] border-white/40 rounded-xl sm:rounded-2xl -z-0"
                     animate={{ rotate: [-1.5, 1.5, -1.5], scale: [0.98, 1.02, 0.98] }}
@@ -1631,8 +1612,8 @@ export default function Under250() {
           ) : sortedAndFilteredRestaurants.length === 0 ? (
             <div className="flex justify-center items-center py-12">
               <div className="text-gray-500 dark:text-gray-400">
-                {under250Restaurants.length === 0 && !loadingRestaurants
-                  ? `No restaurants with dishes under ${RUPEE_SYMBOL}${under250PriceLimit} found.`
+                {under99Restaurants.length === 0 && !loadingRestaurants
+                  ? `No restaurants with dishes under ${RUPEE_SYMBOL}${under99PriceLimit} found.`
                   : "No restaurants match the selected filters."}
               </div>
             </div>
@@ -1748,7 +1729,7 @@ export default function Under250() {
 
                       {/* View Full Menu Pill */}
                       <div className="flex justify-center mt-2">
-                        <Link to={`/user/restaurants/${restaurantSlug}?under250=true`}>
+                        <Link to={`/user/restaurants/${restaurantSlug}?under99=true`}>
                           <Button
                             variant="outline"
                             className="rounded-full h-10 px-6 bg-white dark:bg-[#1a1a1a] shadow-sm border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-semibold gap-2 hover:bg-gray-50 dark:hover:bg-[#222]"
@@ -1983,7 +1964,7 @@ export default function Under250() {
 
                 {/* Description */}
                 <p className="text-sm md:text-base lg:text-lg text-gray-600 dark:text-gray-400 mb-4 md:mb-6 lg:mb-8 leading-relaxed">
-                  {selectedItem.description || `${selectedItem.name} from ${selectedItem.restaurant || 'Under 250'}`}
+                  {selectedItem.description || `${selectedItem.name} from ${selectedItem.restaurant || 'Under 99'}`}
                 </p>
 
                 {/* Highly Reordered Progress Bar */}
@@ -2070,7 +2051,7 @@ export default function Under250() {
                     <div className="flex items-center gap-1 md:gap-2">
                       {/* Check if we have a restaurant discount for the selected item */}
                       {(() => {
-                        const restaurant = under250Restaurants.find(r =>
+                        const restaurant = under99Restaurants.find(r =>
                           r.menuItems?.some(m => m.id === selectedItem.id)
                         );
                         if (restaurant?.discount > 0) {

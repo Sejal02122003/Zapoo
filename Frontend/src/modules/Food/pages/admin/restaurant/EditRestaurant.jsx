@@ -60,8 +60,7 @@ const normalizeLocationFormFromRestaurant = (restaurant) => {
     pincode: loc?.pincode || restaurant?.pincode || "",
     landmark: loc?.landmark || restaurant?.landmark || "",
     latitude: hasValidCoords ? lat : "",
-    longitude: hasValidCoords ? lng : "",
-  }
+    longitude: hasValidCoords ? lng : "" }
 }
 
 const normalizeDetailsFormFromRestaurant = (restaurant) => {
@@ -84,8 +83,7 @@ const normalizeDetailsFormFromRestaurant = (restaurant) => {
     offer: restaurant?.offer || "",
     openingTime: restaurant?.openingTime || restaurant?.deliveryTimings?.openingTime || "",
     closingTime: restaurant?.closingTime || restaurant?.deliveryTimings?.closingTime || "",
-    isActive: restaurant?.isActive !== false,
-  }
+    isActive: restaurant?.isActive !== false }
 }
 
 async function loadGooglePlaces() {
@@ -228,8 +226,7 @@ export default function EditRestaurant() {
         {
           fields: ["formatted_address", "address_components", "geometry"],
           // Omit `types: ["geocode"]` — that biases Autocomplete toward Geocoding API (geocode/json) traffic.
-          componentRestrictions: { country: "in" },
-        },
+          componentRestrictions: { country: "in" } },
       )
 
       const parsePlace = (place) => {
@@ -255,8 +252,7 @@ export default function EditRestaurant() {
           state,
           pincode,
           latitude: Number.isFinite(lat) ? Number(lat.toFixed(6)) : "",
-          longitude: Number.isFinite(lng) ? Number(lng.toFixed(6)) : "",
-        }
+          longitude: Number.isFinite(lng) ? Number(lng.toFixed(6)) : "" }
       }
 
       placesAutocompleteRef.current.addListener("place_changed", () => {
@@ -271,8 +267,7 @@ export default function EditRestaurant() {
           state: parsed.state || prev.state,
           pincode: parsed.pincode || prev.pincode,
           latitude: parsed.latitude !== "" ? parsed.latitude : prev.latitude,
-          longitude: parsed.longitude !== "" ? parsed.longitude : prev.longitude,
-        }))
+          longitude: parsed.longitude !== "" ? parsed.longitude : prev.longitude }))
       })
     }
 
@@ -316,8 +311,7 @@ export default function EditRestaurant() {
         offer: detailsForm.offer,
         openingTime: detailsForm.openingTime,
         closingTime: detailsForm.closingTime,
-        isActive: detailsForm.isActive !== false,
-      }
+        isActive: detailsForm.isActive !== false }
 
       const res = await adminAPI.updateRestaurant(restaurantId, payload)
       const updated = res?.data?.data?.restaurant || res?.data?.data || null
@@ -364,8 +358,7 @@ export default function EditRestaurant() {
         landmark: locationForm.landmark || "",
         pincode: locationForm.pincode || "",
         zipCode: locationForm.pincode || "",
-        postalCode: locationForm.pincode || "",
-      }
+        postalCode: locationForm.pincode || "" }
 
       const res = await adminAPI.updateRestaurantLocation(restaurantId, payload)
       const updatedRestaurant = res?.data?.data?.restaurant || null

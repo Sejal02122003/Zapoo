@@ -7,16 +7,14 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@food/components/ui/select"
+  SelectValue } from "@food/components/ui/select"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
-} from "@food/components/ui/dialog"
+  DialogFooter } from "@food/components/ui/dialog"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -77,8 +75,7 @@ export default function RestaurantComplaints() {
       setLoading(true)
       const params = {
         page: filters.page,
-        limit: filters.limit,
-      }
+        limit: filters.limit }
       if (filters.status && filters.status !== 'all') params.status = filters.status
       if (filters.complaintType && filters.complaintType !== 'all') params.complaintType = filters.complaintType
       if (filters.search) params.search = filters.search

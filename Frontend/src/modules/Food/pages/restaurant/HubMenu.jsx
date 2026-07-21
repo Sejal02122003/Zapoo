@@ -335,8 +335,7 @@ export default function HubMenu() {
                 id: String(v.id || Date.now() + Math.random()),
                 name: v.name || "",
                 price: v.price || 0,
-                stock: v.stock || "Unlimited",
-              })) : [],
+                stock: v.stock || "Unlimited" })) : [],
               tags: Array.isArray(item.tags) ? item.tags : [],
               nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
               allergies: Array.isArray(item.allergies) ? item.allergies : [],
@@ -345,8 +344,7 @@ export default function HubMenu() {
               approvalStatus: item.approvalStatus || 'pending',
               rejectionReason: item.rejectionReason || '',
               requestedAt: item.requestedAt,
-              approvedAt: item.approvedAt,
-            })) : [],
+              approvedAt: item.approvedAt })) : [],
             subsections: Array.isArray(section.subsections) ? section.subsections.map(subsection => ({
               id: subsection.id || `subsection-${Date.now()}`,
               name: subsection.name || "Unnamed Subsection",
@@ -374,8 +372,7 @@ export default function HubMenu() {
                   id: String(v.id || Date.now() + Math.random()),
                   name: v.name || "",
                   price: v.price || 0,
-                  stock: v.stock || "Unlimited",
-                })) : [],
+                  stock: v.stock || "Unlimited" })) : [],
                 tags: Array.isArray(item.tags) ? item.tags : [],
                 nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
                 allergies: Array.isArray(item.allergies) ? item.allergies : [],
@@ -384,12 +381,9 @@ export default function HubMenu() {
                 approvalStatus: item.approvalStatus || 'pending',
                 rejectionReason: item.rejectionReason || '',
                 requestedAt: item.requestedAt,
-                approvedAt: item.approvedAt,
-              })) : [],
-            })) : [],
+                approvedAt: item.approvedAt })) : [] })) : [],
             isEnabled: section.isEnabled !== undefined ? section.isEnabled : true,
-            order: section.order !== undefined ? section.order : index,
-          }))
+            order: section.order !== undefined ? section.order : index }))
           
           // Option A (single source of truth): menu snapshot saving is disabled.
           // Keep UI state locally; menu is generated from food_items.
@@ -424,7 +418,7 @@ export default function HubMenu() {
           .find((ms) => Number.isFinite(ms) && ms > 0)
         if (candidates) return candidates
         const rawId = String(addon.id || "")
-        const match = rawId.match(/\d{10,}/)
+        const match = rawId.match(/\d{10 }/)
         if (!match) return 0
         const fromId = Number(match[0])
         return Number.isFinite(fromId) ? fromId : 0
@@ -722,7 +716,7 @@ export default function HubMenu() {
     if (direct) return direct
 
     const rawId = String(item.id || "")
-    const match = rawId.match(/\d{10,}/)
+    const match = rawId.match(/\d{10 }/)
     if (!match) return 0
     const fromId = Number(match[0])
     return Number.isFinite(fromId) ? fromId : 0
@@ -784,10 +778,8 @@ export default function HubMenu() {
             ...subsection,
             items: [...(subsection.items || [])].sort(
               (a, b) => getItemCreatedMs(b) - getItemCreatedMs(a)
-            ),
-          }))
-        : [],
-    }))
+            ) }))
+        : [] }))
   }, [menuData, activeFilter, searchQuery])
 
   // Toggle group expansion
@@ -843,8 +835,7 @@ export default function HubMenu() {
           sectionId: switchingOffTarget.groupId,
           itemId: switchingOffTarget.id,
           scheduleType: availabilityReason,
-          ...(availabilityReason === 'custom' && { customDateTime }),
-        }
+          ...(availabilityReason === 'custom' && { customDateTime }) }
 
         const response = await restaurantAPI.scheduleItemAvailability(scheduleData)
 
@@ -992,8 +983,7 @@ export default function HubMenu() {
     toast.message('Finish category setup on Menu Categories so you can choose veg, non-veg, or both before admin approval.')
     navigate('/restaurant/menu-categories', {
       state: {
-        draftCategoryName: newCategoryName.trim(),
-      }
+        draftCategoryName: newCategoryName.trim() }
     })
 
     setIsAddCategoryPopupOpen(false)

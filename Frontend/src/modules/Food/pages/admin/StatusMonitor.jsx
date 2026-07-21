@@ -371,8 +371,7 @@ function DeliveryPartnerDetails({ partner, onRefresh }) {
               center: position,
               zoom: partner.lastLat ? 15 : 5,
               mapTypeControl: false,
-              streetViewControl: false,
-            });
+              streetViewControl: false });
           } else {
             mapInstanceRef.current.setCenter(position);
             mapInstanceRef.current.setZoom(partner.lastLat ? 15 : 5);
@@ -383,8 +382,7 @@ function DeliveryPartnerDetails({ partner, onRefresh }) {
               markerRef.current = new google.maps.Marker({
                 position,
                 map: mapInstanceRef.current,
-                title: partner.name,
-              });
+                title: partner.name });
             } else {
               markerRef.current.setPosition(position);
             }

@@ -19,19 +19,16 @@ export default function LandingPageSettings({ type = "admin" }) {
     tagline: "Start Your Business or Download the App",
     buttonName: "Order Now",
     redirectLink: "https://stackfood-web.6amtech.com/",
-    redirectLinkEnabled: true,
-  });
+    redirectLinkEnabled: true });
   const [adminImageContent, setAdminImageContent] = useState({
     enabled: true,
     contentImage: mobileImage1,
-    backgroundImage: null,
-  });
+    backgroundImage: null });
   const [adminFloatingIcon, setAdminFloatingIcon] = useState({
     enabled: true,
     totalOrder: "5000",
     totalUser: "999",
-    totalReviews: "2330",
-  });
+    totalReviews: "2330" });
 
   // React Landing Page state
   const [reactActiveTab, setReactActiveTab] = useState("Header");
@@ -39,16 +36,13 @@ export default function LandingPageSettings({ type = "admin" }) {
   const [reactHeaderContent, setReactHeaderContent] = useState({
     title: "Your Next Experience Awaits",
     subtitle: "Discover Restaurants Near You",
-    backgroundImage: null,
-  });
+    backgroundImage: null });
   const [reactLocationPicker, setReactLocationPicker] = useState({
-    placeholder: "Enter location to search restaurant",
-  });
+    placeholder: "Enter location to search restaurant" });
   const [reactBusinessStats, setReactBusinessStats] = useState({
     restaurant: "200",
     happyCustomer: "10000",
-    averageDelivery: "30",
-  });
+    averageDelivery: "30" });
 
   const adminTabs = [
     "Header",
@@ -82,7 +76,7 @@ export default function LandingPageSettings({ type = "admin" }) {
     { id: "en", label: "English(EN)" },
     { id: "bn", label: "Bengali - বাংলা(BN)" },
     { id: "ar", label: "Arabic - العربية (AR)" },
-    { id: "es", label: "Spanish - espa�ol(ES)" },
+    { id: "es", label: "Spanish - espa�ol(ES)" },
   ];
 
   const handleImageUpload = (e, setter, field) => {
@@ -109,33 +103,27 @@ export default function LandingPageSettings({ type = "admin" }) {
         tagline: "Start Your Business or Download the App",
         buttonName: "Order Now",
         redirectLink: "https://stackfood-web.6amtech.com/",
-        redirectLinkEnabled: true,
-      });
+        redirectLinkEnabled: true });
       setAdminImageContent({
         enabled: true,
         contentImage: mobileImage1,
-        backgroundImage: null,
-      });
+        backgroundImage: null });
       setAdminFloatingIcon({
         enabled: true,
         totalOrder: "5000",
         totalUser: "999",
-        totalReviews: "2330",
-      });
+        totalReviews: "2330" });
     } else {
       setReactHeaderContent({
         title: "Your Next Experience Awaits",
         subtitle: "Discover Restaurants Near You",
-        backgroundImage: null,
-      });
+        backgroundImage: null });
       setReactLocationPicker({
-        placeholder: "Enter location to search restaurant",
-      });
+        placeholder: "Enter location to search restaurant" });
       setReactBusinessStats({
         restaurant: "200",
         happyCustomer: "10000",
-        averageDelivery: "30",
-      });
+        averageDelivery: "30" });
     }
   };
 
@@ -318,8 +306,7 @@ export default function LandingPageSettings({ type = "admin" }) {
                           onClick={() =>
                             setAdminHeaderContent((prev) => ({
                               ...prev,
-                              redirectLinkEnabled: !prev.redirectLinkEnabled,
-                            }))
+                              redirectLinkEnabled: !prev.redirectLinkEnabled }))
                           }
                           className={`px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-all whitespace-nowrap ${
                             adminHeaderContent.redirectLinkEnabled

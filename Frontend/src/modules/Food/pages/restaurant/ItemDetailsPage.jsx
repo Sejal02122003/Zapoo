@@ -44,8 +44,7 @@ const createVariantDraft = (variant = {}) => ({
   localId: String(variant?.id || variant?._id || `variant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
   persistedId: String(variant?.id || variant?._id || ""),
   name: String(variant?.name || ""),
-  price: variant?.price != null ? String(variant.price) : "",
-})
+  price: variant?.price != null ? String(variant.price) : "" })
 
 export default function ItemDetailsPage() {
   const navigate = useNavigate()
@@ -248,8 +247,7 @@ export default function ItemDetailsPage() {
           const formattedCategories = response.data.data.categories.map(cat => ({
             id: cat._id || cat.id,
             name: cat.name,
-            foodTypeScope: cat.foodTypeScope || "Both",
-          }))
+            foodTypeScope: cat.foodTypeScope || "Both" }))
 
           debugLog('Formatted restaurant categories:', formattedCategories)
           setCategories(formattedCategories)
@@ -637,8 +635,7 @@ export default function ItemDetailsPage() {
         .map((variant) => ({
           persistedId: String(variant.persistedId || "").trim(),
           name: String(variant.name || "").trim(),
-          price: Number(variant.price),
-        }))
+          price: Number(variant.price) }))
         .filter((variant) => variant.name || variant.persistedId || variant.price)
 
       if (normalizedVariants.some((variant) => !variant.name)) {
@@ -664,8 +661,7 @@ export default function ItemDetailsPage() {
       const variantPayload = normalizedVariants.map((variant) => ({
         ...(variant.persistedId ? { _id: variant.persistedId } : {}),
         name: variant.name,
-        price: variant.price,
-      }))
+        price: variant.price }))
 
       // Create/update FoodItem in DB (single call per explicit Save; no autosave spam)
       let itemId
@@ -680,8 +676,7 @@ export default function ItemDetailsPage() {
           isAvailable: isInStock,
           preparationTime: preparationTime || "",
           categoryId: categoryId || undefined,
-          categoryName,
-        })
+          categoryName })
         const created = createRes?.data?.data?.food || createRes?.data?.food
         itemId = String(created?._id || created?.id || "")
         if (!itemId) {
@@ -702,8 +697,7 @@ export default function ItemDetailsPage() {
           isAvailable: isInStock,
           preparationTime: preparationTime || "",
           categoryId: categoryId || undefined,
-          categoryName,
-        })
+          categoryName })
       }
 
       try {
@@ -714,8 +708,7 @@ export default function ItemDetailsPage() {
           const safeMap = parsed && typeof parsed === "object" ? parsed : {}
           return {
             ...safeMap,
-            [String(itemId)]: Boolean(isRecommended),
-          }
+            [String(itemId)]: Boolean(isRecommended) }
         })()
 
         if (nextRecommendedMap && typeof window !== "undefined") {

@@ -233,10 +233,13 @@ const restaurantSchema = new mongoose.Schema(
     featuredPrice: { type: Number },
     offer: { type: String },
     discount: { type: Number, default: 0, min: 0, max: 100 },
+    takeawayDiscount: { type: Number, default: 0, min: 0, max: 100 },
     itemDiscounts: [{
       itemId: { type: String },
       discountValue: { type: Number },
-      discountType: { type: String, enum: ['PERCENTAGE', 'FLAT'], default: 'PERCENTAGE' }
+      discountType: { type: String, enum: ['PERCENTAGE', 'FLAT'], default: 'PERCENTAGE' },
+      appliedBy: { type: String, enum: ['admin', 'restaurant'] },
+      appliedAt: { type: Date }
     }],
     discountRules: [{
       conditionType: { type: String, enum: ['PRICE_ABOVE', 'PRICE_BELOW', 'CATEGORY'] },

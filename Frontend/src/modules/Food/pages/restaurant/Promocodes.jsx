@@ -21,8 +21,7 @@ export default function Promocodes() {
     minOrderAmount: "",
     maxDiscountAmount: "",
     expiryDate: "",
-    usageLimit: "",
-  });
+    usageLimit: "" });
 
   useEffect(() => {
     fetchPromocodes();
@@ -79,8 +78,7 @@ export default function Promocodes() {
         discountType: formData.discountType,
         discountValue: Number(formData.discountValue),
         minOrderAmount: Number(formData.minOrderAmount) || 0,
-        expiryDate: new Date(formData.expiryDate).toISOString(),
-      };
+        expiryDate: new Date(formData.expiryDate).toISOString() };
 
       if (formData.maxDiscountAmount && formData.discountType === "PERCENTAGE") {
         payload.maxDiscountAmount = Number(formData.maxDiscountAmount);
@@ -101,8 +99,7 @@ export default function Promocodes() {
         minOrderAmount: "",
         maxDiscountAmount: "",
         expiryDate: "",
-        usageLimit: "",
-      });
+        usageLimit: "" });
       fetchPromocodes();
     } catch (err) {
       console.error(err);

@@ -26,8 +26,7 @@ export default function OngoingOrders() {
     restaurant: true,
     total: true,
     status: true,
-    actions: true,
-  })
+    actions: true })
 
   // Debounce search query
   useEffect(() => {
@@ -120,8 +119,7 @@ export default function OngoingOrders() {
     handleExport,
     handleViewOrder,
     handlePrintOrder,
-    toggleColumn,
-  } = useGenericTableManagement(
+    toggleColumn } = useGenericTableManagement(
     orders,
     "On Going Orders",
     ["id", "customerName", "restaurant", "customerPhone"]
@@ -136,8 +134,7 @@ export default function OngoingOrders() {
       restaurant: true,
       total: true,
       status: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   if (loading) {
@@ -185,8 +182,7 @@ export default function OngoingOrders() {
           restaurant: "Restaurant",
           total: "Total Amount",
           status: "Order Status",
-          actions: "Actions",
-        }}
+          actions: "Actions" }}
       />
       <ViewOrderDialog
         isOpen={isViewOrderOpen}

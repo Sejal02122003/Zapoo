@@ -19,8 +19,7 @@ export default function EditPayment() {
     expiryMonth: "",
     expiryYear: "",
     cvv: "",
-    type: "visa",
-  })
+    type: "visa" })
 
   useEffect(() => {
     if (payment) {
@@ -30,8 +29,7 @@ export default function EditPayment() {
         expiryMonth: payment.expiryMonth || "",
         expiryYear: payment.expiryYear || "",
         cvv: payment.cvv || "",
-        type: payment.type || "visa",
-      })
+        type: payment.type || "visa" })
     }
   }, [payment])
 
@@ -39,8 +37,7 @@ export default function EditPayment() {
     const { name, value } = e.target
     setFormData({
       ...formData,
-      [name]: value,
-    })
+      [name]: value })
 
     // Auto-detect card type based on first digit
     if (name === "cardNumber" && value.length > 0) {

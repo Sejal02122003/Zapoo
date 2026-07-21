@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useEffect, useState, useRef, useMemo } from "react"
-import { ChevronDown, ShoppingCart, Wallet, Search, Mic } from "lucide-react"
+import { ChevronDown, ShoppingCart, Search, Mic } from "lucide-react"
+import WalletIcon from "@food/components/ui/WalletIcon";
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import { Switch } from "@food/components/ui/switch"
@@ -32,7 +33,7 @@ export default function DesktopNavbar({ showLogo = true }) {
     const [logoUrl, setLogoUrl] = useState(() => localStorage.getItem('user_app_logo') || null)
     const [companyName, setCompanyName] = useState(null)
     const [hasScrolledPastBanner, setHasScrolledPastBanner] = useState(false)
-    const [under250PriceLimit, setUnder250PriceLimit] = useState(250)
+    const [under99PriceLimit, setUnder99PriceLimit] = useState(99)
     const [showDining, setShowDining] = useState(true)
     const navRef = useRef(null)
     const cartCount = getCartCount()
@@ -77,14 +78,14 @@ export default function DesktopNavbar({ showLogo = true }) {
 
     // Check active routes - support both /user/* and /* paths
     const isDining = location.pathname === "/food/user/dining" || location.pathname === "/food/dining"
-    const isUnder250 = location.pathname === "/food/user/under-250" || location.pathname === "/food/under-250"
+    const isUnder99 = location.pathname === "/food/user/under-99" || location.pathname === "/food/under-99"
     const isProfile = location.pathname.startsWith("/food/user/profile") || location.pathname.startsWith("/food/profile")
-    const isDelivery = !isDining && !isUnder250 && !isProfile && (location.pathname === "/food/user" || location.pathname === "/food" || (location.pathname.startsWith("/food/user") && !location.pathname.includes("/dining") && !location.pathname.includes("/under-250") && !location.pathname.includes("/profile")))
+    const isDelivery = !isDining && !isUnder99 && !isProfile && (location.pathname === "/food/user" || location.pathname === "/food" || (location.pathname.startsWith("/food/user") && !location.pathname.includes("/dining") && !location.pathname.includes("/under-99") && !location.pathname.includes("/profile")))
     const isBannerRoute =
         location.pathname === "/food/user" ||
         location.pathname === "/food" ||
-        location.pathname === "/food/user/under-250" ||
-        location.pathname === "/food/under-250"
+        location.pathname === "/food/user/under-99" ||
+        location.pathname === "/food/under-99"
 
     // Load business settings logo
     useEffect(() => {
@@ -191,8 +192,8 @@ export default function DesktopNavbar({ showLogo = true }) {
         getPublicLandingSettings(zoneId || null)
             .then((settings) => {
                 if (cancelled || !settings) return
-                if (typeof settings.under250PriceLimit === 'number') {
-                    setUnder250PriceLimit(settings.under250PriceLimit)
+                if (typeof settings.under99PriceLimit === 'number') {
+                    setUnder99PriceLimit(settings.under99PriceLimit)
                 }
                 if (typeof settings.showDining === 'boolean') {
                     setShowDining(settings.showDining)
@@ -200,7 +201,7 @@ export default function DesktopNavbar({ showLogo = true }) {
             })
             .catch(() => {
                 if (!cancelled) {
-                    setUnder250PriceLimit(250)
+                    setUnder99PriceLimit(99)
                     setShowDining(true)
                 }
             })
@@ -338,7 +339,7 @@ export default function DesktopNavbar({ showLogo = true }) {
                                     className="h-12 w-12 lg:h-14 lg:w-14 rounded-full p-0 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                                     title="Wallet"
                                 >
-                                    <Wallet className="!h-5 !w-5 lg:!h-6 lg:!w-6 text-gray-700 dark:text-gray-300" strokeWidth={2} />
+                                    <WalletIcon className="!h-5 !w-5 lg:!h-6 lg:!w-6 object-contain drop-shadow-sm" />
                                 </Button>
                             </Link>
 
@@ -388,16 +389,16 @@ export default function DesktopNavbar({ showLogo = true }) {
                                 )}
                             </Link>
 
-                            {/* Under 250 Tab */}
+                            {/* Under 99 Tab */}
                             <Link
-                                to="/food/user/under-250"
-                                className={`flex flex-col items-center gap-1 px-2 py-1 transition-colors relative group ${isUnder250
+                                to="/food/user/under-99"
+                                className={`flex flex-col items-center gap-1 px-2 py-1 transition-colors relative group ${isUnder99
                                     ? "text-primary"
                                     : "text-gray-600 dark:text-gray-400 hover:text-primary"
                                     }`}
                             >
-                                <span className="text-sm font-bold tracking-wide uppercase">Under ₹{under250PriceLimit}</span>
-                                {isUnder250 && (
+                                <span className="text-sm font-bold tracking-wide uppercase">Under ₹{under99PriceLimit}</span>
+                                {isUnder99 && (
                                     <motion.div
                                         layoutId="navIndicator"
                                         className="absolute -bottom-3 left-0 right-0 h-0.5 bg-primary"

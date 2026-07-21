@@ -49,8 +49,7 @@ export default function RestaurantLogin() {
         method: "phone",
         phone: fullPhone,
         isSignUp: false,
-        module: "restaurant",
-      }
+        module: "restaurant" }
       sessionStorage.setItem("restaurantAuthData", JSON.stringify(authData))
       sessionStorage.setItem("restaurantLoginPhone", phone)
       toast.success("Verification code sent!")

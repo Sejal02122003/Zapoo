@@ -38,8 +38,7 @@ export default function TransactionReport() {
   const [filters, setFilters] = useState({
     zone: "All Zones",
     restaurant: "All restaurants",
-    time: "All Time",
-  })
+    time: "All Time" })
   const [zones, setZones] = useState([])
   const [restaurants, setRestaurants] = useState([])
   const navigate = useNavigate()
@@ -170,8 +169,7 @@ export default function TransactionReport() {
     setFilters({
       zone: "All Zones",
       restaurant: "All restaurants",
-      time: "All Time",
-    })
+      time: "All Time" })
   }
 
   const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)

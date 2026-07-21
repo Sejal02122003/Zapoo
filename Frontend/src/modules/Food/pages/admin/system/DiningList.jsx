@@ -74,8 +74,7 @@ export default function DiningList() {
                         categoryIds: Array.isArray(restaurant.categoryIds) ? restaurant.categoryIds : [],
                         primaryCategoryId: restaurant.primaryCategoryId || null,
                         diningSettings: restaurant.diningSettings || { isEnabled: false, maxGuests: 6, diningType: "" },
-                        originalData: restaurant,
-                    }))
+                        originalData: restaurant }))
 
                     setRestaurants(mappedRestaurants)
                 } else {
@@ -185,8 +184,7 @@ export default function DiningList() {
                 isEnabled: newStatus,
                 maxGuests: restaurant.diningSettings?.maxGuests || 6,
                 categoryIds: restaurant.categoryIds || [],
-                primaryCategoryId: restaurant.primaryCategoryId || restaurant.categoryIds?.[0] || null,
-            })
+                primaryCategoryId: restaurant.primaryCategoryId || restaurant.categoryIds?.[0] || null })
             // Could show success toast here
         } catch (error) {
             debugError("Failed to update dining settings", error)
@@ -218,8 +216,7 @@ export default function DiningList() {
                 isEnabled: restaurant.diningSettings?.isEnabled === true,
                 maxGuests: guests,
                 categoryIds: restaurant.categoryIds || [],
-                primaryCategoryId: restaurant.primaryCategoryId || restaurant.categoryIds?.[0] || null,
-            })
+                primaryCategoryId: restaurant.primaryCategoryId || restaurant.categoryIds?.[0] || null })
         } catch (error) {
             debugError("Failed to update max guests", error)
             // Revert would require tracking previous value better
@@ -472,8 +469,7 @@ export default function DiningList() {
                                             : [],
                                         diningSettings: {
                                             ...prev.diningSettings,
-                                            diningType: categories.find(cat => cat._id === e.target.value)?.slug || "",
-                                        }
+                                            diningType: categories.find(cat => cat._id === e.target.value)?.slug || "" }
                                     }))}
                                     className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                                 >
@@ -500,8 +496,7 @@ export default function DiningList() {
                                             isEnabled: editingRestaurant.diningSettings?.isEnabled === true,
                                             maxGuests: editingRestaurant.diningSettings?.maxGuests || 6,
                                             categoryIds: editingRestaurant.categoryIds || [],
-                                            primaryCategoryId: editingRestaurant.primaryCategoryId || editingRestaurant.categoryIds?.[0] || null,
-                                        })
+                                            primaryCategoryId: editingRestaurant.primaryCategoryId || editingRestaurant.categoryIds?.[0] || null })
 
                                         // Update local state
                                         setRestaurants(prev => prev.map(r =>

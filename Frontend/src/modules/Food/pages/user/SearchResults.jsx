@@ -20,7 +20,7 @@ const filterOptions = [
   { id: 'under-30-mins', label: 'Under 30 mins' },
   { id: 'price-match', label: 'Price Match', hasIcon: true },
   { id: 'flat-50-off', label: 'Flat 50% OFF', hasIcon: true },
-  { id: 'under-250', label: 'Under ₹250' },
+  { id: 'under-99', label: 'Under ₹99' },
   { id: 'rating-4-plus', label: 'Rating 4.0+' },
 ]
 const SEARCH_HISTORY_KEY = "user_recent_searches_v1"
@@ -80,8 +80,7 @@ export default function SearchResults() {
               id: cat.slug || cat.id,
               name: cat.name,
               image: cat.image || cat.imageUrl || "",
-              type: cat.type,
-            }))
+              type: cat.type }))
           ]
 
           setCategories(transformedCategories)
@@ -224,8 +223,7 @@ export default function SearchResults() {
               rating: restaurantsArray[0].rating,
               offer: restaurantsArray[0].offer,
               featuredDish: restaurantsArray[0].featuredDish,
-              featuredPrice: restaurantsArray[0].featuredPrice,
-            })
+              featuredPrice: restaurantsArray[0].featuredPrice })
           }
 
           // Helper function to check if value is a default/mock value
@@ -379,8 +377,7 @@ export default function SearchResults() {
                 slug: restaurant.slug || restaurant.name?.toLowerCase().replace(/\s+/g, '-'),
                 restaurantId: restaurantId,
                 hasPaneer: false, // Will be updated after menu fetch
-                category: 'all',
-              }
+                category: 'all' }
             })
 
           startTransition(() => {
@@ -428,8 +425,7 @@ export default function SearchResults() {
                         hasPaneer: hasPaneer,
                         featuredDish: featuredDish || null,
                         featuredPrice: featuredPrice || null,
-                        categoryMatches: {},
-                      }
+                        categoryMatches: {} }
                     }
                   } catch (error) {
                     debugWarn(`Failed to fetch menu for restaurant ${restaurant.restaurantId}:`, error)
@@ -439,8 +435,7 @@ export default function SearchResults() {
                     ...restaurant,
                     menu: null,
                     hasPaneer: false,
-                    categoryMatches: {},
-                  }
+                    categoryMatches: {} }
                 })
               )
 
@@ -510,8 +505,7 @@ export default function SearchResults() {
                   id: slug,
                   name,
                   image: getCategoryImageFromMenus(slug, name),
-                  type: 'menu-section',
-                })),
+                  type: 'menu-section' })),
               ]
 
               const dynamicKeywords = {}
@@ -810,7 +804,7 @@ export default function SearchResults() {
     if (activeFilters.has('rating-4-plus')) {
       filtered = filtered.filter(r => r.rating && r.rating >= 4.0)
     }
-    if (activeFilters.has('under-250')) {
+    if (activeFilters.has('under-99')) {
       filtered = filtered.filter(r => r.featuredPrice && r.featuredPrice <= 250)
     }
     if (activeFilters.has('flat-50-off')) {
@@ -866,8 +860,7 @@ export default function SearchResults() {
             className="flex gap-3 sm:gap-4 lg:gap-5 overflow-x-auto scrollbar-hide px-4 sm:px-6 md:px-8 lg:px-10 py-3 md:py-4 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800"
             style={{
               scrollbarWidth: "none",
-              msOverflowStyle: "none",
-            }}
+              msOverflowStyle: "none" }}
           >
             {categories.map((cat) => {
               const isSelected = selectedCategory === cat.id
@@ -912,8 +905,7 @@ export default function SearchResults() {
             className="flex items-center gap-2 sm:gap-3 lg:gap-4 overflow-x-auto scrollbar-hide px-4 sm:px-6 md:px-8 lg:px-10 py-3 md:py-4 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800"
             style={{
               scrollbarWidth: "none",
-              msOverflowStyle: "none",
-            }}
+              msOverflowStyle: "none" }}
           >
             {/* Filter Button */}
             <Button

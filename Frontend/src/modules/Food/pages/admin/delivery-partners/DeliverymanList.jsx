@@ -38,8 +38,7 @@ export default function DeliverymanList() {
     cashInHand: true,
     remainingCashLimit: true,
     availabilityStatus: true,
-    actions: true,
-  })
+    actions: true })
 
   const fetchAllWalletRows = async (search = "") => {
     const walletLimit = 100
@@ -51,8 +50,7 @@ export default function DeliverymanList() {
       const response = await adminAPI.getDeliveryBoyWallets({
         search: search || undefined,
         page: currentPage,
-        limit: walletLimit,
-      })
+        limit: walletLimit })
 
       if (!response?.data?.success) {
         break
@@ -108,8 +106,7 @@ export default function DeliverymanList() {
             totalEarning: wallet?.totalEarning || 0,
             bonus: wallet?.bonus || 0,
             totalWithdrawn: wallet?.totalWithdrawn || 0,
-            availableCashLimit: wallet?.availableCashLimit || 0,
-          }
+            availableCashLimit: wallet?.availableCashLimit || 0 }
         })
 
         setDeliverymen(mergedPartners)
@@ -184,8 +181,7 @@ export default function DeliverymanList() {
             totalEarning: wallet?.totalEarning || 0,
             bonus: wallet?.bonus || 0,
             totalWithdrawn: wallet?.totalWithdrawn || 0,
-            availableCashLimit: wallet?.availableCashLimit || 0,
-          }
+            availableCashLimit: wallet?.availableCashLimit || 0 }
         })
 
         setDeliverymen(mergedPartners)
@@ -236,8 +232,7 @@ remainingCashLimit: deliveryman.remainingCashLimit || 0,
 totalEarning: deliveryman.totalEarning || 0,
 bonus: deliveryman.bonus || 0,
 totalWithdrawn: deliveryman.totalWithdrawn || 0,
-availableCashLimit: deliveryman.availableCashLimit || 0,
-        })
+availableCashLimit: deliveryman.availableCashLimit || 0 })
         setIsViewOpen(true)
       } else {
         alert("Failed to load details")
@@ -281,8 +276,7 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
       cashInHand: true,
       remainingCashLimit: true,
       availabilityStatus: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const columnsConfig = {
@@ -295,15 +289,13 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
     cashInHand: "Cash In Hand",
     remainingCashLimit: "Remaining Cash Limit",
     availabilityStatus: "Availability Status",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   const startEditingWallet = (deliveryman) => {
     setEditingDeliveryId(String(deliveryman._id))
     setEditValues({
       pocketBalance: String(Number(deliveryman.pocketBalance) || 0),
-      cashInHand: String(Number(deliveryman.cashInHand) || 0),
-    })
+      cashInHand: String(Number(deliveryman.cashInHand) || 0) })
   }
 
   const cancelEditingWallet = () => {
@@ -335,8 +327,7 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
         walletId: deliveryman.walletSummary?.walletId,
         deliveryId: deliveryman._id,
         pocketBalance: nextPocketBalance,
-        cashInHand: nextCashInHand,
-      })
+        cashInHand: nextCashInHand })
 
       if (!response?.data?.success) {
         toast.error(response?.data?.message || "Failed to update wallet")
@@ -359,9 +350,7 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
                   pocketBalance: updatedWallet.pocketBalance ?? nextPocketBalance,
                   cashCollected: updatedWallet.cashInHand ?? nextCashInHand,
                   remainingCashLimit: updatedWallet.remainingCashLimit ?? item.remainingCashLimit,
-                  availableCashLimit: updatedWallet.availableCashLimit ?? item.availableCashLimit,
-                },
-              }
+                  availableCashLimit: updatedWallet.availableCashLimit ?? item.availableCashLimit } }
             : item,
         ),
       )
@@ -383,9 +372,7 @@ availableCashLimit: deliveryman.availableCashLimit || 0,
             pocketBalance: updatedWallet.pocketBalance ?? nextPocketBalance,
             cashCollected: updatedWallet.cashInHand ?? nextCashInHand,
             remainingCashLimit: updatedWallet.remainingCashLimit ?? prev.remainingCashLimit,
-            availableCashLimit: updatedWallet.availableCashLimit ?? prev.availableCashLimit,
-          },
-        }
+            availableCashLimit: updatedWallet.availableCashLimit ?? prev.availableCashLimit } }
       })
 
       toast.success("Wallet updated")

@@ -4,8 +4,7 @@ export default function AnimatedGradient({ children, className = "" }) {
     <div className={`relative ${className}`}>
       <div
         style={{
-          backgroundSize: "200% 200%",
-        }}
+          backgroundSize: "200% 200%" }}
       />
       <div className="relative z-10">{children}</div>
       <style>{`

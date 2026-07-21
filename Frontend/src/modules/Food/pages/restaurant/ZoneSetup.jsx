@@ -215,8 +215,7 @@ export default function ZoneSetup() {
 
       const paths = z.coordinates.map((c) => ({
         lat: Number(c.latitude),
-        lng: Number(c.longitude),
-      }))
+        lng: Number(c.longitude) }))
 
       const isAssignedZone = restaurantData?.zoneId === (z._id || z.id)
       
@@ -227,8 +226,7 @@ export default function ZoneSetup() {
         strokeWeight: 2,
         fillColor: isAssignedZone ? "#22c55e" : "#ef4444",
         fillOpacity: 0.15,
-        map: mapInstanceRef.current,
-      })
+        map: mapInstanceRef.current })
 
       polygon.addListener("click", (event) => {
         const lat = event.latLng.lat()
@@ -364,8 +362,7 @@ export default function ZoneSetup() {
         fullscreenControl: true,
         scrollwheel: true,
         gestureHandling: 'greedy',
-        disableDoubleClickZoom: false,
-      })
+        disableDoubleClickZoom: false })
 
       mapInstanceRef.current = map
       geocoderRef.current = new google.maps.Geocoder()

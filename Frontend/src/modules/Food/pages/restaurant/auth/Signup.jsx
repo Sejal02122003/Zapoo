@@ -11,8 +11,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@food/components/ui/select"
+  SelectValue } from "@food/components/ui/select"
 import loginBg from "@food/assets/loginbanner.png"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 
@@ -25,12 +24,10 @@ export default function RestaurantSignup() {
   const [formData, setFormData] = useState({
     phone: "",
     countryCode: "+91",
-    name: "",
-  })
+    name: "" })
   const [errors, setErrors] = useState({
     phone: "",
-    name: "",
-  })
+    name: "" })
   const [isLoading, setIsLoading] = useState(false)
   const [apiError, setApiError] = useState("")
 
@@ -63,8 +60,7 @@ export default function RestaurantSignup() {
     const { name, value } = e.target
     setFormData({
       ...formData,
-      [name]: value,
-    })
+      [name]: value })
 
     // Real-time validation
     if (name === "phone") {
@@ -77,8 +73,7 @@ export default function RestaurantSignup() {
   const handleCountryCodeChange = (value) => {
     setFormData({
       ...formData,
-      countryCode: value,
-    })
+      countryCode: value })
   }
 
   const handleSubmit = async (e) => {
@@ -118,8 +113,7 @@ export default function RestaurantSignup() {
         phone: fullPhone,
         name: formData.name,
         isSignUp: true,
-        module: "restaurant",
-      }
+        module: "restaurant" }
       sessionStorage.setItem("restaurantAuthData", JSON.stringify(authData))
 
       navigate("/food/restaurant/otp")

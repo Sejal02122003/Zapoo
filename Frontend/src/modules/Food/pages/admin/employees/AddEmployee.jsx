@@ -18,8 +18,7 @@ export default function AddEmployee() {
     employeeImage: null,
     email: "",
     password: "",
-    confirmPassword: "",
-  })
+    confirmPassword: "" })
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -48,8 +47,7 @@ export default function AddEmployee() {
       employeeImage: null,
       email: "",
       password: "",
-      confirmPassword: "",
-    })
+      confirmPassword: "" })
   }
 
   return (

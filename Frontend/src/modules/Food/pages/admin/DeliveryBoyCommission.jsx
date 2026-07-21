@@ -25,8 +25,7 @@ export default function DeliveryBoyCommission() {
     maxDistance: "",
     maxDistanceUnlimited: false,
     commissionPerKm: "",
-    basePayout: "",
-  })
+    basePayout: "" })
   const [formErrors, setFormErrors] = useState({})
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
@@ -35,8 +34,7 @@ export default function DeliveryBoyCommission() {
     commissionPerKm: true,
     basePayout: true,
     status: true,
-    actions: true,
-  })
+    actions: true })
 
   const filteredCommissions = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -174,8 +172,7 @@ export default function DeliveryBoyCommission() {
       maxDistance: isUnlimited ? "" : String(commission.maxDistance),
       maxDistanceUnlimited: isUnlimited,
       commissionPerKm: commission.commissionPerKm.toString(),
-      basePayout: commission.basePayout.toString(),
-    })
+      basePayout: commission.basePayout.toString() })
     setFormErrors({})
     setIsAddEditOpen(true)
   }
@@ -235,8 +232,7 @@ export default function DeliveryBoyCommission() {
         maxDistance,
         commissionPerKm: parseFloat(formData.commissionPerKm),
         basePayout: parseFloat(formData.basePayout),
-        status: selectedCommission ? selectedCommission.status : true,
-      }
+        status: selectedCommission ? selectedCommission.status : true }
       
       if (selectedCommission) {
         // Update existing commission
@@ -369,8 +365,7 @@ export default function DeliveryBoyCommission() {
       basePayout: true,
       totalCommission: true,
       status: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const columnsConfig = {
@@ -380,8 +375,7 @@ export default function DeliveryBoyCommission() {
     commissionPerKm: "Commission/Km",
     basePayout: "Base Payout",
     status: "Status",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   const configuredMinDistance = Number(
     formData.minDistance !== "" ? formData.minDistance : selectedCommission?.minDistance
@@ -622,8 +616,7 @@ export default function DeliveryBoyCommission() {
                       setFormData({
                         ...formData,
                         maxDistanceUnlimited: e.target.checked,
-                        maxDistance: e.target.checked ? "" : formData.maxDistance,
-                      })
+                        maxDistance: e.target.checked ? "" : formData.maxDistance })
                     }
                   />
                   Unlimited
@@ -641,8 +634,7 @@ export default function DeliveryBoyCommission() {
                   setFormData({
                     ...formData,
                     maxDistanceUnlimited: false,
-                    maxDistance: e.target.value,
-                  })
+                    maxDistance: e.target.value })
                 }
                 disabled={Boolean(formData.maxDistanceUnlimited)}
                 className={`w-full px-4 py-2.5 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${

@@ -88,20 +88,17 @@ export default function AddMoneyModal({ open, onOpenChange, onSuccess }) {
         prefill: {
           name: userName,
           email: userEmail,
-          contact: formattedPhone,
-        },
+          contact: formattedPhone },
         notes: {
           type: "wallet_topup",
-          amount: amountNum.toString(),
-        },
+          amount: amountNum.toString() },
         handler: async (response) => {
           try {
             await userAPI.verifyWalletTopupPayment({
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
-              amount: amountNum,
-            })
+              amount: amountNum })
 
             toast.success(`\u20B9${amountNum} added to wallet successfully!`)
             setAmount("")
@@ -124,8 +121,7 @@ export default function AddMoneyModal({ open, onOpenChange, onSuccess }) {
         },
         onClose: () => {
           setProcessing(false)
-        },
-      })
+        } })
     } catch (error) {
       debugError("Error creating payment order:", error)
       debugError("Error response:", error?.response)

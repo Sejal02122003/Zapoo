@@ -36,8 +36,7 @@ const statusConfig = {
   "restaurant-cancelled": { title: "Restaurant Cancelled Orders", color: "red", icon: Package },
   "payment-failed": { title: "Payment Failed Orders", color: "red", icon: Package },
   "refunded": { title: "Refunded Orders", color: "sky", icon: Package },
-  "offline-payments": { title: "Offline Payments", color: "slate", icon: Package },
-}
+  "offline-payments": { title: "Offline Payments", color: "slate", icon: Package } }
 
 export default function OrdersPage({ statusKey = "all" }) {
   const config = statusConfig[statusKey] || statusConfig["all"]
@@ -206,8 +205,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         silent: false,
         vibrate: [200, 100, 200, 100, 300],
         icon: "/logo.png",
-        data: { targetUrl: "/admin/orders/all" },
-      }
+        data: { targetUrl: "/admin/orders/all" } }
 
       if ("serviceWorker" in navigator) {
         const registration = await navigator.serviceWorker.getRegistration()
@@ -324,8 +322,7 @@ export default function OrdersPage({ statusKey = "all" }) {
             : statusKey === "restaurant-cancelled"
               ? "cancelled"
               : statusKey,
-        cancelledBy: statusKey === "restaurant-cancelled" ? "restaurant" : undefined,
-      }
+        cancelledBy: statusKey === "restaurant-cancelled" ? "restaurant" : undefined }
 
       const response = await adminAPI.getOrders(params)
 
@@ -395,21 +392,20 @@ export default function OrdersPage({ statusKey = "all" }) {
         ? createdAt.toLocaleDateString("en-GB", {
             day: "2-digit",
             month: "short",
-            year: "numeric",
-          }).toUpperCase()
+            year: "numeric" }).toUpperCase()
         : ""
       const time = createdAt
         ? createdAt.toLocaleTimeString("en-US", {
             hour: "2-digit",
             minute: "2-digit",
-            hour12: true,
-          }).toUpperCase()
+            hour12: true }).toUpperCase()
         : ""
 
       const pricing = order.pricing || {}
       const subtotal = Number(pricing.subtotal || 0)
       const deliveryFee = Number(pricing.deliveryFee || 0)
       const platformFee = Number(pricing.platformFee || 0)
+      const platformNetProfit = Number(order.platformProfit || 0)
       const taxAmount = Number(pricing.tax || 0)
       const discountAmount = Number(pricing.discount || 0)
       const computedTotal = subtotal + deliveryFee + platformFee + taxAmount - discountAmount
@@ -486,8 +482,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         ? order.items.map((item) => ({
             quantity: item.quantity || 1,
             name: item.name || item.foodName || item.title || "Item",
-            price: item.price || 0,
-          }))
+            price: item.price || 0 }))
         : []
 
       const customerName = order.customerName || order.userId?.name || "N/A"
@@ -515,6 +510,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         deliveryCharge: deliveryFee,
         vatTax: taxAmount,
         platformFee,
+        platformNetProfit,
         totalAmount,
         paymentType,
         paymentStatus,
@@ -553,8 +549,7 @@ export default function OrdersPage({ statusKey = "all" }) {
     handleViewOrder,
     handlePrintOrder,
     toggleColumn,
-    resetColumns,
-  } = useOrdersManagement(normalizedOrders, statusKey, config.title)
+    resetColumns } = useOrdersManagement(normalizedOrders, statusKey, config.title)
 
   const finalFilteredOrders = useMemo(() => {
     if (statusKey === "food-on-the-way" || orderTypeTab === "all") {
@@ -600,8 +595,7 @@ export default function OrdersPage({ statusKey = "all" }) {
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      timeout: 20000,
-    })
+      timeout: 20000 })
     socketRef.current = socket
 
     const handleIncomingRealtimeOrder = (payload = {}) => {

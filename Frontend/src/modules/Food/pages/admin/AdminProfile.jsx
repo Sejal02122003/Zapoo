@@ -8,8 +8,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
-} from "@food/components/ui/card";
+  CardTitle } from "@food/components/ui/card";
 import { toast } from "sonner";
 import { User, Mail, Phone, Save, Loader2, Upload, X, Pencil, Eye, EyeOff } from "lucide-react";
 const debugLog = (...args) => {}
@@ -30,18 +29,15 @@ export default function AdminProfile() {
     name: "",
     email: "",
     phone: "",
-    profileImage: "",
-  });
+    profileImage: "" });
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
-    confirmPassword: "",
-  });
+    confirmPassword: "" });
   const [showPasswords, setShowPasswords] = useState({
     currentPassword: false,
     newPassword: false,
-    confirmPassword: false,
-  });
+    confirmPassword: false });
 
   useEffect(() => {
     fetchProfile();
@@ -59,8 +55,7 @@ export default function AdminProfile() {
           name: adminData.name || "",
           email: adminData.email || "",
           phone: adminData.phone || "",
-          profileImage: adminData.profileImage || "",
-        });
+          profileImage: adminData.profileImage || "" });
         return;
       }
       throw new Error("No admin data in response");
@@ -77,15 +72,13 @@ export default function AdminProfile() {
             phone: localAdmin.phone || "",
             profileImage: localAdmin.profileImage || "",
             role: localAdmin.role || "admin",
-            isActive: localAdmin.isActive !== false,
-          };
+            isActive: localAdmin.isActive !== false };
           setProfile(fallback);
           setFormData({
             name: fallback.name || "",
             email: fallback.email || "",
             phone: fallback.phone || "",
-            profileImage: fallback.profileImage || "",
-          });
+            profileImage: fallback.profileImage || "" });
           toast.info("Showing saved profile. Backend disconnected — updates may not persist.");
           return;
         }
@@ -101,8 +94,7 @@ export default function AdminProfile() {
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: value,
-    }));
+      [field]: value }));
   };
 
   const handleFileSelect = (e) => {
@@ -144,13 +136,11 @@ export default function AdminProfile() {
     setPasswordData({
       currentPassword: "",
       newPassword: "",
-      confirmPassword: "",
-    });
+      confirmPassword: "" });
     setShowPasswords({
       currentPassword: false,
       newPassword: false,
-      confirmPassword: false,
-    });
+      confirmPassword: false });
   };
 
   const handleSubmit = async (e) => {
@@ -211,8 +201,7 @@ export default function AdminProfile() {
         name: formData.name,
         email: formData.email || undefined,
         phone: formData.phone || undefined,
-        profileImage: profileImageUrl || undefined,
-      });
+        profileImage: profileImageUrl || undefined });
 
       const updatedAdmin = response?.data?.data?.user ?? response?.data?.data?.admin ?? response?.data?.admin;
       
@@ -222,8 +211,7 @@ export default function AdminProfile() {
           name: updatedAdmin.name || "",
           email: updatedAdmin.email || "",
           phone: updatedAdmin.phone || "",
-          profileImage: updatedAdmin.profileImage || "",
-        });
+          profileImage: updatedAdmin.profileImage || "" });
         // Clear selected file and preview
         setSelectedFile(null);
         setImagePreview(null);
@@ -269,8 +257,7 @@ export default function AdminProfile() {
       name: profile?.name || "",
       email: profile?.email || "",
       phone: profile?.phone || "",
-      profileImage: profile?.profileImage || "",
-    });
+      profileImage: profile?.profileImage || "" });
     setSelectedFile(null);
     setImagePreview(null);
     if (fileInputRef.current) {
@@ -285,8 +272,7 @@ export default function AdminProfile() {
       name: profile?.name || "",
       email: profile?.email || "",
       phone: profile?.phone || "",
-      profileImage: profile?.profileImage || "",
-    });
+      profileImage: profile?.profileImage || "" });
     setSelectedFile(null);
     setImagePreview(null);
     if (fileInputRef.current) {
@@ -552,8 +538,7 @@ export default function AdminProfile() {
                     onChange={(e) =>
                       setPasswordData((prev) => ({
                         ...prev,
-                        currentPassword: e.target.value,
-                      }))
+                        currentPassword: e.target.value }))
                     }
                     placeholder="Enter old password"
                     disabled={!isEditMode || saving || uploading}
@@ -564,8 +549,7 @@ export default function AdminProfile() {
                     onClick={() =>
                       setShowPasswords((prev) => ({
                         ...prev,
-                        currentPassword: !prev.currentPassword,
-                      }))
+                        currentPassword: !prev.currentPassword }))
                     }
                     disabled={!isEditMode || saving || uploading}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700 disabled:opacity-50"
@@ -590,8 +574,7 @@ export default function AdminProfile() {
                     onChange={(e) =>
                       setPasswordData((prev) => ({
                         ...prev,
-                        newPassword: e.target.value,
-                      }))
+                        newPassword: e.target.value }))
                     }
                     placeholder="Enter new password"
                     disabled={!isEditMode || saving || uploading}
@@ -602,8 +585,7 @@ export default function AdminProfile() {
                     onClick={() =>
                       setShowPasswords((prev) => ({
                         ...prev,
-                        newPassword: !prev.newPassword,
-                      }))
+                        newPassword: !prev.newPassword }))
                     }
                     disabled={!isEditMode || saving || uploading}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700 disabled:opacity-50"
@@ -628,8 +610,7 @@ export default function AdminProfile() {
                     onChange={(e) =>
                       setPasswordData((prev) => ({
                         ...prev,
-                        confirmPassword: e.target.value,
-                      }))
+                        confirmPassword: e.target.value }))
                     }
                     placeholder="Confirm new password"
                     disabled={!isEditMode || saving || uploading}
@@ -640,8 +621,7 @@ export default function AdminProfile() {
                     onClick={() =>
                       setShowPasswords((prev) => ({
                         ...prev,
-                        confirmPassword: !prev.confirmPassword,
-                      }))
+                        confirmPassword: !prev.confirmPassword }))
                     }
                     disabled={!isEditMode || saving || uploading}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700 disabled:opacity-50"

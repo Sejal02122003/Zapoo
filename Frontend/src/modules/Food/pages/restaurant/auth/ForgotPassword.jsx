@@ -179,8 +179,7 @@ export default function RestaurantForgotPassword() {
       }
 
       navigate("/restaurant/login", {
-        state: { message: "Password reset successfully. Please login with your new password." },
-      })
+        state: { message: "Password reset successfully. Please login with your new password." } })
     } catch (err) {
       const message =
         err?.response?.data?.message ||

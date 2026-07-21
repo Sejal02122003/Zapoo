@@ -7,7 +7,7 @@ const debugError = (...args) => {}
 
 
 const ProfileContext = createContext(null)
-const USER_SESSION_PREFERENCE_KEYS = ["userVegMode", "userVegModeOption", "food-under-250-filters"]
+const USER_SESSION_PREFERENCE_KEYS = ["userVegMode", "userVegModeOption", "food-under-99-filters"]
 
 export function ProfileProvider({ children }) {
   const getAddressId = (address) => address?.id || address?._id || null
@@ -23,8 +23,7 @@ export function ProfileProvider({ children }) {
     return {
       ...address,
       label: normalizeAddressLabel(address.label),
-      ...(id ? { id: String(id) } : {}),
-    }
+      ...(id ? { id: String(id) } : {}) }
   }
   const dedupeAddressesByLabel = (addressList = []) => {
     const addressMap = new Map()
@@ -283,8 +282,7 @@ export function ProfileProvider({ children }) {
     setAddresses((prev) => {
       const updatedAddresses = prev.map((addr) => ({
         ...addr,
-        isDefault: String(getAddressId(addr)) === String(id),
-      }))
+        isDefault: String(getAddressId(addr)) === String(id) }))
 
       localStorage.setItem("userAddresses", JSON.stringify(updatedAddresses))
       notifyDeliveryModeUpdated('saved')
@@ -349,8 +347,7 @@ export function ProfileProvider({ children }) {
             state: selectedAddress?.state || existingLocation?.state || "",
             address: resolvedAddress || existingLocation?.address || "",
             formattedAddress:
-              resolvedAddress || existingLocation?.formattedAddress || "",
-          }
+              resolvedAddress || existingLocation?.formattedAddress || "" }
 
           persistUserLocation(syncedLocation, { mode: 'saved' })
           notifyLocationUpdated(syncedLocation)
@@ -378,8 +375,7 @@ export function ProfileProvider({ children }) {
       const newPayment = {
         ...payment,
         id: Date.now().toString(),
-        isDefault: prev.length === 0 ? true : false,
-      }
+        isDefault: prev.length === 0 ? true : false }
       return [...prev, newPayment]
     })
   }, [])
@@ -408,8 +404,7 @@ export function ProfileProvider({ children }) {
     setPaymentMethods((prev) =>
       prev.map((pm) => ({
         ...pm,
-        isDefault: pm.id === id,
-      }))
+        isDefault: pm.id === id }))
     )
   }, [])
 
@@ -510,8 +505,7 @@ export function ProfileProvider({ children }) {
       removeDishFavorite,
       isDishFavorite,
       getDishFavorites,
-      isAuthenticated,
-    }),
+      isAuthenticated }),
     [
       userProfile,
       loading,

@@ -7,8 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@food/components/ui/dialog"
+  DialogDescription } from "@food/components/ui/dialog"
 import { Button } from "@food/components/ui/button"
 import {
   DropdownMenu,
@@ -18,8 +17,7 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@food/components/ui/dropdown-menu"
+  DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}

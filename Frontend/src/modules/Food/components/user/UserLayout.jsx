@@ -19,8 +19,7 @@ const SearchOverlayContext = createContext({
   searchValue: "",
   setSearchValue: () => { debugWarn("SearchOverlayProvider not available") },
   openSearch: () => { debugWarn("SearchOverlayProvider not available") },
-  closeSearch: () => {},
-})
+  closeSearch: () => {} })
 
 export function useSearchOverlay() {
   return useContext(SearchOverlayContext)
@@ -54,8 +53,7 @@ function SearchOverlayProvider({ children }) {
 const LocationSelectorContext = createContext({
   isLocationSelectorOpen: false,
   openLocationSelector: () => { debugWarn("LocationSelectorProvider not available") },
-  closeLocationSelector: () => {},
-})
+  closeLocationSelector: () => {} })
 
 export function useLocationSelector() {
   const context = useContext(LocationSelectorContext)
@@ -75,8 +73,7 @@ function LocationSelectorProvider({ children }) {
   const value = {
     isLocationSelectorOpen: false,
     openLocationSelector,
-    closeLocationSelector: () => {},
-  }
+    closeLocationSelector: () => {} }
 
   return (
     <LocationSelectorContext.Provider value={value}>
@@ -107,20 +104,20 @@ function UserLayoutShell() {
     normalizedPath === "/user" ||
     normalizedPath === "/dining" ||
     normalizedPath === "/user/dining" ||
-    normalizedPath === "/under-250" ||
-    normalizedPath === "/user/under-250" ||
+    normalizedPath === "/under-99" ||
+    normalizedPath === "/user/under-99" ||
     normalizedPath === "/orders" ||
     normalizedPath === "/user/orders" ||
     isProfileRoot ||
     normalizedPath === ""
   )
 
-  const isUnder250 = normalizedPath === "/under-250" || normalizedPath === "/user/under-250"
+  const isUnder99 = normalizedPath === "/under-99" || normalizedPath === "/user/under-99"
 
   return (
     <>
       <div className="hidden md:block">
-        {showBottomNav && <DesktopNavbar showLogo={!isUnder250} />}
+        {showBottomNav && <DesktopNavbar showLogo={!isUnder99} />}
       </div>
       <LocationGuard>
         <main className={showBottomNav ? "md:pt-40" : ""}>

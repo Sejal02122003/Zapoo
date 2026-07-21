@@ -26,8 +26,7 @@ const popularRestaurants = [
     offer: "Flat 30% OFF + 3 more",
     deliveryTime: "30-35 mins",
     featuredDish: "Pasta",
-    featuredPrice: 450,
-  },
+    featuredPrice: 450 },
   {
     id: 2,
     name: "Skyline Rooftop",
@@ -40,8 +39,7 @@ const popularRestaurants = [
     offer: "Flat 25% OFF + 2 more",
     deliveryTime: "35-40 mins",
     featuredDish: "Grilled Chicken",
-    featuredPrice: 550,
-  },
+    featuredPrice: 550 },
   {
     id: 3,
     name: "The Grand Bistro",
@@ -54,8 +52,7 @@ const popularRestaurants = [
     offer: "Flat 35% OFF + 4 more",
     deliveryTime: "25-30 mins",
     featuredDish: "Risotto",
-    featuredPrice: 650,
-  },
+    featuredPrice: 650 },
   {
     id: 4,
     name: "Coastal Kitchen",
@@ -68,8 +65,7 @@ const popularRestaurants = [
     offer: "Flat 20% OFF + 2 more",
     deliveryTime: "28-33 mins",
     featuredDish: "Fish Curry",
-    featuredPrice: 480,
-  },
+    featuredPrice: 480 },
   {
     id: 5,
     name: "Garden Terrace",
@@ -82,8 +78,7 @@ const popularRestaurants = [
     offer: "Flat 30% OFF + 3 more",
     deliveryTime: "40-45 mins",
     featuredDish: "Butter Chicken",
-    featuredPrice: 380,
-  },
+    featuredPrice: 380 },
   {
     id: 6,
     name: "Midnight Lounge",
@@ -96,8 +91,7 @@ const popularRestaurants = [
     offer: "Flat 25% OFF + 2 more",
     deliveryTime: "35-40 mins",
     featuredDish: "Steak",
-    featuredPrice: 750,
-  },
+    featuredPrice: 750 },
 ]
 
 export default function DiningExploreNear() {
@@ -286,8 +280,7 @@ export default function DiningExploreNear() {
                 className="relative z-10 flex items-center gap-1.5 sm:gap-2 overflow-x-auto overflow-y-visible scrollbar-hide py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 style={{
                   scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                }}
+                  msOverflowStyle: "none" }}
               >
                 {/* Filter Button - Opens Modal */}
                 <Button

@@ -397,13 +397,18 @@ export async function createOrder(userId, dto) {
           { upsert: true },
         );
       }
-    } else {
-      const { default: Promocode } = await import('../../../../models/Promocode.js');
-      await Promocode.updateOne(
-        { code: couponCode, restaurantId: dto.restaurantId },
-        { $inc: { usageCount: 1 } }
-      );
     }
+  }
+
+  const restaurantCouponCode = dto.pricing?.restaurantCouponCode
+    ? String(dto.pricing.restaurantCouponCode).trim().toUpperCase()
+    : "";
+  if (restaurantCouponCode) {
+    const { default: Promocode } = await import('../../../../models/Promocode.js');
+    await Promocode.updateOne(
+      { code: restaurantCouponCode, restaurantId: dto.restaurantId },
+      { $inc: { usageCount: 1 } }
+    );
   }
 
   const dispatchableStatuses = [

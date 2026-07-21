@@ -20,8 +20,7 @@ export default function AdsList() {
   const [filters, setFilters] = useState({
     status: "",
     restaurant: "",
-    priority: "",
-  })
+    priority: "" })
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     adsId: true,
@@ -31,8 +30,7 @@ export default function AdsList() {
     duration: true,
     status: true,
     priority: true,
-    actions: true,
-  })
+    actions: true })
 
   const columnsConfig = {
     si: "Serial Number",
@@ -43,8 +41,7 @@ export default function AdsList() {
     duration: "Duration",
     status: "Status",
     priority: "Priority",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   const filteredAds = useMemo(() => {
     let result = [...ads]
@@ -141,8 +138,7 @@ export default function AdsList() {
       duration: true,
       status: true,
       priority: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const handleApplyFilters = () => {
@@ -153,8 +149,7 @@ export default function AdsList() {
     setFilters({
       status: "",
       restaurant: "",
-      priority: "",
-    })
+      priority: "" })
   }
 
   const restaurants = [...new Set(ads.map(ad => ad.restaurantName))].filter(Boolean)

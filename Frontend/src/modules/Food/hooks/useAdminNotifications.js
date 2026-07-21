@@ -41,8 +41,7 @@ const toDateLabel = (value) => {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: true,
-  });
+    hour12: true });
 };
 
 const uniqueById = (items = []) => {
@@ -66,8 +65,7 @@ const mapPendingRestaurants = (rows = []) =>
     path: "/admin/food/restaurants/joining-request",
     createdAt: item?.createdAt || item?.updatedAt,
     timeLabel: toDateLabel(item?.createdAt || item?.updatedAt),
-    metaLabel: joinMeta(item?.restaurantName, item?.ownerName, item?.ownerPhone),
-  }));
+    metaLabel: joinMeta(item?.restaurantName, item?.ownerName, item?.ownerPhone) }));
 
 const mapDeliveryJoinRequests = (response) => {
   const payload = response?.data?.data;
@@ -87,8 +85,7 @@ const mapDeliveryJoinRequests = (response) => {
     path: "/admin/food/delivery-partners/join-request",
     createdAt: item?.createdAt || item?.updatedAt,
     timeLabel: toDateLabel(item?.createdAt || item?.updatedAt),
-    metaLabel: joinMeta(item?.name, item?.phone, item?.email),
-  }));
+    metaLabel: joinMeta(item?.name, item?.phone, item?.email) }));
 };
 
 const mapFoodApprovals = (response) => {
@@ -109,8 +106,7 @@ const mapFoodApprovals = (response) => {
     path: "/admin/food/food-approval",
     createdAt: item?.requestedAt || item?.createdAt || item?.updatedAt,
     timeLabel: toDateLabel(item?.requestedAt || item?.createdAt || item?.updatedAt),
-    metaLabel: joinMeta(item?.restaurantName, item?.itemName, item?.category || item?.type),
-  }));
+    metaLabel: joinMeta(item?.restaurantName, item?.itemName, item?.category || item?.type) }));
 };
 
 const mapUserRestaurantSupport = (response) => {
@@ -144,8 +140,7 @@ const mapUserRestaurantSupport = (response) => {
         path: "/admin/food/support-tickets",
         createdAt: item?.createdAt || item?.updatedAt,
         timeLabel: toDateLabel(item?.createdAt || item?.updatedAt),
-        metaLabel,
-      };
+        metaLabel };
     });
 };
 
@@ -169,8 +164,7 @@ const mapDeliverySupport = (response) => {
       path: "/admin/food/delivery-support-tickets",
       createdAt: item?.createdAt || item?.updatedAt,
       timeLabel: toDateLabel(item?.createdAt || item?.updatedAt),
-      metaLabel: joinMeta(item?.deliveryPartner?.name, item?.deliveryPartner?.phone, item?.priority, item?.status),
-    }));
+      metaLabel: joinMeta(item?.deliveryPartner?.name, item?.deliveryPartner?.phone, item?.priority, item?.status) }));
 };
 
 const mapExpiredFssai = (response) => {
@@ -188,8 +182,7 @@ const mapExpiredFssai = (response) => {
     path: "/admin/food/restaurants",
     createdAt: item?.createdAt || item?.fssaiExpiry,
     timeLabel: toDateLabel(item?.createdAt || item?.fssaiExpiry),
-    metaLabel: joinMeta(item?.restaurantName, item?.ownerName, item?.ownerPhone, item?.fssaiNumber),
-  }));
+    metaLabel: joinMeta(item?.restaurantName, item?.ownerName, item?.ownerPhone, item?.fssaiNumber) }));
 };
 
 export default function useAdminNotifications(options = {}) {
@@ -284,8 +277,7 @@ export default function useAdminNotifications(options = {}) {
       unreadCount: items.length,
       refresh: loadNotifications,
       dismissOne,
-      clearAll,
-    }),
+      clearAll }),
     [clearAll, dismissOne, items, loadNotifications, loading]
   );
 }

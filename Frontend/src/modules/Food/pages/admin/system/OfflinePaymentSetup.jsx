@@ -43,8 +43,7 @@ export default function OfflinePaymentSetup() {
     paymentInfo: true,
     requiredInfo: true,
     status: true,
-    actions: true,
-  })
+    actions: true })
 
   const filteredMethods = useMemo(() => {
     let filtered = methods.filter(method => {
@@ -109,8 +108,7 @@ export default function OfflinePaymentSetup() {
       paymentInfo: true,
       requiredInfo: true,
       status: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   const columnsConfig = {
@@ -119,8 +117,7 @@ export default function OfflinePaymentSetup() {
     paymentInfo: "Payment Info",
     requiredInfo: "Required Info From Customer",
     status: "Status",
-    actions: "Actions",
-  }
+    actions: "Actions" }
 
   return (
     <div className="p-2 lg:p-3 bg-slate-50 min-h-screen">

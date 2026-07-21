@@ -16,8 +16,7 @@ import {
   Share2,
   Tag,
   Ticket,
-  X,
-} from "lucide-react"
+  X } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { toast } from "sonner"
 
@@ -70,8 +69,7 @@ const buildFeaturedSections = (menuSections) =>
       return {
         id: `${section?.name || "section"}-${index}`,
         title: section?.name || "Menu",
-        pages: items.length || 1,
-      }
+        pages: items.length || 1 }
     })
     .slice(0, 2)
 
@@ -222,8 +220,7 @@ export default function DiningRestaurantDetails() {
     const shareData = {
       title: restaurantName,
       text: `Check out ${restaurantName} on Zapoo!`,
-      url: window.location.href,
-    }
+      url: window.location.href }
 
     try {
       if (navigator.share) {
@@ -273,8 +270,7 @@ export default function DiningRestaurantDetails() {
       name: restaurantName,
       cuisine: cuisines,
       rating,
-      image: heroImage,
-    })
+      image: heroImage })
   }
 
   const handleContinueBooking = () => {
@@ -283,9 +279,7 @@ export default function DiningRestaurantDetails() {
     navigate(`/food/user/dining/book/${slug}`, {
       state: {
         guestCount: selectedGuests,
-        restaurant,
-      },
-    })
+        restaurant } })
   }
 
   return (

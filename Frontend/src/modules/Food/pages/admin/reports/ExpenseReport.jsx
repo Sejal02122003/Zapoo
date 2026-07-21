@@ -13,8 +13,7 @@ export default function ExpenseReport() {
     restaurant: "All restaurants",
     customer: "All customers",
     type: "All Type",
-    time: "All Time",
-  })
+    time: "All Time" })
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -82,8 +81,7 @@ export default function ExpenseReport() {
       restaurant: "All restaurants",
       customer: "All customers",
       type: "All Type",
-      time: "All Time",
-    })
+      time: "All Time" })
   }
 
   const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.type !== "All Type" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)

@@ -5,8 +5,7 @@ import {
   Bookmark,
   Clock,
   Star,
-  Timer,
-} from "lucide-react";
+  Timer } from "lucide-react";
 import { Card, CardContent } from "@food/components/ui/card";
 import { Button } from "@food/components/ui/button";
 import RestaurantImageCarousel from "@food/components/user/home/RestaurantImageCarousel";
@@ -39,8 +38,7 @@ function HomeRestaurantCard({
   isOutOfService = false,
   isFavorite,
   onToggleFavorite,
-  animateEntrance = false,
-}) {
+  animateEntrance = false }) {
   const { ref, outletTimings } = useDeferredOutletTimings(
     restaurant?.mongoId,
     restaurant?.outletTimings ?? null,
@@ -69,8 +67,7 @@ function HomeRestaurantCard({
         perspective: 1000,
         animation: animateEntrance
           ? `fade-in-up 0.5s ease-out ${Math.min(index, 9) * 0.05}s backwards`
-          : "none",
-      }}
+          : "none" }}
     >
       <div className="h-full group">
         <Link to={`/user/restaurants/${restaurantSlug}`} className="h-full flex">

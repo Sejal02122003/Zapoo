@@ -11,8 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-} from "@food/components/ui/dialog"
+  DialogFooter } from "@food/components/ui/dialog"
 import { Switch } from "@food/components/ui/switch"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"

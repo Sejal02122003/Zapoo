@@ -10,8 +10,7 @@ export default function DeliveryManPayments() {
     deliveryman: "",
     amount: "",
     method: "",
-    reference: "",
-  })
+    reference: "" })
   const [formErrors, setFormErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
@@ -27,8 +26,7 @@ export default function DeliveryManPayments() {
     amount: true,
     method: true,
     reference: true,
-    actions: true,
-  })
+    actions: true })
 
   const filteredPayments = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -79,8 +77,7 @@ export default function DeliveryManPayments() {
         receivedAt: new Date().toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }),
         amount: parseFloat(formData.amount),
         method: formData.method,
-        reference: formData.reference || "N/A",
-      }
+        reference: formData.reference || "N/A" }
       setPayments([newPayment, ...payments])
       setIsSubmitting(false)
       setShowSuccessDialog(true)
@@ -93,8 +90,7 @@ export default function DeliveryManPayments() {
       deliveryman: "",
       amount: "",
       method: "",
-      reference: "",
-    })
+      reference: "" })
     setFormErrors({})
   }
 
@@ -137,8 +133,7 @@ export default function DeliveryManPayments() {
       amount: true,
       method: true,
       reference: true,
-      actions: true,
-    })
+      actions: true })
   }
 
   return (
@@ -346,8 +341,7 @@ export default function DeliveryManPayments() {
                         <span className="text-sm font-medium text-slate-700">
                           $ {payment.amount.toLocaleString("en-US", {
                             minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                            maximumFractionDigits: 2 })}
                         </span>
                       </td>}
                       {visibleColumns.method && <td className="px-6 py-4 whitespace-nowrap">
@@ -416,8 +410,7 @@ export default function DeliveryManPayments() {
                   <p className="text-sm font-medium text-slate-900 mt-1">
                     $ {selectedPayment.amount.toLocaleString("en-US", {
                       minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                      maximumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div>

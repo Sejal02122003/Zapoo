@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  ArrowLeft,
+import { ArrowLeft,
   ChevronRight,
-  Wallet,
   Tag,
   User,
   Leaf,
@@ -25,8 +23,8 @@ import {
   Share2,
   Utensils,
   Trash2,
-  Bell,
-} from "lucide-react";
+  Bell } from "lucide-react";
+import WalletIcon from "@food/components/ui/WalletIcon";
 
 import AnimatedPage from "@food/components/user/AnimatedPage";
 import { Card, CardContent } from "@food/components/ui/card";
@@ -36,8 +34,7 @@ import { useLocationSelector } from "@food/components/user/UserLayout";
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
-} from "@food/components/ui/avatar";
+  AvatarImage } from "@food/components/ui/avatar";
 import { useCompanyName } from "@food/hooks/useCompanyName";
 import OptimizedImage from "@food/components/OptimizedImage";
 import {
@@ -45,8 +42,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
-} from "@food/components/ui/dialog";
+  DialogTitle } from "@food/components/ui/dialog";
 import { authAPI, userAPI, notificationAPI } from "@food/api";
 import { firebaseAuth } from "@food/firebase";
 import { clearModuleAuth } from "@food/utils/auth";
@@ -54,7 +50,7 @@ import { toast } from "sonner";
 const debugLog = (...args) => { };
 const debugWarn = (...args) => { };
 const debugError = (...args) => { };
-const USER_SESSION_PREFERENCE_KEYS = ["userVegMode", "food-under-250-filters"];
+const USER_SESSION_PREFERENCE_KEYS = ["userVegMode", "food-under-99-filters"];
 
 import { registerWebPushForCurrentModule } from "@food/utils/firebaseMessaging";
 
@@ -211,8 +207,7 @@ export default function Profile() {
       contact: hasContact,
       profileImage: hasImage,
       dateOfBirth: hasDateOfBirth,
-      gender: hasGender,
-    };
+      gender: hasGender };
 
     const totalRequiredFields = 5; // Fixed: name, contact, profileImage, dateOfBirth, gender
     const completedRequiredFields =
@@ -234,8 +229,7 @@ export default function Profile() {
         contact: hasContact ? "?" : "?",
         profileImage: hasImage ? "?" : "?",
         dateOfBirth: hasDateOfBirth ? "?" : "?",
-        gender: hasGender ? "?" : "?",
-      },
+        gender: hasGender ? "?" : "?" },
       rawData: {
         name: userProfile.name || "missing",
         phone: userProfile.phone || "missing",
@@ -244,9 +238,7 @@ export default function Profile() {
         dateOfBirth: userProfile.dateOfBirth
           ? String(userProfile.dateOfBirth)
           : "missing",
-        gender: userProfile.gender || "missing",
-      },
-    });
+        gender: userProfile.gender || "missing" } });
 
     return percentage;
   };
@@ -307,8 +299,7 @@ export default function Profile() {
         await navigator.share({
           title: `${companyName} referral`,
           text: shareText,
-          url: referralLink,
-        });
+          url: referralLink });
       } else {
         const fallbackUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${referralLink}`)}`;
         window.open(fallbackUrl, "_blank", "noopener,noreferrer");
@@ -566,7 +557,7 @@ export default function Profile() {
                       className="bg-gray-100 dark:bg-gray-800 rounded-full p-2"
                       whileHover={{ rotate: 15, scale: 1.1 }}
                       transition={{ duration: 0.3 }}>
-                      <Wallet className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                      <WalletIcon className="" />
                     </motion.div>
                     <span className="text-base font-medium text-gray-900 dark:text-white">
                       Zapoo Money

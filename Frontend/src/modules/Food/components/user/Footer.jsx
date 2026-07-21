@@ -66,8 +66,7 @@ export default function Footer() {
       { name: "Partner With Us", href: "/user/help" },
       { name: "Restaurant Login", href: "/restaurant" },
       { name: "Delivery", href: "/delivery" },
-    ],
-  }
+    ] }
 
   return (
     <footer className="hidden md:block bg-zinc-900 text-white mt-auto">

@@ -16,8 +16,7 @@ const orderPointsRadially = (pts) => {
   const points = pts
     .map(p => ({
       lat: typeof p.lat === 'function' ? p.lat() : p.lat,
-      lng: typeof p.lng === 'function' ? p.lng() : p.lng,
-    }))
+      lng: typeof p.lng === 'function' ? p.lng() : p.lng }))
     .filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
 
   if (points.length < 3) return points;
@@ -54,8 +53,7 @@ export default function AddZone() {
   const [formData, setFormData] = useState({
     country: "India",
     zoneName: "",
-    unit: "kilometer",
-  })
+    unit: "kilometer" })
   
   const [coordinates, setCoordinates] = useState([])
   const [locationSearch, setLocationSearch] = useState("")
@@ -128,8 +126,7 @@ export default function AddZone() {
         setFormData({
           country: zoneData.country || "India",
           zoneName: zoneData.name || zoneData.zoneName || "",
-          unit: zoneData.unit || "kilometer",
-        })
+          unit: zoneData.unit || "kilometer" })
         if (zoneData.coordinates && zoneData.coordinates.length > 0) {
           setCoordinates(zoneData.coordinates)
         }
@@ -182,8 +179,7 @@ export default function AddZone() {
       clickable: false,
       icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#9333ea", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 2 },
       zIndex: 1000,
-      title: `Point ${i + 1}`,
-    }))
+      title: `Point ${i + 1}` }))
   }
 
   const renderDrawingPolygon = (google, map) => {
@@ -198,16 +194,14 @@ export default function AddZone() {
       polygonRef.current = new google.maps.Polygon({
         paths: ordered, fillColor: "#9333ea", fillOpacity: 0.35,
         strokeColor: "#9333ea", strokeWeight: 2,
-        clickable: false, editable: false, zIndex: 1,
-      })
+        clickable: false, editable: false, zIndex: 1 })
       polygonRef.current.setMap(map)
     }
 
     renderVertexMarkers(google, map, points)
     setCoordinates(ordered.map(p => ({
       latitude: parseFloat(p.lat.toFixed(6)),
-      longitude: parseFloat(p.lng.toFixed(6)),
-    })))
+      longitude: parseFloat(p.lng.toFixed(6)) })))
   }
 
   const drawEditablePolygon = (google, map, coords) => {
@@ -219,8 +213,7 @@ export default function AddZone() {
     const polygon = new google.maps.Polygon({
       paths: path, strokeColor: "#9333ea", strokeOpacity: 0.8, strokeWeight: 3,
       fillColor: "#9333ea", fillOpacity: 0.35,
-      editable: true, draggable: false, clickable: false,
-    })
+      editable: true, draggable: false, clickable: false })
     polygon.setMap(map)
     polygonRef.current = polygon
 
@@ -253,8 +246,7 @@ export default function AddZone() {
     const ordered = orderPointsRadially(points)
     const coords = ordered.map(p => ({
       latitude: parseFloat(p.lat.toFixed(6)),
-      longitude: parseFloat(p.lng.toFixed(6)),
-    }))
+      longitude: parseFloat(p.lng.toFixed(6)) }))
     setCoordinates(coords)
     drawEditablePolygon(google, map, coords)
     return true

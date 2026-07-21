@@ -11,8 +11,7 @@ export default function PrivacyPolicy() {
   const [activeRole, setActiveRole] = useState("user"); // "user" | "restaurant" | "delivery"
   const [privacyData, setPrivacyData] = useState({
     title: "Privacy Policy",
-    content: "",
-  });
+    content: "" });
 
   useEffect(() => {
     fetchPrivacyData();
@@ -29,20 +28,17 @@ export default function PrivacyPolicy() {
         const textContent = legalHtmlToPlainText(content);
         setPrivacyData({
           title: response.data.data.title || `Privacy Policy - ${activeRole.charAt(0).toUpperCase() + activeRole.slice(1)}`,
-          content: textContent,
-        });
+          content: textContent });
       } else {
         setPrivacyData({
           title: `Privacy Policy - ${activeRole.charAt(0).toUpperCase() + activeRole.slice(1)}`,
-          content: "",
-        });
+          content: "" });
       }
     } catch (error) {
       console.error("Error fetching privacy data:", error);
       setPrivacyData({
         title: `Privacy Policy - ${activeRole.charAt(0).toUpperCase() + activeRole.slice(1)}`,
-        content: "",
-      });
+        content: "" });
     } finally {
       setLoading(false);
     }
@@ -67,8 +63,7 @@ export default function PrivacyPolicy() {
         const textContent = legalHtmlToPlainText(content);
         setPrivacyData({
           ...response.data.data,
-          content: textContent,
-        });
+          content: textContent });
       }
     } catch (error) {
       console.error("Error saving privacy policy:", error);

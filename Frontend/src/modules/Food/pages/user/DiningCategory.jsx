@@ -93,8 +93,7 @@ export default function DiningCategory() {
               offer: restaurant.offer || "Pre-book tables and dining offers",
               featuredDish: restaurant.featuredDish || "Chef's special",
               featuredPrice: restaurant.featuredPrice || null,
-              availability,
-            }
+              availability }
           })
           setRestaurants(mapped)
           setError(null)
@@ -192,8 +191,7 @@ export default function DiningCategory() {
                   name: restaurant.name,
                   cuisine: restaurant.cuisine,
                   rating: restaurant.rating,
-                  image: restaurant.image,
-                })
+                  image: restaurant.image })
               }
 
               return (

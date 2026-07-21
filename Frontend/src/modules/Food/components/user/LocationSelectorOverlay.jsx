@@ -62,8 +62,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
     zipCode: "",
     additionalDetails: "",
     label: "Home",
-    phone: "",
-  })
+    phone: "" })
   const [loadingAddress, setLoadingAddress] = useState(false)
   const [mapLoading, setMapLoading] = useState(false)
   const mapContainerRef = useRef(null)
@@ -138,9 +137,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
           `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=10&q=${encodeURIComponent(q)}`
         const res = await fetch(url, {
           headers: {
-            Accept: "application/json",
-          },
-        })
+            Accept: "application/json" } })
         const json = await res.json()
         const list = Array.isArray(json) ? json : []
         const mapped = list.map((r) => ({
@@ -148,14 +145,12 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
           display: r.display_name || "",
           lat: Number(r.lat),
           lng: Number(r.lon),
-          address: r.address || {},
-        }))
+          address: r.address || {} }))
         const withDistance = mapped
           .filter((x) => Number.isFinite(x.lat) && Number.isFinite(x.lng))
           .map((x) => ({
             ...x,
-            distanceMeters: calculateDistance(refLat, refLng, x.lat, x.lng),
-          }))
+            distanceMeters: calculateDistance(refLat, refLng, x.lat, x.lng) }))
           .sort((a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity))
           .slice(0, 4)
 
@@ -363,8 +358,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
               fillColor: "#4285F4",
               fillOpacity: 1,
               strokeColor: "#FFFFFF",
-              strokeWeight: 3,
-            },
+              strokeWeight: 3 },
             zIndex: window.google.maps.Marker.MAX_ZINDEX + 1,
             optimized: false,
             visible: true,
@@ -494,8 +488,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
             { featureType: "water", elementType: "all", stylers: [{ visibility: "off" }] },
             { featureType: "landscape", elementType: "all", stylers: [{ color: "#f3f4f6" }] },
-          ],
-        })
+          ] })
 
         googleMapRef.current = map
 
@@ -559,8 +552,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
               fillColor: "#4285F4", // Google blue
               fillOpacity: 1,
               strokeColor: "#FFFFFF", // White border
-              strokeWeight: 3,
-            },
+              strokeWeight: 3 },
             zIndex: google.maps.Marker.MAX_ZINDEX + 1,
             optimized: false,
             visible: true,
@@ -742,15 +734,13 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       // Check if geolocation is supported
       if (!navigator.geolocation) {
         toast.error("Location services are not supported in your browser", {
-          duration: 3000,
-        })
+          duration: 3000 })
         return
       }
 
       // Show loading toast
       toast.loading("Fetching your current location...", {
-        id: "location-request",
-      })
+        id: "location-request" })
 
       // Request location - this will automatically prompt for permission if needed
       // Clear any cached location first to ensure fresh coordinates
@@ -787,8 +777,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
               // Show info toast that we're using cached location
               toast.info("Using your last known location", {
                 id: "location-request",
-                duration: 2000,
-              })
+                duration: 2000 })
             } else {
               throw new Error("Invalid cached location")
             }
@@ -806,8 +795,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
             toast.error(errorMessage, {
               id: "location-request",
-              duration: 5000,
-            })
+              duration: 5000 })
             return
           }
         } else {
@@ -823,8 +811,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
           toast.error(errorMessage, {
             id: "location-request",
-            duration: 5000,
-          })
+            duration: 5000 })
           return
         }
       }
@@ -913,8 +900,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             city: locationData.city || prev.city,
             state: locationData.state || prev.state,
             zipCode: locationData.postalCode || prev.zipCode,
-            additionalDetails: locationData.formattedAddress || prev.additionalDetails,
-          }))
+            additionalDetails: locationData.formattedAddress || prev.additionalDetails }))
         }
 
         // Update map if it's initialized
@@ -956,37 +942,31 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         state: locationData.state || prev.state,
         zipCode: locationData.postalCode || prev.zipCode,
         additionalDetails: locationData.formattedAddress || prev.additionalDetails,
-        phone: prev.phone || userProfile?.phone || "",
-      }))
+        phone: prev.phone || userProfile?.phone || "" }))
       onClose()
 
       const addressPreview = locationData?.formattedAddress || locationData?.address || "Location updated"
       toast.success(`Location ready: ${addressPreview.split(',').slice(0, 2).join(', ')}`, {
         id: "location-request",
-        duration: 2400,
-      })
+        duration: 2400 })
     } catch (error) {
       // Handle permission denied or other errors
       if (error.code === 1 || error.message?.includes("denied") || error.message?.includes("permission")) {
         toast.error("Location permission denied. Please enable location access in your browser settings.", {
           id: "location-request",
-          duration: 4000,
-        })
+          duration: 4000 })
       } else if (error.code === 2 || error.message?.includes("unavailable")) {
         toast.error("Location unavailable. Please check your GPS settings.", {
           id: "location-request",
-          duration: 3000,
-        })
+          duration: 3000 })
       } else if (error.code === 3 || error.message?.includes("timeout")) {
         toast.error("Location request timed out. Please try again.", {
           id: "location-request",
-          duration: 3000,
-        })
+          duration: 3000 })
       } else {
         toast.error("Failed to get location. Please try again.", {
           id: "location-request",
-          duration: 3000,
-        })
+          duration: 3000 })
       }
       // Don't close the selector if there's an error, so user can try other options
     }
@@ -996,8 +976,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
     if (!isAuthenticated) {
       toast.info("Please login to add an address", {
         description: "You'll be redirected to the login page",
-        duration: 3000,
-      })
+        duration: 3000 })
       onClose()
       navigate("/user/auth/login")
       return
@@ -1011,16 +990,14 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         city: location.city || "",
         state: location.state || "",
         street: location.address || location.area || "",
-        phone: userProfile?.phone || "",
-      }))
+        phone: userProfile?.phone || "" }))
     }
   }
 
   const handleAddressFormChange = (e) => {
     setAddressFormData({
       ...addressFormData,
-      [e.target.name]: e.target.value,
-    })
+      [e.target.name]: e.target.value })
   }
 
   // Google Maps loading is handled by the Loader in the initialization useEffect above
@@ -1596,8 +1573,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         setCurrentAddress(coordLabel)
         setAddressFormData((prev) => ({
           ...prev,
-          additionalDetails: coordLabel || prev.additionalDetails,
-        }))
+          additionalDetails: coordLabel || prev.additionalDetails }))
         return
       }
 
@@ -1706,8 +1682,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             city: city || prev.city,
             state: state || prev.state,
             zipCode: postalCode || prev.zipCode,
-            additionalDetails: fullAddressForField || prev.additionalDetails,
-          }))
+            additionalDetails: fullAddressForField || prev.additionalDetails }))
         } else {
           setCurrentAddress(coordLabel)
         }
@@ -1820,8 +1795,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                 fillColor: "#4285F4",
                 fillOpacity: 1,
                 strokeColor: "#FFFFFF",
-                strokeWeight: 4,
-              },
+                strokeWeight: 4 },
               zIndex: window.google.maps.Marker.MAX_ZINDEX + 1,
               optimized: false,
               visible: true
@@ -2017,8 +1991,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         zipCode: "",
         additionalDetails: "",
         label: "Home",
-        phone: "",
-      })
+        phone: "" })
       setShowAddressForm(false)
       setLoadingAddress(false)
 
@@ -2061,8 +2034,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       zipCode: "",
       additionalDetails: "",
       label: "Home",
-      phone: "",
-    })
+      phone: "" })
   }
 
   const handleSelectSavedAddress = async (address) => {
@@ -2098,8 +2070,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         zipCode: address.zipCode || "",
         additionalDetails: address.additionalDetails || "",
         label: address.label || "Home",
-        phone: address.phone || "",
-      })
+        phone: address.phone || "" })
 
       // Update Google Maps to show selected address
       if (googleMapRef.current && window.google && window.google.maps) {
@@ -2295,8 +2266,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                             street: street || prev.street,
                             city: city || prev.city,
                             state: state || prev.state,
-                            zipCode: zipCode || prev.zipCode,
-                          }))
+                            zipCode: zipCode || prev.zipCode }))
 
                           // Move map + marker, then run reverse-geocode handler for consistency
                           setMapPosition([latitude, longitude])

@@ -99,8 +99,7 @@ export default function DeliverySupportTickets() {
             ...selectedTicket,
             adminResponse: responseText.trim(),
             respondedAt: new Date().toISOString(),
-            status: selectedTicket.status === 'open' ? 'in_progress' : selectedTicket.status,
-          }
+            status: selectedTicket.status === 'open' ? 'in_progress' : selectedTicket.status }
         setSelectedTicket(updatedTicket)
         setIsResponseOpen(false)
         setResponseText("")

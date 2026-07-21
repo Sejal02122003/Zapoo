@@ -11,20 +11,17 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-} from "@food/components/ui/dialog"
+  DialogTitle } from "@food/components/ui/dialog"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@food/components/ui/select"
+  SelectValue } from "@food/components/ui/select"
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@food/components/ui/popover"
+  PopoverTrigger } from "@food/components/ui/popover"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -201,8 +198,7 @@ function TimePickerWheel({
     const snapPosition = padding + clampedIndex * itemHeight
     container.scrollTo({
       top: snapPosition,
-      behavior: "smooth",
-    })
+      behavior: "smooth" })
 
     if (values[clampedIndex] !== undefined) {
       setValue(values[clampedIndex])
@@ -428,8 +424,7 @@ export default function DaySlots() {
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    })
+      smoothWheel: true })
 
     function raf(time) {
       lenis.raf(time)

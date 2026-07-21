@@ -33,8 +33,7 @@ export default function Coupons() {
     usageLimit: "",
     perUserLimit: "",
     isFirstOrderOnly: false,
-    orderType: "Both",
-  })
+    orderType: "Both" })
 
   const fetchOffers = useCallback(async () => {
     try {
@@ -69,8 +68,7 @@ export default function Coupons() {
           const normalized = Array.isArray(list)
             ? list.map((r) => ({
               ...r,
-              name: r?.name || r?.restaurantName || "",
-            }))
+              name: r?.name || r?.restaurantName || "" }))
             : []
           setRestaurants(normalized)
         }
@@ -176,8 +174,7 @@ export default function Coupons() {
       usageLimit: "",
       perUserLimit: "",
       isFirstOrderOnly: false,
-      orderType: "Both",
-    })
+      orderType: "Both" })
   }
 
   const handleCreateCoupon = async (e) => {
@@ -222,8 +219,7 @@ export default function Coupons() {
         usageLimit: formData.usageLimit !== "" ? Number(formData.usageLimit) : undefined,
         perUserLimit: formData.perUserLimit !== "" ? Number(formData.perUserLimit) : undefined,
         isFirstOrderOnly: Boolean(formData.isFirstOrderOnly),
-        orderType: formData.orderType,
-      }
+        orderType: formData.orderType }
       await adminAPI.createAdminOffer(payload)
 
       setSubmitSuccess("Coupon created successfully")

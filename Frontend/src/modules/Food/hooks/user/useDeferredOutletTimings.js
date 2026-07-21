@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   fetchOutletTimingsOnce,
-  primeOutletTimingsCache,
-} from "@food/utils/outletTimingsCache";
+  primeOutletTimingsCache } from "@food/utils/outletTimingsCache";
 
 /**
  * Loads outlet timings when the card enters (or nears) the viewport.
