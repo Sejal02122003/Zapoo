@@ -949,6 +949,27 @@ export async function confirmPickupDelivery(orderId, deliveryPartnerId, billImag
     billImageUrl,
   };
 
+  // ETA Generation & Penalty Engine Snapshot
+  try {
+    const { DeliveryPolicyVersion } = await import('../../admin/models/deliveryPolicy.model.js');
+    const activePolicy = await DeliveryPolicyVersion.findOne({ effectiveFrom: { $lte: new Date() } }).sort({ effectiveFrom: -1 }).lean();
+    
+    // Stubbed ETA Provider
+    const etaProvider = {
+      estimate: async () => {
+        // Mock ETA calculation (e.g. 25 minutes)
+        return 25;
+      }
+    };
+    const etaMinutes = await etaProvider.estimate();
+    
+    order.expectedDeliveryTime = new Date(Date.now() + etaMinutes * 60000);
+    order.graceMinutes = activePolicy?.graceMinutes || 5;
+    order.deliveryPerformanceStatus = 'PENDING_EVALUATION';
+  } catch (error) {
+    logger.error(`Error snapshotting delivery policy at pickup: ${error?.message}`);
+  }
+
   // OTP should be generated/sent only when rider explicitly requests it at drop.
 
   pushStatusHistory(order, {
@@ -1204,7 +1225,90 @@ export async function completeDelivery(orderId, deliveryPartnerId, body = {}) {
     note: `Delivery completed using ${finalPayMethod}.`,
   });
 
-  await order.save();
+  // Penalty Evaluation Engine
+  let penaltyApplied = false;
+  let penaltyToCreate = null;
+
+  try {
+    const { DeliveryPolicyVersion } = await import('../../admin/models/deliveryPolicy.model.js');
+    const { DeliveryPenalty } = await import('../../delivery/models/deliveryPenalty.model.js');
+    const activePolicy = await DeliveryPolicyVersion.findOne({ effectiveFrom: { $lte: new Date() } }).sort({ effectiveFrom: -1 }).lean();
+
+    order.actualDeliveryTime = new Date();
+    
+    if (activePolicy?.enablePenalty && order.expectedDeliveryTime) {
+      const actualTime = order.actualDeliveryTime.getTime();
+      const expectedTime = order.expectedDeliveryTime.getTime();
+      const delayMs = actualTime - expectedTime;
+
+      if (delayMs > 0) {
+        const lateMinutes = Math.floor(delayMs / 60000);
+        order.lateMinutes = lateMinutes;
+
+        const graceMinutes = order.graceMinutes || activePolicy.graceMinutes || 5;
+
+        if (lateMinutes > graceMinutes) {
+          // Check for excluded reasons (e.g. if the rider had reported a reason during trip, stubbed here as not applicable unless we implement report issue)
+          const delayReason = order.delayReason || '';
+          if (!activePolicy.excludedReasons.includes(delayReason)) {
+            // Apply Penalty
+            let calculatedPenalty = lateMinutes * (activePolicy.penaltyRate || 1);
+            if (activePolicy.maxDeduction && calculatedPenalty > activePolicy.maxDeduction) {
+              calculatedPenalty = activePolicy.maxDeduction;
+            }
+
+            if (calculatedPenalty > 0) {
+              order.penaltyAmount = calculatedPenalty;
+              order.penaltyApplied = true;
+              order.deliveryPerformanceStatus = 'LATE_PENALIZED';
+              
+              penaltyToCreate = {
+                riderId: deliveryPartnerId,
+                orderId: order._id,
+                lateMinutes,
+                penaltyAmount: calculatedPenalty,
+                status: 'APPLIED'
+              };
+              penaltyApplied = true;
+            } else {
+              order.deliveryPerformanceStatus = 'LATE_EXCUSED';
+            }
+          } else {
+            order.deliveryPerformanceStatus = 'LATE_EXCUSED';
+          }
+        } else {
+          order.deliveryPerformanceStatus = 'ON_TIME';
+        }
+      } else {
+        order.deliveryPerformanceStatus = 'ON_TIME';
+      }
+    } else {
+      order.deliveryPerformanceStatus = order.deliveryPerformanceStatus || 'NOT_APPLICABLE';
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      if (penaltyToCreate) {
+        await DeliveryPenalty.create([penaltyToCreate], { session });
+      }
+      await order.save({ session });
+      await session.commitTransaction();
+    } catch (dbErr) {
+      await session.abortTransaction();
+      throw dbErr;
+    } finally {
+      session.endSession();
+    }
+
+  } catch (error) {
+    logger.error(`Error in penalty evaluation: ${error?.message}`);
+    // If penalty evaluation fails for any reason other than a DB transaction error, we still want to save the order to avoid blocking delivery
+    if (error.name === 'ValidationError') throw error; // Re-throw validations
+    if (!order.isModified()) {
+        await order.save(); // fallback save without penalty
+    }
+  }
 
   // 5. Update Financial Ledger (FoodTransaction)
   // This triggers the sync back to FoodOrder.payment.method which updates the Rider's Cash Limit (if cash) or Pocket (always).

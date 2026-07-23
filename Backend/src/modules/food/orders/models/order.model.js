@@ -318,6 +318,19 @@ const orderSchema = new mongoose.Schema(
         riderEarning: { type: Number, default: 0, min: 0 },
         deliveryBonusAmount: { type: Number, default: 0, min: 0 },
         platformProfit: { type: Number, default: 0, min: 0 },
+        // Late Delivery Penalty Fields
+        expectedDeliveryTime: { type: Date, default: null },
+        actualDeliveryTime: { type: Date, default: null },
+        graceMinutes: { type: Number, default: 0, min: 0 },
+        lateMinutes: { type: Number, default: 0, min: 0 },
+        penaltyAmount: { type: Number, default: 0, min: 0 },
+        penaltyApplied: { type: Boolean, default: false },
+        delayReason: { type: String, default: '', trim: true },
+        deliveryPerformanceStatus: { 
+            type: String, 
+            enum: ['ON_TIME', 'LATE_EXCUSED', 'LATE_PENALIZED', 'PENDING_EVALUATION', 'NOT_APPLICABLE'], 
+            default: 'NOT_APPLICABLE' 
+        },
         /** Plain 4-digit OTP for pickup at restaurant. */
         pickupOtp: { type: String, default: '', select: false },
         /** Plain 4-digit OTP for handover; cleared after successful verify (never expose to partner in API responses). */

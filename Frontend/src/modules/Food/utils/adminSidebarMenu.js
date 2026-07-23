@@ -176,6 +176,8 @@ export const adminSidebarMenu = [
           { label: "Earning Addon", path: "/admin/food/delivery-partners/earning-addon" },
           { label: "Earning Addon History", path: "/admin/food/delivery-partners/earning-addon-history" },
           { label: "Delivery Earning", path: "/admin/food/delivery-partners/earnings" },
+          { label: "Late Delivery Policy", path: "/admin/food/delivery-partners/delivery-policy" },
+          { label: "Penalty History", path: "/admin/food/delivery-partners/penalties" },
         ] },
     ] },
   {

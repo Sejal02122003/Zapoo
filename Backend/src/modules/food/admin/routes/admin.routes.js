@@ -18,6 +18,8 @@ import { upload } from '../../../../middleware/upload.js';
 import menuBulkRoutes from './menuBulk.routes.js';
 import locationCouponRoutes from './locationCoupon.routes.js';
 import * as manualAssignmentController from '../controllers/manualAssignment.controller.js';
+import * as deliveryPolicyController from '../controllers/deliveryPolicy.controller.js';
+import * as deliveryPenaltyController from '../controllers/deliveryPenalty.controller.js';
 const router = express.Router();
 
 router.use('/menu', menuBulkRoutes);
@@ -234,6 +236,14 @@ router.post('/orders/:orderId/assign-delivery', orderController.assignDeliveryPa
 router.get('/audit-logs/export', auditLogController.exportAuditLogsController);
 router.get('/audit-logs/:id', auditLogController.getAuditLogByIdController);
 router.get('/audit-logs', auditLogController.getAuditLogsController);
+
+// Late Delivery Penalties & Policy
+router.get('/delivery-policy', deliveryPolicyController.getDeliveryPolicyController);
+router.patch('/delivery-policy', deliveryPolicyController.updateDeliveryPolicyController);
+
+router.get('/penalties/analytics', deliveryPenaltyController.getPenaltiesAnalyticsController);
+router.get('/penalties', deliveryPenaltyController.getPenaltiesHistoryController);
+router.post('/penalty/:id/refund', deliveryPenaltyController.refundOrWaivePenaltyController);
 
 // Analytics
 router.get('/analytics/incentives/summary', analyticsController.getIncentivesSummaryController);

@@ -486,6 +486,12 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                   <span className="font-bold text-emerald-700">₹{order.platformNetProfit.toFixed(2)}</span>
                 </div>
               )}
+              {order.lateDeliveryPenalty && (
+                <div className="flex justify-between text-sm mt-1 pt-1 border-t border-slate-100 border-dashed">
+                  <span className="text-red-600 font-medium">Late Delivery Penalty (Deducted from Rider)</span>
+                  <span className="font-bold text-red-600">-₹{order.lateDeliveryPenalty.amount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="pt-2 border-t border-slate-200">
                 <div className="flex justify-between items-center">
                   <span className="text-base font-semibold text-slate-700">Total Amount</span>

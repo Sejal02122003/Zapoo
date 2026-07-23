@@ -294,7 +294,22 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
           deliveryAPI.getProfile()
         ]);
         if (emergencyRes?.data?.success && emergencyRes.data.data) {
-          setEmergencyNumbers(emergencyRes.data.data);
+          const data = emergencyRes.data.data;
+          setEmergencyNumbers({
+            medicalEmergency: data.medicalEmergency || '108',
+            accidentHelpline: data.accidentHelpline || '1073',
+            contactPolice: data.contactPolice || '100',
+            insurance: data.insurance || '18002095732',
+            teamLeader: data.teamLeader || '1234567890'
+          });
+        } else {
+          setEmergencyNumbers({
+            medicalEmergency: '108',
+            accidentHelpline: '1073',
+            contactPolice: '100',
+            insurance: '18002095732',
+            teamLeader: '1234567890'
+          });
         }
         if (profileRes?.data?.success && profileRes.data.data?.profile) {
           const profile = profileRes.data.data.profile;
@@ -1022,15 +1037,15 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
               {import.meta.env.DEV && (
                  <button 
                    onClick={() => setIsSimMode(!isSimMode)}
-                   className={`px-3 h-8 rounded-lg text-[9px] font-black border transition-all ${isSimMode ? 'bg-orange-500 border-orange-400 text-white animate-pulse' : 'bg-white/10 border-white/20 text-white/40'}`}
+                   className={`px-3 h-8 rounded-lg text-[9px] font-black border transition-all ${isSimMode ? 'bg-white text-[#ef4444] border-white animate-pulse' : 'bg-white/10 border-white/20 text-white/80'}`}
                  >
                    SIM
                  </button>
               )}
            </div>
           <div className="flex items-center gap-3">
-             <button onClick={() => setShowEmergencyPopup(true)} className="w-9 h-9 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 active:scale-95 transition-all shadow-lg"><AlertTriangle className="w-4 h-4" /></button>
-             <button onClick={() => navigate('/food/delivery/help/id-card')} className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 active:scale-95 transition-all shadow-lg"><Contact className="w-4 h-4" /></button>
+             <button onClick={() => setShowEmergencyPopup(true)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/20 active:scale-95 transition-all shadow-lg"><AlertTriangle className="w-4 h-4" /></button>
+             <button onClick={() => navigate('/food/delivery/help/id-card')} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/20 active:scale-95 transition-all shadow-lg"><Contact className="w-4 h-4" /></button>
              <button onClick={() => setShowNotifications(true)} className="relative w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/10 active:scale-95 transition-all shadow-lg">
                 <Bell className="w-4 h-4" />
                 {notificationUnreadCount > 0 && (
@@ -1100,12 +1115,12 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                     <div className="flex flex-col items-center justify-center ml-3 shrink-0">
                       <button 
                         onClick={() => window.location.href = `tel:${emergencyNumbers.teamLeader.replace(/\D/g, '')}`}
-                        className="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 active:scale-95 transition-all shadow-lg"
+                        className="w-10 h-10 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-white active:scale-95 transition-all shadow-lg"
                         title="Call Team Leader"
                       >
                         <Phone className="w-4 h-4" />
                       </button>
-                      <span className="text-[8px] font-bold text-blue-300/80 uppercase mt-1 tracking-wider text-center">
+                      <span className="text-[8px] font-black text-white/80 uppercase mt-1 tracking-wider text-center">
                         Team Leader
                       </span>
                     </div>

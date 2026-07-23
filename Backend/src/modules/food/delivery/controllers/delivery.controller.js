@@ -275,3 +275,46 @@ export const getDeliveryReferralStatsController = async (req, res, next) => {
     }
 };
 
+import { DeliveryPenalty } from '../models/deliveryPenalty.model.js';
+export const getPenaltiesHistoryRiderController = async (req, res, next) => {
+    try {
+        const riderId = req.user?.userId;
+        const penalties = await DeliveryPenalty.find({ riderId, status: { $in: ['APPLIED', 'APPEALED', 'REFUNDED', 'WAIVED'] } })
+            .populate('orderId', 'order_id')
+            .sort({ createdAt: -1 })
+            .lean();
+        
+        return sendResponse(res, 200, 'Penalties fetched successfully', { penalties });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const appealPenaltyController = async (req, res, next) => {
+    try {
+        const riderId = req.user?.userId;
+        const penaltyId = req.params.id;
+        const { reason } = req.body;
+
+        if (!reason || reason.trim() === '') {
+            throw new ValidationError('Appeal reason is required');
+        }
+
+        const penalty = await DeliveryPenalty.findOne({ _id: penaltyId, riderId });
+        if (!penalty) {
+            throw new ValidationError('Penalty not found');
+        }
+        if (penalty.status !== 'APPLIED') {
+            throw new ValidationError(`Cannot appeal penalty in ${penalty.status} state`);
+        }
+
+        penalty.status = 'APPEALED';
+        penalty.appealReason = reason;
+        await penalty.save();
+
+        return sendResponse(res, 200, 'Appeal submitted successfully', { penalty });
+    } catch (error) {
+        next(error);
+    }
+};
+

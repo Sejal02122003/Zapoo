@@ -16,6 +16,7 @@ const SignupStep2 = lazy(() => import("./pages/auth/SignupStep2"))
 import DeliveryHomeV2 from './pages/DeliveryHomeV2';
 import { PayoutV2 } from './pages/pocket/PayoutV2';
 import { PocketStatementV2 } from './pages/pocket/PocketStatementV2';
+import PenaltyHistoryV2 from './pages/pocket/PenaltyHistoryV2';
 import { DeductionStatementV2 } from './pages/pocket/DeductionStatementV2';
 import { LimitSettlementV2 } from './pages/pocket/LimitSettlementV2';
 import { PocketBalanceV2 } from './pages/pocket/PocketBalanceV2';
@@ -77,6 +78,7 @@ const DeliveryV2Router = () => {
         {/* Financial Deep-Pages */}
         <Route path="/pocket/payout" element={<ProtectedRoute><PayoutV2 /></ProtectedRoute>} />
         <Route path="/pocket/statement" element={<ProtectedRoute><PocketStatementV2 /></ProtectedRoute>} />
+        <Route path="/pocket/penalties" element={<ProtectedRoute><PenaltyHistoryV2 /></ProtectedRoute>} />
         <Route path="/pocket/deductions" element={<ProtectedRoute><DeductionStatementV2 /></ProtectedRoute>} />
         <Route path="/pocket/limit-settlement" element={<ProtectedRoute><LimitSettlementV2 /></ProtectedRoute>} />
         <Route path="/pocket/balance" element={<ProtectedRoute><PocketBalanceV2 /></ProtectedRoute>} />

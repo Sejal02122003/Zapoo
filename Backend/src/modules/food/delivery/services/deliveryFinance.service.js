@@ -5,6 +5,7 @@ import { FoodDeliveryWithdrawal } from '../models/foodDeliveryWithdrawal.model.j
 import { FoodDeliveryCashDeposit } from '../models/foodDeliveryCashDeposit.model.js';
 import { FoodDeliveryPartner } from '../models/deliveryPartner.model.js';
 import { DeliveryBonusTransaction } from '../../admin/models/deliveryBonusTransaction.model.js';
+import { DeliveryPenalty } from '../models/deliveryPenalty.model.js';
 import { getDeliveryCashLimitSettings } from '../../admin/services/admin.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { createRazorpayOrder, getRazorpayKeyId, isRazorpayConfigured, verifyPaymentSignature } from '../../orders/helpers/razorpay.helper.js';
@@ -16,6 +17,7 @@ import { createRazorpayOrder, getRazorpayKeyId, isRazorpayConfigured, verifyPaym
  * 2. Admin bonuses
  * 3. Withdrawals (pending/payout)
  * 4. Cash collected vs limit
+ * 5. Late delivery penalties
  */
 export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
     if (!deliveryPartnerId || !mongoose.Types.ObjectId.isValid(deliveryPartnerId)) {
@@ -26,7 +28,7 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
     const partner = await FoodDeliveryPartner.findById(partnerId).lean();
     if (!partner) throw new ValidationError('Delivery partner not found');
 
-    const [cashLimitSettings, earningsAgg, bonusAgg, withdrawalAgg, withdrawalsList, depositList] = await Promise.all([
+    const [cashLimitSettings, earningsAgg, bonusAgg, withdrawalAgg, withdrawalsList, depositList, penaltyAgg, penaltyList] = await Promise.all([
         getDeliveryCashLimitSettings(),
         // 1. Total Earnings from Delivered Orders
         FoodOrder.aggregate([
@@ -54,7 +56,18 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
             .sort({ createdAt: -1 })
             .limit(50)
             .lean(),
+        // 5. Recent Cash Deposits
         FoodDeliveryCashDeposit.find({ deliveryPartnerId: partnerId })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .lean(),
+        // 6. Total Penalties
+        DeliveryPenalty.aggregate([
+            { $match: { riderId: partnerId, status: 'APPLIED' } },
+            { $group: { _id: null, totalPenalty: { $sum: { $ifNull: ['$penaltyAmount', 0] } } } }
+        ]),
+        // 7. Recent Penalties
+        DeliveryPenalty.find({ riderId: partnerId, status: { $in: ['APPLIED', 'APPEALED', 'REFUNDED', 'WAIVED'] } })
             .sort({ createdAt: -1 })
             .limit(50)
             .lean()
@@ -99,15 +112,16 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
     const totalBonus = Number(bonusAgg?.[0]?.total) || 0;
     const totalWithdrawn = Number(withdrawalAgg?.[0]?.totalWithdrawn) || 0;
     const pendingWithdrawals = Number(withdrawalAgg?.[0]?.pendingWithdrawals) || 0;
+    const totalPenalty = Number(penaltyAgg?.[0]?.totalPenalty) || 0;
 
     const totalCashLimit = Number(cashLimitSettings.deliveryCashLimit) || 0;
     const deliveryWithdrawalLimit = Number(cashLimitSettings.deliveryWithdrawalLimit) || 100;
 
-    // Pocket Balance = (Earnings + Bonus) - Total Withdrawn (approved)
+    // Pocket Balance = (Earnings + Bonus) - Total Withdrawn (approved) - Total Penalty (applied)
     // As requested: Pending withdrawals are NOT deducted from the displayed balance until admin approves them.
-    const pocketBalance = Math.max(0, (totalEarned + totalBonus) - totalWithdrawn);
+    const pocketBalance = Math.max(0, (totalEarned + totalBonus) - totalWithdrawn - totalPenalty);
 
-    // Fetch transactions for UI (Orders, Bonuses, Withdrawals)
+    // Fetch transactions for UI (Orders, Bonuses, Withdrawals, Penalties)
     const [ordersTx] = await Promise.all([
         FoodOrder.find({ 'dispatch.deliveryPartnerId': partnerId, orderStatus: 'delivered' })
             .sort({ createdAt: -1 })
@@ -145,6 +159,15 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
             paymentMethod: d.paymentMethod || 'cash',
             razorpayPaymentId: d.razorpayPaymentId || '',
             razorpayOrderId: d.razorpayOrderId || ''
+        })),
+        ...(penaltyList || []).map(p => ({
+            id: p._id,
+            type: 'deduction',
+            amount: p.penaltyAmount,
+            status: p.status === 'APPLIED' ? 'Completed' : (p.status === 'APPEALED' ? 'Pending' : p.status),
+            date: p.createdAt,
+            description: `Late Delivery Penalty (${p.lateMinutes} mins late)`,
+            orderId: p.orderId
         }))
     ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -156,6 +179,7 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
         pendingWithdrawals, // In process
         totalEarned,
         totalBonus,
+        totalPenalty, // Extracted penalty count
         totalCashLimit,
         // Available cash limit is simply the total cash limit minus the cash currently in hand.
         availableCashLimit: Math.max(0, totalCashLimit - cashInHand),

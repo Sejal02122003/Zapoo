@@ -9,6 +9,7 @@ import { initializeQueues, closeBullMQConnection } from './src/queues/index.js';
 import { expireExpiredOffers } from './src/modules/food/admin/services/admin.service.js';
 import { syncExpiredFssaiNotifications } from './src/modules/food/restaurant/services/fssaiExpiry.service.js';
 import { startEmergencyBroadcastScheduler } from './src/core/jobs/emergencyBroadcast.scheduler.js';
+import { startLateDeliveryWarningScheduler } from './src/core/jobs/lateDeliveryWarning.scheduler.js';
 
 import { logger } from './src/utils/logger.js';
 import { initializeFirebaseRealtime } from './src/config/firebase.js';
@@ -117,6 +118,12 @@ const startServer = async () => {
             startEmergencyBroadcastScheduler();
         } catch (err) {
             logger.error(`Emergency Broadcast Scheduler error: ${err.message}`);
+        }
+
+        try {
+            startLateDeliveryWarningScheduler();
+        } catch (err) {
+            logger.error(`Late Delivery Warning Scheduler error: ${err.message}`);
         }
 
         process.on('SIGINT', () => gracefulShutdown('SIGINT'));
