@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { Eye, Printer, ArrowUpDown, Loader2, Check, X, Trash2, Truck } from "lucide-react"
+import { Eye, Printer, ArrowUpDown, Loader2, Check, X, Trash2, Truck, Radio } from "lucide-react"
 
 const getStatusColor = (orderStatus) => {
   const colors = {
@@ -15,7 +15,8 @@ const getStatusColor = (orderStatus) => {
     "Payment Failed": "bg-red-100 text-red-700",
     "Refunded": "bg-sky-100 text-sky-700",
     "Dine In": "bg-indigo-100 text-indigo-700",
-    "Offline Payments": "bg-slate-100 text-slate-700" }
+    "Offline Payments": "bg-slate-100 text-slate-700",
+    "Needs Manual Assignment": "bg-red-100 text-red-700 font-bold" }
   return colors[orderStatus] || "bg-slate-100 text-slate-700"
 }
 
@@ -36,6 +37,7 @@ export default function OrdersTable({
   onAcceptOrder,
   onRejectOrder,
   onAssignDelivery,
+  onEmergencyBroadcast,
   actionLoadingOrderId,
   deletingOrderId }) {
   const [currentPage, setCurrentPage] = useState(1)
@@ -442,14 +444,25 @@ export default function OrdersTable({
                         </button>
                       )}
                       {/* Assign Delivery Partner Button */}
-                      {(!order.deliveryPartnerName && onAssignDelivery && ['Pending', 'Processing'].includes(order.orderStatus) && order.deliveryType !== 'Takeaway') && (
-                        <button
-                          onClick={() => onAssignDelivery(order)}
-                          className="p-1.5 rounded text-orange-600 hover:bg-orange-50 transition-colors"
-                          title="Assign Delivery Partner"
-                        >
-                          <Truck className="w-4 h-4" />
-                        </button>
+                      {(!order.deliveryPartnerName && onAssignDelivery && ['Pending', 'Processing', 'Needs Manual Assignment'].includes(order.orderStatus) && order.deliveryType !== 'Takeaway') && (
+                        <>
+                          <button
+                            onClick={() => onAssignDelivery(order)}
+                            className="p-1.5 rounded text-orange-600 hover:bg-orange-50 transition-colors"
+                            title="Assign Delivery Partner"
+                          >
+                            <Truck className="w-4 h-4" />
+                          </button>
+                          {onEmergencyBroadcast && (!order.broadcastStatus || ['EXPIRED', 'CANCELLED'].includes(order.broadcastStatus)) && (
+                            <button
+                              onClick={() => onEmergencyBroadcast(order)}
+                              className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
+                              title="Emergency Broadcast"
+                            >
+                              <Radio className="w-4 h-4" />
+                            </button>
+                          )}
+                        </>
                       )}
                       <button 
                         onClick={() => onViewOrder(order)}

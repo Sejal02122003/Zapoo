@@ -35,7 +35,7 @@ const getPaymentStatusColor = (paymentStatus) => {
   return "text-slate-600"
 }
 
-export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignDelivery }) {
+export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignDelivery, onEmergencyBroadcast }) {
   if (!order) return null
 
   // Debug: Log order data to check billImageUrl
@@ -390,14 +390,29 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                 <Truck className="w-4 h-4" />
                 Delivery Partner
               </h3>
-              {(!order.deliveryPartnerName && onAssignDelivery && ['Pending', 'Processing'].includes(order.orderStatus)) && (
-                <button
-                  onClick={() => onAssignDelivery(order)}
-                  className="px-3 py-1.5 bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                >
-                  <Truck className="w-3.5 h-3.5" />
-                  Assign Partner
-                </button>
+              {(!order.deliveryPartnerName && onAssignDelivery && ['Pending', 'Processing', 'Needs Manual Assignment'].includes(order.orderStatus)) && (
+                <div className="flex gap-2 w-full mt-2">
+                  <button 
+                    onClick={() => onAssignDelivery(order)}
+                    className="flex-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+                  >
+                    Assign Rider
+                  </button>
+                  {onEmergencyBroadcast && (!order.broadcastStatus || ['EXPIRED', 'CANCELLED'].includes(order.broadcastStatus)) && (
+                    <button 
+                      onClick={() => onEmergencyBroadcast(order)}
+                      className="flex-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                    >
+                      Emergency Broadcast
+                    </button>
+                  )}
+                </div>
+              )}
+              {order.broadcastStatus && order.broadcastStatus === 'ACTIVE' && (
+                <div className="mt-2 w-full px-3 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                  Emergency Broadcast Active
+                </div>
               )}
             </div>
             
@@ -481,6 +496,36 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
               </div>
             </div>
           </div>
+          
+          {/* Order Timeline */}
+          {order.statusHistory && order.statusHistory.length > 0 && (
+            <div className="border-t border-slate-200 pt-4">
+              <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Order Timeline
+              </h3>
+              <div className="space-y-4">
+                {order.statusHistory.map((history, idx) => (
+                  <div key={idx} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5" />
+                      {idx !== order.statusHistory.length - 1 && <div className="w-0.5 h-full bg-slate-200 my-1" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {history.to === 'assigned' && history.byRole === 'ADMIN' ? 'Manually Assigned' : (history.to || history.status || 'Status Update')}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {new Date(history.at || history.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).toUpperCase()}
+                      </p>
+                      {history.note && <p className="text-xs text-slate-600 mt-1">{history.note}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
         </div>
       </DialogContent>
     </Dialog>

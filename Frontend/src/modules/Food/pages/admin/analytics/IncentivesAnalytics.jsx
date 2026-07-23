@@ -1,32 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '@food/api';
 import { toast } from 'sonner';
-import { Loader2, TrendingUp, DollarSign, CheckCircle, MapPin } from 'lucide-react';
+import { Loader2, TrendingUp, DollarSign, CheckCircle, Download } from 'lucide-react';
+import { exportToCSV } from '@food/components/admin/orders/ordersExportUtils';
 
 export default function IncentivesAnalytics() {
+  const [data, setData] = useState([]);
   const [summary, setSummary] = useState(null);
-  const [byCity, setByCity] = useState([]);
-  const [impact, setImpact] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [page, dateFrom, dateTo]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      // We will need to add getIncentivesSummary, getIncentivesByCity, getIncentivesImpact to adminAPI
-      const [sumRes, cityRes, impactRes] = await Promise.all([
-        adminAPI.getIncentivesSummary(),
-        adminAPI.getIncentivesByCity(),
-        adminAPI.getIncentivesAcceptanceImpact()
-      ]);
+      const res = await adminAPI.getIncentivesReport({ page, limit: 20, dateFrom, dateTo });
       
-      if (sumRes?.data?.success) setSummary(sumRes.data.data);
-      if (cityRes?.data?.success) setByCity(cityRes.data.data);
-      if (impactRes?.data?.success) setImpact(impactRes.data.data);
-      
+      if (res?.data?.success) {
+        setData(res.data.data);
+        setSummary(res.data.summary);
+        setTotalPages(res.data.pagination?.totalPages || 1);
+      }
     } catch (error) {
       toast.error('Failed to load analytics data');
     } finally {
@@ -34,107 +35,153 @@ export default function IncentivesAnalytics() {
     }
   };
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-primary w-8 h-8"/></div>;
-  }
+  const handleExport = () => {
+    if (!data.length) return toast.error('No data to export');
+    
+    const exportData = data.map(inc => ({
+      'Order ID': inc.orderId?.order_id || inc.orderId,
+      'Rider Name': inc.deliveryPartnerId?.name || 'N/A',
+      'Rider Phone': inc.deliveryPartnerId?.phone || 'N/A',
+      'Incentive Type': inc.incentiveType,
+      'Amount (₹)': inc.amount,
+      'Reason': inc.reason,
+      'Status': inc.status,
+      'Date': new Date(inc.createdAt).toLocaleString()
+    }));
+    
+    exportToCSV(exportData, `Manual_Incentives_Report_${new Date().toISOString().split('T')[0]}.csv`);
+  };
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Incentives Analytics</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Manual Assignment Incentives Report</h1>
+        <button 
+          onClick={handleExport}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Export CSV
+        </button>
+      </div>
       
+      {/* Filters */}
+      <div className="flex gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">From Date</label>
+          <input 
+            type="date" 
+            value={dateFrom} 
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">To Date</label>
+          <input 
+            type="date" 
+            value={dateTo} 
+            onChange={(e) => setDateTo(e.target.value)}
+            className="border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+      </div>
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
           <div className="p-3 bg-green-100 text-green-600 rounded-full">
             <DollarSign className="w-6 h-6" />
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Total Paid</p>
-            <p className="text-2xl font-bold text-gray-800">₹{summary?.totalIncentivesPaid || 0}</p>
+            <p className="text-2xl font-bold text-gray-800">₹{summary?.totalIncentivesAmount?.toFixed(2) || 0}</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
           <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
-            <TrendingUp className="w-6 h-6" />
+            <CheckCircle className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Avg. Per Order</p>
-            <p className="text-2xl font-bold text-gray-800">₹{summary?.avgIncentivePerOrder || 0}</p>
+            <p className="text-sm text-gray-500 font-medium">Total Orders</p>
+            <p className="text-2xl font-bold text-gray-800">{summary?.totalOrders || 0}</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
           <div className="p-3 bg-purple-100 text-purple-600 rounded-full">
-            <CheckCircle className="w-6 h-6" />
+            <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Incentivized Orders</p>
-            <p className="text-2xl font-bold text-gray-800">{summary?.incentivizedOrdersCount || 0}</p>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-          <div className="p-3 bg-red-100 text-red-600 rounded-full">
-            <DollarSign className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">Cancelled / Saved</p>
-            <p className="text-2xl font-bold text-gray-800">₹{summary?.totalIncentivesCancelled || 0}</p>
+            <p className="text-sm text-gray-500 font-medium">Average Incentive</p>
+            <p className="text-2xl font-bold text-gray-800">₹{summary?.averageIncentive?.toFixed(2) || 0}</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Acceptance Impact */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-lg font-bold mb-4">Acceptance Impact</h2>
-          {impact && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                <div>
-                  <p className="font-semibold text-gray-800">With Incentive</p>
-                  <p className="text-xs text-gray-500">{impact.withIncentive.accepted} / {impact.withIncentive.offered} accepted</p>
-                </div>
-                <div className="text-xl font-bold text-green-600">{impact.withIncentive.acceptanceRate}%</div>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                <div>
-                  <p className="font-semibold text-gray-800">Without Incentive</p>
-                  <p className="text-xs text-gray-500">{impact.withoutIncentive.accepted} / {impact.withoutIncentive.offered} accepted</p>
-                </div>
-                <div className="text-xl font-bold text-gray-600">{impact.withoutIncentive.acceptanceRate}%</div>
-              </div>
-              
-              <div className="mt-4 p-4 bg-primary/10 rounded-lg text-primary text-center">
-                <span className="font-bold text-xl">+{impact.upliftPct}%</span>
-                <span className="text-sm ml-2">Uplift in acceptance rate</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* By City */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-lg font-bold mb-4">Incentives By City</h2>
-          <div className="space-y-3">
-            {byCity.map(city => (
-              <div key={city.city} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
-                <div className="flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="font-semibold text-gray-800">{city.city || 'Unknown'}</p>
-                    <p className="text-xs text-gray-500">{city.orderCount} orders</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-gray-800">₹{city.totalPaid}</p>
-                  <p className="text-xs text-gray-500">₹{city.avgIncentive} avg</p>
-                </div>
-              </div>
-            ))}
-            {byCity.length === 0 && (
-              <p className="text-gray-500 text-center py-4">No city data available</p>
-            )}
+      {/* Data Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-primary w-8 h-8"/></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-500">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                <tr>
+                  <th className="px-6 py-3">Date</th>
+                  <th className="px-6 py-3">Order ID</th>
+                  <th className="px-6 py-3">Rider Name</th>
+                  <th className="px-6 py-3">Amount</th>
+                  <th className="px-6 py-3">Reason</th>
+                  <th className="px-6 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((item) => (
+                  <tr key={item._id} className="bg-white border-b hover:bg-gray-50">
+                    <td className="px-6 py-4">{new Date(item.createdAt).toLocaleString()}</td>
+                    <td className="px-6 py-4 font-medium text-gray-900">{item.orderId?.order_id || 'N/A'}</td>
+                    <td className="px-6 py-4">{item.deliveryPartnerId?.name || 'N/A'}</td>
+                    <td className="px-6 py-4 font-semibold text-emerald-600">₹{item.amount.toFixed(2)}</td>
+                    <td className="px-6 py-4 max-w-[200px] truncate" title={item.reason}>{item.reason || '-'}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${item.status === 'CREDITED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {item.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {data.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                      No incentives found for this period.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
+        )}
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center p-4 border-t bg-gray-50">
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1 bg-white border rounded hover:bg-gray-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+            <button 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1 bg-white border rounded hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

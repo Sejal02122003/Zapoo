@@ -265,18 +265,22 @@ export const HistoryV2 = () => {
                              </span>
                          </div>
                          
-                         <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-50">
+                         <div className="grid grid-cols-4 gap-2 pt-4 border-t border-gray-50">
                              <div>
                                 <p className="text-[11px] font-medium text-gray-400 mb-1">Time</p>
                                 <p className="text-sm font-bold text-gray-950">{trip.time || '--:--'}</p>
                              </div>
                              <div className="text-center">
                                 <p className="text-[11px] font-medium text-gray-400 mb-1">COD</p>
-                                <p className="text-sm font-bold text-gray-950">â‚¹{collection.toFixed(2)}</p>
+                                <p className="text-sm font-bold text-gray-950">₹{collection.toFixed(2)}</p>
+                             </div>
+                             <div className="text-center">
+                                <p className="text-[11px] font-medium text-gray-400 mb-1">Base</p>
+                                <p className="text-sm font-bold text-gray-950">₹{payout.toFixed(2)}</p>
                              </div>
                              <div className="text-right">
-                                <p className="text-[11px] font-medium text-gray-400 mb-1">Earning</p>
-                                <p className="text-sm font-bold text-gray-950">â‚¹{payout.toFixed(2)}</p>
+                                <p className="text-[11px] font-medium text-gray-400 mb-1">Bonus</p>
+                                <p className="text-sm font-bold text-green-600">₹{bonus.toFixed(2)}</p>
                              </div>
                          </div>
                       </div>

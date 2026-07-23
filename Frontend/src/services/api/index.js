@@ -341,17 +341,29 @@ export const adminAPI = {
     adminClient.delete(`/food/admin/delivery/${String(id)}`),
   getAvailableDeliveryPartners: (params) =>
     adminClient.get("/food/admin/delivery/available-partners", { params }),
-  assignDeliveryPartner: (orderId, partnerId, incentive = 0, incentiveReason = '') =>
-    adminClient.post(`/food/admin/orders/${String(orderId)}/assign-delivery`, { deliveryPartnerId: partnerId, incentive, incentiveReason }),
+  getAvailableRidersForOrder: (orderId) =>
+    adminClient.get(`/food/admin/orders/${String(orderId)}/available-riders`),
+  assignDeliveryPartner: (orderId, partnerId, manualIncentive = 0, reason = '') =>
+    adminClient.post(`/food/admin/orders/${String(orderId)}/assign`, { deliveryPartnerId: partnerId, manualIncentive, reason }),
+    
+  // Emergency Broadcast
+  startEmergencyBroadcast: (orderId, data) =>
+    adminClient.post(`/food/admin/orders/${String(orderId)}/emergency-broadcast`, data),
+  getEligibleRidersPreview: (orderId, radius) =>
+    adminClient.get(`/food/admin/orders/${String(orderId)}/eligible-riders-preview`, { params: { radius } }),
+  getBroadcastDetails: (broadcastId) =>
+    adminClient.get(`/food/admin/broadcasts/${String(broadcastId)}`),
+  cancelBroadcast: (broadcastId) =>
+    adminClient.post(`/food/admin/broadcasts/${String(broadcastId)}/cancel`),
+
     
   // Audit Logs
   getAuditLogs: (params) => adminClient.get("/food/admin/audit-logs", { params }),
   getAuditLogById: (id) => adminClient.get(`/food/admin/audit-logs/${String(id)}`),
   exportAuditLogs: (params) => adminClient.get("/food/admin/audit-logs/export", { params, responseType: 'blob' }),
   
-  // Analytics
-  getIncentivesSummary: (params) => adminClient.get("/food/admin/analytics/incentives/summary", { params }),
-  getIncentivesByCity: (params) => adminClient.get("/food/admin/analytics/incentives/by-city", { params }),
+  // Analytics & Reports
+  getIncentivesReport: (params) => adminClient.get("/food/admin/incentives", { params }),
   getIncentivesAcceptanceImpact: (params) => adminClient.get("/food/admin/analytics/incentives/acceptance-impact", { params }),
   
   /** GET /food/admin/delivery/support-tickets - list all delivery support tickets (query: status, priority, search, page, limit). */

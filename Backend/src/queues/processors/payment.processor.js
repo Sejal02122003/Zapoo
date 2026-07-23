@@ -62,36 +62,40 @@ async function handleDeliveryCompleted(data) {
     // Check for pending manual incentive on the order
     let incentiveAmount = 0;
     try {
-        const { FoodOrder } = await import('../../modules/food/orders/models/order.model.js');
-        const order = await FoodOrder.findById(orderMongoId);
+        const { FoodIncentive } = await import('../../modules/food/orders/models/incentive.model.js');
+        const mongoose = await import('mongoose');
+        const pendingIncentives = await FoodIncentive.find({ 
+            orderId: new mongoose.default.Types.ObjectId(orderMongoId), 
+            deliveryPartnerId: new mongoose.default.Types.ObjectId(deliveryPartnerId), 
+            status: 'PENDING' 
+        });
         
-        if (order?.deliveryAssignment?.incentiveStatus === 'PENDING' && order?.deliveryAssignment?.incentive > 0) {
-            incentiveAmount = order.deliveryAssignment.incentive;
+        for (const incentive of pendingIncentives) {
+            incentiveAmount += incentive.amount;
             
-            // Mark incentive as EARNED
-            order.deliveryAssignment.incentiveStatus = 'EARNED';
-            await order.save();
+            // Mark incentive as CREDITED
+            incentive.status = 'CREDITED';
+            await incentive.save();
             
             // Credit incentive to Rider Wallet
             await creditWallet({
                 entityType: 'deliveryBoy',
                 entityId: deliveryPartnerId,
-                amount: incentiveAmount,
-                description: `Order ${orderId} - manual assignment incentive`,
+                amount: incentive.amount,
+                description: `Order ${orderId} - ${incentive.incentiveType} incentive`,
                 category: 'bonus',
                 orderId: orderMongoId,
-                metadata: { orderId, reason: order.deliveryAssignment.incentiveReason }
+                metadata: { orderId, reason: incentive.reason }
             });
             
             // Add to totalBonus
             const { FoodDeliveryWallet } = await import('../../modules/food/delivery/models/deliveryWallet.model.js');
-            const mongoose = await import('mongoose');
             await FoodDeliveryWallet.updateOne(
                 { deliveryPartnerId: new mongoose.default.Types.ObjectId(deliveryPartnerId) },
-                { $inc: { totalBonus: incentiveAmount } }
+                { $inc: { totalBonus: incentive.amount } }
             );
             
-            logger.info(`[PaymentProcessor] Delivery partner ${deliveryPartnerId} credited manual incentive ${incentiveAmount} for order ${orderId}`);
+            logger.info(`[PaymentProcessor] Delivery partner ${deliveryPartnerId} credited ${incentive.incentiveType} incentive ${incentive.amount} for order ${orderId}`);
         }
     } catch (err) {
         logger.error(`[PaymentProcessor] Failed to process delivery incentive: ${err.message}`);

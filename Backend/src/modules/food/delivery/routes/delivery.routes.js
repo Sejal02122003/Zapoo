@@ -73,5 +73,10 @@ router.get('/referrals/stats', authMiddleware, requireRoles('DELIVERY_PARTNER'),
 // Delete account (Bearer DELIVERY_PARTNER)
 router.delete('/account', authMiddleware, requireRoles('DELIVERY_PARTNER'), deleteDeliveryAccountController);
 
+// ----- Emergency Broadcast -----
+import * as emergencyDeliveryController from '../controllers/emergencyDelivery.controller.js';
+router.post('/orders/:id/emergency-accept', authMiddleware, requireRoles('DELIVERY_PARTNER'), emergencyDeliveryController.acceptEmergencyBroadcast);
+router.post('/orders/:id/emergency-decline', authMiddleware, requireRoles('DELIVERY_PARTNER'), emergencyDeliveryController.declineEmergencyBroadcast);
+
 export default router;
 

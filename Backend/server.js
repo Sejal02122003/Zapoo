@@ -8,6 +8,7 @@ import { initSocket } from './src/config/socket.js';
 import { initializeQueues, closeBullMQConnection } from './src/queues/index.js';
 import { expireExpiredOffers } from './src/modules/food/admin/services/admin.service.js';
 import { syncExpiredFssaiNotifications } from './src/modules/food/restaurant/services/fssaiExpiry.service.js';
+import { startEmergencyBroadcastScheduler } from './src/core/jobs/emergencyBroadcast.scheduler.js';
 
 import { logger } from './src/utils/logger.js';
 import { initializeFirebaseRealtime } from './src/config/firebase.js';
@@ -111,6 +112,12 @@ const startServer = async () => {
         };
         runFssaiExpirySync();
         fssaiExpiryInterval = setInterval(runFssaiExpirySync, 60 * 60 * 1000);
+
+        try {
+            startEmergencyBroadcastScheduler();
+        } catch (err) {
+            logger.error(`Emergency Broadcast Scheduler error: ${err.message}`);
+        }
 
         process.on('SIGINT', () => gracefulShutdown('SIGINT'));
         process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

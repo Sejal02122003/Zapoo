@@ -279,7 +279,8 @@ const orderSchema = new mongoose.Schema(
                 'cancelled_by_user',
                 'cancelled_by_restaurant',
                 'cancelled_by_admin',
-                'dead'
+                'dead',
+                'needs_manual_assignment'
             ],
             default: 'created'
         },
@@ -287,6 +288,16 @@ const orderSchema = new mongoose.Schema(
             type: dispatchSchema,
             default: () => ({})
         },
+        manualAssignment: {
+            assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodAdmin' },
+            manualIncentive: { type: Number, default: 0 },
+            reason: { type: String, default: '' },
+            assignedAt: { type: Date }
+        },
+        isEmergency: { type: Boolean, default: false },
+        broadcastId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodEmergencyBroadcast', default: null },
+        emergencyIncentive: { type: Number, default: 0 },
+        broadcastStatus: { type: String, enum: ['ACTIVE', 'COMPLETED', 'EXPIRED', 'CANCELLED'], default: null },
         deliveryState: {
             type: deliveryStateSchema,
             default: () => ({})
@@ -365,6 +376,7 @@ const settingsSchema = new mongoose.Schema(
         key: { type: String, required: true, unique: true, trim: true },
         dispatchMode: { type: String, enum: ['auto'], default: 'auto' },
         petpoojaGlobalSync: { type: Boolean, default: true },
+        maxManualIncentive: { type: Number, default: 500, min: 0 },
         updatedBy: {
             role: { type: String },
             adminId: { type: mongoose.Schema.Types.ObjectId },

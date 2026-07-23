@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, MapPin, FastForward, Clock, Phone, ChefHat, ChevronDown } from 'lucide-react';
 import { ActionSlider } from '@/modules/DeliveryV2/components/ui/ActionSlider';
@@ -67,8 +67,8 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
 
   if (!order) return null;
 
-  const bonus = order.deliveryAssignment?.incentive || order.deliveryBonusAmount || 0;
-  const bonusReason = order.deliveryAssignment?.incentiveReason || '';
+  const bonus = order.deliveryAssignment?.incentive || order.deliveryBonusAmount || order.bonusAmount || 0;
+  const bonusReason = order.deliveryAssignment?.incentiveReason || order.bonusReason || '';
   const earnings = order.earnings || order.riderEarning || (order.orderAmount ? order.orderAmount * 0.1 : 0);
   const baseEarnings = Math.max(0, earnings - bonus);
 

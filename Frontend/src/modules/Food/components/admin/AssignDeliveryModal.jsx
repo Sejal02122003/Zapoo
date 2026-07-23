@@ -19,9 +19,9 @@ export default function AssignDeliveryModal({ orderId, isOpen, onClose, onAssign
   const fetchPartners = async () => {
     try {
       setLoading(true);
-      const res = await adminAPI.getAvailableDeliveryPartners();
+      const res = await adminAPI.getAvailableRidersForOrder(orderId);
       if (res?.data?.success) {
-        setPartners(res.data.data.availablePartners || []);
+        setPartners(res.data.riders || []);
       }
     } catch (error) {
       toast.error('Failed to load available partners');

@@ -17,7 +17,7 @@ import * as analyticsController from '../controllers/analytics.controller.js';
 import { upload } from '../../../../middleware/upload.js';
 import menuBulkRoutes from './menuBulk.routes.js';
 import locationCouponRoutes from './locationCoupon.routes.js';
-
+import * as manualAssignmentController from '../controllers/manualAssignment.controller.js';
 const router = express.Router();
 
 router.use('/menu', menuBulkRoutes);
@@ -264,5 +264,19 @@ router.patch('/app-intro-ads/order', appIntroAdController.updateAppIntroAdsOrder
 router.patch('/app-intro-ads/:id', upload.fields([{ name: 'media', maxCount: 1 }]), appIntroAdController.updateAppIntroAd);
 router.patch('/app-intro-ads/:id/toggle', appIntroAdController.toggleAppIntroAdStatus);
 router.delete('/app-intro-ads/:id', appIntroAdController.deleteAppIntroAd);
+
+// ----- Manual Delivery Assignment -----
+router.post('/orders/:orderId/assign', manualAssignmentController.assignDeliveryPartner);
+router.get('/orders/:orderId/available-riders', manualAssignmentController.getAvailableRiders);
+router.get('/incentives', manualAssignmentController.getIncentiveReport);
+
+// ----- Emergency Broadcast -----
+import * as emergencyBroadcastController from '../controllers/emergencyBroadcast.controller.js';
+router.post('/orders/:id/emergency-broadcast', emergencyBroadcastController.startEmergencyBroadcast);
+router.get('/orders/:id/eligible-riders-preview', emergencyBroadcastController.getEligibleRidersPreview);
+router.get('/broadcasts', emergencyBroadcastController.getBroadcasts);
+router.get('/broadcasts/:id', emergencyBroadcastController.getBroadcastDetails);
+router.post('/broadcasts/:id/cancel', emergencyBroadcastController.cancelBroadcast);
+router.post('/broadcasts/:id/retry', emergencyBroadcastController.retryBroadcast);
 
 export default router;

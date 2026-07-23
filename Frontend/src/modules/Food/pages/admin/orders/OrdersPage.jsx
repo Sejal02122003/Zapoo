@@ -12,6 +12,7 @@ import ViewOrderDialog from "@food/components/admin/orders/ViewOrderDialog"
 import SettingsDialog from "@food/components/admin/orders/SettingsDialog"
 import RefundModal from "@food/components/admin/orders/RefundModal"
 import AssignDeliveryModal from "@food/components/admin/AssignDeliveryModal"
+import EmergencyBroadcastModal from "@food/components/admin/orders/EmergencyBroadcastModal"
 import { useOrdersManagement } from "@food/components/admin/orders/useOrdersManagement"
 import { Loader2 } from "lucide-react"
 import { OrdersDashboardSkeleton } from "@food/components/ui/loading-skeletons"
@@ -50,6 +51,8 @@ export default function OrdersPage({ statusKey = "all" }) {
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState(null)
   const [assignDeliveryModalOpen, setAssignDeliveryModalOpen] = useState(false)
   const [selectedOrderForAssign, setSelectedOrderForAssign] = useState(null)
+  const [emergencyBroadcastModalOpen, setEmergencyBroadcastModalOpen] = useState(false)
+  const [selectedOrderForBroadcast, setSelectedOrderForBroadcast] = useState(null)
   const showLoadingSkeleton = useDelayedLoading(isLoading, { delay: 120, minDuration: 360 })
   const seenOrderIdsRef = useRef(new Set())
   const isFirstLoadRef = useRef(true)
@@ -466,6 +469,8 @@ export default function OrdersPage({ statusKey = "all" }) {
         displayStatus = "Cancelled by User"
       } else if (backendStatus === "cancelled_by_admin") {
         displayStatus = "Canceled"
+      } else if (backendStatus === "needs_manual_assignment") {
+        displayStatus = "Needs Manual Assignment"
       }
 
       const dp = order.dispatch?.deliveryPartnerId
@@ -917,6 +922,11 @@ export default function OrdersPage({ statusKey = "all" }) {
     setAssignDeliveryModalOpen(true)
   }
 
+  const handleEmergencyBroadcast = (order) => {
+    setSelectedOrderForBroadcast(order)
+    setEmergencyBroadcastModalOpen(true)
+  }
+
   if (showLoadingSkeleton) {
     return (
       <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 p-4 lg:p-6">
@@ -958,6 +968,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         onOpenChange={setIsViewOrderOpen}
         order={selectedOrder}
         onAssignDelivery={handleAssignDelivery}
+        onEmergencyBroadcast={handleEmergencyBroadcast}
       />
       <RefundModal
         isOpen={refundModalOpen}
@@ -976,6 +987,16 @@ export default function OrdersPage({ statusKey = "all" }) {
         onAssigned={() => {
           fetchOrders({ silent: true, withRingCheck: false })
           setIsViewOrderOpen(false)
+        }}
+      />
+      <EmergencyBroadcastModal
+        isOpen={emergencyBroadcastModalOpen}
+        onOpenChange={setEmergencyBroadcastModalOpen}
+        order={selectedOrderForBroadcast}
+        onSuccess={() => {
+          fetchOrders({ silent: true, withRingCheck: false })
+          setIsViewOrderOpen(false)
+          toast.success("Emergency Broadcast started successfully!")
         }}
       />
       {statusKey !== "food-on-the-way" && (
@@ -1010,6 +1031,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         onAcceptOrder={statusKey === "all" ? handleAcceptOrder : undefined}
         onRejectOrder={statusKey === "all" ? handleRejectOrder : undefined}
         onAssignDelivery={handleAssignDelivery}
+        onEmergencyBroadcast={handleEmergencyBroadcast}
         actionLoadingOrderId={processingActionOrderId}
         deletingOrderId={deletingOrderId}
       />

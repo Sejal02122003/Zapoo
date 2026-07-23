@@ -705,14 +705,36 @@ export async function rejectOrderDelivery(orderId, deliveryPartnerId, reason = '
       logger.error(`[Incentive] Failed to log INCENTIVE_CANCELLED: ${err.message}`);
     }
   }
-  
-  pushStatusHistory(order, {
-    byRole: 'DELIVERY_PARTNER',
-    byId: deliveryPartnerId,
-    from: 'assigned',
-    to: 'unassigned',
-    note: `Rejected. Reason: ${reason || 'Not provided'}`,
-  });
+
+  if (order.manualAssignment?.assignedAt) {
+    order.dispatch.status = 'needs_manual_assignment';
+    order.orderStatus = 'needs_manual_assignment';
+    
+    pushStatusHistory(order, {
+      byRole: 'DELIVERY_PARTNER',
+      byId: deliveryPartnerId,
+      from: 'assigned',
+      to: 'needs_manual_assignment',
+      note: `Rejected manually assigned order. Reason: ${reason || 'Not provided'}`,
+    });
+  } else {
+    order.dispatch.status = 'unassigned';
+    
+    pushStatusHistory(order, {
+      byRole: 'DELIVERY_PARTNER',
+      byId: deliveryPartnerId,
+      from: 'assigned',
+      to: 'unassigned',
+      note: `Rejected. Reason: ${reason || 'Not provided'}`,
+    });
+
+    void dispatchService
+      .tryAutoAssign(order._id)
+      .catch((error) =>
+        logger.error(`SmartDispatch: Auto-assign after reject failed: ${error.message}`),
+      );
+  }
+
   await order.save();
 
   enqueueOrderEvent('delivery_rejected', {
@@ -720,12 +742,6 @@ export async function rejectOrderDelivery(orderId, deliveryPartnerId, reason = '
     orderId: order._id.toString(),
     deliveryPartnerId,
   });
-
-  void dispatchService
-    .tryAutoAssign(order._id)
-    .catch((error) =>
-      logger.error(`SmartDispatch: Auto-assign after reject failed: ${error.message}`),
-    );
 
   return order.toObject();
 }
