@@ -59,6 +59,31 @@ async function handleDeliveryCompleted(data) {
         total = 0, paymentMethod
     } = data;
     
+    // Check for weather surcharge on the order
+    let weatherFeeAmount = 0;
+    try {
+        const { FoodOrder } = await import('../../modules/food/orders/models/order.model.js');
+        const orderDoc = await FoodOrder.findById(orderMongoId).select('weatherPricing').lean();
+        
+        if (orderDoc?.weatherPricing?.enabled && orderDoc?.weatherPricing?.weatherFee > 0) {
+            weatherFeeAmount = orderDoc.weatherPricing.weatherFee;
+            
+            // Credit weather fee to Rider Wallet
+            await creditWallet({
+                entityType: 'deliveryBoy',
+                entityId: deliveryPartnerId,
+                amount: weatherFeeAmount,
+                description: `Order ${orderId} - weather surcharge`,
+                category: 'weather_surcharge',
+                orderId: orderMongoId,
+                metadata: { orderId }
+            });
+            logger.info(`[PaymentProcessor] Delivery partner ${deliveryPartnerId} credited weather surcharge ${weatherFeeAmount} for order ${orderId}`);
+        }
+    } catch (err) {
+        logger.error(`[PaymentProcessor] Failed to process weather surcharge: ${err.message}`);
+    }
+
     // Check for pending manual incentive on the order
     let incentiveAmount = 0;
     try {

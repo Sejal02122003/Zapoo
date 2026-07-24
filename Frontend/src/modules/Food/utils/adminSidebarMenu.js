@@ -164,6 +164,7 @@ export const adminSidebarMenu = [
       { type: "link", label: "Delivery Boy Commission", path: "/admin/food/delivery-boy-commission", icon: "DollarSign" },
       { type: "link", label: "Delivery Emergency Help", path: "/admin/food/delivery-emergency-help", icon: "Phone" },
       { type: "link", label: "Delivery Support Tickets", path: "/admin/food/delivery-support-tickets", icon: "MessageSquare" },
+      { type: "link", label: "Weather Pricing", path: "/admin/food/weather-pricing", icon: "Zap" },
       {
         type: "expandable",
         label: "Deliveryman",

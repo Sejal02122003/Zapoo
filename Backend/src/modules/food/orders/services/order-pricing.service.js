@@ -140,6 +140,26 @@ export async function calculateOrderPricing(userId, dto) {
     }
   }
 
+  // --- Weather Pricing Logic ---
+  const activeWeatherPolicy = await getActiveWeatherPolicy();
+  const weatherEval = evaluateWeatherPricing(activeWeatherPolicy, distanceKm, restaurant.zoneId);
+  
+  const weatherFee = weatherEval.isEligible ? weatherEval.weatherFee : 0;
+  const weatherGST = weatherEval.isEligible ? weatherEval.gstAmount : 0;
+  
+  const weatherPricingSnapshot = weatherEval.isEligible ? {
+      enabled: true,
+      weatherCondition: weatherEval.weatherCondition,
+      distance: distanceKm,
+      feePerKm: weatherEval.feePerKm,
+      weatherFee: weatherEval.weatherFee,
+      gstPercentage: weatherEval.gstPercentage,
+      gstAmount: weatherEval.gstAmount,
+      totalWeatherCharge: weatherEval.totalWeatherCharge,
+      policyId: weatherEval.policyId
+  } : undefined;
+  // --- End Weather Pricing Logic ---
+
   const gstRate = feeSettings.gstRate != null ? Number(feeSettings.gstRate) : 0;
   const gstOnDeliveryFee = feeSettings.gstOnDeliveryFee != null ? Number(feeSettings.gstOnDeliveryFee) : 0;
   const gstOnPackagingFee = feeSettings.gstOnPackagingFee != null ? Number(feeSettings.gstOnPackagingFee) : 0;
@@ -149,7 +169,7 @@ export async function calculateOrderPricing(userId, dto) {
   const platformTax = (Number.isFinite(gstOnPlatformFee) && gstOnPlatformFee > 0) ? (platformFee * (gstOnPlatformFee / 100)) : 0;
   const packagingTax = (Number.isFinite(gstOnPackagingFee) && gstOnPackagingFee > 0) ? (packagingFee * (gstOnPackagingFee / 100)) : 0;
 
-  const tax = Math.round(itemTax + deliveryTax + platformTax + packagingTax);
+  const tax = Math.round(itemTax + deliveryTax + platformTax + packagingTax + weatherGST);
 
   let discount = 0;
   let appliedCoupon = null;
@@ -297,7 +317,7 @@ export async function calculateOrderPricing(userId, dto) {
 
   const couponDiscount = discount;
   const totalDiscount = couponDiscount + restaurantCouponDiscount;
-  const totalBeforeDiscount = subtotal + deliveryFee + tax + platformFee + packagingFee;
+  const totalBeforeDiscount = subtotal + deliveryFee + tax + platformFee + packagingFee + weatherFee;
   const total = Math.max(0, totalBeforeDiscount - totalDiscount);
 
   return {
@@ -313,6 +333,9 @@ export async function calculateOrderPricing(userId, dto) {
       packagingFee,
       deliveryFee,
       deliveryFeeBreakdown: deliveryFeeBreakdown || undefined,
+      weatherFee,
+      weatherGST,
+      weatherPricing: weatherPricingSnapshot,
       freeDeliveryUpTo: Number.isFinite(freeUpTo) ? freeUpTo : undefined,
       platformFee,
       discount: totalDiscount,

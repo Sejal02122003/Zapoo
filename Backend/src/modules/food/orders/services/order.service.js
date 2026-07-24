@@ -273,6 +273,7 @@ export async function createOrder(userId, dto) {
     customerName: dto.customerName || (deliveryAddress ? deliveryAddress.fullName : ""),
     customerPhone: dto.customerPhone || (deliveryAddress ? deliveryAddress.phone : ""),
     pricing: normalizedPricing,
+    weatherPricing: normalizedPricing.weatherPricing,
     payment,
     orderStatus: "created",
     dispatch: { modeAtCreation: dispatchMode, status: "unassigned" },

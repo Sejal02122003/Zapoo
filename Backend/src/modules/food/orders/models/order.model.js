@@ -42,6 +42,8 @@ const pricingSchema = new mongoose.Schema(
         packagingFee: { type: Number, default: 0, min: 0 },
         deliveryFee: { type: Number, default: 0, min: 0 },
         platformFee: { type: Number, default: 0, min: 0 },
+        weatherFee: { type: Number, default: 0, min: 0 },
+        weatherGST: { type: Number, default: 0, min: 0 },
         restaurantCommission: { type: Number, default: 0, min: 0 },
         gstOnItem: { type: Number, default: 0, min: 0 },
         gstOnCommission: { type: Number, default: 0, min: 0 },
@@ -255,6 +257,17 @@ const orderSchema = new mongoose.Schema(
         pricing: {
             type: pricingSchema,
             required: false
+        },
+        weatherPricing: {
+            enabled: { type: Boolean, default: false },
+            weatherCondition: { type: String, default: '' },
+            distance: { type: Number, default: 0 },
+            feePerKm: { type: Number, default: 0 },
+            weatherFee: { type: Number, default: 0 }, // Pre-GST
+            gstPercentage: { type: Number, default: 0 },
+            gstAmount: { type: Number, default: 0 },
+            totalWeatherCharge: { type: Number, default: 0 },
+            policyId: { type: mongoose.Schema.Types.ObjectId, ref: 'WeatherPricingPolicy' }
         },
         /**
          * Denormalized payment snapshot for fast reads & legacy clients.
