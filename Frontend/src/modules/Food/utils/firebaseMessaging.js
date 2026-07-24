@@ -548,7 +548,7 @@ function showForegroundNotification(payload = {}, options = {}) {
           if (registration) {
             registration.showNotification(title, {
               body,
-              icon: "/logo.png",
+              icon: "/appzetologo.png",
               image,
               tag: notificationKey || undefined,
               data: payload?.data || {},
@@ -558,7 +558,7 @@ function showForegroundNotification(payload = {}, options = {}) {
           } else {
             new Notification(title, {
               body,
-              icon: "/logo.png",
+              icon: "/appzetologo.png",
               image,
               tag: notificationKey || undefined,
               requireInteraction: true
@@ -567,14 +567,14 @@ function showForegroundNotification(payload = {}, options = {}) {
         }).catch(() => {
           new Notification(title, {
             body,
-            icon: "/logo.png",
+            icon: "/appzetologo.png",
             image,
             tag: notificationKey || undefined });
         });
       } else {
         new Notification(title, {
           body,
-          icon: "/logo.png",
+          icon: "/appzetologo.png",
           image,
           tag: notificationKey || undefined });
       }

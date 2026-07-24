@@ -329,7 +329,7 @@ export const useDeliveryNotifications = () => {
             requireInteraction: true,
             silent: false,
             vibrate: [200, 100, 200, 100, 300],
-            icon: '/logo.png',
+            icon: '/appzetologo.png',
             data: notificationOptions.data });
           return;
         }
@@ -340,7 +340,7 @@ export const useDeliveryNotifications = () => {
         tag: notificationOptions.tag,
         requireInteraction: true,
         silent: false,
-        icon: '/logo.png',
+        icon: '/appzetologo.png',
         data: notificationOptions.data });
     } catch (error) {
       debugWarn('Error showing background delivery notification:', error);

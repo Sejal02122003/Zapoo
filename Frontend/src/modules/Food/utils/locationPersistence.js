@@ -1,4 +1,4 @@
-﻿/** Single writer for location-related localStorage keys. */
+/** Single writer for location-related localStorage keys. */
 
 export function readStoredUserLocation() {
   try {

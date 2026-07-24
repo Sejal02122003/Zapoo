@@ -68,7 +68,7 @@ export const initRazorpayPayment = async (options) => {
       order_id: options.order_id,
       name: options.name || 'Zapoo Food',
       description: options.description || 'Order Payment',
-      image: options.image || '/logo.png',
+      image: options.image || '/appzetologo.png',
       prefill: {
         name: options.prefill?.name || '',
         email: options.prefill?.email || '',

@@ -11,7 +11,7 @@ import { useLocationSelector, useSearchOverlay } from "./UserLayout"
 import { useProfile } from "@food/context/ProfileContext"
 import { FaLocationDot } from "react-icons/fa6"
 import { AnimatePresence, motion } from "framer-motion"
-import quickSpicyLogo from "@food/assets/logo.png"
+import quickSpicyLogo from "@food/assets/appzetologo.png"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import { getPublicLandingSettings } from "@food/api"
 import { useAppLocation } from "@food/hooks/useAppLocation"
@@ -231,7 +231,8 @@ export default function DesktopNavbar({ showLogo = true }) {
                                             alt={companyName || "Company Logo"}
                                             className="h-10 w-auto md:h-14 lg:h-16 object-contain"
                                             onError={(e) => {
-                                                if (!e.target.src.includes("logo.png")) {
+                                                if (!e.target.dataset.failed) {
+                                                    e.target.dataset.failed = "true"
                                                     e.target.src = quickSpicyLogo
                                                 }
                                             }}

@@ -11,7 +11,7 @@ import {
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Mail, ArrowLeft, Shield } from "lucide-react"
-import quickSpicyLogo from "@food/assets/logo.png"
+import quickSpicyLogo from "@food/assets/appzetologo.png"
 import { adminAPI } from "@food/api"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { loadBusinessSettings } from "@food/utils/businessSettings"
@@ -226,7 +226,8 @@ export default function AdminForgotPassword() {
                   className="h-10 w-24 object-contain"
                   loading="lazy"
                   onError={(e) => {
-                    if (!e.target.src.includes("logo.png")) {
+                    if (!e.target.dataset.failed) {
+                      e.target.dataset.failed = "true"
                       e.target.src = quickSpicyLogo
                     }
                   }}

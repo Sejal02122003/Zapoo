@@ -1,4 +1,4 @@
-﻿import { getHaversineDistance } from './geo';
+import { getHaversineDistance } from './geo';
 
 export function minMovementForSpeed(speedMs = 0) {
   const speed = Number(speedMs) || 0;

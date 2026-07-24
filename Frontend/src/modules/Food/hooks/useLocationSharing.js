@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { shouldSendLocationUpdate } from '@delivery/utils/trackingInterval';
 import { getOrderAcceptId, getOrderMongoId } from '@food/utils/orderDispatchId';
 
