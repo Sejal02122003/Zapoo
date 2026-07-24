@@ -1,4 +1,4 @@
-﻿import { useLocationContext } from '../context/locationContext';
+import { useLocationContext } from '../context/locationContext';
 
 /**
  * Read centralized location + zone from LocationProvider.

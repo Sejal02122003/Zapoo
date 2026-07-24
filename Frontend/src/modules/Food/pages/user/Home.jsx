@@ -82,7 +82,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger } from "@food/components/ui/dropdown-menu";
 import { useAppLocation } from "@food/hooks/useAppLocation";
-import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png";
+import quickSpicyLogo from "@food/assets/logo.png";
 import offerImage from "@food/assets/offerimage.png";
 import api, { publicGetOnce, restaurantAPI, getPublicLandingSettings, getPublicExploreIcons, getPublicCategories, getPublicFoods } from "@food/api";
 import { API_BASE_URL } from "@food/api/config";

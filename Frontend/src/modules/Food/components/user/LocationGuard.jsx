@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { setLocation } from '@/app/slices/locationSlice'
 import { useLocationContext } from '@food/context/locationContext'

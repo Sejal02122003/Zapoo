@@ -1,4 +1,4 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 
 function replaceInFile(filePath, replacements) {
@@ -24,7 +24,7 @@ replaceInFile('src/modules/Food/pages/user/Home.jsx', [
     ['(settingsData.under250PriceLimit) || 250', '(settingsData.under99PriceLimit) || 99'],
     ['to=\"/food/user/under250\"', 'to=\"/food/user/under99\"'],
     ['alt=\"Meals Under 250\"', 'alt=\"Meals Under 99\"'],
-    ['Under ₹250', 'Under ₹99'],
+    ['Under ?250', 'Under ?99'],
     ['@food/assets/category-icons/price_promo.png', '@food/assets/under99Promo.png']
 ]);
 

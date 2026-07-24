@@ -11,7 +11,7 @@ import {
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Mail, User, Lock, Eye, EyeOff, ArrowLeft, Shield } from "lucide-react"
-import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png"
+import quickSpicyLogo from "@food/assets/logo.png"
 import { authAPI, adminAPI } from "@food/api"
 import { setAuthData } from "@food/utils/auth"
 import { loadBusinessSettings } from "@food/utils/businessSettings"
@@ -251,7 +251,7 @@ export default function AdminSignup() {
                   loading="lazy"
                   onError={(e) => {
                     // Fallback to default logo if business logo fails to load
-                    if (!e.target.src.includes("quicky-spicy-logo.png")) {
+                    if (!e.target.src.includes("logo.png")) {
                       e.target.src = quickSpicyLogo
                     }
                   }}

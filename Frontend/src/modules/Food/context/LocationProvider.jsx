@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocationEngine } from '@food/hooks/useLocation';
 import { useZone } from '@food/hooks/useZone';
 import { userAPI } from '@food/api';

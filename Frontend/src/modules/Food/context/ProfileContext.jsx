@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react"
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react"
 import { authAPI, userAPI } from "@food/api"
 import { persistUserLocation, notifyLocationUpdated, notifyDeliveryModeUpdated } from "@food/utils/locationPersistence"
 const debugLog = (...args) => {}

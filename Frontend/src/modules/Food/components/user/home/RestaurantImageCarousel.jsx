@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const WEBVIEW_SESSION_CACHE_BUSTER = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -18,11 +18,11 @@ function OfferBannerContent({ item }) {
         <div className="flex items-center gap-1.5 shrink-0 ml-2">
           {item.discountedPrice && item.discountedPrice < item.price ? (
             <>
-              <span className="text-xs sm:text-sm text-white/80 line-through font-medium drop-shadow-sm">₹{Math.round(item.price)}</span>
-              <span className="font-black text-white text-base sm:text-lg drop-shadow-md">₹{Math.round(item.discountedPrice)}</span>
+              <span className="text-xs sm:text-sm text-white/80 line-through font-medium drop-shadow-sm">?{Math.round(item.price)}</span>
+              <span className="font-black text-white text-base sm:text-lg drop-shadow-md">?{Math.round(item.discountedPrice)}</span>
             </>
           ) : (
-            <span className="font-black text-white text-base sm:text-lg drop-shadow-md">₹{Math.round(item.price)}</span>
+            <span className="font-black text-white text-base sm:text-lg drop-shadow-md">?{Math.round(item.price)}</span>
           )}
         </div>
       </div>
@@ -175,7 +175,7 @@ const RestaurantImageCarousel = React.memo(
             dText = `${discountVal}% OFF`;
           } else {
             discountedPrice = Math.max(0, priceNum - discountVal);
-            dText = `FLAT â‚¹${discountVal} OFF`;
+            dText = `FLAT ₹${discountVal} OFF`;
           }
         } else if (!discountedPrice && bestGlobalOffer) {
           const discountVal = Number(bestGlobalOffer.discountValue) || 0;
@@ -188,7 +188,7 @@ const RestaurantImageCarousel = React.memo(
             dText = bestGlobalOffer.title || `${discountVal}% OFF`;
           } else {
             discountedPrice = Math.max(0, priceNum - discountVal);
-            dText = bestGlobalOffer.title || `FLAT â‚¹${discountVal} OFF`;
+            dText = bestGlobalOffer.title || `FLAT ₹${discountVal} OFF`;
           }
         } else if (!discountedPrice && restaurant.discount > 0) {
           discountedPrice = priceNum * (1 - restaurant.discount / 100);
@@ -226,7 +226,7 @@ const RestaurantImageCarousel = React.memo(
       return () => clearInterval(interval);
     }, [priority, bannerItems.length]);
 
-    // Auto-slide for restaurant images (priority cards only â€” reduces timer churn)
+    // Auto-slide for restaurant images (priority cards only — reduces timer churn)
     useEffect(() => {
       if (!priority || images.length <= 1) return;
       const interval = setInterval(() => {

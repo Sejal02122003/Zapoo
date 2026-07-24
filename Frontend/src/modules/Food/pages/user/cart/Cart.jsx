@@ -1094,7 +1094,8 @@ export default function Cart() {
     }
   }, [])
 
-  // Use backend pricing if available, otherwise fallback to database fee settings
+  // Use backend pricing if available, otherwise fallback to database fee settings
+
   const orderDistanceKm = useMemo(() => {
     const rCoords = restaurantData?.location?.coordinates
     const dCoords = defaultAddress?.location?.coordinates
