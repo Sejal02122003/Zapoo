@@ -298,6 +298,25 @@ const orderSchema = new mongoose.Schema(
         broadcastId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodEmergencyBroadcast', default: null },
         emergencyIncentive: { type: Number, default: 0 },
         broadcastStatus: { type: String, enum: ['ACTIVE', 'COMPLETED', 'EXPIRED', 'CANCELLED'], default: null },
+        
+        // Reassignment Flow Fields
+        reassignmentStatus: { type: String, enum: ['none', 'pending', 'accepted', 'rejected', 'timed_out'], default: 'none' },
+        pendingReassignedDriverId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodDeliveryPartner', default: null },
+        previousAssignedDriverId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodDeliveryPartner', default: null },
+        reassignmentTimeoutAt: { type: Date, default: null },
+        reassignmentHistory: {
+            type: [{
+                previousDriverId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodDeliveryPartner' },
+                newDriverId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodDeliveryPartner' },
+                reassignedByAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodAdmin' },
+                statusAtReassignment: { type: String },
+                reason: { type: String },
+                reassignmentStatus: { type: String, enum: ['pending', 'accepted', 'rejected', 'timed_out'] },
+                createdAt: { type: Date, default: Date.now }
+            }],
+            default: []
+        },
+
         deliveryState: {
             type: deliveryStateSchema,
             default: () => ({})

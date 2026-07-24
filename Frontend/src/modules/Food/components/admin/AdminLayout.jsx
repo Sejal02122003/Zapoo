@@ -4,14 +4,43 @@ import AdminSidebar from "./AdminSidebar"
 import AdminNavbar from "./AdminNavbar"
 import { API_BASE_URL } from "@food/api/config"
 import { adminAPI } from "@/services/api/index.js"
+import io from "socket.io-client"
+import { toast } from "sonner"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
-
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    // Connect to global admin socket for SOS alerts
+    const backendUrl = API_BASE_URL?.replace("/api/v1", "") || "http://localhost:5000"
+    const socket = io(backendUrl, { transports: ["websocket", "polling"] })
+    
+    socket.on("connect", () => {
+      socket.emit("join-admin-orders") // Re-using admin room
+    })
+    
+    socket.on("rider_sos_alert", (data) => {
+      // Play a loud/noticeable toast for SOS
+      toast.error(
+        <div className="flex flex-col gap-1">
+          <span className="font-bold text-lg">âš ï¸  EMERGENCY: {data.type}</span>
+          <span>Rider: {data.riderName} ({data.phone}) triggered an SOS alert!</span>
+          {data.activeOrderNumber && (
+             <span className="font-bold mt-1 text-white bg-black/20 p-1 rounded">Active Order: {data.activeOrderNumber}</span>
+          )}
+        </div>,
+        { duration: 15000, position: "top-center", style: { background: '#ef4444', color: '#fff', border: 'none' } }
+      )
+    })
+
+    return () => {
+      socket.disconnect()
+    }
+  }, [])
 
   // Get initial collapsed state from localStorage to set initial margin
   useEffect(() => {

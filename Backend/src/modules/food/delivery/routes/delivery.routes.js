@@ -3,7 +3,7 @@ import { upload } from '../../../../middleware/upload.js';
 import { authMiddleware } from '../../../../core/auth/auth.middleware.js';
 import { requireRoles } from '../../../../core/roles/role.middleware.js';
 import * as orderController from '../../orders/controllers/order.controller.js';
-import { registerDeliveryPartnerController, updateDeliveryPartnerProfileController, updateDeliveryPartnerBankDetailsController, listSupportTicketsController, createSupportTicketController, getSupportTicketByIdController, updateDeliveryPartnerDetailsController, updateDeliveryPartnerProfilePhotoBase64Controller, updateAvailabilityController, getWalletController, createWithdrawalRequestController, createCashDepositOrderController, verifyCashDepositPaymentController, getEarningsController, getTripHistoryController, getPocketDetailsController, getEmergencyHelpController, getCashLimitController, getDeliveryReferralStatsController, getActiveEarningAddonsController, getPenaltiesHistoryRiderController, appealPenaltyController } from '../controllers/delivery.controller.js';
+import { registerDeliveryPartnerController, updateDeliveryPartnerProfileController, updateDeliveryPartnerBankDetailsController, listSupportTicketsController, createSupportTicketController, getSupportTicketByIdController, updateDeliveryPartnerDetailsController, updateDeliveryPartnerProfilePhotoBase64Controller, updateAvailabilityController, getWalletController, createWithdrawalRequestController, createCashDepositOrderController, verifyCashDepositPaymentController, getEarningsController, getTripHistoryController, getPocketDetailsController, getEmergencyHelpController, getCashLimitController, getDeliveryReferralStatsController, getActiveEarningAddonsController, getPenaltiesHistoryRiderController, appealPenaltyController, triggerSOSAlertController, acceptReassignmentController, rejectReassignmentController } from '../controllers/delivery.controller.js';
 import { deleteDeliveryAccountController } from '../controllers/deleteAccount.controller.js';
 
 const router = express.Router();
@@ -73,6 +73,7 @@ router.get('/referrals/stats', authMiddleware, requireRoles('DELIVERY_PARTNER'),
 // Late Delivery Penalties
 router.get('/penalties', authMiddleware, requireRoles('DELIVERY_PARTNER'), getPenaltiesHistoryRiderController);
 router.post('/penalty/:id/appeal', authMiddleware, requireRoles('DELIVERY_PARTNER'), appealPenaltyController);
+router.post('/sos', authMiddleware, requireRoles('DELIVERY_PARTNER'), triggerSOSAlertController);
 
 // Delete account (Bearer DELIVERY_PARTNER)
 router.delete('/account', authMiddleware, requireRoles('DELIVERY_PARTNER'), deleteDeliveryAccountController);
@@ -81,6 +82,10 @@ router.delete('/account', authMiddleware, requireRoles('DELIVERY_PARTNER'), dele
 import * as emergencyDeliveryController from '../controllers/emergencyDelivery.controller.js';
 router.post('/orders/:id/emergency-accept', authMiddleware, requireRoles('DELIVERY_PARTNER'), emergencyDeliveryController.acceptEmergencyBroadcast);
 router.post('/orders/:id/emergency-decline', authMiddleware, requireRoles('DELIVERY_PARTNER'), emergencyDeliveryController.declineEmergencyBroadcast);
+
+// ----- Reassignment -----
+router.post('/orders/:orderId/accept-reassignment', authMiddleware, requireRoles('DELIVERY_PARTNER'), acceptReassignmentController);
+router.post('/orders/:orderId/reject-reassignment', authMiddleware, requireRoles('DELIVERY_PARTNER'), rejectReassignmentController);
 
 export default router;
 

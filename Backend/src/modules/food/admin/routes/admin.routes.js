@@ -18,6 +18,7 @@ import { upload } from '../../../../middleware/upload.js';
 import menuBulkRoutes from './menuBulk.routes.js';
 import locationCouponRoutes from './locationCoupon.routes.js';
 import * as manualAssignmentController from '../controllers/manualAssignment.controller.js';
+import * as reassignmentController from '../controllers/reassignment.controller.js';
 import * as deliveryPolicyController from '../controllers/deliveryPolicy.controller.js';
 import * as deliveryPenaltyController from '../controllers/deliveryPenalty.controller.js';
 const router = express.Router();
@@ -277,6 +278,7 @@ router.delete('/app-intro-ads/:id', appIntroAdController.deleteAppIntroAd);
 
 // ----- Manual Delivery Assignment -----
 router.post('/orders/:orderId/assign', manualAssignmentController.assignDeliveryPartner);
+router.post('/orders/:orderId/reassign', reassignmentController.triggerReassignment);
 router.get('/orders/:orderId/available-riders', manualAssignmentController.getAvailableRiders);
 router.get('/incentives', manualAssignmentController.getIncentiveReport);
 

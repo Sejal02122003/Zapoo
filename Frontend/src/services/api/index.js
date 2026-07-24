@@ -345,6 +345,8 @@ export const adminAPI = {
     adminClient.get(`/food/admin/orders/${String(orderId)}/available-riders`),
   assignDeliveryPartner: (orderId, partnerId, manualIncentive = 0, reason = '') =>
     adminClient.post(`/food/admin/orders/${String(orderId)}/assign`, { deliveryPartnerId: partnerId, manualIncentive, reason }),
+  reassignDeliveryPartner: (orderId, newDriverId, reason = '') =>
+    adminClient.post(`/food/admin/orders/${String(orderId)}/reassign`, { newDriverId, reason }),
     
   // Emergency Broadcast
   startEmergencyBroadcast: (orderId, data) =>
@@ -1425,6 +1427,9 @@ const getDeliveryMeOnce = () => {
 
 /** Delivery API - OTP login + registration via new backend. */
 export const deliveryAPI = {
+  triggerSOS: (type) => deliveryClient.post("/food/delivery/sos", { type }),
+  acceptReassignment: (orderId) => deliveryClient.post(`/food/delivery/orders/${String(orderId)}/accept-reassignment`),
+  rejectReassignment: (orderId) => deliveryClient.post(`/food/delivery/orders/${String(orderId)}/reject-reassignment`),
   sendOTP: (phone, _purpose = "login") => {
     if (!phone) return Promise.reject(new Error("Phone is required"));
     return authService.requestDeliveryOtp(phone);

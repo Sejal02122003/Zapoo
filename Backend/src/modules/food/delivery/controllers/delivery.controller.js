@@ -317,4 +317,119 @@ export const appealPenaltyController = async (req, res, next) => {
         next(error);
     }
 };
+export const triggerSOSAlertController = async (req, res, next) => {
+    try {
+        const { type } = req.body;
+        const riderId = req.user._id;
+        
+        // Find if rider has an active order
+        const { FoodOrder } = await import('../../orders/models/order.model.js');
+        const activeOrder = await FoodOrder.findOne({
+            deliveryPartner: riderId,
+            orderStatus: { $in: ['DELIVERY_ASSIGNED', 'PICKING_UP', 'PICKED_UP', 'ARRIVED'] }
+        }).select('_id orderNumber');
+        
+        // Dynamically import socket to emit directly to admin room
+        const { getSocketIo } = await import('../../../../utils/socket.js');
+        const io = getSocketIo();
+        
+        if (io) {
+            io.to('admin').emit('rider_sos_alert', {
+                riderId,
+                type,
+                riderName: `${req.user.firstName} ${req.user.lastName}`,
+                phone: req.user.phone,
+                activeOrderId: activeOrder ? activeOrder._id : null,
+                activeOrderNumber: activeOrder ? activeOrder.orderNumber : null,
+                timestamp: new Date()
+            });
+        }
+        
+        // Optional: also push a notification
+        const { notifyAdminsSafely } = await import('../../../../core/notifications/firebase.service.js');
+        await notifyAdminsSafely({
+            title: 'EMERGENCY: Rider SOS Alert',
+            body: `Rider ${req.user.firstName} ${req.user.lastName} triggered a ${type} alert. ${activeOrder ? 'Active Order: ' + activeOrder.orderNumber : ''}`,
+            data: { type: 'sos_alert', riderId: String(riderId), activeOrderId: activeOrder ? String(activeOrder._id) : null }
+        });
+        
+        return sendResponse(res, 200, 'SOS Alert sent successfully');
+    } catch (e) {
+        next(e);
+    }
+};
 
+export const acceptReassignmentController = async (req, res, next) => {
+    try {
+        const { orderId } = req.params;
+        const currentDriverId = req.user._id;
+
+        const { FoodOrder } = await import('../../orders/models/order.model.js');
+        const order = await FoodOrder.findById(orderId);
+
+        if (!order || order.reassignmentStatus !== 'pending' || order.pendingReassignedDriverId?.toString() !== currentDriverId.toString()) {
+            return res.status(400).json({ success: false, message: 'Reassignment request is invalid or has expired' });
+        }
+
+        order.dispatch = order.dispatch || {};
+        order.dispatch.deliveryPartnerId = currentDriverId;
+        order.reassignmentStatus = 'accepted';
+        order.pendingReassignedDriverId = null;
+
+        const historyIndex = order.reassignmentHistory.length - 1;
+        if (historyIndex >= 0) {
+            order.reassignmentHistory[historyIndex].reassignmentStatus = 'accepted';
+        }
+
+        await order.save();
+
+        const { getSocketIo } = await import('../../../../utils/socket.js');
+        const io = getSocketIo();
+        if (io) {
+            io.to('admin').emit('reassignment_accepted', { orderId: order._id, newDriverId: currentDriverId });
+            if (order.previousAssignedDriverId) {
+                io.to(`delivery_${order.previousAssignedDriverId}`).emit('reassignment_accepted_previous', { orderId: order._id });
+            }
+        }
+
+        return res.status(200).json({ success: true, message: 'Reassignment accepted successfully' });
+    } catch (error) {
+        console.error('acceptReassignment error', error);
+        next(error);
+    }
+};
+
+export const rejectReassignmentController = async (req, res, next) => {
+    try {
+        const { orderId } = req.params;
+        const currentDriverId = req.user._id;
+
+        const { FoodOrder } = await import('../../orders/models/order.model.js');
+        const order = await FoodOrder.findById(orderId);
+
+        if (!order || order.reassignmentStatus !== 'pending' || order.pendingReassignedDriverId?.toString() !== currentDriverId.toString()) {
+            return res.status(400).json({ success: false, message: 'Reassignment request is invalid or has expired' });
+        }
+
+        order.reassignmentStatus = 'rejected';
+        order.pendingReassignedDriverId = null;
+
+        const historyIndex = order.reassignmentHistory.length - 1;
+        if (historyIndex >= 0) {
+            order.reassignmentHistory[historyIndex].reassignmentStatus = 'rejected';
+        }
+
+        await order.save();
+
+        const { getSocketIo } = await import('../../../../utils/socket.js');
+        const io = getSocketIo();
+        if (io) {
+            io.to('admin').emit('reassignment_rejected', { orderId: order._id, driverId: currentDriverId });
+        }
+
+        return res.status(200).json({ success: true, message: 'Reassignment rejected successfully' });
+    } catch (error) {
+        console.error('rejectReassignment error', error);
+        next(error);
+    }
+};

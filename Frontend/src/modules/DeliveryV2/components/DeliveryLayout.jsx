@@ -1,8 +1,11 @@
-import { useLocation } from "react-router-dom"
-import { useEffect, useState } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
+import { useEffect, useState, useRef } from "react"
+import io from "socket.io-client"
 import BottomNavigation from "./BottomNavigation"
 import { getUnreadDeliveryNotificationCount } from "@food/utils/deliveryNotifications"
 import { deliveryAPI } from "@food/api"
+import { API_BASE_URL } from "@food/api/config"
+import IncomingReassignmentModal from "./IncomingReassignmentModal"
 
 export default function DeliveryLayout({
   children,
@@ -12,10 +15,14 @@ export default function DeliveryLayout({
   onGigClick
 }) {
   const location = useLocation()
+  const navigate = useNavigate()
   const [requestBadgeCount, setRequestBadgeCount] = useState(() =>
     getUnreadDeliveryNotificationCount()
   )
   const [approvalStatus, setApprovalStatus] = useState("loading")
+  const [reassignmentData, setReassignmentData] = useState(null)
+  const [isReassignmentModalOpen, setIsReassignmentModalOpen] = useState(false)
+  const socketRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -50,6 +57,45 @@ export default function DeliveryLayout({
       window.removeEventListener("storage", handleNotificationUpdate)
     }
   }, [location.pathname])
+
+  // Socket connection for reassignment events
+  useEffect(() => {
+    const userStr = localStorage.getItem("delivery_user")
+    let user = null
+    try {
+      if (userStr) user = JSON.parse(userStr)
+    } catch (e) {}
+
+    const backendUrl = API_BASE_URL.replace(/\/api\/?$/, "")
+    if (!user || !user._id || !backendUrl || !backendUrl.startsWith("http")) return
+
+    const socket = io(backendUrl, {
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionDelayMax: 10000,
+    })
+    socketRef.current = socket
+
+    socket.on("connect", () => {
+      socket.emit("join_delivery", user._id)
+    })
+
+    socket.on("reassignment_requested", (data) => {
+      setReassignmentData(data)
+      setIsReassignmentModalOpen(true)
+    })
+
+    socket.on("reassignment_request_expired", (data) => {
+      setReassignmentData(null)
+      setIsReassignmentModalOpen(false)
+    })
+
+    return () => {
+      socket.off("reassignment_requested")
+      socket.off("reassignment_request_expired")
+      socket.disconnect()
+    }
+  }, [])
 
   const showBottomNav = [
     "/food/delivery",
@@ -94,6 +140,18 @@ export default function DeliveryLayout({
           requestBadgeCount={requestBadgeCount}
         />
       )}
+      <IncomingReassignmentModal 
+        isOpen={isReassignmentModalOpen}
+        reassignmentData={reassignmentData}
+        onClose={() => {
+          setIsReassignmentModalOpen(false)
+          setReassignmentData(null)
+        }}
+        onAccept={(data) => {
+          navigate("/food/delivery/requests")
+        }}
+        onReject={() => {}}
+      />
     </>
   )
 }

@@ -1529,6 +1529,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                key={i} 
                onClick={() => {
                  const num = opt.phone?.replace(/\D/g, '');
+                 deliveryAPI.triggerSOS(opt.title).catch(err => console.warn('Failed to alert admin:', err));
                  if (num) window.location.href = `tel:${num}`;
                  else toast.error('Number not configured');
                }}

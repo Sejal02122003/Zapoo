@@ -12,6 +12,7 @@ import ViewOrderDialog from "@food/components/admin/orders/ViewOrderDialog"
 import SettingsDialog from "@food/components/admin/orders/SettingsDialog"
 import RefundModal from "@food/components/admin/orders/RefundModal"
 import AssignDeliveryModal from "@food/components/admin/AssignDeliveryModal"
+import ReassignDeliveryModal from "@food/components/admin/ReassignDeliveryModal"
 import EmergencyBroadcastModal from "@food/components/admin/orders/EmergencyBroadcastModal"
 import { useOrdersManagement } from "@food/components/admin/orders/useOrdersManagement"
 import { Loader2 } from "lucide-react"
@@ -51,6 +52,8 @@ export default function OrdersPage({ statusKey = "all" }) {
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState(null)
   const [assignDeliveryModalOpen, setAssignDeliveryModalOpen] = useState(false)
   const [selectedOrderForAssign, setSelectedOrderForAssign] = useState(null)
+  const [reassignDeliveryModalOpen, setReassignDeliveryModalOpen] = useState(false)
+  const [selectedOrderForReassign, setSelectedOrderForReassign] = useState(null)
   const [emergencyBroadcastModalOpen, setEmergencyBroadcastModalOpen] = useState(false)
   const [selectedOrderForBroadcast, setSelectedOrderForBroadcast] = useState(null)
   const showLoadingSkeleton = useDelayedLoading(isLoading, { delay: 120, minDuration: 360 })
@@ -653,9 +656,22 @@ export default function OrdersPage({ statusKey = "all" }) {
     socket.on("admin_new_order", handleIncomingRealtimeOrder)
     socket.on("play_notification_sound", handleIncomingRealtimeOrder)
 
+    // Reassignment listeners
+    const handleReassignmentEvent = () => {
+      fetchOrders({ silent: true, withRingCheck: false })
+    }
+    socket.on("reassignment_accepted", handleReassignmentEvent)
+    socket.on("reassignment_rejected", handleReassignmentEvent)
+    socket.on("reassignment_timed_out", handleReassignmentEvent)
+    socket.on("reassignment_pending_admin", handleReassignmentEvent)
+
     return () => {
       socket.off("admin_new_order", handleIncomingRealtimeOrder)
       socket.off("play_notification_sound", handleIncomingRealtimeOrder)
+      socket.off("reassignment_accepted", handleReassignmentEvent)
+      socket.off("reassignment_rejected", handleReassignmentEvent)
+      socket.off("reassignment_timed_out", handleReassignmentEvent)
+      socket.off("reassignment_pending_admin", handleReassignmentEvent)
       socket.disconnect()
       socketRef.current = null
     }
@@ -922,6 +938,11 @@ export default function OrdersPage({ statusKey = "all" }) {
     setAssignDeliveryModalOpen(true)
   }
 
+  const handleReassignDelivery = (order) => {
+    setSelectedOrderForReassign(order)
+    setReassignDeliveryModalOpen(true)
+  }
+
   const handleEmergencyBroadcast = (order) => {
     setSelectedOrderForBroadcast(order)
     setEmergencyBroadcastModalOpen(true)
@@ -964,10 +985,14 @@ export default function OrdersPage({ statusKey = "all" }) {
         resetColumns={resetColumns}
       />
       <ViewOrderDialog
-        isOpen={isViewOrderOpen}
-        onOpenChange={setIsViewOrderOpen}
+        isOpen={viewOrderModalOpen}
+        onOpenChange={(open) => {
+          setViewOrderModalOpen(open)
+          if (!open) setSelectedOrder(null)
+        }}
         order={selectedOrder}
         onAssignDelivery={handleAssignDelivery}
+        onReassignDelivery={handleReassignDelivery}
         onEmergencyBroadcast={handleEmergencyBroadcast}
       />
       <RefundModal
@@ -986,7 +1011,23 @@ export default function OrdersPage({ statusKey = "all" }) {
         orderId={selectedOrderForAssign?.id || selectedOrderForAssign?.orderId}
         onAssigned={() => {
           fetchOrders({ silent: true, withRingCheck: false })
-          setIsViewOrderOpen(false)
+          if (viewOrderModalOpen && selectedOrder) {
+            handleViewOrder(selectedOrder)
+          }
+        }}
+      />
+      <ReassignDeliveryModal
+        isOpen={reassignDeliveryModalOpen}
+        onClose={() => {
+          setReassignDeliveryModalOpen(false)
+          setSelectedOrderForReassign(null)
+        }}
+        orderId={selectedOrderForReassign?.id || selectedOrderForReassign?.orderId}
+        onAssigned={() => {
+          fetchOrders({ silent: true, withRingCheck: false })
+          if (viewOrderModalOpen && selectedOrder) {
+            handleViewOrder(selectedOrder)
+          }
         }}
       />
       <EmergencyBroadcastModal

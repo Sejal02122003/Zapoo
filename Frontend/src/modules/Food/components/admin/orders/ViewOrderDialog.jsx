@@ -35,7 +35,7 @@ const getPaymentStatusColor = (paymentStatus) => {
   return "text-slate-600"
 }
 
-export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignDelivery, onEmergencyBroadcast }) {
+export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignDelivery, onReassignDelivery, onEmergencyBroadcast }) {
   if (!order) return null
 
   // Debug: Log order data to check billImageUrl
@@ -415,7 +415,6 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                 </div>
               )}
             </div>
-            
             {(order.deliveryPartnerName || order.deliveryPartnerPhone) ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {order.deliveryPartnerName && (
@@ -425,9 +424,19 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                   </div>
                 )}
                 {order.deliveryPartnerPhone && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</p>
-                    <p className="text-sm font-medium text-slate-900">{order.deliveryPartnerPhone}</p>
+                  <div className="space-y-1 flex flex-col items-start justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</p>
+                      <p className="text-sm font-medium text-slate-900">{order.deliveryPartnerPhone}</p>
+                    </div>
+                    {onReassignDelivery && !['DELIVERED', 'CANCELLED'].includes(order.orderStatus) && (
+                      <button 
+                        onClick={() => onReassignDelivery(order)}
+                        className="mt-2 px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-xs font-medium hover:bg-amber-100 transition-colors"
+                      >
+                        Reassign Rider
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
