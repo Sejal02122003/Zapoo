@@ -1,28 +1,101 @@
 module.exports = {
   apps: [
     {
-      name: 'indian-foods-api',
+      name: 'zapoo-api',
       script: './server.js',
-
-      // Cluster mode: utilizes all CPU cores on the VPS.
-      // Since socket.js already uses the Redis adapter,
-      // Socket.IO works seamlessly across all worker processes.
       instances: 'max',
       exec_mode: 'cluster',
-
-      // Auto-restart on crash
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
-
-      // Log Management (Crucial for KV2 VPS to prevent disk exhaustion)
       merge_logs: true,
       log_date_format: "YYYY-MM-DD HH:mm:ss Z",
-
-      // Environment variables (production)
       env: {
         NODE_ENV: 'production',
       },
     },
+    {
+      name: 'zapoo-socket',
+      script: './socket-server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '500M',
+      merge_logs: true,
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      env: {
+        NODE_ENV: 'production',
+      },
+    },
+    {
+      name: 'zapoo-scheduler',
+      script: './scheduler-server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '500M',
+      merge_logs: true,
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      env: {
+        NODE_ENV: 'production',
+      },
+    },
+    {
+      name: 'zapoo-worker-otp',
+      script: './src/queues/workers/otp.worker.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      merge_logs: true,
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      env: { NODE_ENV: 'production' },
+    },
+    {
+      name: 'zapoo-worker-notification',
+      script: './src/queues/workers/notification.worker.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      merge_logs: true,
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      env: { NODE_ENV: 'production' },
+    },
+    {
+      name: 'zapoo-worker-order',
+      script: './src/queues/workers/order.worker.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      merge_logs: true,
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      env: { NODE_ENV: 'production' },
+    },
+    {
+      name: 'zapoo-worker-tracking',
+      script: './src/queues/workers/tracking.worker.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      merge_logs: true,
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      env: { NODE_ENV: 'production' },
+    },
+    {
+      name: 'zapoo-worker-payment',
+      script: './src/queues/workers/payment.worker.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      merge_logs: true,
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      env: { NODE_ENV: 'production' },
+    }
   ],
 };
