@@ -173,6 +173,7 @@ export const adminSidebarMenu = [
           { label: "New Join Request", path: "/admin/food/delivery-partners/join-request" },
           { label: "Deliveryman List", path: "/admin/food/delivery-partners" },
           { label: "Deliveryman Reviews", path: "/admin/food/delivery-partners/reviews" },
+          { label: "Shift Slots", path: "/admin/food/delivery-partners/shifts" },
           { label: "Bonus", path: "/admin/food/delivery-partners/bonus" },
           { label: "Earning Addon", path: "/admin/food/delivery-partners/earning-addon" },
           { label: "Earning Addon History", path: "/admin/food/delivery-partners/earning-addon-history" },
