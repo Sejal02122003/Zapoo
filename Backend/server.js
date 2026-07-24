@@ -6,10 +6,7 @@ import { connectDB, disconnectDB } from './src/config/db.js';
 import { connectRedis, closeRedis } from './src/config/redis.js';
 import { initSocket } from './src/config/socket.js';
 import { initializeQueues, closeBullMQConnection } from './src/queues/index.js';
-import { expireExpiredOffers } from './src/modules/food/admin/services/admin.service.js';
-import { syncExpiredFssaiNotifications } from './src/modules/food/restaurant/services/fssaiExpiry.service.js';
-import { startEmergencyBroadcastScheduler } from './src/core/jobs/emergencyBroadcast.scheduler.js';
-import { startLateDeliveryWarningScheduler } from './src/core/jobs/lateDeliveryWarning.scheduler.js';
+
 
 import { logger } from './src/utils/logger.js';
 import { initializeFirebaseRealtime } from './src/config/firebase.js';
@@ -17,8 +14,7 @@ import { loadEnvFromDb } from './src/config/envLoader.js';
 
 const SHUTDOWN_TIMEOUT_MS = 10000;
 let server = null;
-let expireOffersInterval = null;
-let fssaiExpiryInterval = null;
+
 
 const gracefulShutdown = async (signal) => {
     logger.info(`${signal} received, starting graceful shutdown`);
@@ -31,8 +27,7 @@ const gracefulShutdown = async (signal) => {
             await disconnectDB();
             await closeRedis();
             await closeBullMQConnection();
-            if (expireOffersInterval) clearInterval(expireOffersInterval);
-            if (fssaiExpiryInterval) clearInterval(fssaiExpiryInterval);
+
             logger.info('Graceful shutdown complete');
             process.exit(0);
         } catch (err) {
@@ -94,37 +89,7 @@ const startServer = async () => {
             console.log(`🌐 [URL] http://localhost:${config.port}`);
         });
 
-        const runExpire = async () => {
-            try {
-                await expireExpiredOffers();
-            } catch (err) {
-                logger.error(`Expire offers error: ${err.message}`);
-            }
-        };
-        runExpire();
-        expireOffersInterval = setInterval(runExpire, 5 * 60 * 1000);
 
-        const runFssaiExpirySync = async () => {
-            try {
-                await syncExpiredFssaiNotifications();
-            } catch (err) {
-                logger.error(`FSSAI expiry sync error: ${err.message}`);
-            }
-        };
-        runFssaiExpirySync();
-        fssaiExpiryInterval = setInterval(runFssaiExpirySync, 60 * 60 * 1000);
-
-        try {
-            startEmergencyBroadcastScheduler();
-        } catch (err) {
-            logger.error(`Emergency Broadcast Scheduler error: ${err.message}`);
-        }
-
-        try {
-            startLateDeliveryWarningScheduler();
-        } catch (err) {
-            logger.error(`Late Delivery Warning Scheduler error: ${err.message}`);
-        }
 
         process.on('SIGINT', () => gracefulShutdown('SIGINT'));
         process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

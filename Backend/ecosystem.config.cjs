@@ -15,20 +15,6 @@ module.exports = {
       },
     },
     {
-      name: 'zapoo-socket',
-      script: './socket-server.js',
-      instances: 1,
-      exec_mode: 'fork',
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '500M',
-      merge_logs: true,
-      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
-      env: {
-        NODE_ENV: 'production',
-      },
-    },
-    {
       name: 'zapoo-scheduler',
       script: './scheduler-server.js',
       instances: 1,
@@ -42,6 +28,7 @@ module.exports = {
         NODE_ENV: 'production',
       },
     },
+
     {
       name: 'zapoo-worker-otp',
       script: './src/queues/workers/otp.worker.js',
