@@ -264,6 +264,7 @@ export default function RestaurantCommission() {
 
   const handleEdit = async (commission) => {
     try {
+      setSelectedCommission(commission)
       setLoading(true)
       const response = await adminAPI.getRestaurantCommissionById(commission._id)
       
@@ -278,28 +279,24 @@ export default function RestaurantCommission() {
 
       if (commissionData) {
         setSelectedCommission(commissionData)
-        setSelectedRestaurant(commissionData.restaurant)
+        const restIdStr = commissionData.restaurantId?._id || commissionData.restaurantId || commissionData.restaurant;
+        const restaurant = approvedRestaurants.find(r => String(r._id) === String(restIdStr));
+        setSelectedRestaurant(restaurant || null);
         
-        // Handle restaurant ID - it can be an object with _id or just an ID string
-        let restaurantId = ""
-        if (commissionData.restaurant) {
-          if (typeof commissionData.restaurant === 'object' && commissionData.restaurant._id) {
-            restaurantId = commissionData.restaurant._id
-          } else if (typeof commissionData.restaurant === 'string') {
-            restaurantId = commissionData.restaurant
-          } else {
-            restaurantId = commissionData.restaurantId || commissionData.restaurant?._id || ""
-          }
-        } else {
-          // Fallback to restaurantId field if restaurant object is not populated
-          restaurantId = commissionData.restaurantId || commissionData.restaurant || ""
-        }
-        
+        const def = commissionData.defaultCommission || { type: "percentage", value: 10 };
         setFormData({
-          restaurantId: restaurantId,
+          restaurantId: String(restIdStr || ""),
           defaultCommission: {
-            type: commissionData.defaultCommission?.type || "percentage",
-            value: commissionData.defaultCommission?.value?.toString() || "10"
+            type: def.type || "percentage",
+            value: def.value?.toString() || "10"
+          },
+          deliveryCommission: {
+            type: commissionData.deliveryCommission?.type || def.type || "percentage",
+            value: (commissionData.deliveryCommission?.value ?? def.value)?.toString() || "10"
+          },
+          takeawayCommission: {
+            type: commissionData.takeawayCommission?.type || def.type || "percentage",
+            value: (commissionData.takeawayCommission?.value ?? def.value)?.toString() || "5"
           },
           notes: commissionData.notes || ""
         })
@@ -344,13 +341,11 @@ export default function RestaurantCommission() {
       errors.restaurantId = "Restaurant is required"
     }
 
-    if (!formData.defaultCommission.value || parseFloat(formData.defaultCommission.value) < 0) {
-      errors.defaultCommission = "Default commission value is required"
+    if (!formData.deliveryCommission.value || parseFloat(formData.deliveryCommission.value) < 0) {
+      errors.deliveryCommission = "Delivery commission value is required"
     }
-
-    if (formData.defaultCommission.type === "percentage" && 
-        (parseFloat(formData.defaultCommission.value) < 0 || parseFloat(formData.defaultCommission.value) > 100)) {
-      errors.defaultCommission = "Percentage must be between 0-100"
+    if (!formData.takeawayCommission.value || parseFloat(formData.takeawayCommission.value) < 0) {
+      errors.takeawayCommission = "Takeaway commission value is required"
     }
 
     setFormErrors(errors)
@@ -369,8 +364,16 @@ export default function RestaurantCommission() {
       const payload = {
         restaurantId: formData.restaurantId,
         defaultCommission: {
-          type: formData.defaultCommission.type,
-          value: parseFloat(formData.defaultCommission.value)
+          type: formData.deliveryCommission.type,
+          value: parseFloat(formData.deliveryCommission.value)
+        },
+        deliveryCommission: {
+          type: formData.deliveryCommission.type,
+          value: parseFloat(formData.deliveryCommission.value)
+        },
+        takeawayCommission: {
+          type: formData.takeawayCommission.type,
+          value: parseFloat(formData.takeawayCommission.value)
         },
         notes: formData.notes
       }
@@ -756,41 +759,81 @@ export default function RestaurantCommission() {
               </div>
             )}
 
-            {/* Default Commission */}
+            {/* Delivery Commission */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Default Commission <span className="text-red-500">*</span>
+                Delivery Commission <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <select
-                    value={formData.defaultCommission.type}
+                    value={formData.deliveryCommission?.type || 'percentage'}
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
-                      defaultCommission: { ...prev.defaultCommission, type: e.target.value }
+                      deliveryCommission: { ...(prev.deliveryCommission || {}), type: e.target.value }
                     }))}
                     className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="percentage">Percentage (%)</option>
-                    <option value="amount">Fixed Amount (\u20B9)</option>
+                    <option value="amount">Fixed Amount (₹)</option>
                   </select>
                 </div>
                 <div>
                   <input
                     type="number"
-                    step={formData.defaultCommission.type === "percentage" ? "0.1" : "0.01"}
-                    value={formData.defaultCommission.value}
+                    step={formData.deliveryCommission?.type === "percentage" ? "0.1" : "0.01"}
+                    value={formData.deliveryCommission?.value || ''}
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
-                      defaultCommission: { ...prev.defaultCommission, value: e.target.value }
+                      deliveryCommission: { ...(prev.deliveryCommission || {}), value: e.target.value }
                     }))}
                     className={`w-full px-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      formErrors.defaultCommission ? "border-red-500" : "border-slate-300"
+                      formErrors.deliveryCommission ? "border-red-500" : "border-slate-300"
                     }`}
-                    placeholder={formData.defaultCommission.type === "percentage" ? "e.g., 10" : "e.g., 5.00"}
+                    placeholder={formData.deliveryCommission?.type === "percentage" ? "e.g., 10" : "e.g., 5.00"}
                   />
-                  {formErrors.defaultCommission && (
-                    <p className="text-xs text-red-500 mt-1">{formErrors.defaultCommission}</p>
+                  {formErrors.deliveryCommission && (
+                    <p className="text-xs text-red-500 mt-1">{formErrors.deliveryCommission}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Takeaway Commission */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Takeaway Commission <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <select
+                    value={formData.takeawayCommission?.type || 'percentage'}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      takeawayCommission: { ...(prev.takeawayCommission || {}), type: e.target.value }
+                    }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="percentage">Percentage (%)</option>
+                    <option value="amount">Fixed Amount (₹)</option>
+                  </select>
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    step={formData.takeawayCommission?.type === "percentage" ? "0.1" : "0.01"}
+                    value={formData.takeawayCommission?.value || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      takeawayCommission: { ...(prev.takeawayCommission || {}), value: e.target.value }
+                    }))}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      formErrors.takeawayCommission ? "border-red-500" : "border-slate-300"
+                    }`}
+                    placeholder={formData.takeawayCommission?.type === "percentage" ? "e.g., 5" : "e.g., 5.00"}
+                  />
+                  {formErrors.takeawayCommission && (
+                    <p className="text-xs text-red-500 mt-1">{formErrors.takeawayCommission}</p>
                   )}
                 </div>
               </div>

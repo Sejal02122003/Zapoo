@@ -1,6 +1,7 @@
 import { FoodTransaction } from '../models/foodTransaction.model.js';
 import { FoodRestaurantCommission } from '../../admin/models/restaurantCommission.model.js';
 import { FoodFeeSettings } from '../../admin/models/feeSettings.model.js';
+import { resolveCommissionRuleForOrder, computeCommissionAmount } from '../../admin/helpers/commission.helpers.js';
 import mongoose from 'mongoose';
 
 const RESTAURANT_COMMISSION_CACHE_MS = 60 * 1000;
@@ -25,33 +26,15 @@ async function getActiveRestaurantCommissionRules() {
 }
 
 export function computeRestaurantCommissionAmount(baseAmount, rule) {
-    const safeBase = Math.max(0, Number(baseAmount) || 0);
-    if (!Number.isFinite(safeBase) || safeBase < 0) return 0;
-
-    const commissionType = rule?.defaultCommission?.type || 'percentage';
-    const commissionValue = Math.max(
-        0,
-        Number(rule?.defaultCommission?.value ?? 0) || 0
-    );
-
-    let commissionAmount = 0;
-    if (commissionType === 'percentage') {
-        commissionAmount = safeBase * (commissionValue / 100);
-    } else if (commissionType === 'amount') {
-        commissionAmount = commissionValue;
-    }
-
-    // Round to 2 decimals and clamp to [0, base]
-    commissionAmount = Math.round((commissionAmount || 0) * 100) / 100;
-    commissionAmount = Math.max(0, Math.min(commissionAmount, safeBase));
-
-    return { commissionAmount, commissionType, commissionValue, baseAmount: safeBase };
+    const commissionConfig = rule?.defaultCommission || { type: 'percentage', value: 0 };
+    return computeCommissionAmount(baseAmount, commissionConfig);
 }
 
 export async function getRestaurantCommissionSnapshot(orderDoc) {
     const baseAmount = Number(orderDoc?.pricing?.subtotal ?? 0) || 0;
     const restaurantIdRaw =
         orderDoc?.restaurantId?._id ?? orderDoc?.restaurantId ?? null;
+    const orderType = String(orderDoc?.orderType || 'delivery').toLowerCase();
 
     if (!restaurantIdRaw) {
         return {
@@ -69,31 +52,13 @@ export async function getRestaurantCommissionSnapshot(orderDoc) {
     const rules = await getActiveRestaurantCommissionRules();
     const rule =
         rules.find((r) => String(r.restaurantId) === String(restaurantIdRaw)) ||
-        // Fallback: accept legacy docs where restaurantId may be stored under `restaurant` / `restaurant_id`
         rules.find((r) => String(r.restaurant || r.restaurant_id || '') === String(restaurantIdRaw)) ||
         null;
 
-    if (!rule) {
-        // If no specific rule, try to use global default
-        const globalSettings = await FoodFeeSettings.findOne({ isActive: true }).sort({ createdAt: -1 }).lean() || {};
-        if (globalSettings.globalRestaurantCommission > 0) {
-            rule = {
-                defaultCommission: {
-                    type: 'percentage',
-                    value: globalSettings.globalRestaurantCommission
-                }
-            };
-        }
-    }
-
-    const result = rule ? computeRestaurantCommissionAmount(baseAmount, rule) : {
-        commissionAmount: 0,
-        commissionType: 'percentage',
-        commissionValue: 0,
-        baseAmount,
-    };
-
     const globalSettings = await FoodFeeSettings.findOne({ isActive: true }).sort({ createdAt: -1 }).lean() || {};
+
+    const commissionConfig = resolveCommissionRuleForOrder({ rule, globalSettings, orderType });
+    const result = computeCommissionAmount(baseAmount, commissionConfig);
 
     const applyTaxes = globalSettings.applyGlobalTaxes !== false;
 

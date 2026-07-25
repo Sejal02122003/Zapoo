@@ -1732,6 +1732,8 @@ export async function createRestaurantCommission(body) {
     const created = await FoodRestaurantCommission.create({
         restaurantId: body.restaurantId,
         defaultCommission: body.defaultCommission,
+        deliveryCommission: body.deliveryCommission || body.defaultCommission,
+        takeawayCommission: body.takeawayCommission || body.defaultCommission,
         notes: body.notes || '',
         status: true
     });
@@ -1742,7 +1744,14 @@ export async function updateRestaurantCommission(id, body) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
     const updated = await FoodRestaurantCommission.findByIdAndUpdate(
         id,
-        { $set: { defaultCommission: body.defaultCommission, notes: body.notes || '' } },
+        { 
+            $set: { 
+                defaultCommission: body.defaultCommission, 
+                deliveryCommission: body.deliveryCommission || body.defaultCommission,
+                takeawayCommission: body.takeawayCommission || body.defaultCommission,
+                notes: body.notes || '' 
+            } 
+        },
         { new: true }
     ).lean();
     return updated;
@@ -1755,13 +1764,14 @@ export async function deleteRestaurantCommission(id) {
 }
 
 export async function updateGlobalRestaurantCommissionSettings(body) {
-    const { globalRestaurantCommission, globalGstOnItem, globalGstOnCommission, globalPaymentGatewayFee, globalTcs, applyGlobalTaxes } = body;
+    const { globalRestaurantCommission, globalTakeawayRestaurantCommission, globalGstOnItem, globalGstOnCommission, globalPaymentGatewayFee, globalTcs, applyGlobalTaxes } = body;
     let settings = await FoodFeeSettings.findOne({ isActive: true }).sort({ createdAt: -1 });
     if (!settings) {
         settings = new FoodFeeSettings();
     }
     
     if (globalRestaurantCommission !== undefined) settings.globalRestaurantCommission = Number(globalRestaurantCommission);
+    if (globalTakeawayRestaurantCommission !== undefined) settings.globalTakeawayRestaurantCommission = Number(globalTakeawayRestaurantCommission);
     if (globalGstOnItem !== undefined) settings.globalGstOnItem = Number(globalGstOnItem);
     if (globalGstOnCommission !== undefined) settings.globalGstOnCommission = Number(globalGstOnCommission);
     if (globalPaymentGatewayFee !== undefined) settings.globalPaymentGatewayFee = Number(globalPaymentGatewayFee);
@@ -1771,6 +1781,7 @@ export async function updateGlobalRestaurantCommissionSettings(body) {
     await settings.save();
     return {
         globalRestaurantCommission: settings.globalRestaurantCommission,
+        globalTakeawayRestaurantCommission: settings.globalTakeawayRestaurantCommission,
         globalGstOnItem: settings.globalGstOnItem,
         globalGstOnCommission: settings.globalGstOnCommission,
         globalPaymentGatewayFee: settings.globalPaymentGatewayFee,
