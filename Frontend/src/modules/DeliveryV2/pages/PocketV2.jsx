@@ -240,7 +240,7 @@ export const PocketV2 = () => {
                <p className="text-xs text-black/80 font-medium">PAN & bank details required for payouts</p>
             </div>
             <button 
-              onClick={() => navigate('/food/delivery/profile/details')}
+              onClick={() => navigate('/food/delivery/profile/bank')}
               className="bg-yellow-300 text-black px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm"
             >
                Submit
@@ -248,17 +248,36 @@ export const PocketV2 = () => {
          </div>
        )}
 
-       <div className="px-4 py-6 bg-gray-100">
+       <div className="px-4 py-6 bg-gray-100 space-y-4">
           
           {/* 2. WEEKLY EARNINGS CARD */}
           <div 
             onClick={() => navigate('/food/delivery/earnings')}
-            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center mb-5 transition-all active:scale-[0.98]"
+            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center transition-all active:scale-[0.98]"
           >
              <p className="text-gray-500 text-[11px] font-bold uppercase tracking-widest mb-2">Earnings: {getCurrentWeekRange()}</p>
              <h2 className="text-4xl font-black text-black tracking-tighter">
                 ₹{Number(walletState.weeklyEarnings || 0).toFixed(0)}
              </h2>
+          </div>
+
+          {/* SHIFT SLOTS & GUARANTEES CARD */}
+          <div
+            onClick={() => navigate('/food/delivery/shifts')}
+            className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-4 text-white shadow-md cursor-pointer flex items-center justify-between transition-all active:scale-[0.98]"
+          >
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4 text-yellow-300" />
+                <h3 className="text-sm font-extrabold uppercase tracking-wider">Shift Slots & Guarantees</h3>
+              </div>
+              <p className="text-xs text-orange-100 font-medium">
+                Book 11 AM - 11 PM shifts to unlock minimum earnings guarantees & payouts!
+              </p>
+            </div>
+            <div className="bg-white text-orange-600 p-2 rounded-xl shrink-0 ml-3">
+              <ChevronRight className="w-5 h-5 font-bold" />
+            </div>
           </div>
 
           {/* 3. EARNINGS GUARANTEE - API DRIVEN (NO STATIC VALUES) */}

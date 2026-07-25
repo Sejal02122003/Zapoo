@@ -5,7 +5,8 @@ import { DeliveryBonusTransaction } from '../../admin/models/deliveryBonusTransa
 import { FoodEarningAddon } from '../../admin/models/earningAddon.model.js';
 import { FoodOrder } from '../../orders/models/order.model.js';
 import { uploadImageBuffer } from '../../../../services/cloudinary.service.js';
-import { ValidationError } from '../../../../core/auth/errors.js';
+import { RiderBankDetailsAuditLog } from '../models/bankDetailsAudit.model.js';
+import { encrypt, decrypt } from '../../../../utils/encryption.js';
 import { getDeliveryCashLimitSettings } from '../../admin/services/admin.service.js';
 
 export const registerDeliveryPartner = async (payload, files) => {
@@ -216,14 +217,23 @@ export const updateDeliveryPartnerProfilePhotoBase64 = async (userId, payload) =
 export const updateDeliveryPartnerBankDetails = async (userId, payload, files) => {
     const partner = await FoodDeliveryPartner.findById(userId);
     if (!partner) {
-        throw new ValidationError('Delivery partner not found');
+        throw new Error('Delivery partner not found');
     }
+
+    // Capture previous values for audit logging
+    const previousValues = {
+        bankAccountHolderName: partner.bankAccountHolderName || '',
+        bankAccountNumber: decrypt(partner.bankAccountNumber) || '',
+        bankIfscCode: partner.bankIfscCode || '',
+        bankName: partner.bankName || '',
+        upiId: partner.upiId || '',
+        upiQrCode: partner.upiQrCode || ''
+    };
 
     // Handle both nested JSON and flat FormData from multer
     let bankDetails = payload?.documents?.bankDetails;
     let panDetails = payload?.documents?.pan;
 
-    // Multer flattens FormData keys like 'documents[bankDetails][accountNumber]'
     if (!bankDetails && payload) {
         const b = {};
         if (payload['documents[bankDetails][accountHolderName]'] !== undefined) b.accountHolderName = payload['documents[bankDetails][accountHolderName]'];
@@ -231,6 +241,14 @@ export const updateDeliveryPartnerBankDetails = async (userId, payload, files) =
         if (payload['documents[bankDetails][ifscCode]'] !== undefined) b.ifscCode = payload['documents[bankDetails][ifscCode]'];
         if (payload['documents[bankDetails][bankName]'] !== undefined) b.bankName = payload['documents[bankDetails][bankName]'];
         if (payload['documents[bankDetails][upiId]'] !== undefined) b.upiId = payload['documents[bankDetails][upiId]'];
+        
+        // Also support flat top-level payload keys
+        if (payload.accountHolderName !== undefined) b.accountHolderName = payload.accountHolderName;
+        if (payload.accountNumber !== undefined) b.accountNumber = payload.accountNumber;
+        if (payload.ifscCode !== undefined) b.ifscCode = payload.ifscCode;
+        if (payload.bankName !== undefined) b.bankName = payload.bankName;
+        if (payload.upiId !== undefined) b.upiId = payload.upiId;
+
         if (Object.keys(b).length > 0) bankDetails = b;
     }
 
@@ -240,9 +258,28 @@ export const updateDeliveryPartnerBankDetails = async (userId, payload, files) =
 
     if (bankDetails) {
         const b = bankDetails;
-        if (b.accountHolderName !== undefined) partner.bankAccountHolderName = b.accountHolderName ? String(b.accountHolderName).trim() : '';
-        if (b.accountNumber !== undefined) partner.bankAccountNumber = b.accountNumber ? String(b.accountNumber).trim() : '';
-        if (b.ifscCode !== undefined) partner.bankIfscCode = b.ifscCode ? String(b.ifscCode).trim().toUpperCase() : '';
+        if (b.accountHolderName !== undefined) {
+            partner.bankAccountHolderName = b.accountHolderName ? String(b.accountHolderName).trim() : '';
+        }
+
+        if (b.accountNumber !== undefined && b.accountNumber !== '') {
+            const rawAcc = String(b.accountNumber).trim();
+            const ACCOUNT_NUMBER_REGEX = /^\d{9,18}$/;
+            if (!ACCOUNT_NUMBER_REGEX.test(rawAcc)) {
+                throw new Error('Invalid Bank Account Number (must be 9 to 18 digits)');
+            }
+            partner.bankAccountNumber = encrypt(rawAcc);
+        }
+
+        if (b.ifscCode !== undefined && b.ifscCode !== '') {
+            const rawIfsc = String(b.ifscCode).trim().toUpperCase();
+            const IFSC_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+            if (!IFSC_REGEX.test(rawIfsc)) {
+                throw new Error('Invalid IFSC Code format (e.g. SBIN0001234)');
+            }
+            partner.bankIfscCode = rawIfsc;
+        }
+
         if (b.bankName !== undefined) partner.bankName = b.bankName ? String(b.bankName).trim() : '';
         if (b.upiId !== undefined) partner.upiId = b.upiId ? String(b.upiId).trim() : '';
     }
@@ -256,7 +293,44 @@ export const updateDeliveryPartnerBankDetails = async (userId, payload, files) =
     }
 
     await partner.save();
-    return partner.toObject();
+
+    // Create Audit Log Entry
+    const newValues = {
+        bankAccountHolderName: partner.bankAccountHolderName || '',
+        bankAccountNumber: decrypt(partner.bankAccountNumber) || '',
+        bankIfscCode: partner.bankIfscCode || '',
+        bankName: partner.bankName || '',
+        upiId: partner.upiId || '',
+        upiQrCode: partner.upiQrCode || ''
+    };
+
+    await RiderBankDetailsAuditLog.create({
+        riderId: partner._id,
+        changedBy: userId,
+        changedByRole: 'DELIVERY_PARTNER',
+        previousValues,
+        newValues
+    });
+
+    const resObj = partner.toObject();
+    resObj.bankAccountNumber = decrypt(partner.bankAccountNumber);
+    return resObj;
+};
+
+export const getDeliveryPartnerBankDetails = async (userId) => {
+    const partner = await FoodDeliveryPartner.findById(userId);
+    if (!partner) {
+        throw new Error('Delivery partner not found');
+    }
+
+    return {
+        accountHolderName: partner.bankAccountHolderName || '',
+        accountNumber: decrypt(partner.bankAccountNumber) || '',
+        ifscCode: partner.bankIfscCode || '',
+        bankName: partner.bankName || '',
+        upiId: partner.upiId || '',
+        upiQrCode: partner.upiQrCode || ''
+    };
 };
 
 function generateTicketId() {

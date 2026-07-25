@@ -134,7 +134,21 @@ function attachCoreListeners(sock) {
 
   sock.off('connect_error');
 
-  sock.on('connect_error', () => notifyConnectedListeners(false));
+  sock.on('connect_error', (error) => {
+    notifyConnectedListeners(false);
+    const errorMsg = String(error?.message || '').toLowerCase();
+    if (
+      errorMsg.includes('jwt expired') ||
+      errorMsg.includes('auth_invalid') ||
+      errorMsg.includes('auth_missing') ||
+      errorMsg.includes('unauthorized') ||
+      errorMsg.includes('jwt malformed')
+    ) {
+      if (sock) {
+        sock.disconnect();
+      }
+    }
+  });
 
 }
 

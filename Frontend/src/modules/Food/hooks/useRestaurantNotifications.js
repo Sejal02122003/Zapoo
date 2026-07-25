@@ -650,9 +650,14 @@ export const useRestaurantNotifications = () => {
       timeout: 20000,
       forceNew: false,
       autoConnect: true,
-      auth: {
-        token: restaurantToken },
-      query: { token: restaurantToken } });
+      auth: (cb) => {
+        const activeToken = localStorage.getItem('restaurant_accessToken') || localStorage.getItem('accessToken') || "";
+        cb({ token: activeToken });
+      },
+      query: (cb) => {
+        const activeToken = localStorage.getItem('restaurant_accessToken') || localStorage.getItem('accessToken') || "";
+        cb(activeToken ? { token: activeToken } : {});
+      } });
 
     socketRef.current.on('connect', () => {
       debugLog('? Restaurant Socket connected, restaurantId:', restaurantId);
@@ -691,6 +696,24 @@ export const useRestaurantNotifications = () => {
 
     // Listen for connection errors (throttle logs to avoid console spam on reconnect loops)
     socketRef.current.on('connect_error', (error) => {
+      const errorMsg = String(error?.message || '').toLowerCase();
+      const isAuthError =
+        errorMsg.includes('jwt expired') ||
+        errorMsg.includes('auth_invalid') ||
+        errorMsg.includes('auth_missing') ||
+        errorMsg.includes('unauthorized') ||
+        errorMsg.includes('jwt malformed');
+
+      if (isAuthError) {
+        debugWarn('Restaurant socket auth failed (token expired/invalid). Disconnecting socket to prevent retry loop.');
+        setIsConnected(false);
+        if (typeof window !== 'undefined') window.restaurantSocketConnected = false;
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+        }
+        return;
+      }
+
       const now = Date.now();
       const shouldLog = now - lastConnectErrorLogRef.current >= CONNECT_ERROR_LOG_THROTTLE_MS;
       if (shouldLog) {

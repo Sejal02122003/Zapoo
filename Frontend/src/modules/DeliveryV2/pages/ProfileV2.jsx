@@ -13,7 +13,9 @@ import {
   Briefcase,
   Trash2,
   AlertTriangle,
-  Bell
+  Bell,
+  Calendar,
+  CreditCard
 } from "lucide-react"
 import { deliveryAPI, notificationAPI } from "@food/api"
 import { toast } from "sonner"
@@ -203,15 +205,35 @@ export const ProfileV2 = () => {
 
       <div className="px-4 py-6">
         {/* Navigation Buttons */}
-        <div className="grid grid-cols-1 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-2.5 mb-6">
+          <button
+            onClick={() => navigate("/food/delivery/shifts")}
+            className="bg-white rounded-xl p-3 flex flex-col items-center gap-1.5 border border-orange-100 shadow-sm active:bg-orange-50 transition-colors"
+          >
+            <div className="rounded-full bg-orange-50 p-2.5">
+              <Calendar className="w-5 h-5 text-orange-600" />
+            </div>
+            <span className="text-xs font-bold text-gray-900 text-center">Shift Slots</span>
+          </button>
+
+          <button
+            onClick={() => navigate("/food/delivery/profile/bank")}
+            className="bg-white rounded-xl p-3 flex flex-col items-center gap-1.5 border border-blue-100 shadow-sm active:bg-blue-50 transition-colors"
+          >
+            <div className="rounded-full bg-blue-50 p-2.5">
+              <CreditCard className="w-5 h-5 text-blue-600" />
+            </div>
+            <span className="text-xs font-bold text-gray-900 text-center">Bank Details</span>
+          </button>
+
           <button
             onClick={() => navigate("/food/delivery/history")}
-            className="bg-white rounded-xl p-4 flex flex-col items-center gap-2 border border-transparent active:bg-gray-50 transition-colors"
+            className="bg-white rounded-xl p-3 flex flex-col items-center gap-1.5 border border-gray-100 shadow-sm active:bg-gray-50 transition-colors"
           >
-            <div className="rounded-full bg-gray-50 p-3">
-              <Bike className="w-6 h-6 text-gray-700" />
+            <div className="rounded-full bg-gray-50 p-2.5">
+              <Bike className="w-5 h-5 text-gray-700" />
             </div>
-            <span className="text-sm font-bold text-gray-900">Trips history</span>
+            <span className="text-xs font-bold text-gray-900 text-center">Trips history</span>
           </button>
         </div>
 

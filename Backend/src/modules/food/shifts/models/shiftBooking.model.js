@@ -4,6 +4,8 @@ const shiftBookingSchema = new mongoose.Schema(
     {
         shiftId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodShift', required: true, index: true },
         riderId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodDeliveryPartner', required: true, index: true },
+        riderName: { type: String },
+        riderPhone: { type: String },
         status: { 
             type: String, 
             enum: ['BOOKED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'], 

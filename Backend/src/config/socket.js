@@ -81,6 +81,11 @@ export const initSocket = async (server) => {
             logger.info(`Socket auth success: ${decoded.role}:${decoded.userId} for socket ${socket.id}`);
             return next();
         } catch (err) {
+            const isExpired = err.name === 'TokenExpiredError' || err.message?.includes('expired');
+            if (isExpired) {
+                logger.warn(`[DeliverySocket] Handshake auth expired for socket ${socket.id}: jwt expired`);
+                return next(new Error('jwt expired'));
+            }
             logger.error(`Socket auth failed for socket ${socket.id}: ${err.message}`);
             logger.error(`[DeliverySocket] Handshake auth invalid`, {
                 socketId: socket.id,

@@ -12,6 +12,9 @@ const shiftSchema = new mongoose.Schema(
         maxPartners: { type: Number, required: true, min: 1 },
         bonusEnabled: { type: Boolean, default: true },
         isActive: { type: Boolean, default: true },
+        bookingOpensAt: { type: Date },
+        templateId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodShiftTemplate', default: null },
+        slotOrder: { type: Number, default: 0 },
         createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
     },
     { collection: 'food_shifts', timestamps: true }
@@ -20,5 +23,7 @@ const shiftSchema = new mongoose.Schema(
 // Indexes
 shiftSchema.index({ startTime: 1, endTime: 1 });
 shiftSchema.index({ city: 1, isActive: 1 });
+shiftSchema.index({ bookingOpensAt: 1 });
+shiftSchema.index({ templateId: 1, startTime: 1 });
 
 export const FoodShift = mongoose.model('FoodShift', shiftSchema);

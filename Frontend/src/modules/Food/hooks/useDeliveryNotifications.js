@@ -759,10 +759,14 @@ export const useDeliveryNotifications = () => {
       reconnectionDelayMax: 5000,
       reconnectionAttempts: Infinity,
       timeout: 20000,
-      auth: {
-        token: token || ""
+      auth: (cb) => {
+        const activeToken = getDeliveryAuthToken();
+        cb({ token: activeToken || "" });
       },
-      query: token ? { token } : undefined });
+      query: (cb) => {
+        const activeToken = getDeliveryAuthToken();
+        cb(activeToken ? { token: activeToken } : {});
+      } });
 
     debugLog('Socket.IO client created', {
       socketUrl,
@@ -821,6 +825,39 @@ export const useDeliveryNotifications = () => {
     });
 
     socketRef.current.on('connect_error', (error) => {
+      const errorMsg = String(error?.message || '').toLowerCase();
+      const isAuthError =
+        errorMsg.includes('jwt expired') ||
+        errorMsg.includes('auth_invalid') ||
+        errorMsg.includes('auth_missing') ||
+        errorMsg.includes('unauthorized') ||
+        errorMsg.includes('jwt malformed');
+
+      if (isAuthError) {
+        debugWarn('Delivery socket authentication error:', error?.message);
+        setIsConnected(false);
+
+        // Try silently fetching profile/token refresh via API
+        void deliveryAPI.getMe().then((res) => {
+          const freshToken = getDeliveryAuthToken();
+          if (freshToken && freshToken !== token) {
+            debugLog('Fresh delivery token obtained after socket auth error. Reconnecting...');
+            reconnectSocketWithToken(freshToken);
+          } else {
+            debugWarn('Delivery token is expired or invalid. Disconnecting socket to prevent retry loop.');
+            if (socketRef.current) {
+              socketRef.current.disconnect();
+            }
+          }
+        }).catch(() => {
+          debugWarn('Delivery session invalid. Disconnecting socket to prevent retry loop.');
+          if (socketRef.current) {
+            socketRef.current.disconnect();
+          }
+        });
+        return;
+      }
+
       debugError('Socket connection error', {
         message: error?.message,
         type: error?.type,
