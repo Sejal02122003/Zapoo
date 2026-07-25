@@ -117,6 +117,16 @@ export const adminSidebarMenu = [
     items: [
       {
         type: "link",
+        label: "Item-Level Discounts",
+        path: "/admin/food/item-discounts",
+        icon: "Tag" },
+      {
+        type: "link",
+        label: "Cashback & Expiry",
+        path: "/admin/food/cashback",
+        icon: "DollarSign" },
+      {
+        type: "link",
         label: "Restaurant Coupons & Offers",
         path: "/admin/food/coupons",
         icon: "Gift" },

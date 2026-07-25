@@ -1,371 +1,340 @@
-import { useState, useMemo } from "react"
-import { Search, Download, ChevronDown, Edit, Trash2, Calendar, RefreshCw } from "lucide-react"
-import { emptyCashbacks } from "@food/utils/adminFallbackData"
-const debugLog = (...args) => {}
-const debugWarn = (...args) => {}
-const debugError = (...args) => {}
-
+import { useState, useEffect } from "react";
+import { Search, Plus, RefreshCw, Trash2, Calendar, AlertCircle, Check, DollarSign } from "lucide-react";
+import { adminClient } from "../../../../services/api/axios";
 
 export default function Cashback() {
-  const [activeLanguage, setActiveLanguage] = useState("default")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [cashbackType, setCashbackType] = useState("all")
-  const [cashbacks, setCashbacks] = useState(emptyCashbacks)
+  const [cashbacks, setCashbacks] = useState([]);
+  const [restaurants, setRestaurants] = useState([]);
+  const [expiryReport, setExpiryReport] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
   const [formData, setFormData] = useState({
-    title: "Eid Dhamaka",
-    customer: "",
-    cashbackType: "Percentage (%)",
-    cashbackAmount: "",
-    minPurchase: "",
-    maxDiscount: "",
-    startDate: "",
-    endDate: "",
-    limitForSameUser: "" })
+    name: "Standard Cashback",
+    restaurantScope: "ALL",
+    restaurantId: "",
+    orderType: "BOTH",
+    minOrderValue: 99,
+    cashbackType: "PERCENTAGE",
+    cashbackValue: 5,
+    maxCashbackAmount: 30,
+    expiryDays: 60,
+  });
 
-  const languageTabs = [
-    { key: "default", label: "Default" },
-    { key: "en", label: "English(EN)" },
-    { key: "bn", label: "Bengali - বাংলা (BN)" },
-    { key: "ar", label: "Arabic - العربية (AR)" },
-    { key: "es", label: "Spanish - espa�ol(ES)" },
-  ]
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [rulesRes, restRes, reportRes] = await Promise.allSettled([
+        adminClient.get("/food/admin/cashback-rules"),
+        adminClient.get("/food/admin/restaurants"),
+        adminClient.get("/food/admin/wallet/expiry-report"),
+      ]);
 
-  const filteredCashbacks = useMemo(() => {
-    let result = [...cashbacks]
-    
-    if (cashbackType !== "all") {
-      if (cashbackType === "Percentage") {
-        result = result.filter(cb => cb.cashbackType === "Percentage")
-      } else if (cashbackType === "Amount") {
-        result = result.filter(cb => cb.cashbackType === "Amount")
+      if (rulesRes.status === "fulfilled") {
+        setCashbacks(rulesRes.value.data?.data || []);
       }
+      if (restRes.status === "fulfilled") {
+        const list = restRes.value.data?.data?.restaurants || restRes.value.data?.data || [];
+        setRestaurants(Array.isArray(list) ? list : []);
+      }
+      if (reportRes.status === "fulfilled") {
+        setExpiryReport(reportRes.value.data?.data || null);
+      }
+    } catch (err) {
+      console.error("Failed to load cashback data:", err);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
-      result = result.filter(cb =>
-        cb.name.toLowerCase().includes(query)
-      )
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    setSuccessMsg("");
+
+    try {
+      await adminClient.post("/food/admin/cashback-rules", formData);
+      setSuccessMsg("Cashback rule created successfully!");
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to create cashback rule");
+    } finally {
+      setSubmitting(false);
     }
+  };
 
-    return result
-  }, [cashbacks, searchQuery, cashbackType])
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    debugLog("Form submitted:", formData)
-    alert("Cashback offer created successfully!")
-  }
-
-  const handleReset = () => {
-    setFormData({
-      title: "Eid Dhamaka",
-      customer: "",
-      cashbackType: "Percentage (%)",
-      cashbackAmount: "",
-      minPurchase: "",
-      maxDiscount: "",
-      startDate: "",
-      endDate: "",
-      limitForSameUser: "" })
-  }
-
-  const handleToggleStatus = (sl) => {
-    setCashbacks(cashbacks.map(cb =>
-      cb.sl === sl ? { ...cb, status: !cb.status } : cb
-    ))
-  }
-
-  const handleDelete = (sl) => {
-    if (window.confirm("Are you sure you want to delete this cashback offer?")) {
-      setCashbacks(cashbacks.filter(cb => cb.sl !== sl))
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this cashback rule?")) return;
+    try {
+      await adminClient.delete(`/food/admin/cashback-rules/${id}`);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete rule");
     }
-  }
+  };
 
   return (
-    <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        {/* Create Cashback Offer Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
-              <RefreshCw className="w-5 h-5 text-white" />
+    <div className="p-4 lg:p-6 bg-slate-50 min-h-screen space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center text-white">
+              <RefreshCw className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Create Cashback Offer</h1>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Cashback & Expiry Management</h1>
+              <p className="text-sm text-slate-500">Configure global and restaurant-specific cashback rules with automatic 60-day expiry</p>
+            </div>
           </div>
-
-          {/* Language Tabs */}
-          <div className="flex items-center gap-2 border-b border-slate-200 mb-6">
-            {languageTabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveLanguage(tab.key)}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  activeLanguage === tab.key
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Title ({activeLanguage === "default" ? "Default" : languageTabs.find(t => t.key === activeLanguage)?.label})
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => handleInputChange("title", e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Select Customer
-                </label>
-                <select
-                  value={formData.customer}
-                  onChange={(e) => handleInputChange("customer", e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                >
-                  <option value="">Select customer</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Cashback Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.cashbackType}
-                  onChange={(e) => handleInputChange("cashbackType", e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                >
-                  <option value="Percentage (%)">Percentage (%)</option>
-                  <option value="Amount ($)">Amount ($)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Cashback Amount ({formData.cashbackType === "Percentage (%)" ? "%" : "$"}) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  value={formData.cashbackAmount}
-                  onChange={(e) => handleInputChange("cashbackAmount", e.target.value)}
-                  placeholder="Ex: 100"
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Minimum Purchase ($)
-                </label>
-                <input
-                  type="number"
-                  value={formData.minPurchase}
-                  onChange={(e) => handleInputChange("minPurchase", e.target.value)}
-                  placeholder="Ex: 100"
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Maximum Discount ($)
-                </label>
-                <input
-                  type="number"
-                  value={formData.maxDiscount}
-                  onChange={(e) => handleInputChange("maxDiscount", e.target.value)}
-                  placeholder="Ex: 100"
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Start Date
-                </label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => handleInputChange("startDate", e.target.value)}
-                    className="w-full px-4 py-2.5 pr-10 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  />
-                  <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  End Date
-                </label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => handleInputChange("endDate", e.target.value)}
-                    className="w-full px-4 py-2.5 pr-10 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  />
-                  <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Limit For Same User
-                </label>
-                <input
-                  type="number"
-                  value={formData.limitForSameUser}
-                  onChange={(e) => handleInputChange("limitForSameUser", e.target.value)}
-                  placeholder="Ex: 5"
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-4 mt-6">
-              <button
-                type="button"
-                onClick={handleReset}
-                className="px-6 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all"
-              >
-                Reset
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-md"
-              >
-                Submit
-              </button>
-            </div>
-          </form>
+          <button onClick={fetchData} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-semibold flex items-center gap-2">
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </button>
         </div>
 
-        {/* Cashback List Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-900">Cashback List</h2>
-              <span className="px-3 py-1 rounded-full text-sm font-semibold bg-slate-100 text-slate-700">
-                {filteredCashbacks.length}
-              </span>
+        {/* Expiry Overview Cards */}
+        {expiryReport && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-green-100 text-green-600 flex items-center justify-center font-bold">
+                <DollarSign className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase">Platform Admin Wallet Balance</p>
+                <h3 className="text-2xl font-black text-slate-900">₹{expiryReport.adminPlatformBalance}</h3>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <select
-                value={cashbackType}
-                onChange={(e) => setCashbackType(e.target.value)}
-                className="px-4 py-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
-              >
-                <option value="all">All CashBacks</option>
-                <option value="Percentage">Percentage</option>
-                <option value="Amount">Amount</option>
-              </select>
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold">
+                <Calendar className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase">Total Expired Cashback Transferred</p>
+                <h3 className="text-2xl font-black text-slate-900">₹{expiryReport.totalExpiredAmount}</h3>
+              </div>
+            </div>
 
-              <div className="relative flex-1 sm:flex-initial min-w-[200px]">
-                <input
-                  type="text"
-                  placeholder="Ex: Search by title"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                <Check className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase">Expired Batches Processed</p>
+                <h3 className="text-2xl font-black text-slate-900">{expiryReport.totalExpiredCount}</h3>
               </div>
             </div>
           </div>
+        )}
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">SI</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">CashBack Type</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Duration</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Total Used</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-slate-100">
-                {filteredCashbacks.map((cashback) => (
-                  <tr key={cashback.sl} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-slate-700">{cashback.sl}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-medium text-slate-900">{cashback.name}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-slate-700">{cashback.cashbackType}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-slate-900">{cashback.amount}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-slate-700">{cashback.duration}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-slate-700">{cashback.totalUsed}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => handleToggleStatus(cashback.sl)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                          cashback.status ? "bg-blue-600" : "bg-slate-300"
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            cashback.status ? "translate-x-6" : "translate-x-1"
-                          }`}
-                        />
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          className="p-1.5 rounded text-blue-600 hover:bg-blue-50 transition-colors"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(cashback.sl)}
-                          className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-red-500" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center gap-2">
+            <Check className="w-5 h-5 text-green-500" />
+            <span>{successMsg}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Create Cashback Rule Form */}
+          <div className="lg:col-span-1 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h2 className="text-lg font-bold text-slate-900 border-b pb-3">Create Cashback Rule</h2>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Rule Title</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Restaurant Scope</label>
+                <select
+                  value={formData.restaurantScope}
+                  onChange={(e) => setFormData({ ...formData, restaurantScope: e.target.value })}
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                >
+                  <option value="ALL">Global (All Restaurants)</option>
+                  <option value="SELECTED">Specific Restaurant Override</option>
+                </select>
+              </div>
+
+              {formData.restaurantScope === "SELECTED" && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Select Restaurant</label>
+                  <select
+                    value={formData.restaurantId}
+                    onChange={(e) => setFormData({ ...formData, restaurantId: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                    required
+                  >
+                    <option value="">-- Select Restaurant --</option>
+                    {restaurants.map((r) => (
+                      <option key={r._id || r.id} value={r._id || r.id}>
+                        {r.restaurantName || r.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Order Type</label>
+                <select
+                  value={formData.orderType}
+                  onChange={(e) => setFormData({ ...formData, orderType: e.target.value })}
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                >
+                  <option value="BOTH">Delivery & Takeaway</option>
+                  <option value="DELIVERY">Delivery Only</option>
+                  <option value="TAKEAWAY">Takeaway Only</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Cashback Type</label>
+                  <select
+                    value={formData.cashbackType}
+                    onChange={(e) => setFormData({ ...formData, cashbackType: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                  >
+                    <option value="PERCENTAGE">Percentage (%)</option>
+                    <option value="FLAT">Flat Amount (₹)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Value</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.cashbackValue}
+                    onChange={(e) => setFormData({ ...formData, cashbackValue: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Min Order (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.minOrderValue}
+                    onChange={(e) => setFormData({ ...formData, minOrderValue: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Max Cap (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="No max cap"
+                    value={formData.maxCashbackAmount}
+                    onChange={(e) => setFormData({ ...formData, maxCashbackAmount: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Cashback Expiry (Days)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.expiryDays}
+                  onChange={(e) => setFormData({ ...formData, expiryDays: e.target.value })}
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition shadow-md flex items-center justify-center gap-2"
+              >
+                {submitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                Save Cashback Rule
+              </button>
+            </form>
+          </div>
+
+          {/* Active Rules & Expiry Ledger Table */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+              <h2 className="text-lg font-bold text-slate-900 border-b pb-3">Active Cashback Rules ({cashbacks.length})</h2>
+
+              {cashbacks.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">No active cashback rules found.</div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {cashbacks.map((cb) => (
+                    <div key={cb._id} className="py-4 flex items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900">{cb.name}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded font-bold ${cb.restaurantScope === "ALL" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                            {cb.restaurantScope === "ALL" ? "Global Platform Rule" : "Restaurant Override"}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-500 mt-1">
+                          Earns <strong className="text-orange-600">{cb.cashbackType === "PERCENTAGE" ? `${cb.cashbackValue}%` : `₹${cb.cashbackValue}`} cashback</strong> on orders above ₹{cb.minOrderValue} (Capped at ₹{cb.maxCashbackAmount || "Unlimited"}, Valid for {cb.expiryDays} days).
+                        </p>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+                      <button onClick={() => handleDelete(cb._id)} className="p-2 text-slate-400 hover:text-red-600">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent Expired Batches */}
+            {expiryReport?.recentExpiries?.length > 0 && (
+              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h2 className="text-lg font-bold text-slate-900 border-b pb-3">Recent Expired Cashback Transferred to Admin</h2>
+                <div className="divide-y divide-slate-100 text-sm">
+                  {expiryReport.recentExpiries.map((exp) => (
+                    <div key={exp.id} className="py-3 flex items-center justify-between">
+                      <div>
+                        <span className="font-semibold text-slate-800">{exp.user?.name || exp.user?.email || "User"}</span>
+                        <p className="text-xs text-slate-400">{new Date(exp.date).toLocaleString()}</p>
+                      </div>
+                      <span className="font-bold text-red-600">-₹{exp.amount} (Transferred to Admin)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
-

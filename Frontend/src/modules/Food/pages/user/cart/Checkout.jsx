@@ -240,9 +240,17 @@ export default function Checkout() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {orderType === 'takeaway' && (
+                    <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg">
+                      Note: Wallet payments are only available for delivery orders.
+                    </div>
+                  )}
+
                   {availablePaymentMethods.length > 0 ? (
                     <div className="space-y-3">
-                      {availablePaymentMethods.map((payment) => {
+                      {availablePaymentMethods
+                        .filter(p => !(orderType === 'takeaway' && (p.type === 'wallet' || p.id === 'wallet')))
+                        .map((payment) => {
                         const isSelected = selectedPayment === payment.id
                         const cardNumber = payment.type === 'cod' ? '' : `**** **** **** ${payment.cardNumber}`
 

@@ -72,6 +72,11 @@ app.use('/api', apiRateLimiter);
 // Optional: log API response time (method, path, status, duration) - no sensitive data
 app.use('/api', responseTimeLogger);
 
+import { startCashbackExpiryScheduler } from './core/jobs/cashbackExpiry.scheduler.js';
+
+// Initialize background schedulers
+startCashbackExpiryScheduler();
+
 // API Routes
 app.use('/api', routes);
 

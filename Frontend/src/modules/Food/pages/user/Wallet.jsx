@@ -189,10 +189,22 @@ export default function Wallet() {
                   </h2>
 
                   <div className="mb-2 md:mb-3">
-                    <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm lg:text-base mb-1">Current Balance</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm lg:text-base mb-1">Total Available Balance</p>
                     <p className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold text-gray-900 dark:text-white">
                       {formatAmount(currentBalance)}
                     </p>
+                  </div>
+
+                  {/* Cash vs Cashback Breakdown */}
+                  <div className="flex items-center gap-4 text-sm mt-1">
+                    <div className="bg-slate-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg">
+                      <span className="text-gray-500 text-xs">Real Cash: </span>
+                      <span className="font-bold text-gray-900 dark:text-white">{formatAmount(wallet?.cashBalance || 0)}</span>
+                    </div>
+                    <div className="bg-orange-50 dark:bg-orange-950/40 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <span className="text-orange-600 dark:text-orange-400 text-xs">Cashback (Promotional): </span>
+                      <span className="font-bold text-orange-600 dark:text-orange-400">{formatAmount(wallet?.cashbackBalance || 0)}</span>
+                    </div>
                   </div>
 
                   <div className="mb-2 md:mb-3">

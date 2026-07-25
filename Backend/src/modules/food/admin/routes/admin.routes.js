@@ -21,6 +21,7 @@ import * as manualAssignmentController from '../controllers/manualAssignment.con
 import * as reassignmentController from '../controllers/reassignment.controller.js';
 import * as deliveryPolicyController from '../controllers/deliveryPolicy.controller.js';
 import * as deliveryPenaltyController from '../controllers/deliveryPenalty.controller.js';
+import * as offerExtraController from '../controllers/itemDiscountAndCashback.controller.js';
 const router = express.Router();
 
 router.use('/menu', menuBulkRoutes);
@@ -35,6 +36,19 @@ router.get('/fee-settings/public', adminController.getFeeSettings);
 import { requireAdmin, requireSuperAdmin } from '../../../../core/auth/auth.middleware.js';
 
 router.use(requireAdmin);
+
+// ----- Item Discounts -----
+router.post('/item-discounts', offerExtraController.createItemDiscountRule);
+router.get('/item-discounts', offerExtraController.getItemDiscountRules);
+router.patch('/item-discounts/:id', offerExtraController.updateItemDiscountRule);
+router.delete('/item-discounts/:id', offerExtraController.deleteItemDiscountRule);
+
+// ----- Cashback Rules -----
+router.post('/cashback-rules', offerExtraController.createCashbackRule);
+router.get('/cashback-rules', offerExtraController.getCashbackRules);
+router.patch('/cashback-rules/:id', offerExtraController.updateCashbackRule);
+router.delete('/cashback-rules/:id', offerExtraController.deleteCashbackRule);
+router.get('/wallet/expiry-report', offerExtraController.getCashbackExpiryReport);
 
 // ----- Sub Admins -----
 router.get('/sub-admins', requireSuperAdmin, adminController.getSubAdmins);

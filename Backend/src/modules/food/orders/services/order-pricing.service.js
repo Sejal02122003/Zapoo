@@ -4,9 +4,12 @@ import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { FoodFeeSettings } from '../../admin/models/feeSettings.model.js';
 import { FoodOffer } from '../../admin/models/offer.model.js';
 import { FoodOfferUsage } from '../../admin/models/offerUsage.model.js';
+import { FoodItem } from '../../admin/models/food.model.js';
+import { resolveItemDiscountRule } from '../../admin/services/itemDiscount.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { haversineKm } from './order.helpers.js';
 import { validateLocationCoupon } from '../../admin/services/locationCoupon.service.js';
+import { logger } from '../../../../utils/logger.js';
 
 export async function calculateOrderPricing(userId, dto) {
   const restaurant = await FoodRestaurant.findById(dto.restaurantId)
@@ -20,22 +23,61 @@ export async function calculateOrderPricing(userId, dto) {
   let itemDiscountTotal = 0;
   let subtotal = 0;
   let eligibleSubtotalForCoupon = 0;
+  const orderType = String(dto.orderType || 'delivery').toLowerCase();
 
-  items.forEach((it) => {
-    let price = Number(it.price) || 0;
+  const itemIds = items.map((it) => it.id || it._id || it.foodId).filter(Boolean);
+  const foodDocs = itemIds.length ? await FoodItem.find({ _id: { $in: itemIds } }).lean() : [];
+  const foodMap = new Map(foodDocs.map((f) => [String(f._id), f]));
+
+  for (const it of items) {
+    const itemIdStr = String(it.id || it._id || it.foodId || '');
+    const foodDoc = foodMap.get(itemIdStr);
+    
+    const basePrice = foodDoc ? Number(foodDoc.price) || 0 : Number(it.originalPrice || it.price) || 0;
     const qty = Number(it.quantity) || 1;
-    let hasItemDiscount = false;
-    
-    // The frontend already sends the discounted price in it.price.
-    // If we need to calculate itemDiscountTotal, we should rely on originalPrice sent by frontend,
-    // but since it's not sent, we skip re-applying the discount to avoid double discounting.
-    // In a future secure update, backend should fetch item prices from DB and apply discounts here.
-    
-    subtotal += price * qty;
-    if (!hasItemDiscount) {
-      eligibleSubtotalForCoupon += price * qty;
+
+    const rule = await resolveItemDiscountRule({
+      restaurantId: dto.restaurantId,
+      menuItemId: itemIdStr,
+      categoryId: foodDoc?.categoryId ? String(foodDoc.categoryId) : null,
+      orderType: orderType.toUpperCase()
+    });
+
+    let discountedUnitPrice = basePrice;
+    let itemDiscountAmountPerUnit = 0;
+    let isStackable = true;
+
+    if (rule) {
+      if (rule.discountType === 'PERCENTAGE') {
+        const rawDiscount = basePrice * (Number(rule.discountValue) / 100);
+        const cappedDiscount = rule.maxDiscountAmount ? Math.min(rawDiscount, Number(rule.maxDiscountAmount)) : rawDiscount;
+        itemDiscountAmountPerUnit = Math.max(0, Math.min(basePrice, cappedDiscount));
+      } else {
+        itemDiscountAmountPerUnit = Math.max(0, Math.min(basePrice, Number(rule.discountValue) || 0));
+      }
+      discountedUnitPrice = basePrice - itemDiscountAmountPerUnit;
+      isStackable = rule.stackable !== false;
     }
-  });
+
+    const clientSentPrice = Number(it.price);
+    if (Number.isFinite(clientSentPrice) && Math.abs(clientSentPrice - discountedUnitPrice) > 0.5) {
+      logger.warn(`[SECURITY] Price mismatch detected for item ${itemIdStr} in restaurant ${dto.restaurantId}: clientSent=${clientSentPrice}, serverCalculated=${discountedUnitPrice}`);
+    }
+
+    const lineTotal = discountedUnitPrice * qty;
+    const lineDiscount = itemDiscountAmountPerUnit * qty;
+
+    subtotal += lineTotal;
+    itemDiscountTotal += lineDiscount;
+
+    if (isStackable) {
+      eligibleSubtotalForCoupon += lineTotal;
+    }
+
+    it.originalPrice = basePrice;
+    it.discountedPrice = discountedUnitPrice;
+    it.discount = lineDiscount;
+  }
   itemDiscountTotal = Math.floor(itemDiscountTotal);
 
   const feeDoc = await FoodFeeSettings.findOne({ isActive: true })
@@ -50,8 +92,6 @@ export async function calculateOrderPricing(userId, dto) {
     gstRate: 5,
   };
 
-  const orderType = dto.orderType || 'delivery';
-  
   let platformFee = 0;
   let gstOnPlatformFee = 0;
   

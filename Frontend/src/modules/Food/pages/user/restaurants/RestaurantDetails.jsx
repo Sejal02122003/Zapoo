@@ -2175,29 +2175,34 @@ function RestaurantDetailsContent() {
 
           <div className="flex items-center gap-3 mt-1">
             {(() => {
+              const origPrice = Number(item.originalPrice || item.basePrice);
+              const discPrice = Number(item.discountedPrice || item.price);
+              const hasDisc = item.hasDiscount || (origPrice > 0 && discPrice < origPrice);
+              const pct = item.discountPercentage || (origPrice > 0 ? Math.round(((origPrice - discPrice) / origPrice) * 100) : 0);
+
+              if (hasDisc && origPrice > discPrice) {
+                return (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-gray-900 dark:text-white text-base sm:text-lg">
+                      ₹{discPrice}
+                    </span>
+                    <span className="text-xs sm:text-sm text-gray-400 line-through font-normal">
+                      ₹{origPrice}
+                    </span>
+                    {pct > 0 && (
+                      <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                        {pct}% OFF
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+
               const priceStr = getFoodPriceLabel(item);
               const isStartingFrom = priceStr.includes('Starting from');
               const priceNum = parseFloat(priceStr.replace(/[^0-9.]/g, ''));
               if (isNaN(priceNum)) return <p className="font-semibold text-gray-900 dark:text-white">{priceStr}</p>;
-              
-              const { discountValue, isFlatDiscount, discountAmount } = calculateBestDiscount(item, priceNum);
-              
-              if (discountAmount > 0) {
-                const discountedPrice = Math.max(0, Math.round(priceNum - discountAmount));
-                
-                return (
-                  <div className="flex flex-col gap-0.5 mt-1">
-                    <span className="text-[13px] text-gray-500 line-through">
-                      {isStartingFrom ? <span className="text-[11px] mr-1">Starting from</span> : ''}
-                      ₹{priceNum}
-                    </span>
-                    <span className="font-bold text-blue-600 dark:text-blue-400 text-[15px]">
-                      Get for ₹{discountedPrice}
-                    </span>
-                  </div>
-                );
-              }
-              
+
               if (isStartingFrom) {
                 return (
                   <div className="flex flex-col leading-tight">
@@ -2206,7 +2211,7 @@ function RestaurantDetailsContent() {
                   </div>
                 );
               }
-              
+
               return <p className="font-semibold text-gray-900 dark:text-white">{priceStr}</p>;
             })()}
             {/* Preparation Time - Show if available */}

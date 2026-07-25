@@ -45,6 +45,7 @@ import {
   Phone,
   IndianRupee,
   PiggyBank,
+  Tag,
   Lock } from "lucide-react"
 import { cn } from "@food/utils/utils"
 import { Input } from "@food/components/ui/input"
@@ -98,6 +99,7 @@ const iconMap = {
   Phone,
   IndianRupee,
   PiggyBank,
+  Tag,
   Lock,
   X }
 

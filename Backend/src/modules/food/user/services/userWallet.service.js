@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodUserWallet } from '../models/userWallet.model.js';
+import { WalletLedgerEntry } from '../models/walletLedgerEntry.model.js';
 import { createRazorpayOrder, getRazorpayKeyId, isRazorpayConfigured, verifyPaymentSignature } from '../../orders/helpers/razorpay.helper.js';
 
 const ensureWallet = async (userId) => {
@@ -9,28 +10,18 @@ const ensureWallet = async (userId) => {
         throw new ValidationError('User not found');
     }
     const oid = new mongoose.Types.ObjectId(id);
-    const existing = await FoodUserWallet.findOne({ userId: oid });
-    if (existing) return existing;
-    return FoodUserWallet.create({ userId: oid, balance: 0, transactions: [] });
-};
-
-export const creditReferralReward = async (userId, amountInr, metadata = {}) => {
-    const amount = Number(amountInr);
-    if (!Number.isFinite(amount) || amount <= 0) {
-        return { wallet: await getUserWallet(userId) };
+    let wallet = await FoodUserWallet.findOne({ userId: oid });
+    if (!wallet) {
+        wallet = await FoodUserWallet.create({
+            userId: oid,
+            cashBalance: 0,
+            cashbackBalance: 0,
+            balance: 0,
+            referralEarnings: 0,
+            transactions: []
+        });
     }
-    const wallet = await ensureWallet(userId);
-    wallet.transactions.unshift({
-        type: 'addition',
-        amount,
-        status: 'Completed',
-        description: 'Referral reward',
-        metadata: { source: 'referral_reward', ...(metadata || {}) }
-    });
-    wallet.balance = Number(wallet.balance || 0) + amount;
-    wallet.referralEarnings = Number(wallet.referralEarnings || 0) + amount;
-    await wallet.save();
-    return { wallet: await getUserWallet(userId) };
+    return wallet;
 };
 
 export const getUserWallet = async (userId) => {
@@ -39,27 +30,209 @@ export const getUserWallet = async (userId) => {
         throw new ValidationError('User not found');
     }
     const oid = new mongoose.Types.ObjectId(id);
-    const wallet = await FoodUserWallet.findOne({ userId: oid });
-    if (!wallet) {
-        return { balance: 0, referralEarnings: 0, transactions: [] };
-    }
-    // Return newest first (UI expects recent transactions on top)
-    const tx = Array.isArray(wallet.transactions) ? [...wallet.transactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : [];
+    const wallet = await ensureWallet(userId);
+
+    const ledgerEntries = await WalletLedgerEntry.find({ userId: oid })
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .lean();
+
+    const cashBalance = Number(wallet.cashBalance || 0);
+    const cashbackBalance = Number(wallet.cashbackBalance || 0);
+    const totalBalance = cashBalance + cashbackBalance;
+
+    // Find active cashback expiring soon
+    const activeCashbacks = await WalletLedgerEntry.find({
+        userId: oid,
+        sourceType: 'PROMOTIONAL',
+        status: { $in: ['ACTIVE', 'PARTIALLY_USED'] },
+        remainingAmount: { $gt: 0 }
+    })
+    .sort({ expiryDate: 1 })
+    .lean();
+
     return {
-        balance: Number(wallet.balance) || 0,
+        balance: totalBalance,
+        cashBalance,
+        cashbackBalance,
         referralEarnings: Number(wallet.referralEarnings) || 0,
-        transactions: tx.map((t) => ({
+        activeCashbacks: activeCashbacks.map((c) => ({
+            id: String(c._id),
+            remainingAmount: c.remainingAmount,
+            expiryDate: c.expiryDate,
+            createdAt: c.createdAt
+        })),
+        transactions: ledgerEntries.map((t) => ({
             id: String(t._id),
             _id: t._id,
-            type: t.type,
+            type: t.entryType,
+            sourceType: t.sourceType,
             amount: Number(t.amount) || 0,
             status: t.status || 'Completed',
             description: t.description || '',
             date: t.createdAt,
             createdAt: t.createdAt,
+            expiryDate: t.expiryDate || null,
             metadata: t.metadata || {}
         }))
     };
+};
+
+export const deductWalletBalance = async (userId, amountInr, description = 'Order payment', metadata = {}, orderType = 'delivery') => {
+    const amount = Number(amountInr);
+    if (!Number.isFinite(amount) || amount <= 0) {
+        throw new ValidationError('Invalid deduction amount');
+    }
+
+    const normalizedOrderType = String(orderType || '').toLowerCase();
+    if (normalizedOrderType === 'takeaway') {
+        throw new ValidationError('Wallet payments are only available for delivery orders.');
+    }
+
+    const oid = new mongoose.Types.ObjectId(userId);
+    const wallet = await ensureWallet(userId);
+
+    const cashBalance = Number(wallet.cashBalance || 0);
+    const cashbackBalance = Number(wallet.cashbackBalance || 0);
+    const totalAvailable = cashBalance + cashbackBalance;
+
+    if (totalAvailable < amount) {
+        throw new ValidationError('Insufficient wallet balance');
+    }
+
+    let remainingToDeduct = amount;
+    let deductedFromCashback = 0;
+    let deductedFromCash = 0;
+
+    // FIFO consumption of active cashback entries by earliest expiryDate
+    const cashbackEntries = await WalletLedgerEntry.find({
+        userId: oid,
+        sourceType: 'PROMOTIONAL',
+        status: { $in: ['ACTIVE', 'PARTIALLY_USED'] },
+        remainingAmount: { $gt: 0 }
+    }).sort({ expiryDate: 1 });
+
+    for (const entry of cashbackEntries) {
+        if (remainingToDeduct <= 0) break;
+        const availableInEntry = Number(entry.remainingAmount) || 0;
+        const take = Math.min(remainingToDeduct, availableInEntry);
+
+        entry.remainingAmount = availableInEntry - take;
+        if (entry.remainingAmount === 0) {
+            entry.status = 'FULLY_USED';
+        } else {
+            entry.status = 'PARTIALLY_USED';
+        }
+        await entry.save();
+
+        remainingToDeduct -= take;
+        deductedFromCashback += take;
+    }
+
+    if (remainingToDeduct > 0) {
+        deductedFromCash = remainingToDeduct;
+    }
+
+    wallet.cashbackBalance = Math.max(0, cashbackBalance - deductedFromCashback);
+    wallet.cashBalance = Math.max(0, cashBalance - deductedFromCash);
+    wallet.balance = wallet.cashBalance + wallet.cashbackBalance;
+
+    wallet.transactions.unshift({
+        type: 'deduction',
+        amount,
+        status: 'Completed',
+        description,
+        metadata: { source: 'order_payment', deductedFromCashback, deductedFromCash, ...(metadata || {}) }
+    });
+    await wallet.save();
+
+    await WalletLedgerEntry.create({
+        userId: oid,
+        entryType: 'ORDER_PAYMENT',
+        sourceType: deductedFromCashback > 0 && deductedFromCash === 0 ? 'PROMOTIONAL' : 'CASH',
+        amount: -amount,
+        status: 'ACTIVE',
+        relatedOrderId: metadata.orderId && mongoose.Types.ObjectId.isValid(metadata.orderId) ? new mongoose.Types.ObjectId(metadata.orderId) : null,
+        description,
+        metadata: { deductedFromCashback, deductedFromCash, ...(metadata || {}) }
+    });
+
+    return { wallet: await getUserWallet(userId) };
+};
+
+export const creditCashbackToWallet = async (userId, amountInr, expiryDays = 60, relatedOrderId = null, description = 'Order Cashback') => {
+    const amount = Number(amountInr);
+    if (!Number.isFinite(amount) || amount <= 0) {
+        return { wallet: await getUserWallet(userId) };
+    }
+
+    const oid = new mongoose.Types.ObjectId(userId);
+    const wallet = await ensureWallet(userId);
+
+    const now = new Date();
+    const expiryDate = new Date(now.getTime() + Number(expiryDays) * 24 * 60 * 60 * 1000);
+
+    const ledgerEntry = await WalletLedgerEntry.create({
+        userId: oid,
+        entryType: 'CASHBACK',
+        sourceType: 'PROMOTIONAL',
+        amount,
+        originalAmount: amount,
+        remainingAmount: amount,
+        expiryDate,
+        status: 'ACTIVE',
+        relatedOrderId: relatedOrderId && mongoose.Types.ObjectId.isValid(relatedOrderId) ? new mongoose.Types.ObjectId(relatedOrderId) : null,
+        description,
+        metadata: { source: 'cashback_reward', expiryDays }
+    });
+
+    wallet.cashbackBalance = Number(wallet.cashbackBalance || 0) + amount;
+    wallet.balance = Number(wallet.cashBalance || 0) + wallet.cashbackBalance;
+
+    wallet.transactions.unshift({
+        type: 'cashback',
+        amount,
+        status: 'Completed',
+        description,
+        metadata: { cashbackEntryId: ledgerEntry._id, expiryDate }
+    });
+
+    await wallet.save();
+    return { wallet: await getUserWallet(userId) };
+};
+
+export const creditReferralReward = async (userId, amountInr, metadata = {}) => {
+    const amount = Number(amountInr);
+    if (!Number.isFinite(amount) || amount <= 0) {
+        return { wallet: await getUserWallet(userId) };
+    }
+    const oid = new mongoose.Types.ObjectId(userId);
+    const wallet = await ensureWallet(userId);
+
+    wallet.cashBalance = Number(wallet.cashBalance || 0) + amount;
+    wallet.balance = wallet.cashBalance + Number(wallet.cashbackBalance || 0);
+    wallet.referralEarnings = Number(wallet.referralEarnings || 0) + amount;
+
+    wallet.transactions.unshift({
+        type: 'addition',
+        amount,
+        status: 'Completed',
+        description: 'Referral reward',
+        metadata: { source: 'referral_reward', ...(metadata || {}) }
+    });
+    await wallet.save();
+
+    await WalletLedgerEntry.create({
+        userId: oid,
+        entryType: 'TOPUP',
+        sourceType: 'CASH',
+        amount,
+        status: 'ACTIVE',
+        description: 'Referral reward',
+        metadata: { source: 'referral_reward', ...(metadata || {}) }
+    });
+
+    return { wallet: await getUserWallet(userId) };
 };
 
 export const createWalletTopupOrder = async (userId, amountInr) => {
@@ -74,7 +247,6 @@ export const createWalletTopupOrder = async (userId, amountInr) => {
     const amountPaise = Math.round(amount * 100);
 
     if (!isRazorpayConfigured()) {
-        // Dev fallback: return a compatible shape without writing to DB.
         const orderId = `order_dev_${Date.now()}`;
         return {
             razorpay: {
@@ -110,13 +282,9 @@ export const verifyWalletTopupPayment = async (userId, payload) => {
     if (!signature) throw new ValidationError('razorpaySignature is required');
     if (!Number.isFinite(amount) || amount <= 0) throw new ValidationError('amount is required');
 
+    const oid = new mongoose.Types.ObjectId(userId);
     const wallet = await ensureWallet(userId);
-    const existing = wallet.transactions.find((t) => String(t.razorpayOrderId || '') === orderId);
-    if (existing && String(existing.status).toLowerCase() === 'completed') {
-        return { wallet: await getUserWallet(userId) };
-    }
 
-    // If razorpay not configured (dev), accept and credit wallet.
     const ok = isRazorpayConfigured()
         ? verifyPaymentSignature(orderId, paymentId, signature)
         : true;
@@ -124,7 +292,9 @@ export const verifyWalletTopupPayment = async (userId, payload) => {
         throw new ValidationError('Payment verification failed');
     }
 
-    // Store ONLY after payment is verified.
+    wallet.cashBalance = Number(wallet.cashBalance || 0) + amount;
+    wallet.balance = wallet.cashBalance + Number(wallet.cashbackBalance || 0);
+
     wallet.transactions.unshift({
         type: 'addition',
         amount,
@@ -136,33 +306,17 @@ export const verifyWalletTopupPayment = async (userId, payload) => {
         razorpaySignature: signature
     });
 
-    wallet.balance = Number(wallet.balance || 0) + amount;
     await wallet.save();
 
-    return { wallet: await getUserWallet(userId) };
-};
-
-export const deductWalletBalance = async (userId, amountInr, description = 'Order payment', metadata = {}) => {
-    const amount = Number(amountInr);
-    if (!Number.isFinite(amount) || amount <= 0) {
-        throw new ValidationError('Invalid deduction amount');
-    }
-
-    const wallet = await ensureWallet(userId);
-    if (wallet.balance < amount) {
-        throw new ValidationError('Insufficient wallet balance');
-    }
-
-    wallet.transactions.unshift({
-        type: 'deduction',
+    await WalletLedgerEntry.create({
+        userId: oid,
+        entryType: 'TOPUP',
+        sourceType: 'CASH',
         amount,
-        status: 'Completed',
-        description,
-        metadata: { source: 'order_payment', ...(metadata || {}) }
+        status: 'ACTIVE',
+        description: 'Wallet top-up',
+        metadata: { razorpayOrderId: orderId, razorpayPaymentId: paymentId }
     });
-
-    wallet.balance = Number(wallet.balance) - amount;
-    await wallet.save();
 
     return { wallet: await getUserWallet(userId) };
 };
@@ -173,7 +327,12 @@ export const refundWalletBalance = async (userId, amountInr, description = 'Orde
         return { wallet: await getUserWallet(userId) };
     }
 
+    const oid = new mongoose.Types.ObjectId(userId);
     const wallet = await ensureWallet(userId);
+
+    wallet.cashBalance = Number(wallet.cashBalance || 0) + amount;
+    wallet.balance = wallet.cashBalance + Number(wallet.cashbackBalance || 0);
+
     wallet.transactions.unshift({
         type: 'refund',
         amount,
@@ -182,8 +341,17 @@ export const refundWalletBalance = async (userId, amountInr, description = 'Orde
         metadata: { source: 'order_refund', ...(metadata || {}) }
     });
 
-    wallet.balance = Number(wallet.balance) + amount;
     await wallet.save();
+
+    await WalletLedgerEntry.create({
+        userId: oid,
+        entryType: 'REFUND',
+        sourceType: 'CASH',
+        amount,
+        status: 'ACTIVE',
+        description,
+        metadata: { source: 'order_refund', ...(metadata || {}) }
+    });
 
     return { wallet: await getUserWallet(userId) };
 };
@@ -194,7 +362,12 @@ export const topupUserWalletByAdmin = async (userId, amountInr, adminId, descrip
         throw new ValidationError('Invalid top-up amount');
     }
 
+    const oid = new mongoose.Types.ObjectId(userId);
     const wallet = await ensureWallet(userId);
+
+    wallet.cashBalance = Number(wallet.cashBalance || 0) + amount;
+    wallet.balance = wallet.cashBalance + Number(wallet.cashbackBalance || 0);
+
     wallet.transactions.unshift({
         type: 'addition',
         amount,
@@ -203,8 +376,17 @@ export const topupUserWalletByAdmin = async (userId, amountInr, adminId, descrip
         metadata: { source: 'admin_topup', adminId: String(adminId) }
     });
 
-    wallet.balance = Number(wallet.balance || 0) + amount;
     await wallet.save();
+
+    await WalletLedgerEntry.create({
+        userId: oid,
+        entryType: 'ADMIN_ADJUSTMENT',
+        sourceType: 'CASH',
+        amount,
+        status: 'ACTIVE',
+        description,
+        metadata: { source: 'admin_topup', adminId: String(adminId) }
+    });
 
     return { wallet: await getUserWallet(userId) };
 };

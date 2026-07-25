@@ -4,6 +4,7 @@ import { FoodRestaurant } from '../models/restaurant.model.js';
 import { FoodItem } from '../../admin/models/food.model.js';
 import { FoodCategory } from '../../admin/models/category.model.js';
 import { getFoodDisplayPrice, serializeFoodVariants } from '../../admin/services/foodVariant.service.js';
+import { resolveItemDiscountRule } from '../../admin/services/itemDiscount.service.js';
 
 const buildMenuFromFoods = async (foods = []) => {
     const categoryIds = Array.from(
@@ -32,6 +33,34 @@ const buildMenuFromFoods = async (foods = []) => {
         const sectionName = (categoryDoc?.name || food?.categoryName || food?.category || 'Menu').trim() || 'Menu';
         const groupKey = categoryId || `name:${sectionName.toLowerCase()}`;
 
+        const basePrice = getFoodDisplayPrice(food);
+        
+        let discountedPrice = basePrice;
+        let discountPercentage = 0;
+        let hasDiscount = false;
+
+        const rule = await resolveItemDiscountRule({
+            restaurantId: food.restaurantId,
+            menuItemId: food._id,
+            categoryId: categoryId,
+            orderType: 'ALL'
+        });
+
+        if (rule) {
+            if (rule.discountType === 'PERCENTAGE') {
+                discountPercentage = rule.discountValue;
+                const raw = basePrice * (rule.discountValue / 100);
+                const capped = rule.maxDiscountAmount ? Math.min(raw, rule.maxDiscountAmount) : raw;
+                discountedPrice = Math.max(0, basePrice - capped);
+            } else {
+                discountedPrice = Math.max(0, basePrice - rule.discountValue);
+                if (basePrice > 0) {
+                    discountPercentage = Math.round(((basePrice - discountedPrice) / basePrice) * 100);
+                }
+            }
+            hasDiscount = discountedPrice < basePrice;
+        }
+
         if (!byCategory.has(groupKey)) {
             byCategory.set(groupKey, {
                 id: categoryId || null,
@@ -50,7 +79,13 @@ const buildMenuFromFoods = async (foods = []) => {
             category: sectionName,
             name: food.name,
             description: food.description || '',
-            price: getFoodDisplayPrice(food),
+            price: discountedPrice,
+            basePrice: basePrice,
+            originalPrice: hasDiscount ? basePrice : null,
+            discountedPrice: discountedPrice,
+            discountPercentage: hasDiscount ? discountPercentage : 0,
+            hasDiscount,
+            offerText: hasDiscount ? `${discountPercentage}% OFF` : '',
             priceOnOtherPlatforms: food.priceOnOtherPlatforms || null,
             otherPlatformGst: food.otherPlatformGst ?? null,
             variants: serializeFoodVariants(food.variants),
