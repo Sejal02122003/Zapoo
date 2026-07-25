@@ -49,6 +49,9 @@ const pricingSchema = new mongoose.Schema(
         gstOnCommission: { type: Number, default: 0, min: 0 },
         paymentGatewayFee: { type: Number, default: 0, min: 0 },
         tcs: { type: Number, default: 0, min: 0 },
+        surgeAmount: { type: Number, default: 0, min: 0 },
+        riderSurgeBonus: { type: Number, default: 0, min: 0 },
+        surgeSnapshotId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodSurgeSnapshot', default: null },
         discount: { type: Number, default: 0, min: 0 },
         total: { type: Number, required: true, min: 0 },
         currency: { type: String, default: 'INR' }

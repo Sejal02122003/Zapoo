@@ -35,7 +35,13 @@ router.get('/fee-settings/public', adminController.getFeeSettings);
 
 import { requireAdmin, requireSuperAdmin } from '../../../../core/auth/auth.middleware.js';
 
-router.use(requireAdmin);
+import * as surgeController from '../controllers/surge.controller.js';
+
+// ----- Surge Pricing -----
+router.get('/surge/configs', surgeController.getSurgeConfigs);
+router.post('/surge/configs', surgeController.upsertSurgeConfig);
+router.get('/surge/snapshots', surgeController.getActiveSurgeSnapshots);
+router.post('/surge/recalculate', surgeController.triggerManualSurgeRecalculation);
 
 // ----- Item Discounts -----
 router.post('/item-discounts', offerExtraController.createItemDiscountRule);

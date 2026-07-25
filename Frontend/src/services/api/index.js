@@ -639,6 +639,16 @@ export const adminAPI = {
     adminClient.delete(`/food/admin/restaurant-commissions/${String(id)}`),
   toggleRestaurantCommissionStatus: (id) =>
     adminClient.patch(`/food/admin/restaurant-commissions/${String(id)}/toggle`, {}),
+  /** Dynamic Surge Pricing (admin) */
+  getSurgeConfigs: () =>
+    adminClient.get("/food/admin/surge/configs"),
+  upsertSurgeConfig: (body) =>
+    adminClient.post("/food/admin/surge/configs", body ?? {}),
+  getActiveSurgeSnapshots: () =>
+    adminClient.get("/food/admin/surge/snapshots"),
+  triggerSurgeRecalculation: (body) =>
+    adminClient.post("/food/admin/surge/recalculate", body ?? {}),
+
   /** Backward-compatible alias used in UI */
   getApprovedRestaurants: (params = {}) =>
     adminClient.get("/food/admin/restaurants", { params: { status: "approved", limit: 1000, ...params } }),

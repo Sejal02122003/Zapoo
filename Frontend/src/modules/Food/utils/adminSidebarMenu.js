@@ -78,6 +78,7 @@ export const adminSidebarMenu = [
           { label: "Menu Bulk Upload", path: "/admin/food/restaurants/menu-bulk-upload" },
           { label: "New Joining Request", path: "/admin/food/restaurants/joining-request" },
           { label: "Restaurant Commission", path: "/admin/food/restaurants/commission" },
+          { label: "Surge Pricing Setup", path: "/admin/food/restaurants/surge-pricing" },
           { label: "Restaurant Discount", path: "/admin/food/restaurants/discount" },
           { label: "Restaurant Reviews", path: "/admin/food/restaurants/reviews" },
           { label: "Restaurant Complaints", path: "/admin/food/restaurants/complaints" },

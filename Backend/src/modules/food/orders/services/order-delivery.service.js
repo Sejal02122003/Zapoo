@@ -1265,8 +1265,15 @@ export async function completeDelivery(orderId, deliveryPartnerId, body = {}) {
               penaltyToCreate = {
                 riderId: deliveryPartnerId,
                 orderId: order._id,
-                lateMinutes,
+                expectedDelivery: order.expectedDeliveryTime || new Date(actualTime - delayMs),
+                deliveredAt: order.actualDeliveryTime || new Date(actualTime),
+                graceMinutes: graceMinutes,
+                lateMinutes: lateMinutes,
+                chargeableMinutes: Math.max(0, lateMinutes - graceMinutes),
+                penaltyPerMinute: activePolicy.penaltyRate || 1,
                 penaltyAmount: calculatedPenalty,
+                policyVersionId: activePolicy._id,
+                reason: `Late delivery by ${lateMinutes} minutes (grace: ${graceMinutes} mins)`,
                 status: 'APPLIED'
               };
               penaltyApplied = true;

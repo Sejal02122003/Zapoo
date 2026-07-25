@@ -6,6 +6,7 @@ import { FoodOffer } from '../../admin/models/offer.model.js';
 import { FoodOfferUsage } from '../../admin/models/offerUsage.model.js';
 import { FoodItem } from '../../admin/models/food.model.js';
 import { resolveItemDiscountRule } from '../../admin/services/itemDiscount.service.js';
+import { getCurrentSurgeForRestaurant } from '../../admin/services/surgeCalculation.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { haversineKm } from './order.helpers.js';
 import { validateLocationCoupon } from '../../admin/services/locationCoupon.service.js';
@@ -179,6 +180,19 @@ export async function calculateOrderPricing(userId, dto) {
       deliveryFee = Number(feeSettings.deliveryFee || 0);
     }
   }
+
+  // --- Dynamic Surge Pricing Integration ---
+  const surgeInfo = orderType === 'delivery'
+    ? await getCurrentSurgeForRestaurant(dto.restaurantId)
+    : { surgeAmount: 0, snapshotId: null, riderSurgeBonus: 0 };
+
+  const surgeAmount = surgeInfo?.surgeAmount || 0;
+  const riderSurgeBonus = surgeInfo?.riderSurgeBonus || 0;
+  const surgeSnapshotId = surgeInfo?.snapshotId || null;
+
+  // Surge is combined seamlessly into deliveryFee (never shown as a distinct line item to the customer)
+  deliveryFee = deliveryFee + surgeAmount;
+  // --- End Dynamic Surge Pricing Integration ---
 
   // --- Weather Pricing Logic ---
   const activeWeatherPolicy = await getActiveWeatherPolicy();
@@ -384,6 +398,9 @@ export async function calculateOrderPricing(userId, dto) {
       restaurantCouponDiscount: restaurantCouponDiscount > 0 ? restaurantCouponDiscount : undefined,
       total,
       currency: "INR",
+      surgeAmount: surgeAmount > 0 ? surgeAmount : 0,
+      riderSurgeBonus: riderSurgeBonus > 0 ? riderSurgeBonus : 0,
+      surgeSnapshotId: surgeSnapshotId || undefined,
       couponCode: appliedCoupon?.code || codeRaw || null,
       restaurantCouponCode: appliedRestaurantCoupon?.code || restaurantCodeRaw || null,
       appliedCoupon,

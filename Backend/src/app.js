@@ -73,9 +73,11 @@ app.use('/api', apiRateLimiter);
 app.use('/api', responseTimeLogger);
 
 import { startCashbackExpiryScheduler } from './core/jobs/cashbackExpiry.scheduler.js';
+import { startSurgeScheduler } from './core/jobs/surgeScheduler.job.js';
 
 // Initialize background schedulers
 startCashbackExpiryScheduler();
+startSurgeScheduler();
 
 // API Routes
 app.use('/api', routes);
