@@ -93,7 +93,8 @@ router.post('/save', authMiddleware, async (req, res, next) => {
     try {
         const { ownerType, ownerId } = getOwnerContext(req);
         const token = String(req.body?.token || '').trim();
-        const platform = req.body?.platform === 'mobile' ? 'mobile' : 'web';
+        const platformInput = String(req.body?.platform || '').toLowerCase();
+        const platform = (platformInput === 'mobile' || platformInput === 'ios' || platformInput === 'android') ? 'mobile' : platformInput === 'web' ? 'web' : 'mobile';
 
         console.log(`[FCM-DEBUG] /save request received: ownerType=${ownerType}, ownerId=${ownerId}, platform=${platform}, tokenPreview=${token?.slice(0, 10)}...`);
 

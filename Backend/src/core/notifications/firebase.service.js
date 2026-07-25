@@ -263,7 +263,7 @@ export const upsertFirebaseDeviceToken = async ({ ownerType, ownerId, token, pla
         throw new Error('ownerType, ownerId, and token are required.');
     }
 
-    const normalizedPlatform = platform === 'mobile' ? 'mobile' : 'web';
+    const normalizedPlatform = (platform === 'mobile' || platform === 'ios' || platform === 'android') ? 'mobile' : 'web';
     const model = getOwnerModel(ownerType);
     if (!model) {
         console.error(`[FCM-DEBUG] upsert - Unsupported owner type: ${ownerType}`);

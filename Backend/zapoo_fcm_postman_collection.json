@@ -1,0 +1,655 @@
+{
+	"info": {
+		"_postman_id": "zapoo-fcm-complete-postman-2026",
+		"name": "Zapoo - All Users Login & FCM Token Integration (iOS, Android & Web)",
+		"description": "Complete Production Postman Collection for Customer (User), Delivery Partner, and Restaurant Partner Authentication, FCM Token Management (iOS, Android, Web), and Profile /me APIs.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Customer User App (Food User)",
+			"item": [
+				{
+					"name": "Step 1: Request User OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"7974161582\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/food/auth/user/request-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"food",
+								"auth",
+								"user",
+								"request-otp"
+							]
+						},
+						"description": "Sends OTP to Customer Phone Number."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"phone\": \"7974161582\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/food/auth/user/request-otp",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"food",
+										"auth",
+										"user",
+										"request-otp"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"OTP sent successfully\",\n    \"data\": {\n        \"phone\": \"7974161582\",\n        \"otp\": \"123456\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Step 2: Verify User OTP (With Initial FCM Token - iOS/Android)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.accessToken) {",
+									"    pm.collectionVariables.set(\"accessToken\", jsonData.data.accessToken);",
+									"    console.log(\"Saved Customer accessToken to collectionVariables\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"7974161582\",\n  \"otp\": \"123456\",\n  \"name\": \"sejal\",\n  \"fcmToken\": \"f_7zU3BRbNrSIZ6x_lX5lx:APA91bG1bAN0P-QuRIehv_pemTxzUsg3RvCav0fRtXEdO2bvP-b85q_BqiKmk-VSP3JXUu5V04zDLN-uBlFrRBkrTBpBv_GttbkRMEulqfh3lFjnKdkiNkw\",\n  \"platform\": \"ios\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/food/auth/user/verify-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"food",
+								"auth",
+								"user",
+								"verify-otp"
+							]
+						},
+						"description": "Verifies Customer OTP and logs in. Accepts fcmToken and platform ('ios', 'mobile', or 'web')."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"phone\": \"7974161582\",\n  \"otp\": \"123456\",\n  \"name\": \"sejal\",\n  \"fcmToken\": \"f_7zU3BRbNrSIZ6x_lX5lx:APA91bG1bAN0P-QuRIehv_pemTxzUsg3RvCav0fRtXEdO2bvP-b85q_BqiKmk-VSP3JXUu5V04zDLN-uBlFrRBkrTBpBv_GttbkRMEulqfh3lFjnKdkiNkw\",\n  \"platform\": \"ios\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/food/auth/user/verify-otp",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"food",
+										"auth",
+										"user",
+										"verify-otp"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTU5ZmM1NDM1MmNlOWRlMzM5YWYzNTUiLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4NDk2MTMzMSwiZXhwIjoxNzg0OTYyMjMxfQ.RxZt3Huc5BTbHyR8bIwpZHQN8Fp4sAOKOf1EsO_mPuk\",\n        \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTU5ZmM1NDM1MmNlOWRlMzM5YWYzNTUiLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4NDk2MTMzMSwiZXhwIjoxNzg0OTYyMjMxfQ.RxZt3Huc5BTbHyR8bIwpZHQN8Fp4sAOKOf1EsO_mPuk\",\n        \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTU5ZmM1NDM1MmNlOWRlMzM5YWYzNTUiLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4NDk2MTMzMSwiZXhwIjoxNzg1NTY2MTMxfQ.XlfIxiUZQrCc_ZaLYR-ioPBTSUmboD8siI73f2PAU1g\",\n        \"user\": {\n            \"id\": \"6a59fc54352ce9de339af355\",\n            \"_id\": \"6a59fc54352ce9de339af355\",\n            \"name\": \"sejal\",\n            \"phone\": \"7974161582\",\n            \"email\": \"\",\n            \"role\": \"USER\",\n            \"isVerified\": true,\n            \"isActive\": true,\n            \"profileImage\": \"\",\n            \"referralCode\": \"6a59fc54352ce9de339af355\"\n        },\n        \"isNewUser\": false\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Step 3: Get Authenticated Profile (/me)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/food/auth/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"food",
+								"auth",
+								"me"
+							]
+						},
+						"description": "Returns current logged in user profile including array of active fcmTokens and fcmTokenMobile."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/food/auth/me",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"food",
+										"auth",
+										"me"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Profile retrieved successfully\",\n    \"data\": {\n        \"user\": {\n            \"_id\": \"6a59fc54352ce9de339af355\",\n            \"phone\": \"7974161582\",\n            \"countryCode\": \"+91\",\n            \"name\": \"sejal\",\n            \"fcmTokens\": [\n                \"f_7zU3BRbNrSIZ6x_lX5lx:APA91bG1bAN0P-QuRIehv_pemTxzUsg3RvCav0fRtXEdO2bvP-b85q_BqiKmk-VSP3JXUu5V04zDLN-uBlFrRBkrTBpBv_GttbkRMEulqfh3lFjnKdkiNkw\"\n            ],\n            \"fcmTokenMobile\": [\n                \"f_7zU3BRbNrSIZ6x_lX5lx:APA91bG1bAN0P-QuRIehv_pemTxzUsg3RvCav0fRtXEdO2bvP-b85q_BqiKmk-VSP3JXUu5V04zDLN-uBlFrRBkrTBpBv_GttbkRMEulqfh3lFjnKdkiNkw\"\n            ],\n            \"role\": \"USER\",\n            \"isVerified\": true,\n            \"isActive\": true\n        }\n    }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2. Delivery Partner App",
+			"item": [
+				{
+					"name": "Step 1: Request Delivery Partner OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"7828889615\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/food/auth/delivery/request-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"food",
+								"auth",
+								"delivery",
+								"request-otp"
+							]
+						},
+						"description": "Sends OTP to Delivery Partner Phone."
+					}
+				},
+				{
+					"name": "Step 2: Verify Delivery Partner OTP (iOS/Android)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.accessToken) {",
+									"    pm.collectionVariables.set(\"accessToken\", jsonData.data.accessToken);",
+									"    console.log(\"Saved Delivery Partner accessToken to collectionVariables\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"7828889615\",\n  \"otp\": \"123456\",\n  \"fcmToken\": \"ios_delivery_partner_fcm_token_sample_abc123\",\n  \"platform\": \"ios\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/food/auth/delivery/verify-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"food",
+								"auth",
+								"delivery",
+								"verify-otp"
+							]
+						},
+						"description": "Verifies Delivery Partner OTP & registers FCM token."
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Restaurant Partner App",
+			"item": [
+				{
+					"name": "Step 1: Request Restaurant OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9988776655\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/food/auth/restaurant/request-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"food",
+								"auth",
+								"restaurant",
+								"request-otp"
+							]
+						},
+						"description": "Sends OTP to Restaurant Owner Phone."
+					}
+				},
+				{
+					"name": "Step 2: Verify Restaurant OTP (iOS/Android)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.accessToken) {",
+									"    pm.collectionVariables.set(\"accessToken\", jsonData.data.accessToken);",
+									"    console.log(\"Saved Restaurant accessToken to collectionVariables\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9988776655\",\n  \"otp\": \"123456\",\n  \"fcmToken\": \"ios_restaurant_fcm_token_sample_xyz789\",\n  \"platform\": \"ios\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/food/auth/restaurant/verify-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"food",
+								"auth",
+								"restaurant",
+								"verify-otp"
+							]
+						},
+						"description": "Verifies Restaurant Owner OTP & registers FCM token."
+					}
+				}
+			]
+		},
+		{
+			"name": "4. FCM Token Management & Push Testing",
+			"item": [
+				{
+					"name": "Save iOS FCM Token (/mobile/save with platform: ios)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"f_7zU3BRbNrSIZ6x_lX5lx:APA91bG1bAN0P-QuRIehv_pemTxzUsg3RvCav0fRtXEdO2bvP-b85q_BqiKmk-VSP3JXUu5V04zDLN-uBlFrRBkrTBpBv_GttbkRMEulqfh3lFjnKdkiNkw\",\n  \"platform\": \"ios\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/fcm-tokens/mobile/save",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"fcm-tokens",
+								"mobile",
+								"save"
+							]
+						},
+						"description": "Saves or updates iOS FCM token for the currently authenticated user/partner."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"token\": \"f_7zU3BRbNrSIZ6x_lX5lx:APA91bG1bAN0P-QuRIehv_pemTxzUsg3RvCav0fRtXEdO2bvP-b85q_BqiKmk-VSP3JXUu5V04zDLN-uBlFrRBkrTBpBv_GttbkRMEulqfh3lFjnKdkiNkw\",\n  \"platform\": \"ios\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/fcm-tokens/mobile/save",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"fcm-tokens",
+										"mobile",
+										"save"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Mobile FCM token saved successfully\",\n    \"data\": {\n        \"ownerType\": \"USER\",\n        \"ownerId\": \"6a59fc54352ce9de339af355\",\n        \"platform\": \"mobile\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Save Android FCM Token (/mobile/save)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"f_7zU3BRbNrSIZ6x_lX5lx:APA91bG1bAN0P-QuRIehv_pemTxzUsg3RvCav0fRtXEdO2bvP-b85q_BqiKmk-VSP3JXUu5V04zDLN-uBlFrRBkrTBpBv_GttbkRMEulqfh3lFjnKdkiNkw\",\n  \"platform\": \"mobile\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/fcm-tokens/mobile/save",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"fcm-tokens",
+								"mobile",
+								"save"
+							]
+						},
+						"description": "Saves or updates Android FCM token."
+					}
+				},
+				{
+					"name": "Save Web FCM Token (/save)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"f_7zU3BRbNrSIZ6x_lX5lx:APA91bG1bAN0P-QuRIehv_pemTxzUsg3RvCav0fRtXEdO2bvP-b85q_BqiKmk-VSP3JXUu5V04zDLN-uBlFrRBkrTBpBv_GttbkRMEulqfh3lFjnKdkiNkw\",\n  \"platform\": \"web\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/fcm-tokens/save",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"fcm-tokens",
+								"save"
+							]
+						},
+						"description": "Saves or updates Web FCM token."
+					}
+				},
+				{
+					"name": "Send Test FCM Push Notification (/test)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"platform\": \"mobile\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/fcm-tokens/test",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"fcm-tokens",
+								"test"
+							]
+						},
+						"description": "Triggers a real test push notification to the logged-in device via Firebase Admin SDK."
+					}
+				},
+				{
+					"name": "Remove FCM Token on Logout (/remove)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"f_7zU3BRbNrSIZ6x_lX5lx:APA91bG1bAN0P-QuRIehv_pemTxzUsg3RvCav0fRtXEdO2bvP-b85q_BqiKmk-VSP3JXUu5V04zDLN-uBlFrRBkrTBpBv_GttbkRMEulqfh3lFjnKdkiNkw\",\n  \"platform\": \"ios\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/fcm-tokens/remove",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"fcm-tokens",
+								"remove"
+							]
+						},
+						"description": "Deletes the FCM token from the database upon user logout."
+					}
+				},
+				{
+					"name": "FCM Health Check (/check)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/fcm-tokens/check",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"fcm-tokens",
+								"check"
+							]
+						},
+						"description": "Public health check endpoint for FCM token service."
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://zapoo.co.in",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTU5ZmM1NDM1MmNlOWRlMzM5YWYzNTUiLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4NDk2MTMzMSwiZXhwIjoxNzg0OTYyMjMxfQ.RxZt3Huc5BTbHyR8bIwpZHQN8Fp4sAOKOf1EsO_mPuk",
+			"type": "string"
+		}
+	]
+}

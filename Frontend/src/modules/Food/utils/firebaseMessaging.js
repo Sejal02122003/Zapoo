@@ -769,7 +769,8 @@ export async function registerWebPushForCurrentModule(pathname = window.location
       if (!supported) return;
 
       const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-      pushDebugLog(PUSH_DEBUG_PREFIX, "Service worker registered for push", {
+      await navigator.serviceWorker.ready;
+      pushDebugLog(PUSH_DEBUG_PREFIX, "Service worker registered and ready for push", {
         scope: registration.scope,
         moduleName });
       const messaging = getMessaging(app);
@@ -779,6 +780,9 @@ export async function registerWebPushForCurrentModule(pathname = window.location
         serviceWorkerRegistration: registration });
 
       if (!token) return;
+      console.log(`%c🔥 [FCM WEB TOKEN]: ${token}`, "background: #222; color: #bada55; font-size: 14px; font-weight: bold; padding: 4px 8px; rounded: 4px;");
+      console.log("🔥 FCM TOKEN RAW STRING:\n" + token);
+
       pushDebugLog(PUSH_DEBUG_PREFIX, "FCM token resolved", {
         moduleName,
         tokenPreview: `${token.slice(0, 12)}...` });
