@@ -4,6 +4,7 @@ import { adminAPI } from "@food/api"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@food/components/ui/dialog"
 import { exportDeliverymenToExcel, exportDeliverymenToPDF } from "@food/components/admin/deliveryman/deliverymanExportUtils"
+import AdminRiderActiveHours from "@food/components/admin/AdminRiderActiveHours"
 import { toast } from "sonner"
 const debugError = () => {}
 
@@ -1245,6 +1246,11 @@ availableCashLimit: deliveryman.availableCashLimit || 0 })
                       </p>
                     </div>
                   )}
+                </div>
+
+                {/* 7-Day Active Duty Hours Component */}
+                <div className="pt-4 border-t border-slate-200">
+                  <AdminRiderActiveHours riderId={viewDetails._id || viewDetails.id} riderName={viewDetails.name} />
                 </div>
               </div>
             ) : (

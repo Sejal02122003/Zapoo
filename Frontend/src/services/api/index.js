@@ -655,6 +655,12 @@ export const adminAPI = {
   updateVehicleRangeConfig: (vehicleType, body) =>
     adminClient.put(`/food/admin/vehicle-range-configs/${String(vehicleType)}`, body ?? {}),
 
+  /** Rider Active Hours (admin) */
+  getActiveHoursRoster: (params) =>
+    adminClient.get("/food/admin/delivery-partners/active-hours-roster", { params }),
+  getRiderActiveHours: (id) =>
+    adminClient.get(`/food/admin/delivery-partners/${String(id)}/active-hours`),
+
   /** Backward-compatible alias used in UI */
   getApprovedRestaurants: (params = {}) =>
     adminClient.get("/food/admin/restaurants", { params: { status: "approved", limit: 1000, ...params } }),
@@ -1443,6 +1449,10 @@ const getDeliveryMeOnce = () => {
 
 /** Delivery API - OTP login + registration via new backend. */
 export const deliveryAPI = {
+  getActiveHours: () =>
+    deliveryClient.get("/food/delivery/active-hours"),
+  sendHeartbeat: () =>
+    deliveryClient.post("/food/delivery/heartbeat", {}),
   getVehicleConfig: () =>
     deliveryClient.get("/food/delivery/vehicle-config"),
   updateVehicleType: (body) =>

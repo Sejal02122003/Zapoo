@@ -37,6 +37,11 @@ import { requireAdmin, requireSuperAdmin } from '../../../../core/auth/auth.midd
 
 import * as surgeController from '../controllers/surge.controller.js';
 import * as vehicleRangeConfigController from '../controllers/vehicleRangeConfig.controller.js';
+import { getAdminRiderActiveHoursController, getAdminActiveHoursRosterController } from '../../delivery/controllers/dutyLog.controller.js';
+
+// ----- Active Hours Roster (Admin) -----
+router.get('/delivery-partners/active-hours-roster', getAdminActiveHoursRosterController);
+router.get('/delivery-partners/:id/active-hours', getAdminRiderActiveHoursController);
 
 // ----- Vehicle Range Configs -----
 router.get('/vehicle-range-configs', vehicleRangeConfigController.getVehicleRangeConfigs);

@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { deliveryAPI, notificationAPI } from "@food/api"
 import VehicleSettings from "@food/components/delivery/VehicleSettings"
+import ActiveHoursCard from "@food/components/delivery/ActiveHoursCard"
 import { toast } from "sonner"
 import { clearModuleAuth } from "@food/utils/auth"
 import { registerWebPushForCurrentModule } from "@food/utils/firebaseMessaging"
@@ -241,6 +242,8 @@ export const ProfileV2 = () => {
 
         {/* Sections */}
         <div className="space-y-4">
+          {/* Active Duty Hours Card */}
+          <ActiveHoursCard />
           {/* Vehicle & Delivery Radius Settings */}
           <VehicleSettings onUpdated={() => fetchProfile()} />
           {/* Shift Details */}

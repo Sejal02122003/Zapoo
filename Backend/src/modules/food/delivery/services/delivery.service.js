@@ -392,6 +392,14 @@ export const updateDeliveryAvailability = async (userId, payload) => {
 
     partner.availabilityStatus = validStatus;
 
+    if (validStatus === 'online') {
+        const { handleGoOnline } = await import('./dutyLog.service.js');
+        await handleGoOnline(partner._id);
+    } else {
+        const { handleGoOffline } = await import('./dutyLog.service.js');
+        await handleGoOffline(partner._id, 'MANUAL');
+    }
+
     if (validStatus === 'online' && shiftStartPicBase64) {
         try {
             const buffer = Buffer.from(shiftStartPicBase64, 'base64');
