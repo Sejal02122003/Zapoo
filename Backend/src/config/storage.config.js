@@ -8,7 +8,7 @@ export const STORAGE_BASE_DIR = process.env.VPS_STORAGE_PATH || (
         : '/var/storage'
 );
 
-export const APP_BASE_URL = process.env.APP_BASE_URL || 'https://api.domain.com';
+export const APP_BASE_URL = process.env.APP_BASE_URL || 'https://zapoo.co.in';
 
 // Subfolder categorization mapping
 export const STORAGE_CATEGORIES = {
