@@ -36,6 +36,11 @@ router.get('/fee-settings/public', adminController.getFeeSettings);
 import { requireAdmin, requireSuperAdmin } from '../../../../core/auth/auth.middleware.js';
 
 import * as surgeController from '../controllers/surge.controller.js';
+import * as vehicleRangeConfigController from '../controllers/vehicleRangeConfig.controller.js';
+
+// ----- Vehicle Range Configs -----
+router.get('/vehicle-range-configs', vehicleRangeConfigController.getVehicleRangeConfigs);
+router.put('/vehicle-range-configs/:vehicleType', vehicleRangeConfigController.updateVehicleRangeConfig);
 
 // ----- Surge Pricing -----
 router.get('/surge/configs', surgeController.getSurgeConfigs);

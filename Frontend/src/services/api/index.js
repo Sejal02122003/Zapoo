@@ -649,6 +649,12 @@ export const adminAPI = {
   triggerSurgeRecalculation: (body) =>
     adminClient.post("/food/admin/surge/recalculate", body ?? {}),
 
+  /** Vehicle Range Configs (admin) */
+  getVehicleRangeConfigs: () =>
+    adminClient.get("/food/admin/vehicle-range-configs"),
+  updateVehicleRangeConfig: (vehicleType, body) =>
+    adminClient.put(`/food/admin/vehicle-range-configs/${String(vehicleType)}`, body ?? {}),
+
   /** Backward-compatible alias used in UI */
   getApprovedRestaurants: (params = {}) =>
     adminClient.get("/food/admin/restaurants", { params: { status: "approved", limit: 1000, ...params } }),
@@ -1437,6 +1443,10 @@ const getDeliveryMeOnce = () => {
 
 /** Delivery API - OTP login + registration via new backend. */
 export const deliveryAPI = {
+  getVehicleConfig: () =>
+    deliveryClient.get("/food/delivery/vehicle-config"),
+  updateVehicleType: (body) =>
+    deliveryClient.put("/food/delivery/vehicle-type", body ?? {}),
   triggerSOS: (type) => deliveryClient.post("/food/delivery/sos", { type }),
   acceptReassignment: (orderId) => deliveryClient.post(`/food/delivery/orders/${String(orderId)}/accept-reassignment`),
   rejectReassignment: (orderId) => deliveryClient.post(`/food/delivery/orders/${String(orderId)}/reject-reassignment`),

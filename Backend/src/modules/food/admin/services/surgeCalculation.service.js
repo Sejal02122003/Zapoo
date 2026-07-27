@@ -6,6 +6,8 @@ import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
 import { logger } from '../../../../utils/logger.js';
 
+import { getEligibleNearbyRiders } from '../../delivery/services/riderEligibility.service.js';
+
 /**
  * Counts active demand (pending orders) for a restaurant.
  */
@@ -22,37 +24,16 @@ export async function getPendingOrdersCount(restaurantId) {
 }
 
 /**
- * Counts available supply (online, approved riders) near a restaurant location.
+ * Counts available supply (online, approved riders) near a restaurant location filtered by vehicle range eligibility.
  */
 export async function getAvailableRidersCount(restaurantId, radiusKm = 10) {
     if (!restaurantId || !mongoose.Types.ObjectId.isValid(restaurantId)) return 0;
-    const rId = new mongoose.Types.ObjectId(restaurantId);
-
-    const restaurant = await FoodRestaurant.findById(rId).select('location').lean();
-    if (!restaurant?.location?.coordinates || restaurant.location.coordinates.length !== 2) {
-        return 0;
-    }
-
-    const [rLng, rLat] = restaurant.location.coordinates;
-
-    const geoNearPipeline = [
-        {
-            $geoNear: {
-                near: { type: 'Point', coordinates: [rLng, rLat] },
-                distanceField: 'distanceMeters',
-                maxDistance: radiusKm * 1000,
-                spherical: true,
-                query: {
-                    status: 'approved',
-                    availabilityStatus: 'online'
-                }
-            }
-        },
-        { $count: 'count' }
-    ];
-
-    const res = await FoodDeliveryPartner.aggregate(geoNearPipeline);
-    return res[0]?.count || 0;
+    const { partners } = await getEligibleNearbyRiders({
+        restaurantId,
+        maxSearchRadiusKm: radiusKm,
+        limit: 100
+    });
+    return partners?.length || 0;
 }
 
 /**

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
+import VehicleFields from "@food/components/delivery/VehicleFields"
 import useDeliveryBackNavigation from "../../hooks/useDeliveryBackNavigation"
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation"
 import bgImg from "@/assets/delivery_bg_new.png"
@@ -154,17 +155,15 @@ export default function SignupStep1() {
       newErrors.state = "State can contain letters only"
     }
 
-    const isBicycle = formData.vehicleType === "bicycle"
-    const isEVorBicycle = formData.vehicleType === "ev" || formData.vehicleType === "bicycle"
+    const vTypeUpper = String(formData.vehicleType || "BIKE").toUpperCase()
+    const isBicycle = vTypeUpper === "BICYCLE"
 
     if (!isBicycle && !formData.vehicleNumber.trim()) {
       newErrors.vehicleNumber = "Vehicle number is required"
-    } else if (formData.vehicleNumber.trim() && !/^[A-Z]{2}[0-9]{1,2}[A-Z]{1,2}[0-9]{4}$/.test(formData.vehicleNumber)) {
-      newErrors.vehicleNumber = "Invalid Indian vehicle number format (e.g., MH12AB1234)"
     }
     
-    if (!isEVorBicycle && !formData.drivingLicenseNumber.trim()) {
-      newErrors.drivingLicenseNumber = "Driving License is required for this vehicle type"
+    if (!isBicycle && !formData.drivingLicenseNumber.trim()) {
+      newErrors.drivingLicenseNumber = "Driving License is required for motorized vehicle types"
     } else if (formData.drivingLicenseNumber.trim() && !/^[A-Z]{2}[0-9]{2}[0-9]{4}[0-9]{7}$/.test(formData.drivingLicenseNumber)) {
       newErrors.drivingLicenseNumber = "Invalid DL format (e.g., MH1220110012345)"
     }
@@ -334,23 +333,28 @@ export default function SignupStep1() {
             </div>
           </div>
 
-          {/* Vehicle Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Vehicle Type <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="vehicleType"
-              value={formData.vehicleType}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="bike">Bike</option>
-              <option value="scooter">Scooter</option>
-              <option value="bicycle">Bicycle</option>
-              <option value="ev">EV</option>
-            </select>
-          </div>
+          {/* Vehicle Fields Selection Component */}
+          <VehicleFields
+            vehicleType={formData.vehicleType || "BIKE"}
+            vehicleNumber={formData.vehicleNumber || ""}
+            onVehicleTypeChange={(type) => {
+              setFormData(prev => ({
+                ...prev,
+                vehicleType: type,
+                vehicleNumber: type === "BICYCLE" ? "" : prev.vehicleNumber
+              }));
+              if (errors.vehicleNumber) {
+                setErrors(prev => ({ ...prev, vehicleNumber: undefined }));
+              }
+            }}
+            onVehicleNumberChange={(num) => {
+              setFormData(prev => ({ ...prev, vehicleNumber: num }));
+              if (errors.vehicleNumber) {
+                setErrors(prev => ({ ...prev, vehicleNumber: undefined }));
+              }
+            }}
+            errors={errors}
+          />
 
           {/* Vehicle Name */}
           <div>
@@ -365,24 +369,6 @@ export default function SignupStep1() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder="e.g., Honda Activa"
             />
-          </div>
-
-          {/* Vehicle Number */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Vehicle Number {formData.vehicleType === "bicycle" ? "(Optional)" : <span className="text-red-500">*</span>}
-            </label>
-            <input
-              type="text"
-              name="vehicleNumber"
-              value={formData.vehicleNumber}
-              onChange={handleChange}
-              maxLength={10}
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.vehicleNumber ? "border-red-500" : "border-gray-300"
-                }`}
-              placeholder="e.g., MH12AB1234"
-            />
-            {errors.vehicleNumber && <p className="text-red-500 text-sm mt-1">{errors.vehicleNumber}</p>}
           </div>
 
           {/* Driving License Number */}

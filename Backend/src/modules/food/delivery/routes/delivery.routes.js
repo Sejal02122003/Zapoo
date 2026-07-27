@@ -3,7 +3,7 @@ import { upload } from '../../../../middleware/upload.js';
 import { authMiddleware } from '../../../../core/auth/auth.middleware.js';
 import { requireRoles } from '../../../../core/roles/role.middleware.js';
 import * as orderController from '../../orders/controllers/order.controller.js';
-import { registerDeliveryPartnerController, updateDeliveryPartnerProfileController, updateDeliveryPartnerBankDetailsController, getDeliveryPartnerBankDetailsController, listSupportTicketsController, createSupportTicketController, getSupportTicketByIdController, updateDeliveryPartnerDetailsController, updateDeliveryPartnerProfilePhotoBase64Controller, updateAvailabilityController, getWalletController, createWithdrawalRequestController, createCashDepositOrderController, verifyCashDepositPaymentController, getEarningsController, getTripHistoryController, getPocketDetailsController, getEmergencyHelpController, getCashLimitController, getDeliveryReferralStatsController, getActiveEarningAddonsController, getPenaltiesHistoryRiderController, appealPenaltyController, triggerSOSAlertController, acceptReassignmentController, rejectReassignmentController } from '../controllers/delivery.controller.js';
+import { registerDeliveryPartnerController, updateDeliveryPartnerProfileController, updateDeliveryPartnerBankDetailsController, getDeliveryPartnerBankDetailsController, listSupportTicketsController, createSupportTicketController, getSupportTicketByIdController, updateDeliveryPartnerDetailsController, updateDeliveryPartnerProfilePhotoBase64Controller, updateAvailabilityController, getWalletController, createWithdrawalRequestController, createCashDepositOrderController, verifyCashDepositPaymentController, getEarningsController, getTripHistoryController, getPocketDetailsController, getEmergencyHelpController, getCashLimitController, getDeliveryReferralStatsController, getActiveEarningAddonsController, getPenaltiesHistoryRiderController, appealPenaltyController, triggerSOSAlertController, acceptReassignmentController, rejectReassignmentController, getDeliveryVehicleConfigController, updateDeliveryVehicleController } from '../controllers/delivery.controller.js';
 import { deleteDeliveryAccountController } from '../controllers/deleteAccount.controller.js';
 
 const router = express.Router();
@@ -21,6 +21,9 @@ const uploadFields = upload.fields([
 ]);
 
 router.post('/register', uploadFields, registerDeliveryPartnerController);
+
+router.get('/vehicle-config', authMiddleware, requireRoles('DELIVERY_PARTNER'), getDeliveryVehicleConfigController);
+router.put('/vehicle-type', authMiddleware, requireRoles('DELIVERY_PARTNER'), updateDeliveryVehicleController);
 
 router.patch('/profile', authMiddleware, requireRoles('DELIVERY_PARTNER'), uploadFields, updateDeliveryPartnerProfileController);
 

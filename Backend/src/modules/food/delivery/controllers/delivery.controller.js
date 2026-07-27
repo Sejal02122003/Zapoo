@@ -443,3 +443,93 @@ export const rejectReassignmentController = async (req, res, next) => {
         next(error);
     }
 };
+
+async function findPartnerFromRequest(req) {
+    const { FoodDeliveryPartner } = await import('../models/deliveryPartner.model.js');
+    const uId = req.user?.userId || req.user?._id || req.user?.id;
+    const phone = req.user?.phone;
+
+    let partner = null;
+
+    if (uId && mongoose.Types.ObjectId.isValid(uId)) {
+        partner = await FoodDeliveryPartner.findById(uId);
+    }
+    if (!partner && uId) {
+        partner = await FoodDeliveryPartner.findOne({ userId: String(uId) });
+    }
+    if (!partner && phone) {
+        partner = await FoodDeliveryPartner.findOne({ phone: String(phone) });
+    }
+    if (!partner && uId) {
+        partner = await FoodDeliveryPartner.findOne({ phone: String(uId) });
+    }
+
+    return partner;
+}
+
+export const getDeliveryVehicleConfigController = async (req, res, next) => {
+    try {
+        const { getVehicleRangeConfigs } = await import('../services/riderEligibility.service.js');
+        const partner = await findPartnerFromRequest(req);
+
+        if (!partner) {
+            return sendResponse(res, 404, 'Delivery partner profile not found');
+        }
+
+        const rangeConfigs = await getVehicleRangeConfigs();
+        const vType = String(partner.vehicleType || 'BIKE').toUpperCase();
+        const rangeInfo = rangeConfigs[vType] || { maxRangeKm: 10 };
+
+        return sendResponse(res, 200, 'Vehicle config fetched successfully', {
+            vehicleType: partner.vehicleType || 'BIKE',
+            vehicleNumber: partner.vehicleNumber || '',
+            needsVehicleConfirmation: partner.needsVehicleConfirmation || false,
+            maxRangeKm: rangeInfo.maxRangeKm,
+            allVehicleRanges: rangeConfigs
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateDeliveryVehicleController = async (req, res, next) => {
+    try {
+        const { validateVehicleDetails } = await import('../helpers/vehicleValidation.helpers.js');
+        const validated = validateVehicleDetails(req.body || {});
+
+        const partner = await findPartnerFromRequest(req);
+
+        if (!partner) {
+            return sendResponse(res, 404, 'Delivery partner profile not found');
+        }
+
+        if (validated.vehicleNumber) {
+            const { FoodDeliveryPartner } = await import('../models/deliveryPartner.model.js');
+            const duplicate = await FoodDeliveryPartner.findOne({
+                _id: { $ne: partner._id },
+                vehicleNumber: validated.vehicleNumber
+            }).lean();
+
+            if (duplicate) {
+                return sendResponse(res, 400, `Vehicle registration number '${validated.vehicleNumber}' is already registered to another delivery partner`);
+            }
+        }
+
+        partner.vehicleType = validated.vehicleType;
+        partner.vehicleNumber = validated.vehicleNumber || undefined;
+        partner.needsVehicleConfirmation = false;
+
+        await partner.save();
+
+        return sendResponse(res, 200, 'Vehicle details updated successfully', {
+            vehicleType: partner.vehicleType,
+            vehicleNumber: partner.vehicleNumber || '',
+            needsVehicleConfirmation: false
+        });
+    } catch (error) {
+        if (error.code === 11000 || error.message?.includes('E11000')) {
+            return sendResponse(res, 400, 'This vehicle registration number is already registered to another delivery partner');
+        }
+        next(error);
+    }
+};

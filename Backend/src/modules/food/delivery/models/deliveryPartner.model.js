@@ -34,7 +34,14 @@ const deliveryPartnerSchema = new mongoose.Schema(
             type: String
         },
         vehicleType: {
-            type: String
+            type: String,
+            enum: ['BICYCLE', 'BIKE', 'SCOOTER', 'CAR'],
+            default: 'BIKE',
+            uppercase: true
+        },
+        needsVehicleConfirmation: {
+            type: Boolean,
+            default: false
         },
         vehicleName: {
             type: String
@@ -137,6 +144,14 @@ const deliveryPartnerSchema = new mongoose.Schema(
         timestamps: true
     }
 );
+
+// Pre-save hook to clear vehicleNumber for BICYCLE
+deliveryPartnerSchema.pre('save', function (next) {
+    if (this.vehicleType === 'BICYCLE') {
+        this.vehicleNumber = undefined;
+    }
+    next();
+});
 
 // Indices
 deliveryPartnerSchema.index({ lastLocation: '2dsphere' });

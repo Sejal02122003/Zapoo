@@ -27,7 +27,10 @@ export const authMiddleware = (req, res, next) => {
     try {
         const decoded = verifyAccessToken(token);
         req.user = {
-            userId: decoded.userId,
+            ...decoded,
+            userId: decoded.userId || decoded._id || decoded.id,
+            _id: decoded.userId || decoded._id || decoded.id,
+            phone: decoded.phone,
             role: decoded.role
         };
         if (decoded.role === 'USER') {

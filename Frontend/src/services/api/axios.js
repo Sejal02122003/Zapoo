@@ -22,6 +22,16 @@ function getAccessToken(module) {
     const moduleToken = localStorage.getItem(key);
     if (moduleToken) return moduleToken;
 
+    if (module === "delivery") {
+      return (
+        localStorage.getItem("delivery_accessToken") ||
+        localStorage.getItem("deliveryToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        null
+      );
+    }
+
     if (module === "user") {
       return localStorage.getItem("accessToken") || null;
     }

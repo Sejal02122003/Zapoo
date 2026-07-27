@@ -7,6 +7,7 @@ import {
   Bike, Car, Image as ImageIcon
 } from "lucide-react"
 import BottomPopup from "@delivery/components/BottomPopup"
+import VehicleSettings from "@food/components/delivery/VehicleSettings"
 import { toast } from "sonner"
 import { openCamera, isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
 import { deliveryAPI } from "@food/api"
@@ -542,34 +543,7 @@ export const ProfileDetailsV2 = () => {
 
         {/* ─── VEHICLE SECTION ─── */}
         <section>
-          <div className="flex items-center justify-between mb-3 px-1">
-             <h3 className="text-xs font-black text-gray-950 uppercase tracking-widest flex items-center gap-2">
-                {(() => {
-                  const type = String(profile?.vehicle?.type || "").toLowerCase();
-                  if (type.includes("car")) return <Car className="w-4 h-4 text-gray-400" />;
-                  if (type.includes("bike") || type.includes("scooter") || type.includes("motorcycle")) return <Bike className="w-4 h-4 text-gray-400" />;
-                  if (type.includes("bicycle")) return <Bike className="w-4 h-4 text-gray-400" />;
-                  return <Truck className="w-4 h-4 text-gray-400" />;
-                })()} Vehicle Assets
-             </h3>
-          </div>
-          <InfoCard 
-            icon={(() => {
-              const type = String(profile?.vehicle?.type || "").toLowerCase();
-              if (type.includes("car")) return Car;
-              if (type.includes("bike") || type.includes("scooter") || type.includes("motorcycle")) return Bike;
-              if (type.includes("bicycle")) return Bike;
-              return Truck;
-            })()} 
-            label="Vehicle Details" 
-            value={[profile?.vehicle?.type, profile?.vehicle?.brand, vehicleNumber].filter(Boolean).map(v => String(v).toUpperCase()).join(" • ") || "N/A"} 
-            color="blue"
-            badge={!vehicleNumber && <span className="text-[9px] bg-red-50 text-red-500 px-1.5 rounded uppercase font-bold">Missing</span>}
-            onEdit={() => { 
-                setVehicleInput({ number: vehicleNumber, brand: vehicleBrand, type: vehicleType }); 
-                setShowVehiclePopup(true); 
-            }}
-          />
+          <VehicleSettings onUpdated={() => fetchProfile()} />
         </section>
 
         {/* ─── BANK & PAYMENTS SECTION (ENHANCED) ─── */}

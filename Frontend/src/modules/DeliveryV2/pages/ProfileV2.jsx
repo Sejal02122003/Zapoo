@@ -18,6 +18,7 @@ import {
   CreditCard
 } from "lucide-react"
 import { deliveryAPI, notificationAPI } from "@food/api"
+import VehicleSettings from "@food/components/delivery/VehicleSettings"
 import { toast } from "sonner"
 import { clearModuleAuth } from "@food/utils/auth"
 import { registerWebPushForCurrentModule } from "@food/utils/firebaseMessaging"
@@ -48,20 +49,21 @@ export const ProfileV2 = () => {
   }, [])
 
   // Fetch profile data
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setLoading(true)
-        const response = await deliveryAPI.getProfile()
-        if (response?.data?.success && response?.data?.data?.profile) {
-          setProfile(response.data.data.profile)
-        }
-      } catch (error) {
-        toast.error("Failed to load profile data")
-      } finally {
-        setLoading(false)
+  const fetchProfile = async () => {
+    try {
+      setLoading(true)
+      const response = await deliveryAPI.getProfile()
+      if (response?.data?.success && response?.data?.data?.profile) {
+        setProfile(response.data.data.profile)
       }
+    } catch (error) {
+      console.error("Failed to load profile data", error)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     fetchProfile()
   }, [])
 
@@ -239,6 +241,8 @@ export const ProfileV2 = () => {
 
         {/* Sections */}
         <div className="space-y-4">
+          {/* Vehicle & Delivery Radius Settings */}
+          <VehicleSettings onUpdated={() => fetchProfile()} />
           {/* Shift Details */}
           {profile?.shiftStartPic && (
             <div className="bg-white rounded-xl p-4 flex flex-col gap-3">

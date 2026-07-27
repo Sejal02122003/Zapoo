@@ -10,6 +10,7 @@ import { logger } from '../../../../utils/logger.js';
 import { config } from '../../../../config/env.js';
 import { getIO, rooms } from '../../../../config/socket.js';
 import { addOrderJob } from '../../../../queues/producers/order.producer.js';
+import { getVehicleRangeConfigs, filterRidersByVehicleRange } from '../../delivery/services/riderEligibility.service.js';
 import {
   buildDeliverySocketPayload,
   buildOrderIdentityFilter,
@@ -88,17 +89,27 @@ async function listNearbyOnlineDeliveryPartners(
       $project: {
         _id: 1,
         status: 1,
+        vehicleType: 1,
         distanceMeters: 1,
       },
     },
     { $sort: { distanceMeters: 1 } },
-    { $limit: Math.max(1, limit) },
+    { $limit: Math.max(1, limit * 2) },
   ];
 
   let picked;
   try {
+    const rangeMap = await getVehicleRangeConfigs();
     const geoResults = await FoodDeliveryPartner.aggregate(geoNearPipeline);
-    picked = geoResults.map((p) => ({
+
+    // Apply vehicle type range filtering
+    const eligibleResults = filterRidersByVehicleRange({
+      partners: geoResults,
+      deliveryDistanceKm: maxKm,
+      rangeMap
+    });
+
+    picked = eligibleResults.slice(0, Math.max(1, limit)).map((p) => ({
       partnerId: p._id,
       distanceKm: Number((p.distanceMeters / 1000).toFixed(2)),
       status: p.status,
