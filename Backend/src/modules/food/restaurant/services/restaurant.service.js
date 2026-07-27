@@ -1,5 +1,7 @@
 import { FoodRestaurant } from '../models/restaurant.model.js';
-import { uploadImageBuffer, uploadFileBuffer } from '../../../../services/cloudinary.service.js';
+import { uploadFileBuffer } from '../../../../services/cloudinary.service.js';
+import { processAndSaveImage } from '../../../../utils/sharp.util.js';
+import { STORAGE_CATEGORIES } from '../../../../config/storage.config.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import mongoose from 'mongoose';
 import { FoodZone } from '../../admin/models/zone.model.js';
@@ -298,22 +300,29 @@ export const registerRestaurant = async (payload, files) => {
     const images = {};
 
     if (files?.profileImage?.[0]) {
-        images.profileImage = await uploadImageBuffer(files.profileImage[0].buffer, 'food/restaurants/profile');
+        const res = await processAndSaveImage(files.profileImage[0].buffer, STORAGE_CATEGORIES.RESTAURANTS);
+        images.profileImage = res.fullUrl;
     }
     if (files?.panImage?.[0]) {
-        images.panImage = await uploadImageBuffer(files.panImage[0].buffer, 'food/restaurants/pan');
+        const res = await processAndSaveImage(files.panImage[0].buffer, STORAGE_CATEGORIES.RESTAURANTS);
+        images.panImage = res.fullUrl;
     }
     if (files?.gstImage?.[0]) {
-        images.gstImage = await uploadImageBuffer(files.gstImage[0].buffer, 'food/restaurants/gst');
+        const res = await processAndSaveImage(files.gstImage[0].buffer, STORAGE_CATEGORIES.RESTAURANTS);
+        images.gstImage = res.fullUrl;
     }
     if (files?.fssaiImage?.[0]) {
-        images.fssaiImage = await uploadImageBuffer(files.fssaiImage[0].buffer, 'food/restaurants/fssai');
+        const res = await processAndSaveImage(files.fssaiImage[0].buffer, STORAGE_CATEGORIES.RESTAURANTS);
+        images.fssaiImage = res.fullUrl;
     }
 
     let menuImages = [];
     if (files?.menuImages?.length) {
         menuImages = await Promise.all(
-            files.menuImages.map((file) => uploadImageBuffer(file.buffer, 'food/restaurants/menu'))
+            files.menuImages.map(async (file) => {
+                const res = await processAndSaveImage(file.buffer, STORAGE_CATEGORIES.MENU);
+                return res.fullUrl;
+            })
         );
     }
 

@@ -1,5 +1,7 @@
 import AppIntroAd from '../models/appIntroAd.model.js';
-import { uploadImageBuffer, uploadVideoBuffer } from '../../../../services/cloudinary.service.js';
+import { uploadVideoBuffer } from '../../../../services/cloudinary.service.js';
+import { processAndSaveImage } from '../../../../utils/sharp.util.js';
+import { STORAGE_CATEGORIES } from '../../../../config/storage.config.js';
 
 export const getAppIntroAds = async (req, res) => {
     try {
@@ -22,14 +24,16 @@ export const createAppIntroAd = async (req, res) => {
             if (file.mimetype.startsWith('video/')) {
                 mediaUrl = await uploadVideoBuffer(file.buffer, 'app_intro_ads');
             } else {
-                mediaUrl = await uploadImageBuffer(file.buffer, 'app_intro_ads');
+                const res = await processAndSaveImage(file.buffer, STORAGE_CATEGORIES.BANNERS);
+                mediaUrl = res.fullUrl;
             }
         } else if (req.file) {
             const file = req.file;
             if (file.mimetype.startsWith('video/')) {
                 mediaUrl = await uploadVideoBuffer(file.buffer, 'app_intro_ads');
             } else {
-                mediaUrl = await uploadImageBuffer(file.buffer, 'app_intro_ads');
+                const res = await processAndSaveImage(file.buffer, STORAGE_CATEGORIES.BANNERS);
+                mediaUrl = res.fullUrl;
             }
         }
 
@@ -66,14 +70,16 @@ export const updateAppIntroAd = async (req, res) => {
             if (file.mimetype.startsWith('video/')) {
                 updates.mediaUrl = await uploadVideoBuffer(file.buffer, 'app_intro_ads');
             } else {
-                updates.mediaUrl = await uploadImageBuffer(file.buffer, 'app_intro_ads');
+                const res = await processAndSaveImage(file.buffer, STORAGE_CATEGORIES.BANNERS);
+                updates.mediaUrl = res.fullUrl;
             }
         } else if (req.file) {
             const file = req.file;
             if (file.mimetype.startsWith('video/')) {
                 updates.mediaUrl = await uploadVideoBuffer(file.buffer, 'app_intro_ads');
             } else {
-                updates.mediaUrl = await uploadImageBuffer(file.buffer, 'app_intro_ads');
+                const res = await processAndSaveImage(file.buffer, STORAGE_CATEGORIES.BANNERS);
+                updates.mediaUrl = res.fullUrl;
             }
         }
 

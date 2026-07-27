@@ -1,6 +1,7 @@
 import { FoodUser } from '../../../../core/users/user.model.js';
 import { AuthError, ValidationError } from '../../../../core/auth/errors.js';
-import { uploadImageBuffer } from '../../../../services/cloudinary.service.js';
+import { processAndSaveImage } from '../../../../utils/sharp.util.js';
+import { STORAGE_CATEGORIES } from '../../../../config/storage.config.js';
 
 const parseIsoDateOrNull = (value) => {
     if (value === undefined) return undefined;
@@ -50,8 +51,8 @@ export const uploadCurrentUserProfileImage = async (userId, file) => {
     const user = await FoodUser.findById(userId);
     if (!user) throw new AuthError('Profile not found');
 
-    const url = await uploadImageBuffer(file.buffer, 'food/users/profile');
-    user.profileImage = String(url || '').trim();
+    const result = await processAndSaveImage(file.buffer, STORAGE_CATEGORIES.USERS);
+    user.profileImage = result.fullUrl;
     await user.save();
     return { profileImage: user.profileImage, user: user.toObject() };
 };

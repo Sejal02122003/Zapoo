@@ -3,7 +3,6 @@ import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodItem } from '../../admin/models/food.model.js';
 import { FoodCategory } from '../../admin/models/category.model.js';
 import { FoodRestaurant } from '../models/restaurant.model.js';
-import { uploadImageBuffer } from '../../../../services/cloudinary.service.js';
 import {
     extractRawFoodVariants,
     getFoodDisplayPrice,
@@ -66,12 +65,16 @@ const downloadImageBuffer = async (url) => {
     }
 };
 
-const ensureCloudinaryImageUrl = async (value) => {
+import { processAndSaveImage } from '../../../../utils/sharp.util.js';
+import { STORAGE_CATEGORIES } from '../../../../config/storage.config.js';
+
+const ensureVPSImageUrl = async (value) => {
     const url = toStr(value);
     if (!url) return '';
     if (!shouldUploadImageUrl(url)) return url;
     const buffer = await downloadImageBuffer(url);
-    return await uploadImageBuffer(buffer, IMAGE_UPLOAD_FOLDER);
+    const res = await processAndSaveImage(buffer, STORAGE_CATEGORIES.MENU);
+    return res.fullUrl;
 };
 
 const asyncPool = async (limit, items, iterator) => {
@@ -263,7 +266,7 @@ export async function createRestaurantFood(restaurantId, body = {}) {
     const { price, variants } = getCreateFoodPricing(body);
 
     const description = toStr(body.description);
-    const image = await ensureCloudinaryImageUrl(body.image || body.imageUrl || body.photoUrl || body.photo);
+    const image = await ensureVPSImageUrl(body.image || body.imageUrl || body.photoUrl || body.photo);
     const isAvailable = body.isAvailable !== false;
     const foodType = normalizeFoodType(body.foodType);
     const preparationTime = toStr(body.preparationTime);

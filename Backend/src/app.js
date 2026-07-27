@@ -13,7 +13,12 @@ import { healthCheck } from './config/health.js';
 import { config } from './config/env.js';
 import compression from 'compression';
 
+import { setupStaticImageServing } from './config/staticStorage.js';
+
 const app = express();
+
+// Serve local /var/storage images under /images path
+setupStaticImageServing(app);
 
 // Add compression middleware to compress JSON payloads (Gzip)
 app.use(compression());
