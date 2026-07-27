@@ -30,7 +30,7 @@ const buildMenuFromFoods = async (foods = []) => {
     for (const food of foods) {
         const categoryId = food?.categoryId ? String(food.categoryId) : '';
         const categoryDoc = categoryMap.get(categoryId) || null;
-        const sectionName = (categoryDoc?.name || food?.categoryName || food?.category || 'Menu').trim() || 'Menu';
+        const sectionName = String(categoryDoc?.name || food?.categoryName || food?.category || 'Menu').trim() || 'Menu';
         const groupKey = categoryId || `name:${sectionName.toLowerCase()}`;
 
         const basePrice = getFoodDisplayPrice(food);
