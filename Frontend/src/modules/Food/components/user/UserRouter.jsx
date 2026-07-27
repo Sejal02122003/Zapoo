@@ -125,6 +125,8 @@ export default function UserRouter() {
           />
           <Route path="under99" element={<Under99 />} />
           <Route path="under-99" element={<Under99 />} />
+          <Route path="user/under99" element={<Under99 />} />
+          <Route path="user/under-99" element={<Under99 />} />
           <Route path="collection/:category" element={<CollectionPage />} />
           <Route path="categories" element={<Categories />} />
           <Route path="category/momo" element={<MomoPage />} />
