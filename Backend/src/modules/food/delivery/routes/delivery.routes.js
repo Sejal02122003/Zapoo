@@ -21,11 +21,14 @@ const uploadFields = upload.fields([
 ]);
 
 import { getRiderActiveHoursController, riderHeartbeatController } from '../controllers/dutyLog.controller.js';
+import { getRiderIncentivesProgressController, claimIncentiveController } from '../../admin/controllers/workingHoursIncentive.controller.js';
 
 router.post('/register', uploadFields, registerDeliveryPartnerController);
 
 router.get('/active-hours', authMiddleware, requireRoles('DELIVERY_PARTNER'), getRiderActiveHoursController);
 router.post('/heartbeat', authMiddleware, requireRoles('DELIVERY_PARTNER'), riderHeartbeatController);
+router.get('/incentives/working-hours', authMiddleware, requireRoles('DELIVERY_PARTNER'), getRiderIncentivesProgressController);
+router.post('/incentives/working-hours/claim', authMiddleware, requireRoles('DELIVERY_PARTNER'), claimIncentiveController);
 router.get('/vehicle-config', authMiddleware, requireRoles('DELIVERY_PARTNER'), getDeliveryVehicleConfigController);
 router.put('/vehicle-type', authMiddleware, requireRoles('DELIVERY_PARTNER'), updateDeliveryVehicleController);
 

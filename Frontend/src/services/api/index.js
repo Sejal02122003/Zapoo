@@ -661,6 +661,16 @@ export const adminAPI = {
   getRiderActiveHours: (id) =>
     adminClient.get(`/food/admin/delivery-partners/${String(id)}/active-hours`),
 
+  /** Working Hours Incentive Configs (admin editable) */
+  getWorkingHoursIncentiveConfigs: () =>
+    adminClient.get("/food/admin/incentives/working-hours"),
+  createWorkingHoursIncentiveConfig: (body) =>
+    adminClient.post("/food/admin/incentives/working-hours", body ?? {}),
+  updateWorkingHoursIncentiveConfig: (id, body) =>
+    adminClient.put(`/food/admin/incentives/working-hours/${String(id)}`, body ?? {}),
+  deleteWorkingHoursIncentiveConfig: (id) =>
+    adminClient.delete(`/food/admin/incentives/working-hours/${String(id)}`),
+
   /** Backward-compatible alias used in UI */
   getApprovedRestaurants: (params = {}) =>
     adminClient.get("/food/admin/restaurants", { params: { status: "approved", limit: 1000, ...params } }),
@@ -1453,6 +1463,10 @@ export const deliveryAPI = {
     deliveryClient.get("/food/delivery/active-hours"),
   sendHeartbeat: () =>
     deliveryClient.post("/food/delivery/heartbeat", {}),
+  getWorkingHoursIncentiveProgress: () =>
+    deliveryClient.get("/food/delivery/incentives/working-hours"),
+  claimWorkingHoursIncentive: (tierId) =>
+    deliveryClient.post("/food/delivery/incentives/working-hours/claim", { tierId }),
   getVehicleConfig: () =>
     deliveryClient.get("/food/delivery/vehicle-config"),
   updateVehicleType: (body) =>

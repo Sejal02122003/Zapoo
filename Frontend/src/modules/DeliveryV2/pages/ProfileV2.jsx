@@ -20,6 +20,7 @@ import {
 import { deliveryAPI, notificationAPI } from "@food/api"
 import VehicleSettings from "@food/components/delivery/VehicleSettings"
 import ActiveHoursCard from "@food/components/delivery/ActiveHoursCard"
+import WorkingHoursIncentiveCard from "@food/components/delivery/WorkingHoursIncentiveCard"
 import { toast } from "sonner"
 import { clearModuleAuth } from "@food/utils/auth"
 import { registerWebPushForCurrentModule } from "@food/utils/firebaseMessaging"
@@ -244,6 +245,8 @@ export const ProfileV2 = () => {
         <div className="space-y-4">
           {/* Active Duty Hours Card */}
           <ActiveHoursCard />
+          {/* Working Hours Incentive Bonus Targets Card */}
+          <WorkingHoursIncentiveCard />
           {/* Vehicle & Delivery Radius Settings */}
           <VehicleSettings onUpdated={() => fetchProfile()} />
           {/* Shift Details */}

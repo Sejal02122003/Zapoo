@@ -85,6 +85,8 @@ const EarningAddonHistory = lazy(() => import("@food/pages/admin/delivery-partne
 const DeliveryEarnings = lazy(() => import("@food/pages/admin/delivery-partners/DeliveryEarnings"));
 const DeliveryPolicyPage = lazy(() => import("@food/pages/admin/delivery-partners/DeliveryPolicyPage"));
 const PenaltyHistoryPage = lazy(() => import("@food/pages/admin/delivery-partners/PenaltyHistoryPage"));
+const VehicleRangeConfigPage = lazy(() => import("@food/pages/admin/delivery-partners/VehicleRangeConfigPage"));
+const WorkingHoursIncentivePage = lazy(() => import("@food/pages/admin/delivery-partners/WorkingHoursIncentivePage"));
 const ShiftSlots = lazy(() => import("@food/pages/admin/shifts/ShiftSlots"));
 // Disbursement Management
 // Report Management
@@ -272,8 +274,9 @@ export default function AdminRouter() {
             <Route path="delivery-partners/earnings" element={<DeliveryEarnings />} />
             <Route path="delivery-partners/delivery-policy" element={<DeliveryPolicyPage />} />
             <Route path="delivery-partners/penalties" element={<PenaltyHistoryPage />} />
-            <Route path="delivery-partners/policy" element={<DeliveryPolicyPage />} />
             <Route path="delivery-partners/penalty-history" element={<PenaltyHistoryPage />} />
+            <Route path="delivery-partners/working-hours-incentives" element={<WorkingHoursIncentivePage />} />
+            <Route path="delivery-partners/vehicle-range-config" element={<VehicleRangeConfigPage />} />
             <Route path="delivery-partners/shifts" element={<ShiftSlots />} />
 
 
