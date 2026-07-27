@@ -5,7 +5,7 @@ import { adminAPI } from "@food/api"
 import { setAuthData } from "@food/utils/auth"
 import { ShieldCheck, UserCog, Star, Heart, ArrowRight, Loader2, Mail, Lock, Eye, EyeOff, ShieldQuestion } from "lucide-react"
 import { Button } from "@food/components/ui/button"
-import logoNew from "@food/assets/appzetologo.png"
+import logoNew from "@food/assets/zapoologo.png"
 import { toast } from "sonner"
 
 export default function AdminLogin() {
@@ -80,14 +80,12 @@ export default function AdminLogin() {
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", stiffness: 200, damping: 20 }}
-              className="relative w-32 h-32 md:w-36 md:h-36 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden border-4 border-white mx-auto mb-4 bg-white"
-              style={{ borderRadius: '50%', WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
+              className="relative w-32 h-32 md:w-36 md:h-36 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden border-4 border-white mx-auto mb-4 bg-white flex items-center justify-center p-2"
             >
               <img 
                 src={logoNew} 
                 alt="Zapoo Logo" 
-                className="w-full h-full object-cover scale-[1.15]"
-                style={{ borderRadius: '50%' }}
+                className="w-full h-full object-contain rounded-2xl"
               />
             </motion.div>
 
