@@ -406,7 +406,7 @@ export default function ShiftSlots() {
             )}
 
             {/* Tab 3: Pending Bank Payouts */}
-            {activeTab === 'payouts' && <PendingPayouts />}
+            {activeTab === 'payouts' && <PendingPayouts selectedZoneId={selectedZoneId} />}
 
             {/* SHIFT RIDERS & BANK DETAILS MODAL */}
             {selectedShiftId && (

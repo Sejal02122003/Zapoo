@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/api/axios';
 import { Search, Filter, CheckCircle2, Clock, AlertCircle, Eye, ExternalLink, QrCode, FileText } from 'lucide-react';
 
-export default function PendingPayouts() {
+export default function PendingPayouts({ selectedZoneId = 'All' }) {
     const [payouts, setPayouts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('PENDING');
@@ -21,8 +21,11 @@ export default function PendingPayouts() {
     const fetchPayouts = async () => {
         try {
             setLoading(true);
-            const query = statusFilter !== 'ALL' ? `?status=${statusFilter}` : '';
-            const response = await apiClient.get(`/food/admin/shifts/payouts${query}`);
+            const params = new URLSearchParams();
+            if (statusFilter !== 'ALL') params.append('status', statusFilter);
+            if (selectedZoneId && selectedZoneId !== 'All') params.append('zoneId', selectedZoneId);
+            
+            const response = await apiClient.get(`/food/admin/shifts/payouts?${params.toString()}`);
             const list = response.data?.data || response.data?.payouts;
             if (response.data?.success && Array.isArray(list)) {
                 setPayouts(list);
@@ -39,7 +42,7 @@ export default function PendingPayouts() {
 
     useEffect(() => {
         fetchPayouts();
-    }, [statusFilter]);
+    }, [statusFilter, selectedZoneId]);
 
     const handleMarkPaid = async (e) => {
         e.preventDefault();
@@ -92,6 +95,13 @@ export default function PendingPayouts() {
     const safePayouts = Array.isArray(payouts) ? payouts : [];
     const filteredPayouts = safePayouts.filter((p) => {
         if (!p) return false;
+        if (selectedZoneId && selectedZoneId !== 'All') {
+            const shiftZone = p.shiftId?.zoneId || p.shiftId?.zoneName;
+            const riderZone = p.riderId?.zoneId || p.riderId?.zoneName;
+            if (shiftZone && String(shiftZone) !== String(selectedZoneId) && riderZone && String(riderZone) !== String(selectedZoneId)) {
+                return false;
+            }
+        }
         const name = p.riderId?.name || p.bankDetailsSnapshot?.accountHolderName || '';
         const phone = p.riderId?.phone || '';
         return name.toLowerCase().includes((searchTerm || '').toLowerCase()) || phone.includes(searchTerm || '');

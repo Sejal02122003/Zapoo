@@ -8,7 +8,7 @@ export const payoutController = {
         try {
             await shiftService.syncPendingPayoutsForBookings();
 
-            const { status, riderId, date } = req.query;
+            const { status, riderId, date, zoneId } = req.query;
             const filter = {};
             if (status && status !== 'ALL') filter.status = status;
             if (riderId) filter.riderId = riderId;
@@ -18,6 +18,22 @@ export const payoutController = {
                 const endDate = new Date(date);
                 endDate.setHours(23,59,59,999);
                 filter.createdAt = { $gte: startDate, $lte: endDate };
+            }
+
+            if (zoneId && zoneId !== 'All') {
+                const { FoodShift } = await import('../models/shift.model.js');
+                const { FoodDeliveryPartner } = await import('../../delivery/models/deliveryPartner.model.js');
+                
+                const matchingShifts = await FoodShift.find({ zoneId }).select('_id').lean();
+                const matchingRiders = await FoodDeliveryPartner.find({ zoneId }).select('_id').lean();
+                
+                const shiftIds = matchingShifts.map(s => s._id);
+                const riderIds = matchingRiders.map(r => r._id);
+
+                filter.$or = [
+                    { shiftId: { $in: shiftIds } },
+                    { riderId: { $in: riderIds } }
+                ];
             }
 
             const payouts = await shiftRepository.getPayouts(filter, { sort: { createdAt: -1 } });

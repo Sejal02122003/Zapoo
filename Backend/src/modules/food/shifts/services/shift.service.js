@@ -9,6 +9,7 @@ import { FoodTransaction } from '../../orders/models/foodTransaction.model.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
 import { FoodUser } from '../../../../core/users/user.model.js';
 import { FoodAdmin } from '../../../../core/admin/admin.model.js';
+import { FoodZone } from '../../admin/models/zone.model.js';
 import { decrypt } from '../../../../utils/encryption.js';
 
 export const shiftService = {
@@ -24,9 +25,18 @@ export const shiftService = {
         } else if (filterOptions && typeof filterOptions === 'object') {
             const { city, zoneId } = filterOptions;
             if (zoneId && zoneId !== 'All') {
-                filter.zoneId = zoneId;
+                const zoneObjId = mongoose.Types.ObjectId.isValid(zoneId) ? new mongoose.Types.ObjectId(zoneId) : zoneId;
+                filter = {
+                    $or: [
+                        { zoneId: zoneId },
+                        { zoneId: zoneObjId },
+                        { zoneId: null },
+                        { zoneId: { $exists: false } },
+                        { city: 'All' }
+                    ]
+                };
             } else if (city && city !== 'All') {
-                filter.city = city;
+                filter = { city };
             }
         }
         return shiftRepository.getTemplates(filter);
@@ -53,13 +63,23 @@ export const shiftService = {
         
         let templateFilter = { isActive: true };
         if (targetZoneId && targetZoneId !== 'All') {
-            templateFilter.zoneId = targetZoneId;
+            const zoneObjId = mongoose.Types.ObjectId.isValid(targetZoneId) ? new mongoose.Types.ObjectId(targetZoneId) : targetZoneId;
+            templateFilter = {
+                $or: [
+                    { zoneId: targetZoneId },
+                    { zoneId: zoneObjId },
+                    { zoneId: null },
+                    { zoneId: { $exists: false } },
+                    { city: 'All' }
+                ],
+                isActive: true
+            };
         }
 
         let activeTemplates = await shiftRepository.getTemplates(templateFilter);
 
         // Auto-seed standard 11AM-11PM template if no template exists in database
-        if (activeTemplates.length === 0 && (!targetZoneId || targetZoneId === 'All')) {
+        if (activeTemplates.length === 0) {
             const defaultTemplate = await shiftRepository.createTemplate({
                 name: 'Standard 11AM-11PM Daily Template',
                 city: 'All',
@@ -76,9 +96,21 @@ export const shiftService = {
             activeTemplates = [defaultTemplate];
         }
 
+        // Fetch Zone Name if targetZoneId is passed
+        let targetZoneName = '';
+        if (targetZoneId && targetZoneId !== 'All') {
+            const foundZone = await FoodZone.findById(targetZoneId).lean();
+            if (foundZone) {
+                targetZoneName = foundZone.name || foundZone.zoneName || foundZone.serviceLocation || '';
+            }
+        }
+
         const createdShifts = [];
 
         for (const template of activeTemplates) {
+            const effectiveZoneId = (targetZoneId && targetZoneId !== 'All') ? targetZoneId : (template.zoneId || null);
+            const effectiveZoneName = targetZoneName || template.zoneName || template.city || 'All';
+
             for (const slot of template.slots || []) {
                 const shiftStart = new Date(`${dateStr}T${slot.startTime}:00`);
                 const shiftEnd = new Date(`${dateStr}T${slot.endTime}:00`);
@@ -93,11 +125,11 @@ export const shiftService = {
                 bookingOpensAt.setDate(bookingOpensAt.getDate() - 1);
                 bookingOpensAt.setHours(0, 0, 0, 0);
 
-                // Prevent duplicate generation for same template + slotOrder + startTime
+                // Prevent duplicate generation for same template + slotOrder + startTime + zoneId
                 const existing = await FoodShift.findOne({
                     $or: [
-                        { templateId: template._id, slotOrder: slot.slotOrder, startTime: shiftStart },
-                        { name: `${template.name} - Slot ${slot.slotOrder} (${slot.startTime} - ${slot.endTime})`, startTime: shiftStart }
+                        { templateId: template._id, slotOrder: slot.slotOrder, startTime: shiftStart, zoneId: effectiveZoneId },
+                        { name: `${template.name} - Slot ${slot.slotOrder} (${slot.startTime} - ${slot.endTime})`, startTime: shiftStart, zoneId: effectiveZoneId }
                     ]
                 });
 
@@ -109,9 +141,9 @@ export const shiftService = {
                         guaranteeAmount: slot.guaranteeAmount,
                         minimumOrders: slot.minimumOrders,
                         minimumLoginPercentage: slot.minimumLoginPercentage,
-                        city: template.city || 'All',
-                        zoneId: template.zoneId || null,
-                        zoneName: template.zoneName || '',
+                        city: effectiveZoneName,
+                        zoneId: effectiveZoneId,
+                        zoneName: effectiveZoneName,
                         maxPartners: slot.maxPartners,
                         bonusEnabled: slot.guaranteeAmount > 0,
                         isActive: true,
@@ -152,9 +184,17 @@ export const shiftService = {
         } else if (filterOptions && typeof filterOptions === 'object') {
             const { city, zoneId } = filterOptions;
             if (zoneId && zoneId !== 'All') {
-                filter.zoneId = zoneId;
+                const zoneObjId = mongoose.Types.ObjectId.isValid(zoneId) ? new mongoose.Types.ObjectId(zoneId) : zoneId;
+                filter = {
+                    $or: [
+                        { zoneId: zoneId },
+                        { zoneId: zoneObjId },
+                        { zoneId: null },
+                        { zoneId: { $exists: false } }
+                    ]
+                };
             } else if (city && city !== 'All') {
-                filter.city = city;
+                filter = { city };
             }
         }
 
