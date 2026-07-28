@@ -68,6 +68,20 @@ router.use('/v1/uploads', uploadRoutes);
 // Public Admin Settings (Public Category B)
 router.get('/v1/food/admin/business-settings/public', businessSettingsController.getBusinessSettings);
 router.get('/v1/food/admin/fee-settings/public', adminController.getFeeSettings);
+router.get('/v1/food/public/env', (_req, res) => {
+    res.json({
+        success: true,
+        data: {
+            VITE_FIREBASE_API_KEY: process.env.VITE_FIREBASE_API_KEY,
+            VITE_FIREBASE_AUTH_DOMAIN: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+            VITE_FIREBASE_PROJECT_ID: process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
+            VITE_FIREBASE_APP_ID: process.env.VITE_FIREBASE_APP_ID,
+            VITE_FIREBASE_MESSAGING_SENDER_ID: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+            VITE_FIREBASE_STORAGE_BUCKET: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+            VITE_FIREBASE_MEASUREMENT_ID: process.env.VITE_FIREBASE_MEASUREMENT_ID
+        }
+    });
+});
 
 // Private Category C APIs (Must run AFTER authMiddleware so req.user exists)
 router.use('/v1/food/admin/env', envSettingRoutes);
