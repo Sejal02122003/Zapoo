@@ -17,19 +17,51 @@ import { setupStaticImageServing } from './config/staticStorage.js';
 
 const app = express();
 
-// Serve local /var/storage images under /images path
-setupStaticImageServing(app);
-
-// Add compression middleware to compress JSON payloads (Gzip)
-app.use(compression());
-
-// Trust first proxy (essential for express-rate-limit if behind a proxy)
+// Enable Trust Proxy per SOP (Allows Express to identify real client IP from Nginx X-Real-IP / X-Forwarded-For)
 app.set('trust proxy', 1);
 
-// Request ID tracing (before other middlewares so all logs can use it)
-app.use(requestIdMiddleware);
+// Serve local /var/storage images under /images path (Static bypass)
+setupStaticImageServing(app);
 
-// Health endpoints (no rate limit, minimal JSON, no secrets)
+// 1. Compression
+app.use(compression());
+
+// 2. Security Headers (Helmet)
+app.use(helmet({
+    contentSecurityPolicy: { directives: { defaultSrc: ["'self'"] } },
+    hsts: config.nodeEnv === 'production' ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
+    xssFilter: true,
+    noSniff: true,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
+
+// 3. CORS
+app.use(cors());
+
+// 4. Request Logging & Tracing
+app.use(requestIdMiddleware);
+app.use(morgan('dev'));
+
+// 5. Body Parsers
+app.use(express.json({
+    verify: (req, res, buf) => {
+        if (req.originalUrl && req.originalUrl.includes('/webhook/razorpay')) {
+            req.rawBody = buf;
+        }
+    }
+}));
+app.use(express.urlencoded({ extended: true }));
+
+// Sanitization
+app.use((req, _res, next) => {
+    req.body = mongoSanitize(req.body);
+    req.query = mongoSanitize(req.query);
+    req.params = mongoSanitize(req.params);
+    next();
+});
+app.use(xssClean());
+
+// Unrestricted Public Health Endpoints
 app.get('/health', async (_req, res) => {
     try {
         const data = await healthCheck();
@@ -42,39 +74,7 @@ app.get('/ready', (_req, res) => {
     res.status(200).json({ status: 'ready' });
 });
 
-// Security & parsing middlewares
-app.use(helmet({
-    contentSecurityPolicy: { directives: { defaultSrc: ["'self'"] } },
-    hsts: config.nodeEnv === 'production' ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
-    xssFilter: true,
-    noSniff: true,
-    referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
-}));
-app.use(cors());
-app.use(morgan('dev'));
-app.use(express.json({
-    verify: (req, res, buf) => {
-        // ✅ Store rawBody for signature verification (Razorpay Webhooks)
-        if (req.originalUrl && req.originalUrl.includes('/webhook/razorpay')) {
-            req.rawBody = buf;
-        }
-    }
-}));
-app.use(express.urlencoded({ extended: true }));
-
-// Protect against NoSQL injection and XSS
-app.use((req, _res, next) => {
-    req.body = mongoSanitize(req.body);
-    req.query = mongoSanitize(req.query);
-    req.params = mongoSanitize(req.params);
-    next();
-});
-app.use(xssClean());
-
-// Global rate limiting for API routes
-app.use('/api', apiRateLimiter);
-
-// Optional: log API response time (method, path, status, duration) - no sensitive data
+// Response time logger
 app.use('/api', responseTimeLogger);
 
 import { startCashbackExpiryScheduler } from './core/jobs/cashbackExpiry.scheduler.js';
@@ -84,7 +84,7 @@ import { startSurgeScheduler } from './core/jobs/surgeScheduler.job.js';
 startCashbackExpiryScheduler();
 startSurgeScheduler();
 
-// API Routes
+// API Routes (Includes Auth -> Category A Auth Limiter, Public -> Category B Unrestricted, Private -> Category C User+IP Limiter)
 app.use('/api', routes);
 
 // Error Handling

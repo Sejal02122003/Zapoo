@@ -28,6 +28,8 @@ import { shiftRoutes } from '../modules/food/shifts/routes/shift.routes.js';
 
 const router = express.Router();
 
+import { privateRateLimiter } from '../middleware/rateLimit.js';
+
 // Apply Global Zone Interceptor (Reads X-Zone-Id from Frontend Axios)
 router.use(requireZone);
 
@@ -35,16 +37,18 @@ router.get('/v1/health', (req, res) => {
     res.status(200).json({ status: 'UP', message: 'Server is healthy' });
 });
 
-// App Config Route
+// App Config Route (Public Category B)
 router.use('/v1/app-config', appConfigRoutes);
 
-// Food-prefixed auth routes
+// Food-prefixed auth routes (Category A Auth limiter attached inside auth.routes.js)
 router.use('/v1/food/auth', authRoutes);
 
 // Backward-compatible auth routes
 router.use('/v1/auth', authRoutes);
 router.use('/v1/food/delivery', deliveryRoutes);
 router.use('/v1/food/restaurant', restaurantRoutes);
+
+// Public Category B APIs (Unrestricted per SOP)
 router.use('/v1/food', landingRoutes);
 router.use('/v1/food/search', searchRoutes);
 router.use('/v1/food/promocodes', promocodeRoutes);
@@ -52,31 +56,32 @@ router.get('/v1/food/dining/categories/public', getPublicDiningCategories);
 router.get('/v1/food/dining/restaurants/public', getPublicDiningRestaurants);
 router.get('/v1/food/dining/restaurants/:restaurantId/occupied-seats/public', getPublicRestaurantOccupiedSeats);
 
-// Dining Booking Routes
-router.post('/v1/food/dining/bookings', authMiddleware, requireRoles('USER'), createBooking);
-router.get('/v1/food/dining/bookings/my', authMiddleware, requireRoles('USER'), getMyBookings);
-router.post('/v1/food/dining/bookings/:bookingId/review', authMiddleware, requireRoles('USER'), createReview);
-router.get('/v1/food/dining/bookings/restaurant/:restaurantId', authMiddleware, requireRoles('RESTAURANT', 'ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), getRestaurantBookings);
-router.patch('/v1/food/dining/bookings/:bookingId/status', authMiddleware, requireRoles('RESTAURANT', 'ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), updateBookingStatus);
+// Dining Booking Routes (Private Category C: After authMiddleware -> privateRateLimiter)
+router.post('/v1/food/dining/bookings', authMiddleware, privateRateLimiter, requireRoles('USER'), createBooking);
+router.get('/v1/food/dining/bookings/my', authMiddleware, privateRateLimiter, requireRoles('USER'), getMyBookings);
+router.post('/v1/food/dining/bookings/:bookingId/review', authMiddleware, privateRateLimiter, requireRoles('USER'), createReview);
+router.get('/v1/food/dining/bookings/restaurant/:restaurantId', authMiddleware, privateRateLimiter, requireRoles('RESTAURANT', 'ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), getRestaurantBookings);
+router.patch('/v1/food/dining/bookings/:bookingId/status', authMiddleware, privateRateLimiter, requireRoles('RESTAURANT', 'ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), updateBookingStatus);
 
 router.use('/v1/uploads', uploadRoutes);
 
-// Mark business-settings/public and fee-settings/public as truly public
+// Public Admin Settings (Public Category B)
 router.get('/v1/food/admin/business-settings/public', businessSettingsController.getBusinessSettings);
 router.get('/v1/food/admin/fee-settings/public', adminController.getFeeSettings);
 
+// Private Category C APIs (Must run AFTER authMiddleware so req.user exists)
 router.use('/v1/food/admin/env', envSettingRoutes);
-router.use('/v1/food/admin/weather-pricing', authMiddleware, requireRoles('ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), weatherPricingRoutes);
-router.use('/v1/food/admin/shifts', authMiddleware, shiftRoutes);
-router.use('/v1/food/admin', authMiddleware, requireRoles('ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), restaurantAdminRoutes);
-router.use('/v1/food/user', authMiddleware, requireRoles('USER'), userRoutes);
-router.use('/v1/food/notifications', authMiddleware, requireRoles('USER', 'RESTAURANT', 'DELIVERY_PARTNER'), notificationRoutes);
-router.use('/v1/food/orders', authMiddleware, requireRoles('USER'), orderUserRoutes);
-router.use('/v1/food/payments', authMiddleware, paymentRoutes);
+router.use('/v1/food/admin/weather-pricing', authMiddleware, privateRateLimiter, requireRoles('ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), weatherPricingRoutes);
+router.use('/v1/food/admin/shifts', authMiddleware, privateRateLimiter, shiftRoutes);
+router.use('/v1/food/admin', authMiddleware, privateRateLimiter, requireRoles('ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), restaurantAdminRoutes);
+router.use('/v1/food/user', authMiddleware, privateRateLimiter, requireRoles('USER'), userRoutes);
+router.use('/v1/food/notifications', authMiddleware, privateRateLimiter, requireRoles('USER', 'RESTAURANT', 'DELIVERY_PARTNER'), notificationRoutes);
+router.use('/v1/food/orders', authMiddleware, privateRateLimiter, requireRoles('USER'), orderUserRoutes);
+router.use('/v1/food/payments', authMiddleware, privateRateLimiter, paymentRoutes);
 router.use('/v1/payments/webhook', webhookRoutes);
 router.use('/v1/fcm-tokens', fcmRoutes);
 router.use('/fcm-tokens', fcmRoutes);
 
-router.get('/v1/admin/queues', authMiddleware, requireRoles('ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), getQueuesController);
+router.get('/v1/admin/queues', authMiddleware, privateRateLimiter, requireRoles('ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), getQueuesController);
 
 export default router;

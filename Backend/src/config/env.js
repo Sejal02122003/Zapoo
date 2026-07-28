@@ -35,9 +35,11 @@ export const config = {
     smsIndiaHubSenderId: process.env.SMSINDIAHUB_SENDER_ID || 'SMSHUB',
     otpSmsDebug: process.env.OTP_SMS_DEBUG === 'true',
 
-    // Rate limiting
+    // HTTP Rate limiting (APPZETO SOP)
+    rateLimitEnabled: process.env.RATE_LIMIT_ENABLED !== 'false',
     rateLimitWindowMinutes: Number(process.env.RATE_LIMIT_WINDOW || 15),
-    rateLimitMaxRequests: Number(process.env.RATE_LIMIT_MAX || 100),
+    rateLimitMaxRequests: Number(process.env.RATE_LIMIT_MAX || 3500),
+    rateLimitDevMaxRequests: Number(process.env.RATE_LIMIT_DEV_MAX || 2000),
     authRateLimitWindowMinutes: Number(process.env.AUTH_RATE_LIMIT_WINDOW || 15),
     authRateLimitMax: Number(process.env.AUTH_RATE_LIMIT_MAX || 30),
 
