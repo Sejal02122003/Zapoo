@@ -72,7 +72,7 @@ export default function BottomNavigation() {
 
         {/* Under 99 Tab */}
         <Link
-          to="/food/user/under-99"
+          to="/food/under-99"
           className={`flex flex-col items-center justify-center gap-1 w-[22%] py-2 rounded-[1.5rem] transition-all duration-300 ${isUnder99
             ? "bg-[#ffeef2] dark:bg-primary/20 text-primary"
             : "text-slate-500 dark:text-gray-400"
