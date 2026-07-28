@@ -37,11 +37,12 @@ export default function ShiftSlots() {
         const fetchZones = async () => {
             try {
                 const res = await apiClient.get('/food/admin/zones');
-                if (res.data?.data) {
-                    setZones(res.data.data);
-                }
+                const rawData = res.data?.data;
+                const zonesList = Array.isArray(rawData) ? rawData : (rawData?.zones || res.data?.zones || []);
+                setZones(zonesList);
             } catch (err) {
                 console.warn('Could not fetch zones in ShiftSlots', err);
+                setZones([]);
             }
         };
         fetchZones();
@@ -52,11 +53,15 @@ export default function ShiftSlots() {
             setLoading(true);
             const params = selectedZoneId && selectedZoneId !== 'All' ? { zoneId: selectedZoneId } : {};
             const res = await apiClient.get('/food/admin/shifts', { params });
-            if (res.data?.success) {
-                setShifts(res.data.data);
+            const list = res.data?.data || res.data?.shifts;
+            if (res.data?.success && Array.isArray(list)) {
+                setShifts(list);
+            } else {
+                setShifts([]);
             }
         } catch (error) {
             console.error('Error fetching shifts', error);
+            setShifts([]);
         } finally {
             setLoading(false);
         }
@@ -67,11 +72,15 @@ export default function ShiftSlots() {
             setLoading(true);
             const params = selectedZoneId && selectedZoneId !== 'All' ? { zoneId: selectedZoneId } : {};
             const res = await apiClient.get('/food/admin/shifts/templates', { params });
-            if (res.data?.success) {
-                setTemplates(res.data.data);
+            const list = res.data?.data || res.data?.templates;
+            if (res.data?.success && Array.isArray(list)) {
+                setTemplates(list);
+            } else {
+                setTemplates([]);
             }
         } catch (error) {
             console.error('Error fetching templates', error);
+            setTemplates([]);
         } finally {
             setLoading(false);
         }

@@ -22,11 +22,12 @@ export default function ShiftTemplateEditor({ template = null, onSaved, onCancel
         const fetchZones = async () => {
             try {
                 const res = await apiClient.get('/food/admin/zones');
-                if (res.data?.data) {
-                    setZones(res.data.data);
-                }
+                const rawData = res.data?.data;
+                const zonesList = Array.isArray(rawData) ? rawData : (rawData?.zones || res.data?.zones || []);
+                setZones(zonesList);
             } catch (err) {
                 console.warn('Could not fetch zones in ShiftTemplateEditor', err);
+                setZones([]);
             }
         };
         fetchZones();

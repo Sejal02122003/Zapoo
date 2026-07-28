@@ -278,6 +278,7 @@ export default function AdminRouter() {
             <Route path="delivery-partners/working-hours-incentives" element={<WorkingHoursIncentivePage />} />
             <Route path="delivery-partners/vehicle-range-config" element={<VehicleRangeConfigPage />} />
             <Route path="delivery-partners/shifts" element={<ShiftSlots />} />
+            <Route path="shifts" element={<ShiftSlots />} />
 
 
             {/* REPORTS & SETTINGS */}

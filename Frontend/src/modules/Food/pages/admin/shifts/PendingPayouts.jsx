@@ -23,11 +23,15 @@ export default function PendingPayouts() {
             setLoading(true);
             const query = statusFilter !== 'ALL' ? `?status=${statusFilter}` : '';
             const response = await apiClient.get(`/food/admin/shifts/payouts${query}`);
-            if (response.data?.success) {
-                setPayouts(response.data.data);
+            const list = response.data?.data || response.data?.payouts;
+            if (response.data?.success && Array.isArray(list)) {
+                setPayouts(list);
+            } else {
+                setPayouts([]);
             }
         } catch (error) {
             console.error('Error fetching payouts', error);
+            setPayouts([]);
         } finally {
             setLoading(false);
         }
@@ -85,10 +89,12 @@ export default function PendingPayouts() {
         }
     };
 
-    const filteredPayouts = payouts.filter((p) => {
+    const safePayouts = Array.isArray(payouts) ? payouts : [];
+    const filteredPayouts = safePayouts.filter((p) => {
+        if (!p) return false;
         const name = p.riderId?.name || p.bankDetailsSnapshot?.accountHolderName || '';
         const phone = p.riderId?.phone || '';
-        return name.toLowerCase().includes(searchTerm.toLowerCase()) || phone.includes(searchTerm);
+        return name.toLowerCase().includes((searchTerm || '').toLowerCase()) || phone.includes(searchTerm || '');
     });
 
     return (

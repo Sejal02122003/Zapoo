@@ -447,25 +447,33 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
     return matchesPath(targetPath)
   }
 
+  // Auto-expand section containing the currently active route
   useEffect(() => {
-    try {
-      const currentState = JSON.parse(localStorage.getItem('admin_sidebar_state') || '{}')
-      localStorage.setItem('admin_sidebar_state', JSON.stringify({
-        ...currentState,
-        expandedSections
-      }))
-    } catch (e) {
-      debugError('Error saving sidebar state:', e)
+    if (location.pathname) {
+      const currentPath = location.pathname.replace(/\/+$/, "") || "/";
+      adminSidebarMenu.forEach((item) => {
+        if (item.type === "section") {
+          item.items.forEach((subItem) => {
+            if (subItem.type === "expandable" && subItem.subItems) {
+              const hasActiveChild = subItem.subItems.some(si => {
+                const target = String(si.path || "").replace(/\/+$/, "") || "/";
+                return currentPath === target || currentPath.startsWith(`${target}/`);
+              });
+              if (hasActiveChild) {
+                const sectionKey = subItem.label.toLowerCase().replace(/\s+/g, "");
+                setExpandedSections(prev => ({ ...prev, [sectionKey]: true }));
+              }
+            }
+          });
+        }
+      });
     }
-  }, [expandedSections])
+  }, [location.pathname]);
 
   const toggleSection = (sectionKey) => {
     setExpandedSections((prev) => {
       const isCurrentlyOpen = Boolean(prev[sectionKey])
 
-      // Accordion behavior:
-      // 1) If current section is open -> close it.
-      // 2) If current section is closed -> open it and close all others.
       if (isCurrentlyOpen) {
         return {
           ...prev,
@@ -483,6 +491,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
   const renderMenuItem = (item, index, isInSection = false) => {
     if (item.type === "link") {
       const Icon = iconMap[item.icon] || Utensils
+      const active = isActive(item.path)
       return (
         <Link
           key={item.path || item.label || index}
@@ -493,12 +502,12 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             }
           }}
           className={cn(
-            "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-300 ease-out menu-item-animate text-left",
-            isInSection ? "text-base font-bold" : "text-base font-bold",
+            "flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-300 ease-out menu-item-animate text-left relative",
+            isInSection ? "text-sm font-bold" : "text-sm font-bold",
             item.label === "Log out" ? "text-red-500 hover:bg-red-500/10 hover:text-red-400" :
-            isActive(item.path)
-              ? "bg-white/10 sidebar-dynamic-text border border-white/15"
-              : "sidebar-dynamic-text hover-bg-dynamic",
+            active
+              ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white font-extrabold shadow-md shadow-orange-500/20"
+              : "sidebar-dynamic-text hover-bg-dynamic opacity-90 hover:opacity-100",
             isCollapsed && "justify-center px-2"
           )}
           style={{ animationDelay: `${index * 0.05}s` }}
@@ -507,15 +516,18 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
           <Icon className={cn(
             "shrink-0 transition-all duration-300 text-left",
             isInSection ? "w-4 h-4" : "w-4 h-4",
-            isActive(item.path) ? "sidebar-dynamic-text scale-110" : "sidebar-dynamic-text opacity-70"
+            active ? "text-white scale-110" : "sidebar-dynamic-text opacity-70"
           )} />
           {!isCollapsed && (
             <div className="flex-1 flex items-center justify-between overflow-hidden">
-              <span className="text-left font-bold">
+              <span className="text-left font-extrabold tracking-tight">
                 {item.label}
               </span>
               {getBadgeCount(item.label, item.path) > 0 && (
-                <span className="shrink-0 bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 min-w-[18px] text-center">
+                <span className={cn(
+                  "shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 min-w-[18px] text-center",
+                  active ? "bg-white text-orange-600 font-extrabold" : "bg-orange-500 text-white"
+                )}>
                   {getBadgeCount(item.label, item.path) > 99 ? "99+" : getBadgeCount(item.label, item.path)}
                 </span>
               )}
@@ -532,6 +544,8 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
       const Icon = iconMap[item.icon] || Utensils
       const sectionKey = item.label.toLowerCase().replace(/\s+/g, "")
       const isExpanded = expandedSections[sectionKey] || false
+      const allSubPaths = (item.subItems || []).map(si => si.path)
+      const isParentActive = item.subItems?.some(si => isActive(si.path, allSubPaths))
 
       if (isCollapsed) {
         return (
@@ -539,8 +553,10 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             <button
               onClick={() => toggleSection(sectionKey)}
               className={cn(
-                "w-full flex items-center justify-center px-2 py-2 rounded-lg transition-all duration-300 ease-out text-base font-bold",
-                "sidebar-dynamic-text hover-bg-dynamic"
+                "w-full flex items-center justify-center px-2 py-2 rounded-xl transition-all duration-300 ease-out text-sm font-bold",
+                isParentActive
+                  ? "bg-orange-500/20 text-orange-400 border border-orange-500/40"
+                  : "sidebar-dynamic-text hover-bg-dynamic"
               )}
               title={item.label}
             >
@@ -560,13 +576,18 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
           <button
             onClick={() => toggleSection(sectionKey)}
             className={cn(
-              "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg transition-all duration-300 ease-out text-base font-bold text-left",
-              "sidebar-dynamic-text hover-bg-dynamic"
+              "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl transition-all duration-300 ease-out text-sm font-bold text-left",
+              isParentActive
+                ? "bg-white/15 text-white font-extrabold border-l-4 border-orange-400"
+                : "sidebar-dynamic-text hover-bg-dynamic"
             )}
           >
             <div className="flex items-center gap-2.5 text-left flex-1 min-w-0">
-              <Icon className="w-4 h-4 shrink-0 sidebar-dynamic-text transition-transform duration-300" />
-              <span className="font-bold text-left">{item.label}</span>
+              <Icon className={cn(
+                "w-4 h-4 shrink-0 transition-transform duration-300",
+                isParentActive ? "text-orange-400 scale-110" : "sidebar-dynamic-text"
+              )} />
+              <span className="font-extrabold text-left tracking-tight">{item.label}</span>
               {getBadgeCount(item.label, item.path) > 0 && (
                 <span className="shrink-0 bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 min-w-[18px] text-center">
                   {getBadgeCount(item.label, item.path) > 99 ? "99+" : getBadgeCount(item.label, item.path)}
@@ -578,9 +599,9 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             </div>
           </button>
           {isExpanded && item.subItems && (
-            <div className="ml-5 mt-1 space-y-1 border-neutral-800/60 pl-3 submenu-animate overflow-hidden">
+            <div className="ml-4 mt-1 space-y-1 border-l-2 border-white/10 pl-2.5 submenu-animate overflow-hidden">
               {item.subItems.map((subItem, subIndex) => {
-                const allSubPaths = item.subItems.map(si => si.path)
+                const active = isActive(subItem.path, allSubPaths)
                 return (
                   <Link
                     key={subItem.path || subItem.label}
@@ -591,20 +612,23 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                       }
                     }}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-300 ease-out text-base font-bold text-left",
-                      isActive(subItem.path, allSubPaths)
-                        ? "bg-white/10 sidebar-dynamic-text"
-                        : "sidebar-dynamic-text hover-bg-dynamic"
+                      "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-300 ease-out text-xs font-bold text-left",
+                      active
+                        ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black shadow-sm"
+                        : "sidebar-dynamic-text hover-bg-dynamic opacity-90 hover:opacity-100"
                     )}
                     style={{ animationDelay: `${subIndex * 0.03}s` }}
                   >
                     <span className={cn(
                       "w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-300",
-                      isActive(subItem.path, allSubPaths) ? "bg-white scale-125" : "bg-neutral-400"
+                      active ? "bg-white scale-150" : "bg-neutral-400"
                     )}></span>
-                    <span className="text-left flex-1">{subItem.label}</span>
+                    <span className="text-left flex-1 font-bold">{subItem.label}</span>
                     {getBadgeCount(subItem.label, subItem.path) > 0 && (
-                      <span className="shrink-0 bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 min-w-[18px] text-center">
+                      <span className={cn(
+                        "shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 min-w-[18px] text-center",
+                        active ? "bg-white text-orange-600 font-extrabold" : "bg-orange-500 text-white"
+                      )}>
                         {getBadgeCount(subItem.label, subItem.path) > 99 ? "99+" : getBadgeCount(subItem.label, subItem.path)}
                       </span>
                     )}
