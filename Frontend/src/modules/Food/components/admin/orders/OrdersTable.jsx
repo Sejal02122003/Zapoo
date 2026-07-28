@@ -28,8 +28,8 @@ const getPaymentStatusColor = (paymentStatus) => {
 }
 
 export default function OrdersTable({
-  orders,
-  visibleColumns,
+  orders = [],
+  visibleColumns = {},
   onViewOrder,
   onPrintOrder,
   onRefund,
@@ -42,38 +42,43 @@ export default function OrdersTable({
   deletingOrderId }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
-  const totalPages = Math.ceil(orders.length / itemsPerPage)
+
+  const safeOrders = Array.isArray(orders) ? orders : []
+  const cols = {
+    si: true,
+    orderId: true,
+    orderDate: true,
+    orderOtp: true,
+    customer: true,
+    restaurant: true,
+    foodItems: true,
+    itemPrice: true,
+    deliveryCharge: true,
+    totalAmount: true,
+    paymentType: true,
+    paymentCollectionStatus: true,
+    paymentMethodDetail: true,
+    orderStatus: true,
+    actions: true,
+    ...(visibleColumns || {})
+  }
+
+  const totalPages = Math.ceil(safeOrders.length / itemsPerPage)
   
   // Reset to page 1 when orders change
   useEffect(() => {
     setCurrentPage(1)
-  }, [orders.length])
+  }, [safeOrders.length])
   
   const paginatedOrders = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage
     const end = start + itemsPerPage
-    return orders.slice(start, end)
-  }, [orders, currentPage])
+    return safeOrders.slice(start, end)
+  }, [safeOrders, currentPage, itemsPerPage])
 
   const formatRestaurantName = (name) => {
     if (name === "Cafe Monarch") return "Café Monarch"
     return name
-  }
-
-  if (orders.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-32 h-32 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-            <div className="w-20 h-20 bg-white rounded-xl flex items-center justify-center shadow-md">
-              <span className="text-5xl text-orange-500 font-bold">!</span>
-            </div>
-          </div>
-          <p className="text-lg font-semibold text-slate-700 mb-1">No Data Found</p>
-          <p className="text-sm text-slate-500">There are no orders matching your criteria</p>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -82,7 +87,7 @@ export default function OrdersTable({
         <table className="w-full min-w-full">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              {visibleColumns.si && (
+              {cols.si && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <span>SI</span>
@@ -90,7 +95,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.orderId && (
+              {cols.orderId && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <span>Order ID</span>
@@ -98,7 +103,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.orderDate && (
+              {cols.orderDate && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <span>Order Date</span>
@@ -106,7 +111,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.orderOtp && (
+              {cols.orderOtp && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <span>Order OTP</span>
@@ -114,7 +119,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.customer && (
+              {cols.customer && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <span>Customer Information</span>
@@ -122,7 +127,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.restaurant && (
+              {cols.restaurant && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <span>Restaurant</span>
@@ -130,7 +135,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.foodItems && (
+              {cols.foodItems && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider min-w-[200px]">
                   <div className="flex items-center gap-2">
                     <span>Food Items</span>
@@ -138,7 +143,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.itemPrice && (
+              {cols.itemPrice && (
                 <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider min-w-[120px]">
                   <div className="flex items-center justify-end gap-2">
                     <span>Price</span>
@@ -146,7 +151,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.deliveryCharge && (
+              {cols.deliveryCharge && (
                 <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center justify-end gap-2">
                     <span>Delivery Charge</span>
@@ -154,7 +159,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.totalAmount && (
+              {cols.totalAmount && (
                 <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center justify-end gap-2">
                     <span>Total Amount</span>
@@ -162,7 +167,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {(visibleColumns.paymentType !== false) && (
+              {(cols.paymentType !== false) && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <span>Payment Type</span>
@@ -170,7 +175,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {(visibleColumns.paymentCollectionStatus !== false) && (
+              {(cols.paymentCollectionStatus !== false) && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <span>Payment Status</span>
@@ -178,7 +183,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.paymentMethodDetail && (
+              {cols.paymentMethodDetail && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <span>Method</span>
@@ -186,7 +191,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.orderStatus && (
+              {cols.orderStatus && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <span>Order Status</span>
@@ -194,7 +199,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.actions && (
+              {cols.actions && (
                 <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   Actions
                 </th>
@@ -202,34 +207,47 @@ export default function OrdersTable({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-100">
-            {paginatedOrders.map((order, index) => (
-              <tr 
-                key={order.orderId} 
-                className="hover:bg-slate-50 transition-colors"
-              >
-                {visibleColumns.si && (
+            {paginatedOrders.length === 0 ? (
+              <tr>
+                <td colSpan={16} className="px-6 py-16 text-center text-slate-500 font-medium">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+                      <span className="text-xl text-slate-400 font-bold">!</span>
+                    </div>
+                    <p className="text-base font-semibold text-slate-700">No orders found</p>
+                    <p className="text-xs text-slate-400 mt-1">There are no orders matching this status category yet.</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              paginatedOrders.map((order, index) => (
+                <tr 
+                  key={order._id || order.id || order.orderId || index} 
+                  className="hover:bg-slate-50 transition-colors"
+                >
+                {cols.si && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-slate-700">{(currentPage - 1) * itemsPerPage + index + 1}</span>
                   </td>
                 )}
-                {visibleColumns.orderId && (
+                {cols.orderId && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-slate-900">{order.orderId}</span>
                   </td>
                 )}
-                {visibleColumns.orderDate && (
+                {cols.orderDate && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-slate-700">{order.date}, {order.time}</span>
                   </td>
                 )}
-                {visibleColumns.orderOtp && (
+                {cols.orderOtp && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-semibold text-slate-900">
                       {order.orderOtp || "--"}
                     </span>
                   </td>
                 )}
-                {visibleColumns.customer && (
+                {cols.customer && (
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-slate-700">{order.customerName}</span>
@@ -237,12 +255,12 @@ export default function OrdersTable({
                     </div>
                   </td>
                 )}
-                {visibleColumns.restaurant && (
+                {cols.restaurant && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-slate-700">{formatRestaurantName(order.restaurant)}</span>
                   </td>
                 )}
-                {visibleColumns.foodItems && (
+                {cols.foodItems && (
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-2 min-w-[200px] max-w-md">
                       {order.items && Array.isArray(order.items) && order.items.length > 0 ? (
@@ -262,7 +280,7 @@ export default function OrdersTable({
                     </div>
                   </td>
                 )}
-                {visibleColumns.itemPrice && (
+                {cols.itemPrice && (
                   <td className="px-6 py-4 text-right">
                     <div className="flex flex-col gap-2 min-w-[120px]">
                       {order.items && Array.isArray(order.items) && order.items.length > 0 ? (
@@ -283,7 +301,7 @@ export default function OrdersTable({
                     </div>
                   </td>
                 )}
-                {visibleColumns.deliveryCharge && (
+                {cols.deliveryCharge && (
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <span className="text-sm font-medium text-slate-700">
                       {(() => {
@@ -296,7 +314,7 @@ export default function OrdersTable({
                     </span>
                   </td>
                 )}
-                {visibleColumns.totalAmount && (
+                {cols.totalAmount && (
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="text-sm font-medium text-slate-900">
                       {(() => {
@@ -319,7 +337,7 @@ export default function OrdersTable({
                     </div>
                   </td>
                 )}
-                {(visibleColumns.paymentType !== false) && (
+                {(cols.paymentType !== false) && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     {(() => {
                       // Determine payment type display
@@ -358,7 +376,7 @@ export default function OrdersTable({
                     })()}
                   </td>
                 )}
-                {(visibleColumns.paymentCollectionStatus !== false) && (
+                {(cols.paymentCollectionStatus !== false) && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
                       <span className={`text-sm font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
@@ -372,7 +390,7 @@ export default function OrdersTable({
                     </div>
                   </td>
                 )}
-                {visibleColumns.paymentMethodDetail && (
+                {cols.paymentMethodDetail && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                       (order.paymentMethodDetail === "QR" || order.paymentMethodDetail === "COD/QR")
@@ -383,7 +401,7 @@ export default function OrdersTable({
                     </span>
                   </td>
                 )}
-                {visibleColumns.orderStatus && (
+                {cols.orderStatus && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
@@ -410,7 +428,7 @@ export default function OrdersTable({
                     </div>
                   </td>
                 )}
-                {visibleColumns.actions && (
+                {cols.actions && (
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-2">
                       {order.orderStatus === "Pending" && onAcceptOrder && (
@@ -549,7 +567,7 @@ export default function OrdersTable({
                   </td>
                 )}
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
       </div>

@@ -456,21 +456,21 @@ export default function OrdersPage({ statusKey = "all" }) {
 
 
       let displayStatus = order.orderStatus
-      if (!backendStatus || backendStatus === "created") {
+      if (!backendStatus || backendStatus === "created" || backendStatus === "pending") {
         displayStatus = "Pending"
-      } else if (backendStatus === "confirmed") {
+      } else if (backendStatus === "confirmed" || backendStatus === "accepted") {
         displayStatus = "Accepted"
-      } else if (backendStatus === "preparing" || backendStatus === "ready_for_pickup") {
+      } else if (backendStatus === "preparing" || backendStatus === "ready_for_pickup" || backendStatus === "processing") {
         displayStatus = "Processing"
-      } else if (backendStatus === "picked_up") {
+      } else if (backendStatus === "picked_up" || backendStatus === "reached_pickup" || backendStatus === "en_route_to_delivery" || backendStatus === "at_drop") {
         displayStatus = "Food On The Way"
-      } else if (backendStatus === "delivered") {
+      } else if (backendStatus === "delivered" || backendStatus === "completed" || backendStatus === "reached_drop") {
         displayStatus = "Delivered"
       } else if (backendStatus === "cancelled_by_restaurant") {
         displayStatus = "Cancelled by Restaurant"
       } else if (backendStatus === "cancelled_by_user") {
         displayStatus = "Cancelled by User"
-      } else if (backendStatus === "cancelled_by_admin") {
+      } else if (backendStatus === "cancelled_by_admin" || backendStatus === "cancelled" || backendStatus === "canceled") {
         displayStatus = "Canceled"
       } else if (backendStatus === "needs_manual_assignment") {
         displayStatus = "Needs Manual Assignment"
@@ -544,6 +544,7 @@ export default function OrdersPage({ statusKey = "all" }) {
     isViewOrderOpen,
     setIsViewOrderOpen,
     selectedOrder,
+    setSelectedOrder,
     filters,
     setFilters,
     visibleColumns,
@@ -985,9 +986,9 @@ export default function OrdersPage({ statusKey = "all" }) {
         resetColumns={resetColumns}
       />
       <ViewOrderDialog
-        isOpen={viewOrderModalOpen}
+        isOpen={isViewOrderOpen}
         onOpenChange={(open) => {
-          setViewOrderModalOpen(open)
+          setIsViewOrderOpen(open)
           if (!open) setSelectedOrder(null)
         }}
         order={selectedOrder}
@@ -1011,7 +1012,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         orderId={selectedOrderForAssign?.id || selectedOrderForAssign?.orderId}
         onAssigned={() => {
           fetchOrders({ silent: true, withRingCheck: false })
-          if (viewOrderModalOpen && selectedOrder) {
+          if (isViewOrderOpen && selectedOrder) {
             handleViewOrder(selectedOrder)
           }
         }}
@@ -1025,7 +1026,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         orderId={selectedOrderForReassign?.id || selectedOrderForReassign?.orderId}
         onAssigned={() => {
           fetchOrders({ silent: true, withRingCheck: false })
-          if (viewOrderModalOpen && selectedOrder) {
+          if (isViewOrderOpen && selectedOrder) {
             handleViewOrder(selectedOrder)
           }
         }}

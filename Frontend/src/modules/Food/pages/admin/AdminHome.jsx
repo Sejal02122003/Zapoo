@@ -566,7 +566,7 @@ export default function AdminHome() {
             <Card className="border-neutral-200 bg-white">
               <CardHeader className="border-b border-neutral-200 pb-4">
                 <CardTitle className="text-lg text-neutral-900">Order states</CardTitle>
-                <p className="text-sm text-neutral-500">Quick glance by status</p>
+                <p className="text-sm text-neutral-500">Quick glance by status (Click to view orders)</p>
               </CardHeader>
               <CardContent className="grid gap-3 pt-4">
                 {orderStats.map((item) => (
@@ -581,21 +581,25 @@ export default function AdminHome() {
                       }
                       navigate(routes[item.label] || '/admin/food/orders/all')
                     }}
-                    className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3 cursor-pointer hover:bg-neutral-100 transition-colors group"
+                    className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-white px-3.5 py-3 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-neutral-300 group active:scale-[0.98]"
+                    title={`Click to view all ${item.label} orders`}
                   >
                     <div className="flex items-center gap-3">
                       <span
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-neutral-900 transition-transform group-hover:scale-110"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-xs font-bold text-neutral-900 transition-transform duration-200 group-hover:scale-110 shadow-xs"
                         style={{ background: `${item.color}1A`, color: item.color }}
                       >
                         {item.label.slice(0, 2).toUpperCase()}
                       </span>
                       <div>
-                        <p className="text-sm text-neutral-900 group-hover:font-medium">{item.label}</p>
-                        <p className="text-xs text-neutral-500">Tracked in {selectedPeriod}</p>
+                        <p className="text-sm font-bold text-neutral-900 group-hover:text-orange-600 transition-colors">{item.label}</p>
+                        <p className="text-[11px] text-neutral-500 font-medium">Tracked in {selectedPeriod}</p>
                       </div>
                     </div>
-                    <p className="text-sm font-semibold text-neutral-900">{item.value}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-extrabold text-neutral-900">{item.value}</span>
+                      <ArrowUpRight className="w-4 h-4 text-neutral-400 group-hover:text-orange-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    </div>
                   </div>
                 ))}
               </CardContent>

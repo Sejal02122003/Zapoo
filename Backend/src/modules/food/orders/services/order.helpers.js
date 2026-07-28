@@ -128,9 +128,11 @@ export function pushStatusHistory(order, { byRole, byId, from, to, note = "" }) 
 export function normalizeOrderForClient(orderDoc) {
   const order = orderDoc?.toObject ? orderDoc.toObject() : orderDoc || {};
   const mongoId = (order._id || orderDoc?._id || "").toString();
-  const displayId = order.order_id || mongoId;
+  const displayId = order.order_id || order.orderId || mongoId;
   return {
     ...order,
+    id: mongoId,
+    _id: mongoId,
     orderMongoId: mongoId,
     orderId: displayId,
     status: order?.orderStatus || order?.status || "",

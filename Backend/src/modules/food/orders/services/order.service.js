@@ -1566,12 +1566,7 @@ export async function getPaymentStatus(orderId, deliveryPartnerId) {
 // ----- Admin -----
 export async function listOrdersAdmin(query) {
   const { page, limit, skip } = buildPaginationOptions(query);
-  const filter = {
-    $or: [
-      { "payment.method": { $in: ["cash", "wallet"] } },
-      { "payment.status": { $in: ["paid", "authorized", "captured", "settled", "refunded"] } },
-    ],
-  };
+  const filter = {};
 
   const rawStatus =
     typeof query.status === "string" ? query.status.trim().toLowerCase() : "";
@@ -1589,19 +1584,19 @@ export async function listOrdersAdmin(query) {
   if (rawStatus && rawStatus !== "all") {
     switch (rawStatus) {
       case "pending":
-        filter.orderStatus = "created";
+        filter.orderStatus = { $in: ["created", "pending", "PENDING", "placed", "PLACED"] };
         break;
       case "accepted":
-        filter.orderStatus = "confirmed";
+        filter.orderStatus = { $in: ["confirmed", "accepted", "ACCEPTED", "CONFIRMED"] };
         break;
       case "processing":
-        filter.orderStatus = { $in: ["preparing", "ready_for_pickup"] };
+        filter.orderStatus = { $in: ["preparing", "ready_for_pickup", "processing", "PREPARING", "READY_FOR_PICKUP"] };
         break;
       case "food-on-the-way":
-        filter.orderStatus = "picked_up";
+        filter.orderStatus = { $in: ["picked_up", "out_for_delivery", "food-on-the-way", "PICKED_UP", "OUT_FOR_DELIVERY"] };
         break;
       case "delivered":
-        filter.orderStatus = "delivered";
+        filter.orderStatus = { $in: ["delivered", "DELIVERED", "completed", "COMPLETED", "reached_drop"] };
         break;
       case "canceled":
       case "cancelled":
@@ -1610,6 +1605,10 @@ export async function listOrdersAdmin(query) {
             "cancelled_by_user",
             "cancelled_by_restaurant",
             "cancelled_by_admin",
+            "cancelled",
+            "CANCELLED",
+            "canceled",
+            "CANCELED",
             "dead"
           ],
         };
@@ -1618,14 +1617,13 @@ export async function listOrdersAdmin(query) {
         filter.orderStatus = "cancelled_by_restaurant";
         break;
       case "payment-failed":
-        filter["payment.status"] = "failed";
+        filter["payment.status"] = { $in: ["failed", "FAILED"] };
         break;
       case "refunded":
-        filter["payment.status"] = "refunded";
+        filter["payment.status"] = { $in: ["refunded", "REFUNDED"] };
         break;
       case "offline-payments":
-        filter["payment.method"] = "cash";
-        filter.orderStatus = { $in: ["created", "confirmed", "delivered"] };
+        filter["payment.method"] = { $in: ["cash", "cod", "CASH", "COD"] };
         break;
       case "scheduled":
         filter.scheduledAt = { $ne: null };
