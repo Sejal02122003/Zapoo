@@ -35,7 +35,7 @@ export default function BottomNavigation() {
 
   // Check active routes - support both /user/* and /* paths
   const isDining = pathname === "/food/dining" || pathname.startsWith("/food/user/dining")
-  const isUnder99 = pathname === "/food/under99"
+  const isUnder99 = pathname === "/food/user/under99"
   const isOrders = pathname === "/food/orders" || pathname.startsWith("/food/user/orders")
   const isTakeaway = pathname === "/food/user/takeaway"
   const isProfile = pathname === "/food/profile" || pathname.startsWith("/food/user/profile")
@@ -72,7 +72,7 @@ export default function BottomNavigation() {
 
         {/* Under 99 Tab */}
         <Link
-          to="/food/under99"
+          to="/food/user/under99"
           className={`flex flex-col items-center justify-center gap-1 w-[22%] py-2 rounded-[1.5rem] transition-all duration-300 ${isUnder99
             ? "bg-[#ffeef2] dark:bg-primary/20 text-primary"
             : "text-slate-500 dark:text-gray-400"

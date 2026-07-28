@@ -78,7 +78,7 @@ export default function DesktopNavbar({ showLogo = true }) {
 
     // Check active routes - support both /user/* and /* paths
     const isDining = location.pathname === "/food/user/dining" || location.pathname === "/food/dining"
-    const isUnder99 = location.pathname === "/food/under99"
+    const isUnder99 = location.pathname === "/food/user/under99"
     const isProfile = location.pathname.startsWith("/food/user/profile") || location.pathname.startsWith("/food/profile")
     const isDelivery = !isDining && !isUnder99 && !isProfile && (location.pathname === "/food/user" || location.pathname === "/food" || (location.pathname.startsWith("/food/user") && !location.pathname.includes("/dining") && !isUnder99 && !location.pathname.includes("/profile")))
     const isBannerRoute =
@@ -391,7 +391,7 @@ export default function DesktopNavbar({ showLogo = true }) {
 
                             {/* Under 99 Tab */}
                             <Link
-                                to="/food/under99"
+                                to="/food/user/under99"
                                 className={`flex flex-col items-center gap-1 px-2 py-1 transition-colors relative group ${isUnder99
                                     ? "text-primary"
                                     : "text-gray-600 dark:text-gray-400 hover:text-primary"
