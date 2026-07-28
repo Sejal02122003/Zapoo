@@ -1,4 +1,5 @@
 import { toast } from "sonner"
+import { convertToWebP } from "../../../utils/imageConverter.js"
 
 const openTransientImageInput = ({
   onSelectFile,
@@ -31,9 +32,17 @@ const openTransientImageInput = ({
     }
   }
 
-  input.onchange = (event) => {
+  input.onchange = async (event) => {
     const file = event?.target?.files?.[0] || null
-    if (file) onSelectFile(file)
+    if (file) {
+      try {
+        const webpFile = await convertToWebP(file)
+        onSelectFile(webpFile)
+      } catch (err) {
+        console.warn("WebP conversion fallback to original file:", err)
+        onSelectFile(file)
+      }
+    }
     cleanup()
   }
 

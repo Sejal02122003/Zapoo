@@ -6,6 +6,7 @@ import apiClient, { userClient, restaurantClient, deliveryClient, adminClient } 
 import { API_ENDPOINTS } from "./config.js";
 import * as authService from "./auth.js";
 import { mockRestaurants, mockOffers, mockMenus } from './mockData.js';
+import { convertToWebP } from "../../utils/imageConverter.js";
 
 const stub = () =>
   Promise.resolve({
@@ -1990,13 +1991,22 @@ export const uploadAPI = {
    * @param {File|Blob} file
    * @param {{ folder?: string }} options
    */
-  uploadMedia: (file, options = {}) => {
+  uploadMedia: async (file, options = {}) => {
     if (!file) {
       return Promise.reject(new Error("File is required for upload"));
     }
 
+    let fileToUpload = file;
+    if (file && (file instanceof Blob || file instanceof File) && (file.type ? file.type.startsWith("image/") : true)) {
+      try {
+        fileToUpload = await convertToWebP(file);
+      } catch (e) {
+        console.warn("Failed to convert image to WebP, proceeding with original file:", e);
+      }
+    }
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", fileToUpload);
     if (options.folder) {
       formData.append("folder", options.folder);
     }
