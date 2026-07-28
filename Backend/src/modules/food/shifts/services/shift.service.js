@@ -17,8 +17,18 @@ export const shiftService = {
         return shiftRepository.createTemplate({ ...data, createdBy: adminId });
     },
 
-    getTemplates: async (city) => {
-        const filter = city && city !== 'All' ? { city } : {};
+    getTemplates: async (filterOptions = {}) => {
+        let filter = {};
+        if (typeof filterOptions === 'string') {
+            if (filterOptions && filterOptions !== 'All') filter = { city: filterOptions };
+        } else if (filterOptions && typeof filterOptions === 'object') {
+            const { city, zoneId } = filterOptions;
+            if (zoneId && zoneId !== 'All') {
+                filter.zoneId = zoneId;
+            } else if (city && city !== 'All') {
+                filter.city = city;
+            }
+        }
         return shiftRepository.getTemplates(filter);
     },
 
@@ -34,17 +44,22 @@ export const shiftService = {
         return shiftRepository.deleteTemplate(id);
     },
 
-    generateShiftsFromTemplates: async (targetDateInput = new Date(), adminId = null) => {
+    generateShiftsFromTemplates: async (targetDateInput = new Date(), adminId = null, targetZoneId = null) => {
         const targetDate = new Date(targetDateInput);
         const year = targetDate.getFullYear();
         const month = String(targetDate.getMonth() + 1).padStart(2, '0');
         const day = String(targetDate.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${day}`;
         
-        let activeTemplates = await shiftRepository.getTemplates({ isActive: true });
+        let templateFilter = { isActive: true };
+        if (targetZoneId && targetZoneId !== 'All') {
+            templateFilter.zoneId = targetZoneId;
+        }
+
+        let activeTemplates = await shiftRepository.getTemplates(templateFilter);
 
         // Auto-seed standard 11AM-11PM template if no template exists in database
-        if (activeTemplates.length === 0) {
+        if (activeTemplates.length === 0 && (!targetZoneId || targetZoneId === 'All')) {
             const defaultTemplate = await shiftRepository.createTemplate({
                 name: 'Standard 11AM-11PM Daily Template',
                 city: 'All',
@@ -94,7 +109,9 @@ export const shiftService = {
                         guaranteeAmount: slot.guaranteeAmount,
                         minimumOrders: slot.minimumOrders,
                         minimumLoginPercentage: slot.minimumLoginPercentage,
-                        city: template.city,
+                        city: template.city || 'All',
+                        zoneId: template.zoneId || null,
+                        zoneName: template.zoneName || '',
                         maxPartners: slot.maxPartners,
                         bonusEnabled: slot.guaranteeAmount > 0,
                         isActive: true,
@@ -128,8 +145,19 @@ export const shiftService = {
         });
     },
 
-    getShiftsAdmin: async (city) => {
-        const filter = city && city !== 'All' ? { city } : {};
+    getShiftsAdmin: async (filterOptions = {}) => {
+        let filter = {};
+        if (typeof filterOptions === 'string') {
+            if (filterOptions && filterOptions !== 'All') filter = { city: filterOptions };
+        } else if (filterOptions && typeof filterOptions === 'object') {
+            const { city, zoneId } = filterOptions;
+            if (zoneId && zoneId !== 'All') {
+                filter.zoneId = zoneId;
+            } else if (city && city !== 'All') {
+                filter.city = city;
+            }
+        }
+
         const shifts = await shiftRepository.getShifts(filter, { sort: { startTime: -1 } });
         
         return Promise.all(shifts.map(async (shift) => {
@@ -142,14 +170,34 @@ export const shiftService = {
         }));
     },
 
-    getAvailableShifts: async (city) => {
+    getAvailableShifts: async (filterOptions = {}) => {
         const now = new Date();
         const filter = {
             isActive: true,
             endTime: { $gt: now }
         };
-        if (city && city !== 'All') {
-            filter.$or = [{ city: city }, { city: 'All' }, { city: { $exists: false } }];
+
+        let targetCity = null;
+        let targetZoneId = null;
+
+        if (typeof filterOptions === 'string') {
+            targetCity = filterOptions;
+        } else if (filterOptions && typeof filterOptions === 'object') {
+            targetCity = filterOptions.city;
+            targetZoneId = filterOptions.zoneId;
+        }
+
+        if (targetZoneId && targetZoneId !== 'All') {
+            filter.$or = [
+                { zoneId: targetZoneId },
+                { zoneId: null }
+            ];
+        } else if (targetCity && targetCity !== 'All') {
+            filter.$or = [
+                { city: targetCity },
+                { city: 'All' },
+                { city: { $exists: false } }
+            ];
         }
 
         const shifts = await shiftRepository.getShifts(filter, { sort: { startTime: 1 } });

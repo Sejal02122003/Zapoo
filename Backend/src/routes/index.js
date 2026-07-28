@@ -87,6 +87,7 @@ router.get('/v1/food/public/env', (_req, res) => {
 router.use('/v1/food/admin/env', envSettingRoutes);
 router.use('/v1/food/admin/weather-pricing', authMiddleware, privateRateLimiter, requireRoles('ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), weatherPricingRoutes);
 router.use('/v1/food/admin/shifts', authMiddleware, privateRateLimiter, shiftRoutes);
+router.use('/v1/food/delivery/shifts', authMiddleware, privateRateLimiter, shiftRoutes);
 router.use('/v1/food/admin', authMiddleware, privateRateLimiter, requireRoles('ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), restaurantAdminRoutes);
 router.use('/v1/food/user', authMiddleware, privateRateLimiter, requireRoles('USER'), userRoutes);
 router.use('/v1/food/notifications', authMiddleware, privateRateLimiter, requireRoles('USER', 'RESTAURANT', 'DELIVERY_PARTNER'), notificationRoutes);

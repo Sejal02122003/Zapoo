@@ -9,6 +9,8 @@ const shiftSchema = new mongoose.Schema(
         minimumOrders: { type: Number, required: true, min: 0 },
         minimumLoginPercentage: { type: Number, required: true, min: 0, max: 100 },
         city: { type: String, required: true },
+        zoneId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodZone', default: null, index: true },
+        zoneName: { type: String, trim: true },
         maxPartners: { type: Number, required: true, min: 1 },
         bonusEnabled: { type: Boolean, default: true },
         isActive: { type: Boolean, default: true },
@@ -23,6 +25,7 @@ const shiftSchema = new mongoose.Schema(
 // Indexes
 shiftSchema.index({ startTime: 1, endTime: 1 });
 shiftSchema.index({ city: 1, isActive: 1 });
+shiftSchema.index({ zoneId: 1, isActive: 1 });
 shiftSchema.index({ bookingOpensAt: 1 });
 shiftSchema.index({ templateId: 1, startTime: 1 });
 

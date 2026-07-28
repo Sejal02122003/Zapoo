@@ -13,6 +13,8 @@ export default function ShiftSlots() {
     const [activeTab, setActiveTab] = useState('templates'); // 'shifts' | 'templates' | 'payouts'
     const [shifts, setShifts] = useState([]);
     const [templates, setTemplates] = useState([]);
+    const [zones, setZones] = useState([]);
+    const [selectedZoneId, setSelectedZoneId] = useState('All');
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     
@@ -31,10 +33,25 @@ export default function ShiftSlots() {
     const [payNotesInput, setPayNotesInput] = useState('');
     const [paying, setPaying] = useState(false);
 
+    useEffect(() => {
+        const fetchZones = async () => {
+            try {
+                const res = await apiClient.get('/food/admin/zones');
+                if (res.data?.data) {
+                    setZones(res.data.data);
+                }
+            } catch (err) {
+                console.warn('Could not fetch zones in ShiftSlots', err);
+            }
+        };
+        fetchZones();
+    }, []);
+
     const fetchShifts = async () => {
         try {
             setLoading(true);
-            const res = await apiClient.get('/food/admin/shifts');
+            const params = selectedZoneId && selectedZoneId !== 'All' ? { zoneId: selectedZoneId } : {};
+            const res = await apiClient.get('/food/admin/shifts', { params });
             if (res.data?.success) {
                 setShifts(res.data.data);
             }
@@ -48,7 +65,8 @@ export default function ShiftSlots() {
     const fetchTemplates = async () => {
         try {
             setLoading(true);
-            const res = await apiClient.get('/food/admin/shifts/templates');
+            const params = selectedZoneId && selectedZoneId !== 'All' ? { zoneId: selectedZoneId } : {};
+            const res = await apiClient.get('/food/admin/shifts/templates', { params });
             if (res.data?.success) {
                 setTemplates(res.data.data);
             }
@@ -62,12 +80,16 @@ export default function ShiftSlots() {
     useEffect(() => {
         if (activeTab === 'shifts') fetchShifts();
         if (activeTab === 'templates') fetchTemplates();
-    }, [activeTab]);
+    }, [activeTab, selectedZoneId]);
 
     const handleGenerateShifts = async () => {
         try {
             setGenerating(true);
-            const res = await apiClient.post('/food/admin/shifts/generate', { targetDate: new Date() });
+            const payload = { targetDate: new Date() };
+            if (selectedZoneId && selectedZoneId !== 'All') {
+                payload.zoneId = selectedZoneId;
+            }
+            const res = await apiClient.post('/food/admin/shifts/generate', payload);
             if (res.data?.success) {
                 const msg = res.data.message || 'Shifts auto-generated from templates successfully!';
                 toast.success(msg);
@@ -155,7 +177,23 @@ export default function ShiftSlots() {
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl">
+                        <span className="text-xs font-bold text-gray-500 uppercase">Zone Filter:</span>
+                        <select
+                            value={selectedZoneId}
+                            onChange={(e) => setSelectedZoneId(e.target.value)}
+                            className="bg-transparent text-xs font-bold text-gray-900 outline-none cursor-pointer"
+                        >
+                            <option value="All">All Active Zones</option>
+                            {zones.map((z) => (
+                                <option key={z._id} value={z._id}>
+                                    📍 {z.name || z.zoneName}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     <button
                         onClick={handleGenerateShifts}
                         disabled={generating}

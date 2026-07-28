@@ -7,6 +7,7 @@ export default function RiderShiftsV2() {
     const [activeTab, setActiveTab] = useState('available'); // 'available' | 'payouts'
     const [shifts, setShifts] = useState([]);
     const [payouts, setPayouts] = useState([]);
+    const [riderZone, setRiderZone] = useState({ zoneId: null, zoneName: '' });
     const [loading, setLoading] = useState(true);
 
     const fetchShifts = async () => {
@@ -15,6 +16,9 @@ export default function RiderShiftsV2() {
             const response = await apiClient.get('/food/admin/shifts/rider');
             if (response.data?.success) {
                 setShifts(response.data.data);
+                if (response.data.riderZone) {
+                    setRiderZone(response.data.riderZone);
+                }
             }
         } catch (error) {
             console.error("Error fetching available shifts", error);
@@ -63,11 +67,18 @@ export default function RiderShiftsV2() {
         <div className="min-h-screen bg-gray-50 pb-20">
             {/* Header */}
             <div className="bg-white px-4 py-4 shadow-sm sticky top-0 z-10 space-y-3">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => navigate(-1)} className="text-gray-600 p-1">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                    </button>
-                    <h1 className="text-lg font-bold text-gray-800">Shift Management</h1>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => navigate(-1)} className="text-gray-600 p-1">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                        <h1 className="text-lg font-bold text-gray-800">Shift Operations</h1>
+                    </div>
+                    {riderZone?.zoneName && (
+                        <span className="px-2.5 py-1 bg-orange-50 text-orange-700 border border-orange-200 rounded-full text-[11px] font-bold flex items-center gap-1">
+                            📍 {riderZone.zoneName}
+                        </span>
+                    )}
                 </div>
 
                 {/* Sub tabs */}
@@ -96,7 +107,7 @@ export default function RiderShiftsV2() {
                             <div className="text-center py-10 bg-white rounded-xl border border-gray-100 shadow-sm">
                                 <div className="text-4xl mb-3">📭</div>
                                 <h3 className="text-gray-800 font-semibold mb-1 text-sm">No Shifts Available</h3>
-                                <p className="text-gray-500 text-xs px-6">There are no open shifts right now. Check back later!</p>
+                                <p className="text-gray-500 text-xs px-6">There are no open shifts in {riderZone?.zoneName || 'your zone'} right now. Check back later!</p>
                             </div>
                         ) : (
                             shifts.map((shift) => {
@@ -118,8 +129,8 @@ export default function RiderShiftsV2() {
                                             </div>
 
                                             <div className="flex gap-2 mb-4">
-                                                <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium flex items-center gap-1">
-                                                    📍 {shift.city}
+                                                <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium flex items-center gap-1">
+                                                    📍 {shift.zoneName || shift.city || 'Active Zone'}
                                                 </span>
                                                 <span className="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium flex items-center gap-1">
                                                     👥 {shift.bookedCount || 0}/{shift.maxPartners} Booked

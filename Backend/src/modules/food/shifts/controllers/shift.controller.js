@@ -17,7 +17,8 @@ export const shiftController = {
 
     getTemplates: async (req, res) => {
         try {
-            const templates = await shiftService.getTemplates(req.query.city);
+            const { city, zoneId } = req.query;
+            const templates = await shiftService.getTemplates({ city, zoneId });
             res.status(200).json({ success: true, data: templates });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
@@ -54,9 +55,9 @@ export const shiftController = {
 
     generateShifts: async (req, res) => {
         try {
-            const { targetDate } = req.body;
+            const { targetDate, zoneId } = req.body;
             const adminId = req.user?._id || req.user?.id;
-            const shifts = await shiftService.generateShiftsFromTemplates(targetDate || new Date(), adminId);
+            const shifts = await shiftService.generateShiftsFromTemplates(targetDate || new Date(), adminId, zoneId || req.query.zoneId);
             res.status(200).json({ success: true, message: `Generated ${shifts.length} shifts`, data: shifts });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
@@ -77,8 +78,8 @@ export const shiftController = {
 
     getShiftsAdmin: async (req, res) => {
         try {
-            const city = req.query.city;
-            const shifts = await shiftService.getShiftsAdmin(city);
+            const { city, zoneId } = req.query;
+            const shifts = await shiftService.getShiftsAdmin({ city, zoneId });
             res.status(200).json({ success: true, data: shifts });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
@@ -130,12 +131,19 @@ export const shiftController = {
         try {
             const userId = req.user?.userId || req.user?._id || req.user?.id;
             let city = req.query.city;
-            if (!city && userId) {
-                const partner = await FoodDeliveryPartner.findById(userId);
-                city = partner?.city;
+            let zoneId = req.query.zoneId || req.headers['x-zone-id'];
+            let riderZoneName = null;
+
+            if (userId) {
+                const partner = await FoodDeliveryPartner.findById(userId) || await FoodDeliveryPartner.findOne({ userId });
+                if (partner) {
+                    if (partner.zoneId) zoneId = partner.zoneId;
+                    if (partner.zoneName) riderZoneName = partner.zoneName;
+                    if (partner.city && !city) city = partner.city;
+                }
             }
-            const shifts = await shiftService.getAvailableShifts(city || 'All');
-            res.status(200).json({ success: true, data: shifts });
+            const shifts = await shiftService.getAvailableShifts({ city: city || 'All', zoneId });
+            res.status(200).json({ success: true, data: shifts, riderZone: { zoneId, zoneName: riderZoneName || city || 'Default Zone' } });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
         }

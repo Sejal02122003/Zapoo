@@ -15,6 +15,8 @@ const shiftTemplateSchema = new mongoose.Schema(
     {
         name: { type: String, required: true },
         city: { type: String, required: true },
+        zoneId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodZone', default: null, index: true },
+        zoneName: { type: String, trim: true },
         isActive: { type: Boolean, default: true },
         slots: [shiftSlotSchema],
         createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
@@ -23,5 +25,6 @@ const shiftTemplateSchema = new mongoose.Schema(
 );
 
 shiftTemplateSchema.index({ city: 1, isActive: 1 });
+shiftTemplateSchema.index({ zoneId: 1, isActive: 1 });
 
 export const FoodShiftTemplate = mongoose.model('FoodShiftTemplate', shiftTemplateSchema);

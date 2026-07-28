@@ -5,6 +5,9 @@ import { Plus, Trash2, AlertTriangle, CheckCircle2, Moon, Clock, ShieldCheck } f
 export default function ShiftTemplateEditor({ template = null, onSaved, onCancel }) {
     const [name, setName] = useState(template?.name || 'Standard 11AM-11PM Daily Template');
     const [city, setCity] = useState(template?.city || 'All');
+    const [zoneId, setZoneId] = useState(template?.zoneId || '');
+    const [zoneName, setZoneName] = useState(template?.zoneName || '');
+    const [zones, setZones] = useState([]);
     const [slots, setSlots] = useState(template?.slots || [
         { slotOrder: 1, startTime: '11:00', endTime: '13:00', guaranteeAmount: 350, minimumOrders: 6, minimumLoginPercentage: 80, maxPartners: 50, isNightSlot: false },
         { slotOrder: 2, startTime: '13:00', endTime: '15:00', guaranteeAmount: 350, minimumOrders: 6, minimumLoginPercentage: 80, maxPartners: 50, isNightSlot: false },
@@ -15,10 +18,39 @@ export default function ShiftTemplateEditor({ template = null, onSaved, onCancel
     const [saving, setSaving] = useState(false);
     const [warnings, setWarnings] = useState([]);
 
+    useEffect(() => {
+        const fetchZones = async () => {
+            try {
+                const res = await apiClient.get('/food/admin/zones');
+                if (res.data?.data) {
+                    setZones(res.data.data);
+                }
+            } catch (err) {
+                console.warn('Could not fetch zones in ShiftTemplateEditor', err);
+            }
+        };
+        fetchZones();
+    }, []);
+
     // Check gaps and overlaps whenever slots change
     useEffect(() => {
         analyzeTimeline(slots);
     }, [slots]);
+
+    const handleZoneChange = (selectedZoneId) => {
+        setZoneId(selectedZoneId);
+        if (!selectedZoneId || selectedZoneId === 'All') {
+            setZoneName('All Zones');
+            setCity('All');
+        } else {
+            const found = zones.find(z => z._id === selectedZoneId);
+            if (found) {
+                const nameStr = found.name || found.zoneName || 'Zone';
+                setZoneName(nameStr);
+                setCity(found.serviceLocation || nameStr);
+            }
+        }
+    };
 
     const analyzeTimeline = (currentSlots) => {
         const newWarnings = [];
@@ -101,7 +133,13 @@ export default function ShiftTemplateEditor({ template = null, onSaved, onCancel
         e.preventDefault();
         try {
             setSaving(true);
-            const payload = { name, city, slots };
+            const payload = { 
+                name, 
+                city, 
+                zoneId: zoneId || null, 
+                zoneName: zoneName || city || 'Zone', 
+                slots 
+            };
             let response;
             if (template?._id) {
                 response = await apiClient.patch(`/food/admin/shifts/templates/${template._id}`, payload);
@@ -129,7 +167,7 @@ export default function ShiftTemplateEditor({ template = null, onSaved, onCancel
                         {template ? 'Edit Shift Template' : 'Create Daily Time-Slot Template'}
                     </h2>
                     <p className="text-xs text-gray-500 mt-0.5">
-                        Define repeating 11:00 AM – 11:00 PM shift slots with independent guarantee rules.
+                        Define repeating 11:00 AM – 11:00 PM shift slots with independent guarantee rules per Zone.
                     </p>
                 </div>
                 <button type="button" onClick={onCancel} className="text-gray-400 hover:text-gray-600 text-sm">
@@ -151,15 +189,19 @@ export default function ShiftTemplateEditor({ template = null, onSaved, onCancel
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">City / Zone</label>
-                        <input
-                            type="text"
-                            value={city}
-                            onChange={(e) => setCity(e.target.value)}
-                            placeholder="e.g. All, Mumbai, Delhi"
-                            className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-sm"
-                            required
-                        />
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Assign Target Zone</label>
+                        <select
+                            value={zoneId}
+                            onChange={(e) => handleZoneChange(e.target.value)}
+                            className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-sm bg-white"
+                        >
+                            <option value="">All Zones (Global Template)</option>
+                            {zones.map((z) => (
+                                <option key={z._id} value={z._id}>
+                                    📍 {z.name || z.zoneName} ({z.serviceLocation || 'Active Zone'})
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
