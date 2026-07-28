@@ -104,14 +104,14 @@ function UserLayoutShell() {
     normalizedPath === "/user" ||
     normalizedPath === "/dining" ||
     normalizedPath === "/user/dining" ||
-    normalizedPath === "/under-99" ||
+    normalizedPath === "/under99" ||
     normalizedPath === "/orders" ||
     normalizedPath === "/user/orders" ||
     isProfileRoot ||
     normalizedPath === ""
   )
 
-  const isUnder99 = normalizedPath === "/under-99"
+  const isUnder99 = normalizedPath === "/under99"
 
   return (
     <>

@@ -46,7 +46,7 @@ export default function PromoRow({ handleVegModeChange, navigate, isVegMode, tog
           onClick={() => {
             if (promo.id === 'pure-veg') handleVegModeChange(!isVegMode);
             else if (promo.id === 'offers') navigate('/food/user/offers');
-            else if (promo.id === 'under-99') navigate('/food/under-99');
+            else if (promo.id === 'under-99') navigate('/food/under99');
           }}
         >
           {/* Subtle Glow Effect */}
