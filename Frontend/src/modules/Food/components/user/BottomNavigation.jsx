@@ -35,7 +35,7 @@ export default function BottomNavigation() {
 
   // Check active routes - support both /user/* and /* paths
   const isDining = pathname === "/food/dining" || pathname.startsWith("/food/user/dining")
-  const isUnder99 = pathname === "/food/user/under99"
+  const isUnder99 = pathname === "/food/user/under99" || pathname === "/food/under99" || pathname.includes("/under99") || pathname.includes("/under-99")
   const isOrders = pathname === "/food/orders" || pathname.startsWith("/food/user/orders")
   const isTakeaway = pathname === "/food/user/takeaway"
   const isProfile = pathname === "/food/profile" || pathname.startsWith("/food/user/profile")
@@ -50,7 +50,7 @@ export default function BottomNavigation() {
       pathname === "/food/user" ||
       (pathname.startsWith("/food/user") &&
         !pathname.includes("/dining") &&
-        !pathname.includes("/under-99") &&
+        !pathname.includes("/under99") &&
         !pathname.includes("/profile")))
 
   return (

@@ -123,7 +123,10 @@ export default function UserRouter() {
               </ProtectedRoute>
             }
           />
+          <Route path="under99" element={<Under99 />} />
           <Route path="user/under99" element={<Under99 />} />
+          <Route path="under-99" element={<Navigate to="/food/user/under99" replace />} />
+          <Route path="user/under-99" element={<Navigate to="/food/user/under99" replace />} />
           <Route path="collection/:category" element={<CollectionPage />} />
           <Route path="categories" element={<Categories />} />
           <Route path="category/momo" element={<MomoPage />} />
