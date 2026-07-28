@@ -123,6 +123,9 @@ export default function AdminLogin() {
                       type="email"
                       required
                       autoFocus
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck="false"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="block w-full pl-12 pr-6 py-4 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white border-2 border-transparent focus:border-primary/50 rounded-2xl outline-none transition-all placeholder:text-gray-300 font-bold"
@@ -141,6 +144,9 @@ export default function AdminLogin() {
                     <input
                       type={showPassword ? "text" : "password"}
                       required
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck="false"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="block w-full pl-12 pr-12 py-4 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white border-2 border-transparent focus:border-primary/50 rounded-2xl outline-none transition-all placeholder:text-gray-300 font-bold"
