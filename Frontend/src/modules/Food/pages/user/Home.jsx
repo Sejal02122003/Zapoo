@@ -1956,10 +1956,29 @@ export default function Home() {
 
   // Filter restaurants and foods based on active filters
   const filteredRestaurants = useMemo(() => {
-    // Rely on API data which is already filtered and sorted by the backend.
-    // We only apply client-side Veg Mode filtering here.
-    return (restaurantsData || []).filter(matchesVegMode);
-  }, [restaurantsData, matchesVegMode]);
+    return (restaurantsData || [])
+      .filter(matchesVegMode)
+      .filter((restaurant) => {
+        const rZoneId = typeof restaurant?.zoneId === 'object' ? restaurant?.zoneId?._id : restaurant?.zoneId;
+        if (effectiveZoneId && rZoneId && String(rZoneId) !== String(effectiveZoneId)) {
+          return false;
+        }
+        const userLat = effectiveLocation?.latitude;
+        const userLng = effectiveLocation?.longitude;
+        const rLoc = restaurant?.location;
+        const rLat = rLoc?.latitude || rLoc?.coordinates?.[1];
+        const rLng = rLoc?.longitude || rLoc?.coordinates?.[0];
+        if (userLat && userLng && rLat && rLng) {
+          const rad = Math.PI / 180;
+          const dLat = (rLat - userLat) * rad;
+          const dLng = (rLng - userLng) * rad;
+          const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLat * rad) * Math.cos(rLat * rad) * Math.sin(dLng / 2) ** 2;
+          const distKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          if (distKm > 100) return false;
+        }
+        return true;
+      });
+  }, [restaurantsData, matchesVegMode, effectiveZoneId, effectiveLocation]);
 
   const recommendedForYouRestaurants = useMemo(() => {
     const idsInOrder = (recommendedRestaurantIds || []).map((id) => String(id));
@@ -2027,11 +2046,34 @@ export default function Home() {
 
     return [...orderedFromSettings, ...fromFetchedMissing]
       .filter(matchesVegMode)
+      .filter((restaurant) => {
+        // If restaurant zoneId exists and effectiveZoneId exists, verify they match
+        if (effectiveZoneId && restaurant?.zoneId && String(restaurant.zoneId) !== String(effectiveZoneId)) {
+          return false;
+        }
+        // If user coordinates exist and distance is computed > 100km, exclude
+        const userLat = effectiveLocation?.latitude;
+        const userLng = effectiveLocation?.longitude;
+        const rLoc = restaurant?.location;
+        const rLat = rLoc?.latitude || rLoc?.coordinates?.[1];
+        const rLng = rLoc?.longitude || rLoc?.coordinates?.[0];
+        if (userLat && userLng && rLat && rLng) {
+          const rad = Math.PI / 180;
+          const dLat = (rLat - userLat) * rad;
+          const dLng = (rLng - userLng) * rad;
+          const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLat * rad) * Math.cos(rLat * rad) * Math.sin(dLng / 2) ** 2;
+          const distKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          if (distKm > 100) return false;
+        }
+        return true;
+      })
       .slice(0, 12);
   }, [
     recommendedRestaurantIds,
     recommendedRestaurantsFromSettings,
     restaurantsData,
+    effectiveZoneId,
+    effectiveLocation,
     extractImages,
     normalizeImageUrl,
     matchesVegMode,

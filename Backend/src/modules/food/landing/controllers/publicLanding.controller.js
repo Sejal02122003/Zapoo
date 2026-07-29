@@ -129,7 +129,7 @@ export const getPublicLandingSettingsController = async (req, res, next) => {
                 query.zoneId = new mongoose.Types.ObjectId(zoneId);
             }
             recommendedRestaurants = await FoodRestaurant.find(query)
-                .select('restaurantName area city profileImage coverImages menuImages slug rating cuisines pureVegRestaurant')
+                .select('restaurantName area city profileImage coverImages menuImages slug rating cuisines pureVegRestaurant zoneId location')
                 .lean();
         }
         const payload = {

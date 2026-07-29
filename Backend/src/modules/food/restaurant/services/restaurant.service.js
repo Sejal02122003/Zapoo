@@ -1682,7 +1682,7 @@ export const listApprovedRestaurants = async (query = {}) => {
         drivingDistances = await getDrivingDistances(origin, dests);
     }
 
-    const restaurants = (restaurantsRaw || []).map((r) => {
+    let restaurants = (restaurantsRaw || []).map((r) => {
         const drivingInfo = drivingDistances.get(String(r._id));
         return {
             ...r,
@@ -1703,6 +1703,22 @@ export const listApprovedRestaurants = async (query = {}) => {
             distanceText: drivingInfo ? drivingInfo.distanceText : null
         };
     });
+
+    if (lat !== null && lng !== null) {
+        restaurants = restaurants.filter(r => {
+            const rLat = r.location?.coordinates?.[1];
+            const rLng = r.location?.coordinates?.[0];
+            if (rLat !== null && rLng !== null) {
+                const rad = Math.PI / 180;
+                const dLat = (rLat - lat) * rad;
+                const dLng = (rLng - lng) * rad;
+                const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat * rad) * Math.cos(rLat * rad) * Math.sin(dLng / 2) ** 2;
+                const distKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                if (distKm > 100) return false;
+            }
+            return true;
+        });
+    }
 
     return { restaurants, total, page, limit };
 };
