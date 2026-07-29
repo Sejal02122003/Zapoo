@@ -33,6 +33,9 @@ export const config = {
     // SMS Hub India Configuration
     smsIndiaHubApiKey: process.env.SMSINDIAHUB_API_KEY,
     smsIndiaHubSenderId: process.env.SMSINDIAHUB_SENDER_ID || 'SMSHUB',
+    smsIndiaHubEntityId: process.env.SMSINDIAHUB_ENTITY_ID,
+    smsIndiaHubTemplateId: process.env.SMSINDIAHUB_TEMPLATE_ID,
+    smsIndiaHubTemplateText: process.env.SMSINDIAHUB_TEMPLATE_TEXT,
     otpSmsDebug: process.env.OTP_SMS_DEBUG === 'true',
 
     // HTTP Rate limiting (APPZETO SOP)
@@ -119,6 +122,9 @@ export const updateConfig = () => {
     config.msg91TemplateId = process.env.MSG91_TEMPLATE_ID || config.msg91TemplateId;
     config.smsIndiaHubApiKey = process.env.SMSINDIAHUB_API_KEY || config.smsIndiaHubApiKey;
     config.smsIndiaHubSenderId = process.env.SMSINDIAHUB_SENDER_ID || config.smsIndiaHubSenderId;
+    config.smsIndiaHubEntityId = process.env.SMSINDIAHUB_ENTITY_ID || config.smsIndiaHubEntityId;
+    config.smsIndiaHubTemplateId = process.env.SMSINDIAHUB_TEMPLATE_ID || config.smsIndiaHubTemplateId;
+    config.smsIndiaHubTemplateText = process.env.SMSINDIAHUB_TEMPLATE_TEXT || config.smsIndiaHubTemplateText;
     config.otpSmsDebug = process.env.OTP_SMS_DEBUG === 'true';
     config.rateLimitWindowMinutes = Number(process.env.RATE_LIMIT_WINDOW || config.rateLimitWindowMinutes);
     config.rateLimitMaxRequests = Number(process.env.RATE_LIMIT_MAX || config.rateLimitMaxRequests);

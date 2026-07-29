@@ -5,6 +5,7 @@ import { config } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
 import { ValidationError } from '../auth/errors.js';
 
+// Generate 6-digit OTP code
 const generateOtpCode = () => {
     const code = crypto.randomInt(100000, 999999);
     return String(code);
@@ -74,10 +75,30 @@ const sendSmsViaSmsIndiaHub = async (phone, otp) => {
 
         const apiKey = config.smsIndiaHubApiKey;
         const senderId = config.smsIndiaHubSenderId;
+        const entityId = config.smsIndiaHubEntityId;
+        const templateId = config.smsIndiaHubTemplateId;
         
-        // DLT Template message text:
-        // E.g., "{#var#} is your verification code for login."
-        const msgText = `${otp} is your verification code for login.`;
+        // DLT Template message text format:
+        // Approved Template: "Welcome to the ##var## powered by Appzeto.Your OTP for registration is ##var##.BGADEC"
+        const rawTemplateText = config.smsIndiaHubTemplateText || 'Welcome to the ##var## powered by Appzeto.Your OTP for registration is ##var##.BGADEC';
+        let msgText = rawTemplateText;
+        if (msgText.includes('##var##')) {
+            const count = (msgText.match(/##var##/g) || []).length;
+            if (count >= 2) {
+                msgText = msgText.replace('##var##', 'Zapoo').replace('##var##', otp);
+            } else {
+                msgText = msgText.replace('##var##', otp);
+            }
+        } else if (msgText.includes('{#var#}')) {
+            const count = (msgText.match(/\{#var\}/g) || []).length;
+            if (count >= 2) {
+                msgText = msgText.replace('{#var#}', 'Zapoo').replace('{#var#}', otp);
+            } else {
+                msgText = msgText.replace('{#var#}', otp);
+            }
+        } else {
+            msgText = msgText.replace('{otp}', otp);
+        }
 
         const url = new URL('http://cloud.smsindiahub.in/vendorsms/pushsms.aspx');
         url.searchParams.append('APIKey', apiKey);
@@ -86,6 +107,8 @@ const sendSmsViaSmsIndiaHub = async (phone, otp) => {
         url.searchParams.append('msg', msgText);
         url.searchParams.append('fl', '0');
         url.searchParams.append('gwid', '2');
+        if (entityId) url.searchParams.append('entityid', entityId);
+        if (templateId) url.searchParams.append('templateid', templateId);
 
         logger.info(`[SMS] Sending OTP to ${msisdn} via SMS India Hub...`);
         if (config.otpSmsDebug) {
@@ -122,7 +145,7 @@ export const createOrUpdateOtp = async (phone) => {
     }
 
     let otp;
-    if (config.useDefaultOtp || phone.endsWith('9755633147') || phone.endsWith('8624862400')) {
+    if (config.useDefaultOtp) {
         otp = '123456';
         logger.info(`Default OTP mode enabled – OTP is ${otp} for phone ${phone}`);
     } else {
@@ -157,7 +180,7 @@ export const createOrUpdateOtp = async (phone) => {
     }
 
     // Only send SMS if not in default OTP mode
-    if (!config.useDefaultOtp && !phone.endsWith('9755633147') && !phone.endsWith('8624862400')) {
+    if (!config.useDefaultOtp) {
         if (config.smsIndiaHubApiKey) {
             await sendSmsViaSmsIndiaHub(phone, otp);
         } else {
