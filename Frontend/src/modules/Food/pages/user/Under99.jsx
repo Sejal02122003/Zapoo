@@ -1627,9 +1627,11 @@ export default function Under99() {
                 <section key={restaurant.id} className={`mb-6 md:mb-8 rounded-2xl ${isClosed ? 'opacity-70 grayscale' : ''}`}>
                   {/* Restaurant Header */}
                   <div className="flex flex-col mb-4 md:mb-5">
-                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                      {restaurant.name}
-                    </h3>
+                    <Link to={`/user/restaurants/${restaurantSlug}`}>
+                      <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 hover:text-primary transition-colors cursor-pointer">
+                        {restaurant.name}
+                      </h3>
+                    </Link>
                     <div className="flex items-center gap-3 text-sm font-medium text-gray-600 dark:text-gray-400">
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
@@ -1729,7 +1731,7 @@ export default function Under99() {
 
                       {/* View Full Menu Pill */}
                       <div className="flex justify-center mt-2">
-                        <Link to={`/user/restaurants/${restaurantSlug}?under99=true`}>
+                        <Link to={`/user/restaurants/${restaurantSlug}`}>
                           <Button
                             variant="outline"
                             className="rounded-full h-10 px-6 bg-white dark:bg-[#1a1a1a] shadow-sm border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-semibold gap-2 hover:bg-gray-50 dark:hover:bg-[#222]"

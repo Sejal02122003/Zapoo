@@ -1302,10 +1302,6 @@ export const uploadRestaurantMenuImages = async (restaurantId, files = []) => {
 };
 
 export const listApprovedRestaurants = async (query = {}) => {
-    // OVERRIDE FOR ZAPOO: Disable location/zone filters to show ALL restaurants
-    query.zoneId = '';
-    query.lat = '';
-    query.lng = '';
     const limit = parseQueryLimit(query.limit, 100, 1000);
     const page = parseQueryPage(query.page, 1);
     const skip = (page - 1) * limit;

@@ -1715,7 +1715,7 @@ export default function CollectionPage() {
                     
                     {/* View Full Menu Pill */}
                     <div className="flex justify-center mt-2">
-                      <Link to={`/user/restaurants/${restaurantSlug}?under99=true`}>
+                      <Link to={`/user/restaurants/${restaurantSlug}`}>
                         <Button 
                           variant="outline" 
                           className="rounded-full h-10 px-6 bg-white dark:bg-[#1a1a1a] shadow-sm border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-semibold gap-2 hover:bg-gray-50 dark:hover:bg-[#222]"
