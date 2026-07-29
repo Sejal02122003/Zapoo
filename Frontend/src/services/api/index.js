@@ -1874,6 +1874,9 @@ export const userAPI = {
       return inFlight;
     };
   })(),
+  /** GET /food/user/wallet/cashback-history (Bearer USER) */
+  getCashbackHistory: () =>
+    userClient.get("/food/user/wallet/cashback-history"),
   /** GET /food/user/referrals/stats (Bearer USER) */
   getReferralStats: () =>
     userClient.get("/food/user/referrals/stats"),

@@ -73,6 +73,14 @@ router.patch('/cashback-rules/:id', offerExtraController.updateCashbackRule);
 router.delete('/cashback-rules/:id', offerExtraController.deleteCashbackRule);
 router.get('/wallet/expiry-report', offerExtraController.getCashbackExpiryReport);
 
+// ----- Unified Coupons -----
+import * as couponAdminController from '../controllers/couponAdmin.controller.js';
+router.post('/coupons', couponAdminController.createCoupon);
+router.get('/coupons', couponAdminController.getCoupons);
+router.put('/coupons/:id', couponAdminController.updateCoupon);
+router.patch('/coupons/:id', couponAdminController.updateCoupon);
+router.delete('/coupons/:id', couponAdminController.deleteCoupon);
+
 // ----- Sub Admins -----
 router.get('/sub-admins', requireSuperAdmin, adminController.getSubAdmins);
 router.post('/sub-admins', requireSuperAdmin, adminController.createSubAdmin);

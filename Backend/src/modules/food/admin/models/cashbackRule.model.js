@@ -9,7 +9,7 @@ const cashbackRuleSchema = new mongoose.Schema(
         },
         restaurantScope: {
             type: String,
-            enum: ['ALL', 'SELECTED'],
+            enum: ['ALL', 'SELECTED', 'SPECIFIC'],
             default: 'ALL',
             required: true,
             index: true
@@ -20,6 +20,12 @@ const cashbackRuleSchema = new mongoose.Schema(
             default: null,
             index: true
         },
+        restaurantIds: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'FoodRestaurant'
+            }
+        ],
         orderType: {
             type: String,
             enum: ['DELIVERY', 'TAKEAWAY', 'BOTH'],
@@ -52,6 +58,42 @@ const cashbackRuleSchema = new mongoose.Schema(
             type: Number,
             default: 60,
             min: 1
+        },
+        stackableWithCoupons: {
+            type: Boolean,
+            default: false
+        },
+        userSegment: {
+            type: String,
+            enum: ['ALL', 'NEW_USERS_ONLY', 'SPECIFIC_USER_IDS'],
+            default: 'ALL',
+            required: true
+        },
+        specificUserIds: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'FoodUser'
+            }
+        ],
+        activeDaysOfWeek: {
+            type: [Number],
+            default: []
+        },
+        activeTimeWindow: {
+            startHour: { type: Number, min: 0, max: 23, default: null },
+            endHour: { type: Number, min: 0, max: 23, default: null }
+        },
+        firstOrderOnlyForRestaurant: {
+            type: Boolean,
+            default: false
+        },
+        validFrom: {
+            type: Date,
+            default: null
+        },
+        validUntil: {
+            type: Date,
+            default: null
         },
         isActive: {
             type: Boolean,

@@ -29,7 +29,19 @@ export default function Wallet() {
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [cashbackLedgers, setCashbackLedgers] = useState([])
   const [addMoneyModalOpen, setAddMoneyModalOpen] = useState(false)
+
+  const fetchCashbackHistory = async () => {
+    try {
+      const res = await userAPI.getCashbackHistory()
+      if (res?.data?.data) {
+        setCashbackLedgers(res.data.data)
+      }
+    } catch (err) {
+      console.error("Failed to load cashback history:", err)
+    }
+  }
 
   const fetchWalletData = async () => {
     try {
@@ -54,6 +66,7 @@ export default function Wallet() {
 
   useEffect(() => {
     fetchWalletData()
+    fetchCashbackHistory()
   }, [])
 
   const currentBalance = wallet?.balance || 0

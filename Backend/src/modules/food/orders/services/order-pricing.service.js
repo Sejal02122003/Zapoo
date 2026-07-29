@@ -232,9 +232,48 @@ export async function calculateOrderPricing(userId, dto) {
     ? String(dto.couponCode).trim().toUpperCase()
     : "";
 
+  let appliedCashbackCoupon = null;
   if (codeRaw) {
-    const now = new Date();
-    let offer = await FoodOffer.findOne({ couponCode: codeRaw }).lean();
+    try {
+      const { validateCoupon } = await import('../../admin/services/coupon.service.js');
+      const couponRes = await validateCoupon({
+        couponCode: codeRaw,
+        userId,
+        restaurantId: dto.restaurantId,
+        orderSubtotal: eligibleSubtotalForCoupon > 0 ? eligibleSubtotalForCoupon : subtotal,
+        orderType: dto.orderType || 'DELIVERY'
+      });
+
+      if (couponRes && couponRes.coupon) {
+        if (couponRes.rewardType === 'CASHBACK') {
+          discount = 0; // Order total is unaffected at checkout for cashback reward coupons
+          appliedCashbackCoupon = {
+            couponId: couponRes.coupon._id,
+            code: codeRaw,
+            amount: couponRes.computedCashbackAmount || couponRes.computedAmount
+          };
+          appliedCoupon = { code: codeRaw, discount: 0, rewardType: 'CASHBACK', amount: couponRes.computedCashbackAmount || couponRes.computedAmount };
+        } else if (couponRes.rewardType === 'BOTH') {
+          discount = couponRes.computedAmount || 0;
+          appliedCashbackCoupon = {
+            couponId: couponRes.coupon._id,
+            code: codeRaw,
+            amount: couponRes.computedCashbackAmount
+          };
+          appliedCoupon = { code: codeRaw, discount: discount, rewardType: 'BOTH', amount: couponRes.computedCashbackAmount };
+        } else {
+          discount = couponRes.computedAmount;
+          appliedCoupon = { code: codeRaw, discount: couponRes.computedAmount, rewardType: 'INSTANT_DISCOUNT' };
+        }
+      }
+    } catch (err) {
+      // If unified coupon throws specific error, save couponError and try legacy fallback if needed
+      couponError = err.message || "Invalid coupon code";
+    }
+
+    if (!appliedCoupon && !couponError) {
+      const now = new Date();
+      let offer = await FoodOffer.findOne({ couponCode: codeRaw }).lean();
 
     if (!offer) {
       const locationCoupon = await LocationCoupon.findOne({ code: codeRaw, restaurantId: dto.restaurantId, isActive: true }).lean();
@@ -279,82 +318,83 @@ export async function calculateOrderPricing(userId, dto) {
       }
     }
 
-    if (offer) {
-      const statusOk = offer.status === "active";
-      const startOk = !offer.startDate || now >= new Date(offer.startDate);
-      const endOk = !offer.endDate || now < new Date(offer.endDate);
-      const scopeOk =
-        offer.restaurantScope !== "selected" ||
-        String(offer.restaurantId || "") === String(dto.restaurantId || "");
-      const minOk = subtotal >= (Number(offer.minOrderValue) || 0);
-      let usageOk = true;
-      if (
-        Number(offer.usageLimit) > 0 &&
-        Number(offer.usedCount || 0) >= Number(offer.usageLimit)
-      ) {
-        usageOk = false;
-      }
-
-      let perUserOk = true;
-      if (userId && Number(offer.perUserLimit) > 0) {
-        const usage = await FoodOfferUsage.findOne({
-          offerId: offer._id,
-          userId,
-        }).lean();
-        if (usage && Number(usage.count) >= Number(offer.perUserLimit)) {
-          perUserOk = false;
+      if (offer) {
+        const statusOk = offer.status === "active";
+        const startOk = !offer.startDate || now >= new Date(offer.startDate);
+        const endOk = !offer.endDate || now < new Date(offer.endDate);
+        const scopeOk =
+          offer.restaurantScope !== "selected" ||
+          String(offer.restaurantId || "") === String(dto.restaurantId || "");
+        const minOk = subtotal >= (Number(offer.minOrderValue) || 0);
+        let usageOk = true;
+        if (
+          Number(offer.usageLimit) > 0 &&
+          Number(offer.usedCount || 0) >= Number(offer.usageLimit)
+        ) {
+          usageOk = false;
         }
-      }
 
-      let firstOrderOk = true;
-      if (userId && offer.customerScope === "first-time") {
-        const c = await FoodOrder.countDocuments({
-          userId: new mongoose.Types.ObjectId(userId),
-        });
-        firstOrderOk = c === 0;
-      }
-      if (userId && offer.isFirstOrderOnly === true) {
-        const c2 = await FoodOrder.countDocuments({
-          userId: new mongoose.Types.ObjectId(userId),
-        });
-        if (c2 > 0) firstOrderOk = false;
-      }
-
-      const allowed =
-        statusOk &&
-        startOk &&
-        endOk &&
-        scopeOk &&
-        minOk &&
-        usageOk &&
-        perUserOk &&
-        firstOrderOk;
-
-      if (allowed) {
-        if (eligibleSubtotalForCoupon <= 0) {
-          couponError = "This coupon is not applicable on discounted items. Please try other items.";
-        } else {
-          if (offer.discountType === "percentage") {
-            const raw = eligibleSubtotalForCoupon * (Number(offer.discountValue) / 100);
-            const capped = Number(offer.maxDiscount)
-              ? Math.min(raw, Number(offer.maxDiscount))
-              : raw;
-            discount = Math.max(0, Math.min(eligibleSubtotalForCoupon, Math.floor(capped)));
-          } else {
-            discount = Math.max(
-              0,
-              Math.min(eligibleSubtotalForCoupon, Math.floor(Number(offer.discountValue) || 0)),
-            );
+        let perUserOk = true;
+        if (userId && Number(offer.perUserLimit) > 0) {
+          const usage = await FoodOfferUsage.findOne({
+            offerId: offer._id,
+            userId,
+          }).lean();
+          if (usage && Number(usage.count) >= Number(offer.perUserLimit)) {
+            perUserOk = false;
           }
-          appliedCoupon = { code: codeRaw, discount };
+        }
+
+        let firstOrderOk = true;
+        if (userId && offer.customerScope === "first-time") {
+          const c = await FoodOrder.countDocuments({
+            userId: new mongoose.Types.ObjectId(userId),
+          });
+          firstOrderOk = c === 0;
+        }
+        if (userId && offer.isFirstOrderOnly === true) {
+          const c2 = await FoodOrder.countDocuments({
+            userId: new mongoose.Types.ObjectId(userId),
+          });
+          if (c2 > 0) firstOrderOk = false;
+        }
+
+        const allowed =
+          statusOk &&
+          startOk &&
+          endOk &&
+          scopeOk &&
+          minOk &&
+          usageOk &&
+          perUserOk &&
+          firstOrderOk;
+
+        if (allowed) {
+          if (eligibleSubtotalForCoupon <= 0) {
+            couponError = "This coupon is not applicable on discounted items. Please try other items.";
+          } else {
+            if (offer.discountType === "percentage") {
+              const raw = eligibleSubtotalForCoupon * (Number(offer.discountValue) / 100);
+              const capped = Number(offer.maxDiscount)
+                ? Math.min(raw, Number(offer.maxDiscount))
+                : raw;
+              discount = Math.max(0, Math.min(eligibleSubtotalForCoupon, Math.floor(capped)));
+            } else {
+              discount = Math.max(
+                0,
+                Math.min(eligibleSubtotalForCoupon, Math.floor(Number(offer.discountValue) || 0)),
+              );
+            }
+            appliedCoupon = { code: codeRaw, discount };
+          }
+        } else {
+          if (!minOk) {
+            couponError = `Minimum order value of ${offer.minOrderValue} required for this coupon.`;
+          }
         }
       } else {
-        if (!minOk) {
-          couponError = `Minimum order value of ${offer.minOrderValue} required for this coupon.`;
-        }
+        couponError = "Invalid or expired coupon code.";
       }
-    } else {
-      couponError = "Invalid or expired coupon code.";
     }
   }
 

@@ -233,6 +233,9 @@ router.get('/download-menu-pdf/:id', authMiddleware, (req, res, next) => {
     downloadRestaurantMenuPdf(req, res, next);
 });
 
+import { getSellerActivePromotions } from '../controllers/sellerPromotions.controller.js';
+router.get('/active-promotions', authMiddleware, requireRestaurant, getSellerActivePromotions);
+
 // Delete account (Bearer RESTAURANT)
 router.delete('/account', authMiddleware, requireRestaurant, deleteRestaurantAccountController);
 

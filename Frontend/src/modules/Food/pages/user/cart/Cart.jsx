@@ -290,25 +290,37 @@ export default function Cart() {
       });
 
       let totalSaved = 0;
+      let totalCashback = 0;
+      let isCashback = false;
+      let isCombo = false;
       let codes = [];
       let couponsToApply = [];
       
       if (bestAdminCoupon && (!appliedCoupon || appliedCoupon.code !== bestAdminCoupon.code)) {
         totalSaved += (bestAdminCoupon.discount || 0);
+        totalCashback += (bestAdminCoupon.cashbackValue || 0);
+        isCashback = isCashback || bestAdminCoupon.rewardType === 'CASHBACK' || bestAdminCoupon.rewardType === 'BOTH';
+        isCombo = isCombo || bestAdminCoupon.rewardType === 'BOTH';
         codes.push(bestAdminCoupon.code);
         couponsToApply.push(bestAdminCoupon);
       }
       if (bestRestaurantCoupon && (!appliedRestaurantCoupon || appliedRestaurantCoupon.code !== bestRestaurantCoupon.code)) {
         totalSaved += (bestRestaurantCoupon.discount || 0);
+        totalCashback += (bestRestaurantCoupon.cashbackValue || 0);
+        isCashback = isCashback || bestRestaurantCoupon.rewardType === 'CASHBACK' || bestRestaurantCoupon.rewardType === 'BOTH';
+        isCombo = isCombo || bestRestaurantCoupon.rewardType === 'BOTH';
         codes.push(bestRestaurantCoupon.code);
         couponsToApply.push(bestRestaurantCoupon);
       }
 
-      if (totalSaved > 0) {
+      if (couponsToApply.length > 0) {
          const combinationKey = codes.join('-');
          if (!shownAutoPopupFor.includes(combinationKey)) {
              setAutoApplyPopupData({
                savings: totalSaved,
+               cashback: totalCashback,
+               isCashback: isCashback,
+               isCombo: isCombo || (isCashback && totalSaved > 0), // Combo is true if BOTH or if we have both discount and cashback combined
                codes: codes.join(" & "),
                couponsToApply: couponsToApply
              });
@@ -3911,7 +3923,19 @@ export default function Cart() {
                     </p>
                     
                     <h3 className="text-2xl font-bold text-[#1a1a1a] mb-1">
-                      Save <span className="text-[#4a84f3]">{RUPEE_SYMBOL}{autoApplyPopupData.savings}</span> on this order
+                      {autoApplyPopupData.isCombo ? (
+                        <>
+                          Save <span className="text-[#4a84f3]">{RUPEE_SYMBOL}{autoApplyPopupData.savings}</span> & Earn <span className="text-[#4a84f3]">{RUPEE_SYMBOL}{autoApplyPopupData.cashback}</span> Cashback
+                        </>
+                      ) : autoApplyPopupData.isCashback ? (
+                        <>
+                          Earn <span className="text-[#4a84f3]">{RUPEE_SYMBOL}{autoApplyPopupData.cashback || autoApplyPopupData.savings}</span> Cashback
+                        </>
+                      ) : (
+                        <>
+                          Save <span className="text-[#4a84f3]">{RUPEE_SYMBOL}{autoApplyPopupData.savings}</span> on this order
+                        </>
+                      )}
                     </h3>
                     
                     <p className="text-sm text-gray-600 mb-1">

@@ -1334,6 +1334,14 @@ export async function completeDelivery(orderId, deliveryPartnerId, body = {}) {
 
   emitOrderUpdate(order, deliveryPartnerId);
   
+  // Credit pending cashback (rule & cashback-coupons) upon order delivery
+  try {
+    const { creditPendingCashbackForOrder } = await import('../../admin/services/cashback.service.js');
+    await creditPendingCashbackForOrder(order._id);
+  } catch (cbErr) {
+    logger.error(`[CASHBACK] Error crediting pending cashback on order delivery: ${cbErr?.message}`);
+  }
+
   enqueueOrderEvent('delivery_completed', {
     orderMongoId: order._id?.toString?.(),
     orderId: order.orderId || order._id.toString(),

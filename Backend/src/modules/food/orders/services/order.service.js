@@ -992,6 +992,14 @@ export async function cancelOrder(orderId, userId, reason, refundDestination = "
     reason: reason || "",
   });
 
+  // Reverse any pending or credited cashback ledgers
+  try {
+    const { reverseCashbackForOrder } = await import('../../admin/services/cashback.service.js');
+    await reverseCashbackForOrder(order._id, `Order cancelled by user: ${reason || "No reason"}`);
+  } catch (cbErr) {
+    logger.warn(`cancelOrder cashback reversal failed: ${cbErr?.message || cbErr}`);
+  }
+
   // Sync transaction status
   try {
     const finalPaymentMethod = String(order.payment?.method || paymentMethod || "cash").toLowerCase();

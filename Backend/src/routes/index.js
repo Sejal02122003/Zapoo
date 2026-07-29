@@ -55,6 +55,10 @@ router.use('/v1/food/promocodes', promocodeRoutes);
 router.get('/v1/food/dining/categories/public', getPublicDiningCategories);
 router.get('/v1/food/dining/restaurants/public', getPublicDiningRestaurants);
 router.get('/v1/food/dining/restaurants/:restaurantId/occupied-seats/public', getPublicRestaurantOccupiedSeats);
+import userCouponRoutes from '../modules/food/user/routes/userCoupon.routes.js';
+router.use('/v1/food', userCouponRoutes);
+router.use('/v1/coupons', userCouponRoutes);
+router.use('/v1/order', userCouponRoutes);
 
 // Dining Booking Routes (Private Category C: After authMiddleware -> privateRateLimiter)
 router.post('/v1/food/dining/bookings', authMiddleware, privateRateLimiter, requireRoles('USER'), createBooking);

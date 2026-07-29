@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { upload } from '../../../../middleware/upload.js';
 import {
     listAddressesController,
@@ -41,8 +41,11 @@ router.get('/profile', getCurrentUserProfileController);
 router.patch('/profile', updateCurrentUserProfileController);
 router.post('/profile/profile-image', upload.single('file'), uploadCurrentUserProfileImageController);
 
+import { getUserCashbackHistory } from '../controllers/userCoupon.controller.js';
+
 // Wallet (Bearer USER)
 router.get('/wallet', getUserWalletController);
+router.get('/wallet/cashback-history', getUserCashbackHistory);
 router.post('/wallet/topup/order', createWalletTopupOrderController);
 router.post('/wallet/topup/verify', verifyWalletTopupPaymentController);
 
