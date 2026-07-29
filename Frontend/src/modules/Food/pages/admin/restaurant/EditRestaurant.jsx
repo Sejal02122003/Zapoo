@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { adminAPI } from "@food/api"
+import { adminAPI, uploadAPI } from "@food/api"
 import { Input } from "@food/components/ui/input"
 import { Button } from "@food/components/ui/button"
 import { Label } from "@food/components/ui/label"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2, Upload, Image as ImageIcon } from "lucide-react"
 
 const debugError = (..._args) => {}
 
@@ -22,6 +22,12 @@ const normalizeZoneId = (zoneId) => {
   if (!zoneId) return ""
   if (typeof zoneId === "string") return zoneId
   return zoneId?._id || zoneId?.id || ""
+}
+
+const normalizeImageUrl = (image) => {
+  if (!image) return ""
+  if (typeof image === "string") return image
+  return image.url || image.secure_url || ""
 }
 
 const normalizeLocationFormFromRestaurant = (restaurant) => {
@@ -64,6 +70,11 @@ const normalizeLocationFormFromRestaurant = (restaurant) => {
 }
 
 const normalizeDetailsFormFromRestaurant = (restaurant) => {
+  const profileImage = normalizeImageUrl(restaurant?.profileImage || restaurant?.logo || restaurant?.restaurantImage)
+  const coverImages = Array.isArray(restaurant?.coverImages)
+    ? restaurant.coverImages.map(normalizeImageUrl).filter(Boolean)
+    : (restaurant?.coverImage ? [normalizeImageUrl(restaurant.coverImage)] : [])
+
   return {
     name: restaurant?.name || restaurant?.restaurantName || "",
     pureVegRestaurant:
@@ -83,7 +94,10 @@ const normalizeDetailsFormFromRestaurant = (restaurant) => {
     offer: restaurant?.offer || "",
     openingTime: restaurant?.openingTime || restaurant?.deliveryTimings?.openingTime || "",
     closingTime: restaurant?.closingTime || restaurant?.deliveryTimings?.closingTime || "",
-    isActive: restaurant?.isActive !== false }
+    isActive: restaurant?.isActive !== false,
+    profileImage,
+    coverImages,
+  }
 }
 
 async function loadGooglePlaces() {
@@ -285,6 +299,45 @@ export default function EditRestaurant() {
     return z?.name || z?.zoneName || ""
   }, [locationForm.zoneId, zones])
 
+  const [uploadingImage, setUploadingImage] = useState(false)
+
+  const handleProfileImageUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      setUploadingImage(true)
+      const res = await uploadAPI.uploadMedia(file, { folder: "zapoo/restaurant/profile" })
+      const url = res?.data?.data?.url || res?.data?.url || res?.data?.file?.url || ""
+      if (url) {
+        setDetailsForm((p) => ({ ...p, profileImage: url }))
+      }
+    } catch (err) {
+      alert("Failed to upload profile image")
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const handleCoverImageUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      setUploadingImage(true)
+      const res = await uploadAPI.uploadMedia(file, { folder: "zapoo/restaurant/cover" })
+      const url = res?.data?.data?.url || res?.data?.url || res?.data?.file?.url || ""
+      if (url) {
+        setDetailsForm((p) => ({
+          ...p,
+          coverImages: [url, ...(p.coverImages || [])],
+        }))
+      }
+    } catch (err) {
+      alert("Failed to upload cover image")
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   const handleSaveDetails = async () => {
     if (!restaurantId) return
     try {
@@ -311,7 +364,9 @@ export default function EditRestaurant() {
         offer: detailsForm.offer,
         openingTime: detailsForm.openingTime,
         closingTime: detailsForm.closingTime,
-        isActive: detailsForm.isActive !== false }
+        isActive: detailsForm.isActive !== false,
+        profileImage: detailsForm.profileImage,
+        coverImages: detailsForm.coverImages }
 
       const res = await adminAPI.updateRestaurant(restaurantId, payload)
       const updated = res?.data?.data?.restaurant || res?.data?.data || null
@@ -476,6 +531,60 @@ export default function EditRestaurant() {
                   <Label>Cuisines (comma separated)</Label>
                   <Input value={detailsForm.cuisinesText} onChange={(e) => setDetailsForm((p) => ({ ...p, cuisinesText: e.target.value }))} />
                 </div>
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 pt-4 mt-2">
+                  <div>
+                    <Label className="block mb-2 font-medium">Profile / Logo Image</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
+                        {detailsForm.profileImage ? (
+                          <img src={detailsForm.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-slate-400" />
+                        )}
+                      </div>
+                      <div>
+                        <label className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg cursor-pointer transition-colors">
+                          <Upload className="w-3.5 h-3.5" />
+                          {uploadingImage ? "Uploading..." : "Upload Profile Image"}
+                          <input type="file" accept="image/*" onChange={handleProfileImageUpload} disabled={uploadingImage} className="hidden" />
+                        </label>
+                        {detailsForm.profileImage && (
+                          <button
+                            type="button"
+                            onClick={() => setDetailsForm((p) => ({ ...p, profileImage: "" }))}
+                            className="block text-[11px] text-red-500 hover:underline mt-1"
+                          >
+                            Remove image
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="block mb-2 font-medium">Cover Images</Label>
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                      {(detailsForm.coverImages || []).map((img, idx) => (
+                        <div key={idx} className="relative w-14 h-14 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden group">
+                          <img src={img} alt={`Cover ${idx}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setDetailsForm((p) => ({ ...p, coverImages: p.coverImages.filter((_, i) => i !== idx) }))}
+                            className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 text-[9px] opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <label className="w-14 h-14 rounded-lg border-2 border-dashed border-slate-300 hover:border-slate-400 flex flex-col items-center justify-center text-slate-500 cursor-pointer transition-colors">
+                        <Upload className="w-4 h-4" />
+                        <span className="text-[9px] font-medium mt-0.5">Add</span>
+                        <input type="file" accept="image/*" onChange={handleCoverImageUpload} disabled={uploadingImage} className="hidden" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <Label>Estimated Delivery Time (minutes)</Label>
                   <Input

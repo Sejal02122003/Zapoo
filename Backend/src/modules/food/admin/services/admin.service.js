@@ -2628,11 +2628,21 @@ export async function updateRestaurantById(id, body = {}) {
     if (body.featuredPrice !== undefined) doc.featuredPrice = toFinite(body.featuredPrice);
 
     // Images
-    const getUrl = (v) => (v && typeof v === 'object' ? v.url : v);
+    const getUrl = (v) => (v && typeof v === 'object' ? (v.url || v.secure_url || '') : v);
     if (body.profileImage !== undefined) doc.profileImage = toStr(getUrl(body.profileImage)) || undefined;
     if (body.panImage !== undefined) doc.panImage = toStr(getUrl(body.panImage)) || undefined;
     if (body.gstImage !== undefined) doc.gstImage = toStr(getUrl(body.gstImage)) || undefined;
     if (body.fssaiImage !== undefined) doc.fssaiImage = toStr(getUrl(body.fssaiImage)) || undefined;
+
+    if (body.coverImages !== undefined) {
+        if (Array.isArray(body.coverImages)) {
+            doc.coverImages = body.coverImages.map(c => toStr(getUrl(c))).filter(Boolean);
+        } else {
+            doc.coverImages = [toStr(getUrl(body.coverImages))].filter(Boolean);
+        }
+    } else if (body.coverImage !== undefined) {
+        doc.coverImages = [toStr(getUrl(body.coverImage))].filter(Boolean);
+    }
 
     if (body.menuImages !== undefined) {
         if (Array.isArray(body.menuImages)) {
@@ -3483,6 +3493,7 @@ export async function createRestaurantByAdmin(body) {
         accountType: toStr(body.accountType),
         menuImages: menuUrls,
         profileImage: toUrl(body.profileImage),
+        coverImages: Array.isArray(body.coverImages) ? body.coverImages.map(c => toUrl(c)).filter(Boolean) : (body.coverImage ? [toUrl(body.coverImage)].filter(Boolean) : []),
         panImage: toUrl(body.panImage),
         gstImage: toUrl(body.gstImage),
         fssaiImage: toUrl(body.fssaiImage),
