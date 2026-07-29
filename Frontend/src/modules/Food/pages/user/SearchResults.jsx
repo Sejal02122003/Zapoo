@@ -5,7 +5,6 @@ import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import { RestaurantGridSkeleton } from "@food/components/ui/loading-skeletons"
-import AutoSlider from "@food/components/ui/AutoSlider"
 import StickyCartCard from "@food/components/user/StickyCartCard"
 import { useProfile } from "@food/context/ProfileContext"
 import { useAppLocation } from "@food/hooks/useAppLocation"
@@ -957,12 +956,12 @@ export default function SearchResults() {
               RECOMMENDED FOR YOU
             </h2>
 
-            <AutoSlider
-              items={filteredRecommended}
-              renderItem={(restaurant, { openLightbox }) => {
-                const imgUrl = restaurant.image;
+            {/* Small Restaurant Cards - Horizontal Scroll */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 lg:gap-5">
+              {filteredRecommended.slice(0, 6).map((restaurant) => {
                 return (
                   <Link
+                    key={restaurant.id}
                     to={`/user/restaurants/${restaurant.slug || restaurant.name.toLowerCase().replace(/\s+/g, '-')}`}
                     className="block"
                   >
@@ -974,29 +973,14 @@ export default function SearchResults() {
                             src={restaurant.image}
                             alt={restaurant.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            loading="lazy"
                             onError={(e) => {
                               e.target.style.display = 'none'
                             }}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-2xl">🍽️</span>
+                            <span className="text-2xl">???</span>
                           </div>
-                        )}
-                        {imgUrl && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              openLightbox(imgUrl, restaurant.name);
-                            }}
-                            className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:scale-110 transition-all z-10"
-                            aria-label={`Enlarge image for ${restaurant.name}`}
-                          >
-                            <Search className="w-3 h-3" />
-                          </button>
                         )}
                         {/* Offer Badge - Only show if offer exists */}
                         {restaurant.offer && (
@@ -1028,9 +1012,9 @@ export default function SearchResults() {
                       )}
                     </div>
                   </Link>
-                );
-              }}
-            />
+                )
+              })}
+            </div>
           </section>
         )}
 

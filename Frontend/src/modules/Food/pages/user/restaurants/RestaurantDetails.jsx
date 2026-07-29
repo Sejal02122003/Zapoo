@@ -6,7 +6,6 @@ import { restaurantAPI, diningAPI, orderAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
 import { toast } from "sonner"
 import { useAppLocation } from "@food/hooks/useAppLocation"
-import AutoSlider from "@food/components/ui/AutoSlider"
 import {
   ArrowLeft,
   Search,
@@ -2139,7 +2138,7 @@ function RestaurantDetailsContent() {
   }, [restaurant?.offers])
 
   // Render a single dish card with layout and performance optimizations
-  const renderDishCard = (item, isRecommendedSection, openLightbox) => {
+  const renderDishCard = (item, isRecommendedSection) => {
     const quantity = getDishQuantity(item)
     const isVeg = item.foodType === "Veg"
     const isHighlighted = highlightedDishId === (item.id || item._id)
@@ -2269,22 +2268,8 @@ function RestaurantDetailsContent() {
         {/* Right Side - Image and Add Button Wrapper */}
         <div className="relative w-32 h-32 flex-shrink-0">
           {/* Image Container with rounded-2xl overflow-hidden */}
-          <div 
-            className={`w-full h-full bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm group/dishimg ${item.image && openLightbox ? 'cursor-pointer relative' : ''}`}
-            onClick={(e) => {
-              if (item.image && openLightbox) {
-                e.stopPropagation();
-                e.preventDefault();
-                openLightbox(item.image, item.name);
-              }
-            }}
-          >
+          <div className="w-full h-full bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm">
             <DishImage src={item.image} alt={item.name} className="w-full h-full object-cover" />
-            {item.image && openLightbox && (
-              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/dishimg:opacity-100 flex items-center justify-center transition-opacity">
-                <Search className="w-5 h-5 text-white" />
-              </div>
-            )}
           </div>
           {/* Button overlay - rendered outside of overflow-hidden image container to prevent clipping */}
           {quantity > 0 ? (
@@ -2918,16 +2903,9 @@ function RestaurantDetailsContent() {
                     </div>
                   )}
                   {isExpanded && sectionItems.length > 0 && (
-                    isRecommended ? (
-                      <AutoSlider
-                        items={sectionItems}
-                        renderItem={(item, { openLightbox }) => renderDishCard(item, isRecommended, openLightbox)}
-                      />
-                    ) : (
-                      <div className="space-y-0">
-                        {sectionItems.map((item) => renderDishCard(item, isRecommended))}
-                      </div>
-                    )
+                    <div className="space-y-0">
+                      {sectionItems.map((item) => renderDishCard(item, isRecommended))}
+                    </div>
                   )}
 
                   {/* Subsections */}

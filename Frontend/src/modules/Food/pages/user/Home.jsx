@@ -51,7 +51,6 @@ import {
 import { useProfile } from "@food/context/ProfileContext";
 import { useCart } from "@food/context/CartContext";
 import { HorizontalCarousel } from "@food/components/ui/horizontal-carousel";
-import AutoSlider from "@food/components/ui/AutoSlider";
 import { DotPattern } from "@food/components/ui/dot-pattern";
 import {
   Card,
@@ -2545,47 +2544,39 @@ export default function Home() {
 
                   {recommendedForYouRestaurants.length > 0 && (
                     <motion.section
-                      className="content-auto pt-1 sm:pt-2 px-4"
+                      className="content-auto pt-1 sm:pt-2"
                       initial={false}
                       animate={{ opacity: 1, y: 0 }}>
-                      <h2 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-2 sm:mb-3">
+                      <h2 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-2 sm:mb-3 px-4">
                         Recommended For You
                       </h2>
 
-                      <AutoSlider
-                        items={recommendedForYouRestaurants}
-                        renderItem={(restaurant, { openLightbox }) => {
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-4">
+                        {recommendedForYouRestaurants.map((restaurant, index) => {
                           const restaurantSlug =
                             restaurant.slug ||
                             restaurant.name.toLowerCase().replace(/\s+/g, "-");
-                          const imgUrl = typeof restaurant.image === "string" ? restaurant.image : (restaurant.image?.url || restaurant.coverImage || restaurant.profileImage);
                           return (
-                            <div className="transform transition-all duration-300 hover:-translate-y-1">
+                            <div
+                              key={`recommended-${restaurant.mongoId || restaurant.id || restaurantSlug}`}
+                              className="transform transition-all duration-300 hover:-translate-y-1"
+                              style={
+                                index < 6
+                                  ? {
+                                    animation: `fade-in-up 0.35s ease-out ${index * 0.05}s backwards` }
+                                  : undefined
+                              }
+                            >
                               <Link
                                 to={`/user/restaurants/${restaurantSlug}`}
-                                className="block rounded-[20px] overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] shadow-sm hover:shadow-md transition-shadow"
-                              >
-                                <div className="relative h-28 sm:h-32 bg-gray-50 group">
+                                className="block rounded-[20px] overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] shadow-sm hover:shadow-md transition-shadow">
+                                <div className="relative h-24 sm:h-28 md:h-32 bg-gray-50">
                                   <RestaurantImageCarousel
                                     restaurant={restaurant}
                                     backendOrigin={BACKEND_ORIGIN}
-                                    className="h-28 sm:h-32"
+                                    className="h-24 sm:h-28 md:h-32"
                                     roundedClass="rounded-t-[20px]"
                                   />
-                                  {imgUrl && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        openLightbox(imgUrl, restaurant.name);
-                                      }}
-                                      className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:scale-110 transition-all z-10"
-                                      aria-label={`Enlarge image for ${restaurant.name}`}
-                                    >
-                                      <Search className="w-3.5 h-3.5" />
-                                    </button>
-                                  )}
                                   <div className={`absolute bottom-2 left-2 px-2 py-0.5 rounded-lg ${Number(restaurant.rating) > 0 ? "bg-black/80 backdrop-blur-md text-white font-medium" : "bg-gray-200/90 text-gray-600 font-medium"} text-[10px] shadow-lg border border-white/10`}>
                                     {Number(restaurant.rating) > 0 ? Number(restaurant.rating).toFixed(1) : "NEW"}
                                   </div>
@@ -2602,8 +2593,8 @@ export default function Home() {
                               </Link>
                             </div>
                           );
-                        }}
-                      />
+                        })}
+                      </div>
                     </motion.section>
                   )}
 

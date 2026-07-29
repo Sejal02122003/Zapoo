@@ -28,8 +28,8 @@ const deliveryAddressSchema = new mongoose.Schema(
         zipCode: { type: String, default: '', trim: true },
         phone: { type: String, default: '', trim: true },
         location: {
-            type: { type: String, enum: ['Point'] },
-            coordinates: { type: [Number] }
+            type: { type: String, enum: ['Point'], default: 'Point' },
+            coordinates: { type: [Number], default: undefined }
         }
     },
     { _id: false }
@@ -63,7 +63,7 @@ const paymentSchema = new mongoose.Schema(
     {
         method: {
             type: String,
-            enum: ['cash', 'razorpay', 'razorpay_qr', 'wallet', 'online', 'card', 'upi', 'cod'],
+            enum: ['cash', 'razorpay', 'razorpay_qr', 'wallet'],
             required: true
         },
         status: {
@@ -414,29 +414,6 @@ orderSchema.pre('save', async function (next) {
     if (this.order_id) {
         this.orderId = this.order_id;
     }
-
-    // Clean up incomplete/invalid GeoJSON fields to prevent 2dsphere indexing errors
-    if (this.deliveryAddress?.location) {
-        const coords = this.deliveryAddress.location.coordinates;
-        if (!Array.isArray(coords) || coords.length !== 2 || !coords.every(n => typeof n === 'number' && Number.isFinite(n))) {
-            this.deliveryAddress.location = undefined;
-        }
-    }
-
-    if (this.lastRiderLocation) {
-        const coords = this.lastRiderLocation.coordinates;
-        if (!Array.isArray(coords) || coords.length !== 2 || !coords.every(n => typeof n === 'number' && Number.isFinite(n))) {
-            this.lastRiderLocation = undefined;
-        }
-    }
-
-    // Normalize legacy/alias payment methods
-    if (this.payment?.method === 'online') {
-        this.payment.method = 'razorpay';
-    } else if (this.payment?.method === 'cod') {
-        this.payment.method = 'cash';
-    }
-
     next();
 });
 

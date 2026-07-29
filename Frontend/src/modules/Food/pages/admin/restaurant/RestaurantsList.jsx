@@ -819,7 +819,7 @@ export default function RestaurantsList() {
           folder: "zapoo/restaurant/profile" })
         const media = uploadRes?.data?.data?.file || uploadRes?.data?.data || uploadRes?.data?.file
         if (media?.url) {
-          profileImage = media.url
+          profileImage = { url: media.url, publicId: media.publicId || media.public_id }
         }
       }
 
