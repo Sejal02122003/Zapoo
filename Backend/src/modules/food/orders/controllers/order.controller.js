@@ -389,6 +389,19 @@ export async function updateOrderStatusAdminController(req, res, next) {
     }
 }
 
+export async function cancelOrderAdminController(req, res, next) {
+    try {
+        const adminId = req.user?.userId;
+        const orderId = req.params.orderId;
+        const reason = req.body?.reason || req.body?.cancelReason || "Cancelled by Admin";
+        const refundDestination = req.body?.refundDestination || "source";
+        const order = await orderService.cancelOrderAdmin(orderId, adminId, reason, refundDestination);
+        return sendResponse(res, 200, 'Order cancelled by admin', { order });
+    } catch (err) {
+        next(err);
+    }
+}
+
 export async function deleteOrderAdminController(req, res, next) {
     try {
         const adminId = req.user?.userId;

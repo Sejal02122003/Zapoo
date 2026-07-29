@@ -1,10 +1,13 @@
-import { Eye, MapPin, Package, User, Phone, Mail, Calendar, Clock, Truck, CreditCard, X, Receipt, CheckCircle2 } from "lucide-react"
+import { useState } from "react"
+import { Eye, MapPin, Package, User, Phone, Mail, Calendar, Clock, Truck, CreditCard, X, Receipt, CheckCircle2, Ban, AlertCircle, Loader2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription } from "@food/components/ui/dialog"
+import { adminAPI } from "@food/api"
+import { toast } from "sonner"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -21,6 +24,7 @@ const getStatusColor = (orderStatus) => {
     "Canceled": "bg-rose-100 text-rose-700",
     "Cancelled by Restaurant": "bg-red-100 text-red-700",
     "Cancelled by User": "bg-orange-100 text-orange-700",
+    "Cancelled by Admin": "bg-red-100 text-red-700",
     "Payment Failed": "bg-red-100 text-red-700",
     "Refunded": "bg-sky-100 text-sky-700",
     "Dine In": "bg-indigo-100 text-indigo-700",
@@ -35,8 +39,39 @@ const getPaymentStatusColor = (paymentStatus) => {
   return "text-slate-600"
 }
 
-export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignDelivery, onReassignDelivery, onEmergencyBroadcast }) {
+export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignDelivery, onReassignDelivery, onEmergencyBroadcast, onOrderCancelled }) {
+  const [showCancelBox, setShowCancelBox] = useState(false)
+  const [cancelReason, setCancelReason] = useState("")
+  const [isCancelling, setIsCancelling] = useState(false)
+
   if (!order) return null
+
+  const canBeCancelled = !['delivered', 'picked_up', 'cancelled_by_user', 'cancelled_by_restaurant', 'cancelled_by_admin', 'Delivered', 'Cancelled', 'Canceled'].includes(order.orderStatus || order.status)
+
+  const handleAdminCancelOrder = async () => {
+    try {
+      setIsCancelling(true)
+      const orderIdToUse = order._id || order.id || order.orderId
+      const response = await adminAPI.cancelOrder(orderIdToUse, {
+        reason: cancelReason || "Cancelled by Admin"
+      })
+      if (response?.data?.success) {
+        toast.success("Order cancelled successfully by Admin")
+        setShowCancelBox(false)
+        setCancelReason("")
+        if (onOrderCancelled) {
+          onOrderCancelled(orderIdToUse)
+        }
+        onOpenChange(false)
+      } else {
+        toast.error(response?.data?.message || "Failed to cancel order")
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to cancel order")
+    } finally {
+      setIsCancelling(false)
+    }
+  }
 
   // Debug: Log order data to check billImageUrl
   if (order.billImageUrl) {
@@ -167,9 +202,68 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
               {order.orderStatus && (
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Order Status</p>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.orderStatus)}`}>
-                    {order.orderStatus}
-                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.orderStatus)}`}>
+                      {order.orderStatus}
+                    </span>
+                    {canBeCancelled && !showCancelBox && (
+                      <button
+                        type="button"
+                        onClick={() => setShowCancelBox(true)}
+                        className="px-2.5 py-1 text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 rounded-full border border-red-200 transition-colors flex items-center gap-1"
+                      >
+                        <Ban className="w-3.5 h-3.5" /> Cancel Order
+                      </button>
+                    )}
+                  </div>
+
+                  {showCancelBox && (
+                    <div className="mt-3 p-3 bg-red-50/70 border border-red-200 rounded-lg space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-red-800 flex items-center gap-1">
+                          <Ban className="w-3.5 h-3.5 text-red-600" /> Cancel Order (Admin)
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => { setShowCancelBox(false); setCancelReason(""); }}
+                          className="text-slate-400 hover:text-slate-600 text-xs"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        placeholder="Reason for cancellation..."
+                        className="w-full text-xs px-3 py-1.5 border border-red-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                      />
+                      <div className="flex items-center justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => { setShowCancelBox(false); setCancelReason(""); }}
+                          className="px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-200/60 rounded"
+                          disabled={isCancelling}
+                        >
+                          Dismiss
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleAdminCancelOrder}
+                          disabled={isCancelling}
+                          className="px-3 py-1 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded flex items-center gap-1 disabled:opacity-50"
+                        >
+                          {isCancelling ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" /> Cancelling...
+                            </>
+                          ) : (
+                            "Confirm Cancel"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {order.cancellationReason && (
                     <p className="text-xs text-red-600 mt-1">
                       <span className="font-medium">
@@ -469,10 +563,16 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
               )}
               {order.deliveryCharge !== undefined && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Delivery Charge</span>
+                  <span className="text-slate-600">Customer Delivery Charge</span>
                   <span className="font-medium text-slate-900">
                     {order.deliveryCharge > 0 ? `₹${order.deliveryCharge.toFixed(2)}` : <span className="text-emerald-600">Free delivery</span>}
                   </span>
+                </div>
+              )}
+              {order.riderPay !== undefined && order.riderPay > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-amber-700 font-medium">Rider Delivery Payout (Paid to Rider)</span>
+                  <span className="font-bold text-amber-700">₹{order.riderPay.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm">

@@ -34,7 +34,8 @@ const businessSettingsSchema = new mongoose.Schema(
         maintenanceMode: { type: Boolean, default: false },
         customerRegistration: { type: Boolean, default: true },
         restaurantRegistration: { type: Boolean, default: true },
-        deliveryRegistration: { type: Boolean, default: true }
+        deliveryRegistration: { type: Boolean, default: true },
+        outerZoneDeliveryRangeKm: { type: Number, default: 15 } // Max customizable range in km for outer zone delivery
     },
     { timestamps: true }
 );

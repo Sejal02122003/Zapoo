@@ -2308,10 +2308,12 @@ export default function OrderTracking() {
                 </div>
               )}
 
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">Delivery Fee</span>
-                <span className="text-gray-900 font-medium">₹{Number(order?.deliveryFee || 0).toFixed(2)}</span>
-              </div>
+              {order?.orderType !== 'takeaway' && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Delivery Fee</span>
+                  <span className="text-gray-900 font-medium">₹{Number(order?.deliveryFee || 0).toFixed(2)}</span>
+                </div>
+              )}
 
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">GST</span>

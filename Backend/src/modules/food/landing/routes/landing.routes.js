@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { upload } from '../../../../middleware/upload.js';
 import {
     listHeroBannersController,
@@ -6,7 +6,8 @@ import {
     deleteHeroBannerController,
     updateHeroBannerOrderController,
     toggleHeroBannerStatusController,
-    linkRestaurantsToBannerController
+    linkRestaurantsToBannerController,
+    updateBannerTargetScopeController
 } from '../controllers/heroBanner.controller.js';
 
 import {
@@ -21,7 +22,8 @@ import {
     uploadDiningBannersController,
     deleteDiningBannerController,
     updateDiningBannerOrderController,
-    toggleDiningBannerStatusController
+    toggleDiningBannerStatusController,
+    updateDiningBannerTargetScopeController
 } from '../controllers/diningBanner.controller.js';
 import {
     getAdminLandingSettingsController,
@@ -75,6 +77,7 @@ router.delete('/hero-banners/:id', deleteHeroBannerController);
 router.patch('/hero-banners/:id/order', updateHeroBannerOrderController);
 router.patch('/hero-banners/:id/status', toggleHeroBannerStatusController);
 router.patch('/hero-banners/:id/link-restaurants', linkRestaurantsToBannerController);
+router.patch('/hero-banners/:id/target-scope', updateBannerTargetScopeController);
 
 
 // Admin under 250 banners
@@ -98,6 +101,7 @@ router.post(
 router.delete('/hero-banners/ads/:id', deleteDiningBannerController);
 router.patch('/hero-banners/ads/:id/order', updateDiningBannerOrderController);
 router.patch('/hero-banners/ads/:id/status', toggleDiningBannerStatusController);
+router.patch('/hero-banners/ads/:id/target-scope', updateDiningBannerTargetScopeController);
 
 // Admin Explore More (icons)
 router.get('/hero-banners/landing/explore-more', listExploreMoreController);

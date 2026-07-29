@@ -951,7 +951,7 @@ Order again from this restaurant in the ${companyName} app.`
                         <span className="text-gray-800 dark:text-gray-200 font-medium">{"\u20B9"}{order.subtotal.toFixed(2)}</span>
                       </div>
                     )}
-                    {order.deliveryFee > 0 && (
+                    {order.deliveryFee > 0 && order.orderType !== 'takeaway' && (
                       <div className="hidden sm:flex justify-between text-xs">
                         <span className="text-gray-600 dark:text-gray-400">Delivery Fee</span>
                         <span className="text-gray-800 dark:text-gray-200 font-medium">{"\u20B9"}{order.deliveryFee.toFixed(2)}</span>

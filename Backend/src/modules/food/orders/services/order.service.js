@@ -81,7 +81,30 @@ async function getActiveCommissionRules() {
 
 async function getRiderEarning(distanceKm) {
   const d = Number(distanceKm);
-  if (!Number.isFinite(d) || d <= 0) return 0;
+  if (!Number.isFinite(d) || d < 0) return 0;
+
+  const feeSettings = await FoodFeeSettings.findOne({ isActive: true }).lean();
+  if (feeSettings) {
+    const riderRanges = Array.isArray(feeSettings.riderPayoutRanges) ? feeSettings.riderPayoutRanges : [];
+    if (riderRanges.length > 0) {
+      const sorted = [...riderRanges].sort((a, b) => Number(a.min) - Number(b.min));
+      for (let i = 0; i < sorted.length; i++) {
+        const r = sorted[i];
+        const min = Number(r.min);
+        const max = Number(r.max);
+        const pay = Number(r.pay);
+        const isLast = i === sorted.length - 1;
+        const inRange = isLast ? d >= min && d <= max : d >= min && d < max;
+        if (inRange && Number.isFinite(pay)) {
+          return Math.round(pay);
+        }
+      }
+    }
+    if (Number.isFinite(Number(feeSettings.riderBasePayout)) && Number(feeSettings.riderBasePayout) > 0) {
+      return Math.round(Number(feeSettings.riderBasePayout));
+    }
+  }
+
   const rules = await getActiveCommissionRules();
   if (!rules.length) return 0;
 
@@ -405,6 +428,11 @@ export async function createOrder(userId, dto) {
     ? String(dto.pricing.restaurantCouponCode).trim().toUpperCase()
     : "";
   if (restaurantCouponCode) {
+    const { LocationCoupon } = await import('../../admin/models/locationCoupon.model.js');
+    await LocationCoupon.updateOne(
+      { code: restaurantCouponCode, restaurantId: dto.restaurantId },
+      { $inc: { usageCount: 1 } }
+    );
     const { default: Promocode } = await import('../../../../models/Promocode.js');
     await Promocode.updateOne(
       { code: restaurantCouponCode, restaurantId: dto.restaurantId },
@@ -1044,6 +1072,143 @@ export async function cancelOrder(orderId, userId, reason, refundDestination = "
     }
   } catch (err) {
     logger.warn(`cancelOrder socket emit failed: ${err?.message || err}`);
+  }
+
+  return normalizeOrderForClient(order);
+}
+
+export async function cancelOrderAdmin(orderId, adminId, reason, refundDestination = "source") {
+  const identity = buildOrderIdentityFilter(orderId);
+  if (!identity) throw new ValidationError("Order id required");
+
+  const order = await FoodOrder.findOne(identity);
+  if (!order) throw new NotFoundError("Order not found");
+
+  if (["delivered", "cancelled_by_user", "cancelled_by_restaurant", "cancelled_by_admin"].includes(order.orderStatus)) {
+      throw new ValidationError("Order cannot be cancelled in its current state");
+  }
+
+  const from = order.orderStatus;
+  order.orderStatus = "cancelled_by_admin";
+  pushStatusHistory(order, {
+    byRole: "ADMIN",
+    byId: adminId,
+    from,
+    to: "cancelled_by_admin",
+    note: reason || "Cancelled by Admin",
+  });
+
+  const userId = order.userId ? order.userId.toString() : null;
+
+  if (userId) {
+    try {
+      const { cancelPendingIncentive } = await import('./incentive.service.js');
+      await cancelPendingIncentive(order, adminId, "Order cancelled by admin", "ADMIN_CANCEL");
+    } catch (e) {
+      console.warn("Error cancelling incentive:", e);
+    }
+  }
+
+  const paymentMethod = String(order.payment?.method || "cash").toLowerCase();
+  const paymentStatus = String(order.payment?.status || "cod_pending").toLowerCase();
+  const normalizedRefundDestination =
+    String(refundDestination || "source").toLowerCase() === "wallet"
+      ? "wallet"
+      : "source";
+  const hasRefundProcessed =
+    String(order.payment?.refund?.status || "none").toLowerCase() === "processed";
+
+  if (
+    userId &&
+    paymentStatus === "paid" &&
+    paymentMethod === "razorpay" &&
+    order.payment?.razorpay?.paymentId &&
+    !hasRefundProcessed
+  ) {
+    try {
+      if (normalizedRefundDestination === "wallet") {
+        await userWalletService.refundWalletBalance(
+          userId,
+          order.pricing.total,
+          `Refund for admin cancelled order #${order.order_id || order._id}`,
+          { orderId: order._id, source: "order_refund_wallet" },
+        );
+        order.payment.status = "refunded";
+        order.payment.refund = {
+          status: "processed",
+          destination: "wallet",
+          amount: order.pricing.total,
+          refundId: "",
+          processedAt: new Date()
+        };
+      } else {
+        const refundResult = await initiateRazorpayRefund(
+          order.payment.razorpay.paymentId,
+          order.pricing.total
+        );
+
+        if (refundResult.success) {
+          order.payment.status = "refunded";
+          order.payment.refund = {
+            status: "processed",
+            destination: "source",
+            amount: order.pricing.total,
+            refundId: refundResult.refundId,
+            processedAt: new Date()
+          };
+        } else {
+          order.payment.refund = {
+            status: "failed",
+            destination: "source",
+            amount: order.pricing.total
+          };
+        }
+      }
+    } catch (err) {
+      console.error(`Refund processing error for Order ${orderId}:`, err);
+      order.payment.refund = {
+        status: "failed",
+        destination: normalizedRefundDestination,
+        amount: order.pricing.total,
+      };
+    }
+  } else if (
+    userId &&
+    paymentStatus === "paid" &&
+    paymentMethod === "wallet" &&
+    !hasRefundProcessed
+  ) {
+    try {
+      await userWalletService.refundWalletBalance(userId, order.pricing.total, `Refund for admin cancelled order #${order.order_id || order._id}`, { orderId: order._id });
+      order.payment.status = "refunded";
+      order.payment.refund = {
+        status: "processed",
+        destination: "wallet",
+        amount: order.pricing.total,
+        processedAt: new Date()
+      };
+    } catch (err) {
+      console.error(`Wallet refund processing error for Order ${orderId}:`, err);
+      order.payment.refund = { status: "failed", destination: "wallet", amount: order.pricing.total };
+    }
+  }
+
+  await order.save();
+
+  try {
+    const finalPaymentMethod = String(order.payment?.method || paymentMethod || "cash").toLowerCase();
+    const finalPaymentStatus = String(order.payment?.status || paymentStatus || "cod_pending").toLowerCase();
+    const isOnlinePaid =
+      finalPaymentMethod === "razorpay" &&
+      (finalPaymentStatus === "paid" || finalPaymentStatus === "refunded");
+    await foodTransactionService.updateTransactionStatus(order._id, 'cancelled_by_admin', {
+        status: isOnlinePaid ? 'refunded' : 'failed',
+        note: `Order cancelled by admin: ${reason || "No reason"}`,
+        recordedByRole: 'ADMIN',
+        recordedById: adminId
+    });
+  } catch (err) {
+    logger.warn(`cancelOrderAdmin transaction sync failed: ${err?.message || err}`);
   }
 
   return normalizeOrderForClient(order);

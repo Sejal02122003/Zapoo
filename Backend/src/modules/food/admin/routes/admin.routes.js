@@ -267,7 +267,7 @@ router.get('/orders', orderController.listOrdersAdminController);
 router.get('/orders/:orderId', orderController.getOrderByIdAdminController);
 router.patch('/orders/:orderId/update-status', orderController.updateOrderStatusAdminController);
 router.delete('/orders/:orderId', orderController.deleteOrderAdminController);
-router.post('/orders/:orderId/cancel', orderController.cancelOrderController);
+router.post('/orders/:orderId/cancel', orderController.cancelOrderAdminController);
 router.post('/orders/:orderId/assign-delivery', orderController.assignDeliveryPartnerController);
 
 // Audit Logs

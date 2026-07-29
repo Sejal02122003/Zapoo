@@ -24,6 +24,9 @@ export const getPublicHeroBannersController = async (req, res, next) => {
         if (zoneId && mongoose.Types.ObjectId.isValid(zoneId)) {
             const targetZone = String(zoneId);
             docs = (docs || []).filter(banner => {
+                if (banner.targetScope === 'zone' && banner.zoneId) {
+                    return String(banner.zoneId) === targetZone;
+                }
                 const linked = banner.linkedRestaurantIds || [];
                 if (linked.length === 0) return true;
                 return linked.some(r => String(r.zoneId || '') === targetZone);
@@ -64,7 +67,18 @@ export const getPublicUnder99BannersController = async (req, res, next) => {
 
 export const getPublicDiningBannersController = async (req, res, next) => {
     try {
-        const docs = await FoodDiningBanner.find({ isActive: true }).sort({ sortOrder: 1, createdAt: -1 }).lean();
+        const { zoneId } = req.query;
+        const query = { isActive: true };
+        if (zoneId && mongoose.Types.ObjectId.isValid(zoneId)) {
+            query.$or = [
+                { targetScope: 'global' },
+                { zoneId: new mongoose.Types.ObjectId(zoneId) },
+                { zoneId: String(zoneId) },
+                { zoneId: null },
+                { zoneId: { $exists: false } }
+            ];
+        }
+        const docs = await FoodDiningBanner.find(query).sort({ sortOrder: 1, createdAt: -1 }).lean();
         return sendResponse(res, 200, 'Dining banners fetched', { banners: docs });
     } catch (error) {
         next(error);

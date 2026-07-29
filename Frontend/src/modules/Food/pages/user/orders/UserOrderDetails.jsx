@@ -702,17 +702,19 @@ export default function UserOrderDetails() {
                 ₹{Number(pricing.tax || 0).toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400 dark:text-gray-500 font-medium">Delivery fee</span>
-              {pricing.deliveryFee === 0 && (
-                <span className="text-primary text-[10px] font-bold border border-primary px-1 rounded ml-1">
-                  FREE
+            {order?.orderType !== 'takeaway' && (
+              <div className="flex justify-between">
+                <span className="text-gray-400 dark:text-gray-500 font-medium">Delivery fee</span>
+                {pricing.deliveryFee === 0 && (
+                  <span className="text-primary text-[10px] font-bold border border-primary px-1 rounded ml-1">
+                    FREE
+                  </span>
+                )}
+                <span className="text-primary dark:text-[#a04882] font-medium uppercase">
+                  {pricing.deliveryFee ? `₹${Number(pricing.deliveryFee).toFixed(2)}` : "Free"}
                 </span>
-              )}
-              <span className="text-primary dark:text-[#a04882] font-medium uppercase">
-                {pricing.deliveryFee ? `₹${Number(pricing.deliveryFee).toFixed(2)}` : "Free"}
-              </span>
-            </div>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">Platform fee</span>
               <span className="text-gray-800 dark:text-gray-200">

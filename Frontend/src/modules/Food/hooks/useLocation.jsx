@@ -1070,12 +1070,12 @@ export function useLocationEngine() {
           async (err) => {
             // If timeout and we haven't retried yet, try with lower accuracy
             if (err.code === 3 && retryCount === 0 && options.enableHighAccuracy) {
-              debugWarn("?? High accuracy timeout, retrying with lower accuracy...")
-              // Retry with lower accuracy - faster response (uses network-based location)
+              debugWarn("?? High accuracy timeout, retrying with fast network location...")
+              // Retry with lower accuracy - fast network/cell tower positioning
               getPositionWithRetry({
                 enableHighAccuracy: false,
-                timeout: 5000,  // 5 seconds for lower accuracy (network-based is faster)
-                maximumAge: 300000 // Allow 5 minute old cached location for instant response
+                timeout: 2500,  // 2.5 seconds for network-based location
+                maximumAge: 120000 // Allow cached network location
               }, 1).then(resolve).catch(reject)
               return
             }
@@ -1149,9 +1149,9 @@ export function useLocationEngine() {
     // If forceFresh is true, don't use cached location (maximumAge: 0)
     // Otherwise, allow cached location for faster response
     return getPositionWithRetry({
-      enableHighAccuracy: true,  // Use GPS for exact location (highest accuracy)
-      timeout: 15000,            // 15 seconds timeout (gives GPS more time to lock before fallback)
-      maximumAge: forceFresh ? 0 : 300000 // 5 minutes cache (huge speedup if already fetched recently)
+      enableHighAccuracy: true,  // Use GPS for exact location
+      timeout: 3500,             // 3.5s fast timeout before falling back to network positioning
+      maximumAge: forceFresh ? 0 : 60000 // 1 minute cache for fast response
     })
   }
 

@@ -32,6 +32,8 @@ export const createDiningBannersFromFiles = async (files, meta = {}) => {
                 ctaText: meta.ctaText,
                 ctaLink: meta.ctaLink,
                 diningType: meta.diningType,
+                targetScope: meta.targetScope || (meta.zoneId ? 'zone' : 'global'),
+                zoneId: meta.zoneId || null,
                 sortOrder: meta.sortOrder ?? 0,
                 isActive: true,
             });
@@ -78,6 +80,15 @@ export const toggleDiningBannerStatus = async (id, isActive) => {
         { isActive },
         { new: true }
     ).lean();
+    return updated;
+};
+
+export const updateDiningBannerTargetScope = async (id, targetScope, zoneId = null) => {
+    const updateData = {
+        targetScope: targetScope === 'zone' ? 'zone' : 'global',
+        zoneId: targetScope === 'zone' && zoneId ? zoneId : null
+    };
+    const updated = await FoodDiningBanner.findByIdAndUpdate(id, updateData, { new: true }).lean();
     return updated;
 };
 

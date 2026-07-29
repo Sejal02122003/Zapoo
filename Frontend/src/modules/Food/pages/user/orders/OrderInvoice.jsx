@@ -281,7 +281,7 @@ export default function OrderInvoice() {
                     <td className="px-3 py-2 border-r border-gray-400"></td>
                     <td className="px-3 py-2 font-bold text-right text-gray-900">₹{order.subtotal.toFixed(2)}</td>
                   </tr>
-                  {order.deliveryFee > 0 && (
+                  {order.deliveryFee > 0 && order.orderType !== 'takeaway' && (
                     <tr className="border-t border-gray-300">
                       <td colSpan="4" className="px-3 py-2 border-r border-gray-400 font-bold text-right text-gray-800 uppercase text-[10px] tracking-wider">Delivery Charges</td>
                       <td className="px-3 py-2 text-right font-medium">₹{order.deliveryFee.toFixed(2)}</td>

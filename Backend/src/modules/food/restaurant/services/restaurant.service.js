@@ -228,6 +228,22 @@ const zoneToPolygon = (zoneDoc) => {
     return { type: 'Polygon', coordinates: [ring] };
 };
 
+const isPointInPolygon = (lat, lng, polygon) => {
+    if (!Array.isArray(polygon) || polygon.length < 3) return false;
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].longitude;
+        const yi = polygon[i].latitude;
+        const xj = polygon[j].longitude;
+        const yj = polygon[j].latitude;
+        const intersect =
+            yi > lat !== yj > lat &&
+            lng < ((xj - xi) * (lat - yi)) / (yj - yi + 0.0) + xi;
+        if (intersect) inside = !inside;
+    }
+    return inside;
+};
+
 const notifyAdminsAboutRestaurantProfileReview = async (restaurantId, restaurantName) => {
     try {
         const { notifyAdminsSafely } = await import('../../../../core/notifications/firebase.service.js');
@@ -1355,20 +1371,43 @@ export const listApprovedRestaurants = async (query = {}) => {
         }
     }
 
-    // Optional zone polygon filter (when restaurant.zoneId is not set yet).
-    const zoneIdRaw = String(query.zoneId || '').trim();
-    if (zoneIdRaw && mongoose.Types.ObjectId.isValid(zoneIdRaw)) {
-        const zoneOr = [{ zoneId: new mongoose.Types.ObjectId(zoneIdRaw) }];
-        const zoneDoc = await FoodZone.findOne({ _id: zoneIdRaw, isActive: true }).lean();
-        const polygon = zoneToPolygon(zoneDoc);
-        if (polygon) {
-            zoneOr.push({ location: { $geoWithin: { $geometry: polygon } } });
-        }
-        filter.$and = [...(filter.$and || []), { $or: zoneOr }];
-    }
-
     const lat = toFiniteNumber(query.lat);
     const lng = toFiniteNumber(query.lng);
+
+    // Enforce strict zone filtering (with auto-detection from lat/lng if zoneId is omitted)
+    let targetZoneId = String(query.zoneId || '').trim();
+    if (!targetZoneId && lat !== null && lng !== null) {
+        const activeZones = await FoodZone.find({ isActive: true }).lean();
+        for (const zone of activeZones) {
+            const coords = Array.isArray(zone.coordinates) ? zone.coordinates : [];
+            if (coords.length >= 3 && isPointInPolygon(lat, lng, coords)) {
+                targetZoneId = String(zone._id);
+                break;
+            }
+        }
+    }
+
+    if (targetZoneId && mongoose.Types.ObjectId.isValid(targetZoneId)) {
+        const zoneObjId = new mongoose.Types.ObjectId(targetZoneId);
+        const zoneDoc = await FoodZone.findOne({ _id: targetZoneId, isActive: true }).lean();
+        const polygon = zoneToPolygon(zoneDoc);
+
+        const zoneOr = [{ zoneId: zoneObjId }];
+        if (polygon) {
+            zoneOr.push({
+                location: { $geoWithin: { $geometry: polygon } },
+                $or: [
+                    { zoneId: { $exists: false } },
+                    { zoneId: null }
+                ]
+            });
+        }
+        filter.$and = [...(filter.$and || []), { $or: zoneOr }];
+    } else if (query.zoneId || (lat !== null && lng !== null)) {
+        // Zone explicitly passed but not found, or coordinates fall outside all active zones -> return empty list
+        filter._id = new mongoose.Types.ObjectId();
+    }
+
     // Accept both radiusKm (preferred) and maxDistance (legacy frontend param).
     const radiusKm = toFiniteNumber(query.radiusKm) ?? toFiniteNumber(query.maxDistance);
     const sortBy = parseSortBy(query.sortBy);

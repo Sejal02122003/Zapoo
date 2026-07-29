@@ -1,8 +1,22 @@
 import { FoodZone } from '../../admin/models/zone.model.js';
+import { FoodBusinessSettings } from '../../admin/models/businessSettings.model.js';
 
 const toFinite = (v) => {
     const n = typeof v === 'number' ? v : parseFloat(String(v));
     return Number.isFinite(n) ? n : null;
+};
+
+const calcDistanceKm = (lat1, lng1, lat2, lng2) => {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
 // Ray-casting point-in-polygon for lat/lng polygons.
@@ -31,6 +45,9 @@ export const detectZonePublicController = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'lat and lng are required' });
         }
 
+        const settings = await FoodBusinessSettings.findOne().lean();
+        const maxRangeKm = Number(settings?.outerZoneDeliveryRangeKm || 15);
+
         const zones = await FoodZone.find({ isActive: true }).lean();
         for (const zone of zones) {
             const coords = Array.isArray(zone.coordinates) ? zone.coordinates : [];
@@ -39,9 +56,38 @@ export const detectZonePublicController = async (req, res, next) => {
                 return res.status(200).json({
                     success: true,
                     message: 'Zone detected',
-                    data: { status: 'IN_SERVICE', zoneId: zone._id, zone }
+                    data: { status: 'IN_SERVICE', zoneId: zone._id, zone, isOuterZone: false }
                 });
             }
+        }
+
+        // Outer zone distance check (within admin-configured range)
+        let nearestZone = null;
+        let minDistanceKm = Infinity;
+
+        for (const zone of zones) {
+            const coords = Array.isArray(zone.coordinates) ? zone.coordinates : [];
+            for (const pt of coords) {
+                const d = calcDistanceKm(lat, lng, pt.latitude, pt.longitude);
+                if (d < minDistanceKm) {
+                    minDistanceKm = d;
+                    nearestZone = zone;
+                }
+            }
+        }
+
+        if (nearestZone && minDistanceKm <= maxRangeKm) {
+            return res.status(200).json({
+                success: true,
+                message: `Outer zone detected within ${maxRangeKm}km range`,
+                data: { 
+                    status: 'IN_SERVICE', 
+                    zoneId: nearestZone._id, 
+                    zone: nearestZone, 
+                    isOuterZone: true, 
+                    distanceKm: Number(minDistanceKm.toFixed(1)) 
+                }
+            });
         }
 
         return res.status(200).json({

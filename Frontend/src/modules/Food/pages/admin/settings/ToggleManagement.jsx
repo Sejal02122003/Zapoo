@@ -30,6 +30,7 @@ export default function ToggleManagement() {
           ...prev,
           onlinePaymentOnly: settings.onlinePaymentOnly || false,
           maxCodAmount: settings.maxCodAmount || 0,
+          outerZoneDeliveryRangeKm: settings.outerZoneDeliveryRangeKm || 15,
           maintenanceMode: settings.maintenanceMode || false,
           customerRegistration: settings.customerRegistration !== false,
           restaurantRegistration: settings.restaurantRegistration !== false,
@@ -61,6 +62,7 @@ export default function ToggleManagement() {
       const dataToSend = {
         onlinePaymentOnly: toggles.onlinePaymentOnly,
         maxCodAmount: Number(toggles.maxCodAmount) || 0,
+        outerZoneDeliveryRangeKm: Number(toggles.outerZoneDeliveryRangeKm) || 15,
         maintenanceMode: toggles.maintenanceMode,
         customerRegistration: toggles.customerRegistration,
         restaurantRegistration: toggles.restaurantRegistration,
@@ -153,6 +155,25 @@ export default function ToggleManagement() {
                   </div>
                 </div>
               )}
+
+              {/* Outer Zone Max Delivery Range Input */}
+              <div className="flex items-center justify-between border border-slate-100 p-4 rounded-xl bg-slate-50/50">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Outer Zone Max Delivery Range</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Allow outer-zone customers to order within this distance range</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={toggles.outerZoneDeliveryRangeKm || 15}
+                    onChange={(e) => handleInputChange('outerZoneDeliveryRangeKm', e.target.value)}
+                    className="w-24 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-semibold text-slate-700">km</span>
+                </div>
+              </div>
 
               {/* Maintenance Mode Toggle */}
               <div className="flex items-center justify-between border border-slate-100 p-4 rounded-xl bg-slate-50/50">

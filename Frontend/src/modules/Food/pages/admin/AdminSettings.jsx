@@ -18,6 +18,8 @@ const debugError = (...args) => {}
 
 export default function AdminSettings() {
   const [adminInfo, setAdminInfo] = useState(null);
+  const [outerZoneRange, setOuterZoneRange] = useState(15);
+  const [savingDelivery, setSavingDelivery] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -27,6 +29,32 @@ export default function AdminSettings() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    adminAPI.getBusinessSettings()
+      .then(res => {
+        const settings = res?.data?.data || res?.data;
+        if (settings?.outerZoneDeliveryRangeKm) {
+          setOuterZoneRange(settings.outerZoneDeliveryRangeKm);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveDeliverySettings = async (e) => {
+    e.preventDefault();
+    try {
+      setSavingDelivery(true);
+      await adminAPI.updateBusinessSettings({
+        outerZoneDeliveryRangeKm: Number(outerZoneRange) || 15
+      });
+      toast.success("Outer zone delivery range updated successfully!");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to save delivery range");
+    } finally {
+      setSavingDelivery(false);
+    }
+  };
 
   // Single API: getAdminProfile (GET /auth/me) for current account display
   useEffect(() => {
@@ -324,6 +352,67 @@ export default function AdminSettings() {
                   <>
                     <Save className="w-4 h-4 mr-2" />
                     Change Password
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Delivery & Zone Range Settings Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Truck className="w-5 h-5 text-orange-600" />
+            <CardTitle>Delivery & Outer Zone Settings</CardTitle>
+          </div>
+          <CardDescription>
+            Configure maximum delivery distance coverage for outer-zone customers
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSaveDeliverySettings} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="outerZoneDeliveryRangeKm" className="text-sm font-medium text-neutral-800">
+                Outer Zone Max Delivery Range (in kilometers)
+              </Label>
+              <p className="text-xs text-neutral-500">
+                Customers located outside exact zone polygons can order from nearby zone restaurants if they fall within this kilometer range.
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <Input
+                  id="outerZoneDeliveryRangeKm"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={outerZoneRange}
+                  onChange={(e) => setOuterZoneRange(e.target.value)}
+                  className="h-11 max-w-xs font-semibold text-neutral-900"
+                  disabled={savingDelivery}
+                  required
+                />
+                <span className="text-sm font-semibold text-neutral-700 bg-neutral-100 px-3 py-2.5 rounded-md">
+                  km
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-neutral-200">
+              <Button
+                type="submit"
+                disabled={savingDelivery}
+                className="bg-orange-600 text-white hover:bg-orange-700 h-11 px-8"
+              >
+                {savingDelivery ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving Range...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Delivery Range
                   </>
                 )}
               </Button>

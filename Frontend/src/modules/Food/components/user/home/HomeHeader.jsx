@@ -14,6 +14,7 @@ import quickIcon from "@food/assets/category-icons/quick.png";
 import taxiIcon from "@food/assets/category-icons/taxi.png";
 import hotelIcon from "@food/assets/category-icons/hotel.png";
 import useNotificationInbox from "@food/hooks/useNotificationInbox";
+import WalletIcon from "@food/components/ui/WalletIcon";
 
 const ICON_MAP = {
   CheckCircle2,
@@ -173,9 +174,17 @@ export default function HomeHeader({
             </div>
           </div>
 
-          {/* Right Actions: Bell */}
+          {/* Right Actions: Wallet & Bell */}
           <div className="flex items-center gap-2.5">
- 
+            {/* Wallet Icon Button */}
+            <Link
+              to="/food/user/wallet"
+              className="h-8 w-8 relative flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md border border-white/20 cursor-pointer active:scale-90 transition-all hover:bg-white/30 text-white"
+              title="Wallet"
+            >
+              <WalletIcon className="h-4 w-4 text-white" />
+            </Link>
+
             <Popover>
               <PopoverTrigger asChild>
                 <div className="h-8 w-8 relative flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md border border-white/20 cursor-pointer active:scale-90 transition-all">

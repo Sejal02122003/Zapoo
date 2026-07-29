@@ -13,6 +13,8 @@ export default function FeeSettings() {
   const [feeSettings, setFeeSettings] = useState({
     deliveryFee: "",
     deliveryFeeRanges: [],
+    riderBasePayout: "",
+    riderPayoutRanges: [],
     freeDeliveryUpTo: "",
     freeDeliveryThreshold: "",
     platformFee: "",
@@ -24,11 +26,18 @@ export default function FeeSettings() {
     gstOnTakeawayPlatformFee: "",
     gstOnPackagingFee: "",
     deliveryBonusAmount: "",
-    dispatchRadiusTiers: "2, 4, 6, 8, 10" })
+    dispatchRadiusTiers: "2, 4, 6, 8, 10"
+  })
   const [loadingFeeSettings, setLoadingFeeSettings] = useState(false)
   const [savingFeeSettings, setSavingFeeSettings] = useState(false)
+  
+  // Customer Range state
   const [editingRangeIndex, setEditingRangeIndex] = useState(null)
   const [newRange, setNewRange] = useState({ min: '', max: '', fee: '' })
+
+  // Rider Range state
+  const [editingRiderRangeIndex, setEditingRiderRangeIndex] = useState(null)
+  const [newRiderRange, setNewRiderRange] = useState({ min: '', max: '', pay: '' })
 
   // Fetch fee settings
   const fetchFeeSettings = async () => {
@@ -39,6 +48,8 @@ export default function FeeSettings() {
         setFeeSettings({
           deliveryFee: response.data.data.feeSettings.deliveryFee ?? "",
           deliveryFeeRanges: response.data.data.feeSettings.deliveryFeeRanges || [],
+          riderBasePayout: response.data.data.feeSettings.riderBasePayout ?? "",
+          riderPayoutRanges: response.data.data.feeSettings.riderPayoutRanges || [],
           freeDeliveryUpTo: response.data.data.feeSettings.freeDeliveryUpTo ?? "",
           freeDeliveryThreshold: response.data.data.feeSettings.freeDeliveryThreshold ?? "",
           platformFee: response.data.data.feeSettings.platformFee ?? "",
@@ -50,12 +61,14 @@ export default function FeeSettings() {
           gstOnTakeawayPlatformFee: response.data.data.feeSettings.gstOnTakeawayPlatformFee ?? "",
           gstOnPackagingFee: response.data.data.feeSettings.gstOnPackagingFee ?? "",
           deliveryBonusAmount: response.data.data.feeSettings.deliveryBonusAmount ?? "",
-          dispatchRadiusTiers: response.data.data.feeSettings.dispatchRadiusTiers?.join(", ") ?? "2, 4, 6, 8, 10" })
+          dispatchRadiusTiers: response.data.data.feeSettings.dispatchRadiusTiers?.join(", ") ?? "2, 4, 6, 8, 10"
+        })
       } else if (response.data.success && response.data.data.feeSettings === null) {
-        // Not configured yet - keep empty fields (no defaults).
         setFeeSettings({
           deliveryFee: "",
           deliveryFeeRanges: [],
+          riderBasePayout: "",
+          riderPayoutRanges: [],
           freeDeliveryUpTo: "",
           freeDeliveryThreshold: "",
           platformFee: "",
@@ -67,7 +80,8 @@ export default function FeeSettings() {
           gstOnTakeawayPlatformFee: "",
           gstOnPackagingFee: "",
           deliveryBonusAmount: "",
-          dispatchRadiusTiers: "2, 4, 6, 8, 10" })
+          dispatchRadiusTiers: "2, 4, 6, 8, 10"
+        })
       }
     } catch (error) {
       debugError('Error fetching fee settings:', error)
@@ -89,6 +103,8 @@ export default function FeeSettings() {
       const response = await adminAPI.createOrUpdateFeeSettings({
         deliveryFee: feeSettings.deliveryFee === "" ? undefined : Number(feeSettings.deliveryFee),
         deliveryFeeRanges: feeSettings.deliveryFeeRanges,
+        riderBasePayout: feeSettings.riderBasePayout === "" ? undefined : Number(feeSettings.riderBasePayout),
+        riderPayoutRanges: feeSettings.riderPayoutRanges,
         freeDeliveryUpTo: feeSettings.freeDeliveryUpTo === "" ? undefined : Number(feeSettings.freeDeliveryUpTo),
         freeDeliveryThreshold: feeSettings.freeDeliveryThreshold === "" ? undefined : Number(feeSettings.freeDeliveryThreshold),
         platformFee: feeSettings.platformFee === "" ? undefined : Number(feeSettings.platformFee),
@@ -101,7 +117,8 @@ export default function FeeSettings() {
         gstOnPackagingFee: feeSettings.gstOnPackagingFee === "" ? undefined : Number(feeSettings.gstOnPackagingFee),
         deliveryBonusAmount: feeSettings.deliveryBonusAmount === "" ? undefined : Number(feeSettings.deliveryBonusAmount),
         dispatchRadiusTiers: feeSettings.dispatchRadiusTiers ? feeSettings.dispatchRadiusTiers.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n)) : undefined,
-        isActive: true })
+        isActive: true
+      })
 
       if (response.data.success) {
         toast.success('Fee settings saved successfully')
@@ -240,6 +257,105 @@ export default function FeeSettings() {
   const handleCancelEdit = () => {
     setNewRange({ min: '', max: '', fee: '' })
     setEditingRangeIndex(null)
+  }
+
+  // --- RIDER PAYOUT RANGES HANDLERS ---
+  const handleAddRiderRange = () => {
+    if (newRiderRange.min === '' || newRiderRange.max === '' || newRiderRange.pay === '') {
+      toast.error('Please fill all fields for rider payout range')
+      return
+    }
+
+    const min = Number(newRiderRange.min)
+    const max = Number(newRiderRange.max)
+    const pay = Number(newRiderRange.pay)
+
+    if (min < 0 || max < 0 || pay < 0) {
+      toast.error('All values must be positive numbers')
+      return
+    }
+
+    if (min >= max) {
+      toast.error('Min value must be less than Max value')
+      return
+    }
+
+    const ranges = [...(feeSettings.riderPayoutRanges || [])]
+    for (const range of ranges) {
+      if ((min >= range.min && min < range.max) || (max > range.min && max <= range.max) || (min <= range.min && max >= range.max)) {
+        toast.error('This rider payout range overlaps with an existing range')
+        return
+      }
+    }
+
+    setFeeSettings({
+      ...feeSettings,
+      riderPayoutRanges: [...ranges, { min, max, pay }].sort((a, b) => a.min - b.min)
+    })
+    setNewRiderRange({ min: '', max: '', pay: '' })
+    toast.success('Rider payout range added')
+  }
+
+  const handleDeleteRiderRange = (index) => {
+    const newRanges = (feeSettings.riderPayoutRanges || []).filter((_, i) => i !== index)
+    setFeeSettings({
+      ...feeSettings,
+      riderPayoutRanges: newRanges
+    })
+    toast.success('Rider payout range deleted')
+  }
+
+  const handleEditRiderRange = (index) => {
+    const range = feeSettings.riderPayoutRanges[index]
+    setNewRiderRange({ min: range.min, max: range.max, pay: range.pay })
+    setEditingRiderRangeIndex(index)
+  }
+
+  const handleSaveEditRiderRange = () => {
+    if (newRiderRange.min === '' || newRiderRange.max === '' || newRiderRange.pay === '') {
+      toast.error('Please fill all fields')
+      return
+    }
+
+    const min = Number(newRiderRange.min)
+    const max = Number(newRiderRange.max)
+    const pay = Number(newRiderRange.pay)
+
+    if (min < 0 || max < 0 || pay < 0) {
+      toast.error('All values must be positive numbers')
+      return
+    }
+
+    if (min >= max) {
+      toast.error('Min value must be less than Max value')
+      return
+    }
+
+    const ranges = [...(feeSettings.riderPayoutRanges || [])]
+    ranges.splice(editingRiderRangeIndex, 1)
+
+    for (const range of ranges) {
+      if ((min >= range.min && min < range.max) || (max > range.min && max <= range.max) || (min <= range.min && max >= range.max)) {
+        toast.error('This range overlaps with an existing range')
+        return
+      }
+    }
+
+    ranges.push({ min, max, pay })
+    ranges.sort((a, b) => a.min - b.min)
+
+    setFeeSettings({
+      ...feeSettings,
+      riderPayoutRanges: ranges
+    })
+    setNewRiderRange({ min: '', max: '', pay: '' })
+    setEditingRiderRangeIndex(null)
+    toast.success('Rider payout range updated')
+  }
+
+  const handleCancelRiderEdit = () => {
+    setNewRiderRange({ min: '', max: '', pay: '' })
+    setEditingRiderRangeIndex(null)
   }
 
   return (
@@ -464,10 +580,196 @@ export default function FeeSettings() {
                       </div>
                     </div>
                     <p className="text-xs text-slate-500 mt-2 italic">
-                      Example: Orders between 0 km and 5 km will have ₹50 delivery fee.
+                      Example: Orders between 0 km and 5 km will charge customer ₹50 delivery fee.
                     </p>
                   </div>
                 )}
+              </div>
+
+              {/* Rider Delivery Payout Section */}
+              <div className="bg-amber-50/60 rounded-xl p-5 border border-amber-200 space-y-4">
+                <div className="flex items-center justify-between border-b border-amber-200/80 pb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-amber-900 flex items-center gap-2">
+                      <span>🏍️</span> Rider Delivery Payout Configuration (Paid to Delivery Partner)
+                    </h3>
+                    <p className="text-xs text-amber-700 mt-0.5">
+                      Configure separate payout rates paid to riders for completing deliveries (independent of what customers pay).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-amber-900 mb-1">
+                      Fixed Rider Base Pay (₹) (Fallback if no range matches)
+                    </label>
+                    <input
+                      type="number"
+                      value={feeSettings.riderBasePayout}
+                      onChange={(e) => setFeeSettings({ ...feeSettings, riderBasePayout: e.target.value })}
+                      min="0"
+                      step="1"
+                      className="w-full px-3 py-2 text-sm border border-amber-300 bg-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none font-medium"
+                      placeholder="e.g. 30"
+                    />
+                    <p className="text-[11px] text-amber-700 mt-1">Default flat payout per order for delivery partner</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-amber-900 mb-1">
+                      Additional Delivery Bonus (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={feeSettings.deliveryBonusAmount}
+                      onChange={(e) => setFeeSettings({ ...feeSettings, deliveryBonusAmount: e.target.value })}
+                      min="0"
+                      step="1"
+                      className="w-full px-3 py-2 text-sm border border-amber-300 bg-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none font-medium"
+                      placeholder="e.g. 10"
+                    />
+                    <p className="text-[11px] text-amber-700 mt-1">Extra bonus added on top of rider earnings per delivery</p>
+                  </div>
+                </div>
+
+                {/* Rider Range Table */}
+                <div className="pt-2">
+                  <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2">Distance-based Rider Payout Slabs</h4>
+                  {(!feeSettings.riderPayoutRanges || feeSettings.riderPayoutRanges.length === 0) ? (
+                    <div className="bg-white p-4 rounded-lg border border-amber-200 text-center text-xs text-amber-800">
+                      No distance-based payout slabs added. Rider will receive the Fixed Base Pay.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto bg-white rounded-lg border border-amber-200">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-amber-100/60 border-b border-amber-200">
+                            <th className="px-4 py-2.5 text-xs font-bold text-amber-900">Min Distance</th>
+                            <th className="px-4 py-2.5 text-xs font-bold text-amber-900">Max Distance</th>
+                            <th className="px-4 py-2.5 text-xs font-bold text-amber-900">Rider Payout (₹)</th>
+                            <th className="px-4 py-2.5 text-xs font-bold text-amber-900 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {feeSettings.riderPayoutRanges.map((range, originalIndex) => {
+                            const isEditing = editingRiderRangeIndex === originalIndex;
+                            return (
+                              <tr key={originalIndex} className="border-b border-slate-100 hover:bg-amber-50/30">
+                                <td className="px-4 py-2.5 text-xs font-semibold text-slate-800">
+                                  {isEditing ? (
+                                    <input
+                                      type="number"
+                                      value={newRiderRange.min}
+                                      onChange={(e) => setNewRiderRange({ ...newRiderRange, min: e.target.value })}
+                                      className="w-20 px-2 py-1 border border-amber-400 rounded"
+                                    />
+                                  ) : (
+                                    <>{range.min} km</>
+                                  )}
+                                </td>
+                                <td className="px-4 py-2.5 text-xs font-semibold text-slate-800">
+                                  {isEditing ? (
+                                    <input
+                                      type="number"
+                                      value={newRiderRange.max}
+                                      onChange={(e) => setNewRiderRange({ ...newRiderRange, max: e.target.value })}
+                                      className="w-20 px-2 py-1 border border-amber-400 rounded"
+                                    />
+                                  ) : (
+                                    <>{range.max} km</>
+                                  )}
+                                </td>
+                                <td className="px-4 py-2.5 text-xs font-bold text-amber-700">
+                                  {isEditing ? (
+                                    <input
+                                      type="number"
+                                      value={newRiderRange.pay}
+                                      onChange={(e) => setNewRiderRange({ ...newRiderRange, pay: e.target.value })}
+                                      className="w-20 px-2 py-1 border border-amber-400 rounded text-amber-700 font-bold"
+                                    />
+                                  ) : (
+                                    <>₹{range.pay}</>
+                                  )}
+                                </td>
+                                <td className="px-4 py-2.5 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    {isEditing ? (
+                                      <>
+                                        <button onClick={handleSaveEditRiderRange} className="p-1 text-green-600 hover:bg-green-100 rounded">
+                                          <Check className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={handleCancelRiderEdit} className="p-1 text-red-600 hover:bg-red-100 rounded">
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button onClick={() => handleEditRiderRange(originalIndex)} className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                                          <Edit className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => handleDeleteRiderRange(originalIndex)} className="p-1 text-red-600 hover:bg-red-50 rounded">
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Add New Rider Range */}
+                  {editingRiderRangeIndex === null && (
+                    <div className="bg-white p-3.5 rounded-lg border border-amber-200 mt-3">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-amber-900 mb-1">Min (km)</label>
+                          <input
+                            type="number"
+                            value={newRiderRange.min}
+                            onChange={(e) => setNewRiderRange({ ...newRiderRange, min: e.target.value })}
+                            placeholder="0"
+                            className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-amber-900 mb-1">Max (km)</label>
+                          <input
+                            type="number"
+                            value={newRiderRange.max}
+                            onChange={(e) => setNewRiderRange({ ...newRiderRange, max: e.target.value })}
+                            placeholder="3"
+                            className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-amber-900 mb-1">Rider Pay (₹)</label>
+                          <input
+                            type="number"
+                            value={newRiderRange.pay}
+                            onChange={(e) => setNewRiderRange({ ...newRiderRange, pay: e.target.value })}
+                            placeholder="35"
+                            className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 outline-none font-bold text-amber-800"
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <Button
+                            type="button"
+                            onClick={handleAddRiderRange}
+                            className="bg-amber-600 hover:bg-amber-700 text-white text-xs w-full h-8 flex items-center justify-center gap-1 font-bold"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> Add Slab
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-200 pt-6 mt-6">

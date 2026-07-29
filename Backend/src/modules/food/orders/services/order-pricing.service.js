@@ -237,25 +237,45 @@ export async function calculateOrderPricing(userId, dto) {
     let offer = await FoodOffer.findOne({ couponCode: codeRaw }).lean();
 
     if (!offer) {
-      const { default: Promocode } = await import('../../../../models/Promocode.js');
-      const promo = await Promocode.findOne({ code: codeRaw, restaurantId: dto.restaurantId }).lean();
-      if (promo) {
+      const locationCoupon = await LocationCoupon.findOne({ code: codeRaw, restaurantId: dto.restaurantId, isActive: true }).lean();
+      if (locationCoupon) {
         offer = {
-          _id: promo._id,
-          status: promo.isActive ? "active" : "inactive",
-          startDate: promo.startDate,
-          endDate: promo.expiryDate,
+          _id: locationCoupon._id,
+          status: locationCoupon.isActive ? "active" : "inactive",
+          startDate: locationCoupon.startDate,
+          endDate: locationCoupon.endDate,
           restaurantScope: "selected",
-          restaurantId: promo.restaurantId,
-          minOrderValue: promo.minOrderAmount || 0,
-          usageLimit: promo.usageLimit || 0,
-          usedCount: promo.usageCount || 0,
-          discountType: promo.discountType === 'PERCENTAGE' ? 'percentage' : 'flat',
-          discountValue: promo.discountValue,
-          maxDiscount: promo.maxDiscountAmount || 0,
+          restaurantId: locationCoupon.restaurantId,
+          minOrderValue: locationCoupon.minimumOrderAmount || 0,
+          usageLimit: 0,
+          usedCount: 0,
+          discountType: locationCoupon.discountType === 'percentage' ? 'percentage' : 'flat',
+          discountValue: locationCoupon.discountValue,
+          maxDiscount: locationCoupon.maximumDiscount || 0,
           perUserLimit: 0,
           customerScope: "all"
         };
+      } else {
+        const { default: Promocode } = await import('../../../../models/Promocode.js');
+        const promo = await Promocode.findOne({ code: codeRaw, restaurantId: dto.restaurantId }).lean();
+        if (promo) {
+          offer = {
+            _id: promo._id,
+            status: promo.isActive ? "active" : "inactive",
+            startDate: promo.startDate,
+            endDate: promo.expiryDate,
+            restaurantScope: "selected",
+            restaurantId: promo.restaurantId,
+            minOrderValue: promo.minOrderAmount || 0,
+            usageLimit: promo.usageLimit || 0,
+            usedCount: promo.usageCount || 0,
+            discountType: promo.discountType === 'PERCENTAGE' ? 'percentage' : 'flat',
+            discountValue: promo.discountValue,
+            maxDiscount: promo.maxDiscountAmount || 0,
+            perUserLimit: 0,
+            customerScope: "all"
+          };
+        }
       }
     }
 

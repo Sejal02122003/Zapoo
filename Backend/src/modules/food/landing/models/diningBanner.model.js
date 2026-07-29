@@ -22,6 +22,18 @@ const foodDiningBannerSchema = new mongoose.Schema(
         diningType: {
             type: String
         },
+        targetScope: {
+            type: String,
+            enum: ['global', 'zone'],
+            default: 'global',
+            index: true
+        },
+        zoneId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'FoodZone',
+            default: null,
+            index: true
+        },
         sortOrder: {
             type: Number,
             default: 0,

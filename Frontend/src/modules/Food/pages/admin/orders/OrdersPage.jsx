@@ -516,6 +516,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         couponDiscount: discountAmount,
         itemDiscount: 0,
         deliveryCharge: deliveryFee,
+        riderPay: Number(order.riderEarning || order.pricing?.riderEarning || order.deliveryEarning || 0),
         vatTax: taxAmount,
         platformFee,
         platformNetProfit,
@@ -795,6 +796,37 @@ export default function OrdersPage({ statusKey = "all" }) {
     }
   }
 
+  const handleCancelOrder = async (order) => {
+    const orderIdToUse = order.id || order._id || order.orderId
+    if (!orderIdToUse) {
+      toast.error("Order ID not found")
+      return
+    }
+
+    const reason = prompt(
+      `Cancel Order #${order.orderId || orderIdToUse}?\nEnter cancellation reason:`,
+      "Cancelled by Admin"
+    )
+
+    if (reason === null) return
+
+    try {
+      setProcessingActionOrderId(order.id || order.orderId)
+      const response = await adminAPI.cancelOrder(orderIdToUse, { reason })
+      if (response.data?.success) {
+        toast.success(response.data?.message || `Order ${order.orderId || orderIdToUse} cancelled`)
+        await fetchOrders({ silent: true, withRingCheck: false })
+      } else {
+        toast.error(response.data?.message || "Failed to cancel order")
+      }
+    } catch (error) {
+      debugError("Error cancelling order:", error)
+      toast.error(error.response?.data?.message || "Failed to cancel order")
+    } finally {
+      setProcessingActionOrderId(null)
+    }
+  }
+
   // Handle refund button click - show modal for wallet payments, confirm dialog for others
   const handleRefund = (order) => {
     const isWalletPayment = order.paymentType === "Wallet" || order.payment?.method === "wallet";
@@ -995,6 +1027,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         onAssignDelivery={handleAssignDelivery}
         onReassignDelivery={handleReassignDelivery}
         onEmergencyBroadcast={handleEmergencyBroadcast}
+        onOrderCancelled={fetchOrders}
       />
       <RefundModal
         isOpen={refundModalOpen}
@@ -1070,6 +1103,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         onPrintOrder={handlePrintOrder}
         onRefund={handleRefund}
         onDeleteOrder={statusKey === "all" ? handleDeleteOrder : undefined}
+        onCancelOrder={handleCancelOrder}
         onAcceptOrder={statusKey === "all" ? handleAcceptOrder : undefined}
         onRejectOrder={statusKey === "all" ? handleRejectOrder : undefined}
         onAssignDelivery={handleAssignDelivery}

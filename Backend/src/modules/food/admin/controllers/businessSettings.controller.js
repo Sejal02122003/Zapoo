@@ -120,6 +120,12 @@ export async function updateBusinessSettings(req, res, next) {
         if (deliveryRegistration !== undefined) {
             settings.deliveryRegistration = Boolean(deliveryRegistration === 'true' || deliveryRegistration === true);
         }
+        if (data.outerZoneDeliveryRangeKm !== undefined) {
+            const range = Number(data.outerZoneDeliveryRangeKm);
+            if (Number.isFinite(range) && range > 0) {
+                settings.outerZoneDeliveryRangeKm = range;
+            }
+        }
 
         // Handle file uploads
         if (req.files) {

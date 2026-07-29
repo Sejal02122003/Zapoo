@@ -348,6 +348,8 @@ export const adminAPI = {
     adminClient.post(`/food/admin/orders/${String(orderId)}/assign`, { deliveryPartnerId: partnerId, manualIncentive, reason }),
   reassignDeliveryPartner: (orderId, newDriverId, reason = '') =>
     adminClient.post(`/food/admin/orders/${String(orderId)}/reassign`, { newDriverId, reason }),
+  cancelOrder: (orderId, body = {}) =>
+    adminClient.post(`/food/admin/orders/${String(orderId)}/cancel`, body),
     
   // Emergency Broadcast
   startEmergencyBroadcast: (orderId, data) =>

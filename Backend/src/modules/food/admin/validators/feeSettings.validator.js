@@ -7,9 +7,17 @@ const rangeSchema = z.object({
     fee: z.number().min(0)
 });
 
+const riderRangeSchema = z.object({
+    min: z.number().min(0),
+    max: z.number().min(0),
+    pay: z.number().min(0)
+});
+
 const feeSettingsUpsertSchema = z.object({
     deliveryFee: z.number().min(0).nullable().optional(),
     deliveryFeeRanges: z.array(rangeSchema).optional(),
+    riderBasePayout: z.number().min(0).nullable().optional(),
+    riderPayoutRanges: z.array(riderRangeSchema).optional(),
     freeDeliveryUpTo: z.number().min(0).nullable().optional(),
     freeDeliveryThreshold: z.number().min(0).nullable().optional(),
     platformFee: z.number().min(0).nullable().optional(),
@@ -38,6 +46,19 @@ export const validateFeeSettingsUpsertDto = (body) => {
                 min: Number(r?.min),
                 max: Number(r?.max),
                 fee: Number(r?.fee)
+            }))
+            : undefined,
+        riderBasePayout:
+            body?.riderBasePayout === null
+                ? null
+                : body?.riderBasePayout !== undefined
+                    ? Number(body.riderBasePayout)
+                    : undefined,
+        riderPayoutRanges: Array.isArray(body?.riderPayoutRanges)
+            ? body.riderPayoutRanges.map((r) => ({
+                min: Number(r?.min),
+                max: Number(r?.max),
+                pay: Number(r?.pay)
             }))
             : undefined,
         freeDeliveryUpTo:

@@ -23,7 +23,16 @@ export default function LandingPageManagement() {
   const [bannersUploading, setBannersUploading] = useState(false)
   const [bannersUploadProgress, setBannersUploadProgress] = useState({ current: 0, total: 0 })
   const [bannersDeleting, setBannersDeleting] = useState(null)
+  const [selectedBannerZoneFilter, setSelectedBannerZoneFilter] = useState("ALL")
   const bannersFileInputRef = useRef(null)
+
+  const filteredBannersByZone = useMemo(() => {
+    if (selectedBannerZoneFilter === "ALL") return banners
+    if (selectedBannerZoneFilter === "GLOBAL") {
+      return banners.filter(b => b.targetScope === 'global' || !b.zoneId)
+    }
+    return banners.filter(b => String(b.zoneId) === String(selectedBannerZoneFilter))
+  }, [banners, selectedBannerZoneFilter])
 
   // Categories
   const [categories, setCategories] = useState([])
@@ -395,11 +404,32 @@ export default function LandingPageManagement() {
         setRestaurantSearchQuery("")
         await fetchBanners()
         setTimeout(() => setSuccess(null), 3000)
+      } else {
+        setErrorSafely(response.data.message || 'Failed to link restaurants')
       }
     } catch (err) {
-      setErrorSafely(err.response?.data?.message || 'Failed to link restaurants to banner.')
+      debugError('Error linking restaurants:', err)
+      setErrorSafely(err.response?.data?.message || 'Failed to link restaurants')
     } finally {
       setLinkingRestaurants(false)
+    }
+  }
+
+  const handleTargetScopeChange = async (bannerId, targetScope, zoneId = null) => {
+    try {
+      setError(null)
+      const response = await api.patch(
+        `/food/hero-banners/${bannerId}/target-scope`,
+        { targetScope, zoneId: targetScope === 'zone' ? zoneId : null },
+        getAuthConfig()
+      )
+      if (response.data?.success) {
+        setSuccess('Banner target scope updated successfully!')
+        await fetchBanners()
+        setTimeout(() => setSuccess(null), 3000)
+      }
+    } catch (err) {
+      setErrorSafely(err.response?.data?.message || 'Failed to update banner target scope')
     }
   }
 
@@ -1064,6 +1094,24 @@ export default function LandingPageManagement() {
     }
   }
 
+  const handleDiningTargetScopeChange = async (bannerId, targetScope, zoneId = null) => {
+    try {
+      setError(null)
+      const response = await api.patch(
+        `/food/hero-banners/ads/${bannerId}/target-scope`,
+        { targetScope, zoneId: targetScope === 'zone' ? zoneId : null },
+        getAuthConfig()
+      )
+      if (response.data?.success) {
+        setSuccess('Sponsored Ad target scope updated successfully!')
+        await fetchDiningBanners()
+        setTimeout(() => setSuccess(null), 3000)
+      }
+    } catch (err) {
+      setErrorSafely(err.response?.data?.message || 'Failed to update sponsored ad target scope')
+    }
+  }
+
   // ==================== SETTINGS ====================
   const fetchSettings = async () => {
     try {
@@ -1497,19 +1545,41 @@ export default function LandingPageManagement() {
 
             {/* Banners List */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-4">Banner List ({banners.length})</h2>
+              <div className="flex items-center justify-between gap-4 mb-4 flex-wrap pb-3 border-b border-slate-100">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Banner List ({filteredBannersByZone.length})</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Filter and manage sponsored banners zone-wise or globally</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-700">Filter Zone:</span>
+                  <select
+                    value={selectedBannerZoneFilter}
+                    onChange={(e) => setSelectedBannerZoneFilter(e.target.value)}
+                    className="text-xs font-semibold border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  >
+                    <option value="ALL">All Banners ({banners.length})</option>
+                    <option value="GLOBAL">🌐 Global Banners Only</option>
+                    {zones.map((z) => (
+                      <option key={z._id} value={z._id}>
+                        📍 {z.name || z.zoneName || 'Zone'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               {bannersLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
                 </div>
-              ) : banners.length === 0 ? (
+              ) : filteredBannersByZone.length === 0 ? (
                 <div className="text-center py-12 text-slate-500">
                   <ImageIcon className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-                  <p>No banners uploaded yet.</p>
+                  <p>No banners found for selected zone filter.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {banners.map((banner, index) => (
+                  {filteredBannersByZone.map((banner, index) => (
                     <div key={banner._id} className="border border-slate-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                       <div className="relative aspect-video bg-slate-100">
                         <img src={banner.imageUrl} alt={`Hero Banner ${index + 1}`} className="w-full h-full object-cover" />
@@ -1523,6 +1593,46 @@ export default function LandingPageManagement() {
                         </div>
                       </div>
                       <div className="p-4 bg-white">
+                        {/* Target Scope Selection (Global vs Zone-Wise) */}
+                        <div className="mb-3 p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-700">Targeting:</span>
+                            <select
+                              value={banner.targetScope === 'zone' && banner.zoneId ? 'zone' : 'global'}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === 'global') {
+                                  handleTargetScopeChange(banner._id, 'global', null);
+                                } else {
+                                  const firstZoneId = zones[0]?._id || null;
+                                  handleTargetScopeChange(banner._id, 'zone', firstZoneId);
+                                }
+                              }}
+                              className="text-xs font-medium border border-slate-300 rounded px-2 py-1 bg-white focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value="global">🌐 Global (All Zones)</option>
+                              <option value="zone">📍 Zone-Wise</option>
+                            </select>
+                          </div>
+
+                          {(banner.targetScope === 'zone' || banner.zoneId) && (
+                            <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200">
+                              <span className="text-xs text-slate-600">Select Zone:</span>
+                              <select
+                                value={String(banner.zoneId || zones[0]?._id || '')}
+                                onChange={(e) => handleTargetScopeChange(banner._id, 'zone', e.target.value)}
+                                className="text-xs font-medium border border-slate-300 rounded px-2 py-1 bg-white max-w-[150px] truncate"
+                              >
+                                {zones.map((z) => (
+                                  <option key={z._id} value={z._id}>
+                                    {z.name || z.zoneName || 'Zone'}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-1">
                             <button onClick={() => handleBannerOrderChange(banner._id, 'up')} disabled={index === 0} className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-50">
@@ -1785,6 +1895,46 @@ export default function LandingPageManagement() {
                         </div>
                       </div>
                       <div className="p-4 bg-white">
+                        {/* Target Scope Selection (Global vs Zone-Wise) */}
+                        <div className="mb-3 p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-700">Targeting:</span>
+                            <select
+                              value={banner.targetScope === 'zone' && banner.zoneId ? 'zone' : 'global'}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === 'global') {
+                                  handleDiningTargetScopeChange(banner._id, 'global', null);
+                                } else {
+                                  const firstZoneId = zones[0]?._id || null;
+                                  handleDiningTargetScopeChange(banner._id, 'zone', firstZoneId);
+                                }
+                              }}
+                              className="text-xs font-medium border border-slate-300 rounded px-2 py-1 bg-white focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value="global">🌐 Global (All Zones)</option>
+                              <option value="zone">📍 Zone-Wise</option>
+                            </select>
+                          </div>
+
+                          {(banner.targetScope === 'zone' || banner.zoneId) && (
+                            <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200">
+                              <span className="text-xs text-slate-600">Select Zone:</span>
+                              <select
+                                value={String(banner.zoneId || zones[0]?._id || '')}
+                                onChange={(e) => handleDiningTargetScopeChange(banner._id, 'zone', e.target.value)}
+                                className="text-xs font-medium border border-slate-300 rounded px-2 py-1 bg-white max-w-[150px] truncate"
+                              >
+                                {zones.map((z) => (
+                                  <option key={z._id} value={z._id}>
+                                    {z.name || z.zoneName || 'Zone'}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1">
                             <button onClick={() => handleDiningBannerOrderChange(banner._id, 'up')} disabled={index === 0} className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-50">

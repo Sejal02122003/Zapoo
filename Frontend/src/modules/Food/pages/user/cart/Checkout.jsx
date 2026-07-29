@@ -369,10 +369,12 @@ export default function Checkout() {
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="dark:text-gray-200">₹{subtotal.toFixed(0)}</span>
                     </div>
-                    <div className="flex justify-between text-sm md:text-base">
-                      <span className="text-muted-foreground">Delivery Fee</span>
-                      <span className="dark:text-gray-200">₹{deliveryFee.toFixed(0)}</span>
-                    </div>
+                    {orderType !== 'takeaway' && (
+                      <div className="flex justify-between text-sm md:text-base">
+                        <span className="text-muted-foreground">Delivery Fee</span>
+                        <span className="dark:text-gray-200">₹{deliveryFee.toFixed(0)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm md:text-base">
                       <span className="text-muted-foreground">Tax</span>
                       <span className="dark:text-gray-200">₹{tax.toFixed(0)}</span>

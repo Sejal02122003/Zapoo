@@ -3,7 +3,8 @@ import {
     createDiningBannersFromFiles,
     deleteDiningBanner,
     updateDiningBannerOrder,
-    toggleDiningBannerStatus
+    toggleDiningBannerStatus,
+    updateDiningBannerTargetScope
 } from '../services/diningBanner.service.js';
 import { sendResponse } from '../../../../utils/response.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
@@ -28,6 +29,8 @@ export const uploadDiningBannersController = async (req, res, next) => {
             ctaText: req.body.ctaText,
             ctaLink: req.body.ctaLink,
             diningType: req.body.diningType,
+            targetScope: req.body.targetScope,
+            zoneId: req.body.zoneId,
         };
 
         const results = await createDiningBannersFromFiles(req.files, meta);
@@ -68,16 +71,23 @@ export const updateDiningBannerOrderController = async (req, res, next) => {
 export const toggleDiningBannerStatusController = async (req, res, next) => {
     try {
         const { id } = req.params;
-        if (!id) {
-            throw new ValidationError('Banner id is required');
-        }
-        const banners = await listDiningBanners();
-        const banner = banners.find(b => b._id.toString() === id);
-        if (!banner) {
-            throw new ValidationError('Dining banner not found');
-        }
-        const updated = await toggleDiningBannerStatus(id, !banner.isActive);
+        const { isActive } = req.body;
+        const updated = await toggleDiningBannerStatus(id, typeof isActive === 'boolean' ? isActive : true);
         return sendResponse(res, 200, 'Dining banner status updated', updated);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateDiningBannerTargetScopeController = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { targetScope, zoneId } = req.body;
+        if (!id) {
+            throw new ValidationError('id is required');
+        }
+        const updated = await updateDiningBannerTargetScope(id, targetScope, zoneId);
+        return sendResponse(res, 200, 'Dining banner target scope updated successfully', updated);
     } catch (error) {
         next(error);
     }

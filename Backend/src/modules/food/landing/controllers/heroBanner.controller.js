@@ -4,7 +4,8 @@ import {
     deleteHeroBanner,
     updateHeroBannerOrder,
     toggleHeroBannerStatus,
-    linkRestaurantsToBanner
+    linkRestaurantsToBanner,
+    updateBannerTargetScope
 } from '../services/heroBanner.service.js';
 import { sendResponse } from '../../../../utils/response.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
@@ -88,6 +89,20 @@ export const linkRestaurantsToBannerController = async (req, res, next) => {
         }
         const updated = await linkRestaurantsToBanner(id, restaurantIds);
         return sendResponse(res, 200, 'Restaurants linked to banner successfully', updated);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateBannerTargetScopeController = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { targetScope, zoneId } = req.body;
+        if (!id) {
+            throw new ValidationError('id is required');
+        }
+        const updated = await updateBannerTargetScope(id, targetScope, zoneId);
+        return sendResponse(res, 200, 'Banner target scope updated successfully', updated);
     } catch (error) {
         next(error);
     }

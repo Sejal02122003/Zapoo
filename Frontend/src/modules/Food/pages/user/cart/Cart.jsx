@@ -2960,27 +2960,31 @@ export default function Cart() {
                       <span className="text-gray-800 dark:text-gray-200 font-medium">{RUPEE_SYMBOL}{subtotal.toFixed(2)}</span>
                     </div>
 
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">Delivery Fee</span>
-                       <span className={deliveryFee === 0 ? "text-primary font-medium" : "text-gray-800 dark:text-gray-200 font-medium"}>
-                         {deliveryFee === 0 ? "FREE" : `${RUPEE_SYMBOL}${deliveryFee.toFixed(2)}`}
-                       </span>
-                    </div>
-                    {deliveryFeeBreakdownText && (
-                      <div className="text-[11px] text-gray-500 dark:text-gray-400 -mt-1.5 ml-1 border-l-2 border-gray-100 pl-2">
-                        {deliveryFeeBreakdownText}
-                      </div>
-                    )}
-                    {Number((pricing?.freeDeliveryUpTo ?? feeSettings.freeDeliveryUpTo) || 0) > 0 && (
-                      <div className="-mt-1.5">
-                        <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary/10 via-primary/20 to-primary/10 text-primary border border-primary/25 px-2.5 py-1 text-[11px] font-semibold shadow-sm animate-pulse">
-                          <Sparkles className="h-3 w-3" />
-                          <span>Free delivery at</span>
-                          <span className="text-secondary">
-                            {RUPEE_SYMBOL}{Number((pricing?.freeDeliveryUpTo ?? feeSettings.freeDeliveryUpTo) || 0).toFixed(0)}+
+                    {orderType !== 'takeaway' && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Delivery Fee</span>
+                          <span className={deliveryFee === 0 ? "text-primary font-medium" : "text-gray-800 dark:text-gray-200 font-medium"}>
+                            {deliveryFee === 0 ? "FREE" : `${RUPEE_SYMBOL}${deliveryFee.toFixed(2)}`}
                           </span>
                         </div>
-                      </div>
+                        {deliveryFeeBreakdownText && (
+                          <div className="text-[11px] text-gray-500 dark:text-gray-400 -mt-1.5 ml-1 border-l-2 border-gray-100 pl-2">
+                            {deliveryFeeBreakdownText}
+                          </div>
+                        )}
+                        {Number((pricing?.freeDeliveryUpTo ?? feeSettings.freeDeliveryUpTo) || 0) > 0 && (
+                          <div className="-mt-1.5">
+                            <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary/10 via-primary/20 to-primary/10 text-primary border border-primary/25 px-2.5 py-1 text-[11px] font-semibold shadow-sm animate-pulse">
+                              <Sparkles className="h-3 w-3" />
+                              <span>Free delivery at</span>
+                              <span className="text-secondary">
+                                {RUPEE_SYMBOL}{Number((pricing?.freeDeliveryUpTo ?? feeSettings.freeDeliveryUpTo) || 0).toFixed(0)}+
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Platform Fee</span>
@@ -2999,11 +3003,29 @@ export default function Cart() {
                       </span>
                       <span className="text-gray-800 dark:text-gray-200 font-medium">{RUPEE_SYMBOL}{gstCharges.toFixed(2)}</span>
                     </div>
-                    {couponDiscount > 0 && (
-                       <div className="flex justify-between text-sm text-primary font-medium">
-                         <span>Coupon Discount</span>
-                         <span>-{RUPEE_SYMBOL}{couponDiscount.toFixed(2)}</span>
-                       </div>
+                    {itemDiscount > 0 && (
+                      <div className="flex justify-between text-sm text-green-600 font-medium">
+                        <span>Item-Wise Discount</span>
+                        <span>-{RUPEE_SYMBOL}{itemDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {pricing?.couponDiscount > 0 && (
+                      <div className="flex justify-between text-sm text-primary font-medium">
+                        <span>Platform Coupon ({pricing.appliedCoupon?.code || 'Applied'})</span>
+                        <span>-{RUPEE_SYMBOL}{pricing.couponDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {pricing?.restaurantCouponDiscount > 0 && (
+                      <div className="flex justify-between text-sm text-amber-600 dark:text-amber-500 font-medium">
+                        <span>Restaurant Offer ({pricing.appliedRestaurantCoupon?.code || 'Applied'})</span>
+                        <span>-{RUPEE_SYMBOL}{pricing.restaurantCouponDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {couponDiscount > 0 && !pricing?.couponDiscount && !pricing?.restaurantCouponDiscount && (
+                      <div className="flex justify-between text-sm text-primary font-medium">
+                        <span>Coupon Discount</span>
+                        <span>-{RUPEE_SYMBOL}{couponDiscount.toFixed(2)}</span>
+                      </div>
                     )}
 
                     {/* Platform Pricing Comparison - Bottom */}

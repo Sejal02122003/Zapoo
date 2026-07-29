@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { Eye, Printer, ArrowUpDown, Loader2, Check, X, Trash2, Truck, Radio } from "lucide-react"
+import { Eye, Printer, ArrowUpDown, Loader2, Check, X, Trash2, Truck, Radio, Ban } from "lucide-react"
 
 const getStatusColor = (orderStatus) => {
   const colors = {
@@ -12,6 +12,7 @@ const getStatusColor = (orderStatus) => {
     "Canceled": "bg-rose-100 text-rose-700",
     "Cancelled by Restaurant": "bg-red-100 text-red-700",
     "Cancelled by User": "bg-orange-100 text-orange-700",
+    "Cancelled by Admin": "bg-red-100 text-red-700",
     "Payment Failed": "bg-red-100 text-red-700",
     "Refunded": "bg-sky-100 text-sky-700",
     "Dine In": "bg-indigo-100 text-indigo-700",
@@ -34,6 +35,7 @@ export default function OrdersTable({
   onPrintOrder,
   onRefund,
   onDeleteOrder,
+  onCancelOrder,
   onAcceptOrder,
   onRejectOrder,
   onAssignDelivery,
@@ -496,6 +498,15 @@ export default function OrdersTable({
                       >
                         <Printer className="w-4 h-4" />
                       </button>
+                      {onCancelOrder && !['delivered', 'picked_up', 'cancelled_by_user', 'cancelled_by_restaurant', 'cancelled_by_admin', 'Delivered', 'Cancelled', 'Canceled'].includes(order.orderStatus || order.status) && (
+                        <button
+                          onClick={() => onCancelOrder(order)}
+                          className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
+                          title="Cancel Order (Admin)"
+                        >
+                          <Ban className="w-4 h-4" />
+                        </button>
+                      )}
                       {onDeleteOrder && (
                         <button
                           onClick={() => onDeleteOrder(order)}

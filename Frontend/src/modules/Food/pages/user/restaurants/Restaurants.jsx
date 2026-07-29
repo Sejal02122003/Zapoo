@@ -63,6 +63,10 @@ export default function Restaurants() {
         if (zoneId) {
           params.zoneId = zoneId
         }
+        if (userLocation?.latitude && userLocation?.longitude) {
+          params.lat = userLocation.latitude
+          params.lng = userLocation.longitude
+        }
         if (isTakeawayView) {
           params.isTakeawayEnabled = true
         }

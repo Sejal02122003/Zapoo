@@ -39,6 +39,8 @@ export const createHeroBannersFromFiles = async (files, meta = {}) => {
                 ctaText: meta.ctaText,
                 ctaLink: meta.ctaLink,
                 linkedRestaurantIds: meta.linkedRestaurantIds || [],
+                targetScope: meta.targetScope || (meta.zoneId ? 'zone' : 'global'),
+                zoneId: meta.zoneId || null,
                 sortOrder: meta.sortOrder ?? 0,
                 isActive: true
             });
@@ -98,6 +100,15 @@ export const linkRestaurantsToBanner = async (id, restaurantIds) => {
     if (updated) {
         updated.linkedRestaurants = updated.linkedRestaurantIds;
     }
+    return updated;
+};
+
+export const updateBannerTargetScope = async (id, targetScope, zoneId = null) => {
+    const updateData = {
+        targetScope: targetScope === 'zone' ? 'zone' : 'global',
+        zoneId: targetScope === 'zone' && zoneId ? zoneId : null
+    };
+    const updated = await FoodHeroBanner.findByIdAndUpdate(id, updateData, { new: true }).lean();
     return updated;
 };
 

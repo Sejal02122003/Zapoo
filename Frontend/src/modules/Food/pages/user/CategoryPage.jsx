@@ -822,6 +822,10 @@ export default function CategoryPage() {
         if (zoneId) {
           params.zoneId = zoneId
         }
+        if (location?.latitude && location?.longitude) {
+          params.lat = location.latitude
+          params.lng = location.longitude
+        }
         const response = await restaurantAPI.getRestaurants(params)
 
         if (response.data && response.data.success && response.data.data && response.data.data.restaurants) {
