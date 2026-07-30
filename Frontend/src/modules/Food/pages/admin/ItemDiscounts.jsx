@@ -5,6 +5,7 @@ import { adminClient } from "../../../../services/api/axios";
 export default function ItemDiscounts() {
   const [rules, setRules] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
+  const [restaurantMenu, setRestaurantMenu] = useState({ sections: [] });
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -49,13 +50,39 @@ export default function ItemDiscounts() {
     }
   };
 
+  const fetchRestaurantMenu = async (restaurantId) => {
+    if (!restaurantId) return;
+    try {
+      const res = await adminClient.get(`/food/admin/restaurants/${restaurantId}/menu`);
+      setRestaurantMenu(res.data?.data?.menu || { sections: [] });
+    } catch (err) {
+      console.error("Failed to fetch restaurant menu:", err);
+      setRestaurantMenu({ sections: [] });
+    }
+  };
+
   useEffect(() => {
     fetchRestaurants();
   }, []);
 
   useEffect(() => {
     fetchRules();
+    fetchRestaurantMenu(formData.restaurantId);
   }, [formData.restaurantId]);
+
+  // When scope changes, reset targetName to first available option
+  useEffect(() => {
+    if (formData.scope === "CATEGORY") {
+      const firstCategory = restaurantMenu.sections?.[0]?.name || "";
+      setFormData(prev => ({ ...prev, targetName: firstCategory }));
+    } else if (formData.scope === "MENU_ITEM") {
+      const allItems = restaurantMenu.sections?.flatMap(s => s.items) || [];
+      const firstItem = allItems[0]?.name || "";
+      setFormData(prev => ({ ...prev, targetName: firstItem }));
+    } else {
+      setFormData(prev => ({ ...prev, targetName: "" }));
+    }
+  }, [formData.scope, restaurantMenu]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -166,13 +193,41 @@ export default function ItemDiscounts() {
                   <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
                     {formData.scope === "CATEGORY" ? "Category Name" : "Item Name"}
                   </label>
-                  <input
-                    type="text"
-                    placeholder={formData.scope === "CATEGORY" ? "e.g. Pizza, Beverages" : "e.g. Cheese Pizza"}
-                    value={formData.targetName}
-                    onChange={(e) => setFormData({ ...formData, targetName: e.target.value })}
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                  />
+                  
+                  {formData.scope === "CATEGORY" ? (
+                    <select
+                      value={formData.targetId || ""}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        const selectedCat = restaurantMenu.sections?.find(s => s.id === selectedId || String(s._id) === selectedId);
+                        setFormData({ ...formData, targetId: selectedId, targetName: selectedCat?.name || "" });
+                      }}
+                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                      required
+                    >
+                      <option value="">-- Select Category --</option>
+                      {restaurantMenu.sections?.map((section, idx) => (
+                        <option key={idx} value={section.id || String(section._id)}>{section.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={formData.targetId || ""}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        const allItems = restaurantMenu.sections?.flatMap(s => s.items) || [];
+                        const selectedItem = allItems.find(i => i.id === selectedId || String(i._id) === selectedId);
+                        setFormData({ ...formData, targetId: selectedId, targetName: selectedItem?.name || "" });
+                      }}
+                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                      required
+                    >
+                      <option value="">-- Select Item --</option>
+                      {restaurantMenu.sections?.flatMap(s => s.items).map((item, idx) => (
+                        <option key={idx} value={item.id || String(item._id)}>{item.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               )}
 

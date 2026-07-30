@@ -3,11 +3,13 @@ import * as cashbackService from '../services/cashback.service.js';
 import { WalletLedgerEntry } from '../../user/models/walletLedgerEntry.model.js';
 import { FoodAdminWallet } from '../models/adminWallet.model.js';
 import { sendResponse } from '../../../../utils/response.js';
+import { invalidateCache } from '../../../../core/utils/cache.js';
 
 // --- Item Discounts ---
 export async function createItemDiscountRule(req, res, next) {
     try {
         const rule = await itemDiscountService.createItemDiscountRule(req.body, req.user?.userId);
+        await invalidateCache('restaurant_menu:*');
         return sendResponse(res, 201, 'Item discount rule created successfully', rule);
     } catch (err) {
         next(err);
@@ -26,6 +28,7 @@ export async function getItemDiscountRules(req, res, next) {
 export async function updateItemDiscountRule(req, res, next) {
     try {
         const rule = await itemDiscountService.updateItemDiscountRule(req.params.id, req.body);
+        await invalidateCache('restaurant_menu:*');
         return sendResponse(res, 200, 'Item discount rule updated successfully', rule);
     } catch (err) {
         next(err);
@@ -35,6 +38,7 @@ export async function updateItemDiscountRule(req, res, next) {
 export async function deleteItemDiscountRule(req, res, next) {
     try {
         await itemDiscountService.deleteItemDiscountRule(req.params.id);
+        await invalidateCache('restaurant_menu:*');
         return sendResponse(res, 200, 'Item discount rule deleted successfully');
     } catch (err) {
         next(err);
