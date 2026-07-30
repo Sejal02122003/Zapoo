@@ -3,7 +3,7 @@ import * as cashbackService from '../services/cashback.service.js';
 import { WalletLedgerEntry } from '../../user/models/walletLedgerEntry.model.js';
 import { FoodAdminWallet } from '../models/adminWallet.model.js';
 import { sendResponse } from '../../../../utils/response.js';
-import { invalidateCache } from '../../../../core/utils/cache.js';
+import { invalidateCache } from '../../../../middleware/cache.js';
 
 // --- Item Discounts ---
 export async function createItemDiscountRule(req, res, next) {

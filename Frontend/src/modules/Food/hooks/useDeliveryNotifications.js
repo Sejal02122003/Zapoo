@@ -836,6 +836,12 @@ export const useDeliveryNotifications = () => {
       if (isAuthError) {
         debugWarn('Delivery socket authentication error:', error?.message);
         setIsConnected(false);
+        
+        // Immediately disconnect to prevent socket.io from aggressively retrying 
+        // while we check if a fresh token can be obtained.
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+        }
 
         // Try silently fetching profile/token refresh via API
         void deliveryAPI.getMe().then((res) => {

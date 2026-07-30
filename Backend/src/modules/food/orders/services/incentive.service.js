@@ -1,4 +1,4 @@
-import { ValidationError, ForbiddenError } from '../../../../../core/errors.js';
+import { ValidationError, ForbiddenError } from '../../../../core/auth/errors.js';
 
 /**
  * Validates whether an incentive can be applied to an order.
