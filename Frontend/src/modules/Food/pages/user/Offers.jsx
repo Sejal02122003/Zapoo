@@ -9,7 +9,7 @@ import { toast } from "sonner"
 import { RestaurantGridSkeleton } from "@food/components/ui/loading-skeletons"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 
-import { useLocationContext } from "@food/context/LocationContext"
+import { useLocationContext } from "@food/context/locationContext"
 
 // Import banner image
 import offerBanner from "../../assets/offerpagebanner.svg"
