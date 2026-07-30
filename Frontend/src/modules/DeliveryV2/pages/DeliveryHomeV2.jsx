@@ -235,14 +235,16 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
   const lastSimUpdateSentAt = useRef(0);
   useEffect(() => {
     let interval;
+    console.log('[SimAuto] Effect Check:', { isSimMode, simPathLength: simPath.length, simIndex });
     if (isSimMode && simPath.length > 1 && simIndex < simPath.length - 1) {
-      console.log('[SimAuto] Glide Active âˆš');
+      console.log('[SimAuto] Glide Active √. Starting movement...');
       
       interval = setInterval(() => {
         setSimProgress(prev => {
           const nextProgress = prev + 0.08; // 8% movement per tick
           
           if (nextProgress >= 1) {
+            console.log('[SimAuto] Segment completed. Moving to next index:', simIndex + 1);
             setSimIndex(idx => idx + 1);
             return 0; // Move to next segment
           }
@@ -281,6 +283,12 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
           return nextProgress;
         });
       }, 50); // 20 FPS movement
+    } else {
+      console.log('[SimAuto] Glide Inactive. Reasons:', { 
+        isSimMode, 
+        hasPath: simPath.length > 1, 
+        notFinished: simIndex < simPath.length - 1 
+      });
     }
     return () => clearInterval(interval);
   }, [isSimMode, simPath, simIndex, activeOrder, emitLocation, activePolyline, eta, tripStatus, resolveActiveOrderMeta]);
@@ -1074,7 +1082,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                       <span className="text-[9px] text-white/70 font-black uppercase tracking-[0.15em] mb-1">Distance</span>
                       <div className="flex items-end gap-1">
                         <span className="text-2xl font-black text-white leading-none tracking-tighter">
-                          {distanceToTarget && distanceToTarget !== Infinity ? (distanceToTarget / 1000).toFixed(1) : '--'}
+                          {distanceToTarget !== null && distanceToTarget !== undefined && distanceToTarget !== Infinity ? (distanceToTarget / 1000).toFixed(1) : '--'}
                         </span>
                         <span className="text-[11px] text-white/80 font-bold mb-0.5">KM</span>
                       </div>
@@ -1090,7 +1098,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                       <span className="text-[9px] text-white/70 font-black uppercase tracking-[0.15em] mb-1">Arrival</span>
                       <div className="flex items-end gap-1">
                         <span className="text-2xl font-black text-white leading-none tracking-tighter">
-                          {eta ? String(eta) : '--'}
+                          {eta !== null && eta !== undefined ? String(eta) : '--'}
                         </span>
                         <span className="text-[11px] text-white/80 font-bold mb-0.5">MIN</span>
                       </div>
@@ -1180,6 +1188,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                  setActivePolyline(poly);
                  pushRoutePolylineToCustomer(poly);
                }}
+               fallbackPath={simPath}
                zoom={zoom}
              />
              

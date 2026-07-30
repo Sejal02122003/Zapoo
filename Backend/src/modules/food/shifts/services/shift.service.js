@@ -228,9 +228,12 @@ export const shiftService = {
         }
 
         if (targetZoneId && targetZoneId !== 'All') {
+            const zoneObjId = mongoose.Types.ObjectId.isValid(targetZoneId) ? new mongoose.Types.ObjectId(targetZoneId) : targetZoneId;
             filter.$or = [
                 { zoneId: targetZoneId },
-                { zoneId: null }
+                { zoneId: zoneObjId },
+                { zoneId: null },
+                { zoneId: { $exists: false } }
             ];
         } else if (targetCity && targetCity !== 'All') {
             filter.$or = [

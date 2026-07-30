@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { shiftService } from '../services/shift.service.js';
 import { shiftRepository } from '../repositories/shift.repository.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
@@ -134,8 +135,22 @@ export const shiftController = {
             let zoneId = req.query.zoneId || req.headers['x-zone-id'];
             let riderZoneName = null;
 
+            let partner = null;
             if (userId) {
-                const partner = await FoodDeliveryPartner.findById(userId) || await FoodDeliveryPartner.findOne({ userId });
+                const phone = req.user?.phone;
+                if (mongoose.Types.ObjectId.isValid(userId)) {
+                    partner = await FoodDeliveryPartner.findById(userId);
+                }
+                if (!partner) {
+                    partner = await FoodDeliveryPartner.findOne({ userId: String(userId) });
+                }
+                if (!partner && phone) {
+                    partner = await FoodDeliveryPartner.findOne({ phone: String(phone) });
+                }
+                if (!partner) {
+                    partner = await FoodDeliveryPartner.findOne({ phone: String(userId) });
+                }
+
                 if (partner) {
                     if (partner.zoneId) zoneId = partner.zoneId;
                     if (partner.zoneName) riderZoneName = partner.zoneName;

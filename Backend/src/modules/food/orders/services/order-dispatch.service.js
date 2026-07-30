@@ -54,7 +54,7 @@ async function filterPartnersByCashLimit(partners = [], options = {}) {
 
 async function listNearbyOnlineDeliveryPartners(
   restaurantId,
-  { maxKm = 15, limit = 25, requiredAmount = 0, allowOverLimitFallback = true } = {},
+  { maxKm = 15, limit = 25, requiredAmount = 0, allowOverLimitFallback = true, fallbackToAll = false } = {},
 ) {
   const rId = (restaurantId?._id || restaurantId).toString();
   const restaurant = await FoodRestaurant.findById(rId)
@@ -76,7 +76,7 @@ async function listNearbyOnlineDeliveryPartners(
       $geoNear: {
         near: { type: 'Point', coordinates: [rLng, rLat] },
         distanceField: 'distanceMeters',
-        maxDistance: maxKm * 1000,
+        maxDistance: fallbackToAll ? 99999999 : (maxKm * 1000),
         spherical: true,
         query: {
           availabilityStatus: 'online',
@@ -241,18 +241,20 @@ export async function tryAutoAssign(orderId, options = {}) {
     }
     const maxKm = radiusTiers[Math.min(attempt - 1, radiusTiers.length - 1)];
 
+    const isPhase2 = attempt >= 4;
+
     const searchOptions = {
       maxKm,
       limit: 10000, // No artificial limit, fetch all in the radius
       requiredAmount: 0,
       allowOverLimitFallback: true,
+      fallbackToAll: isPhase2,
     };
     const { partners } = await listNearbyOnlineDeliveryPartners(order.restaurantId, searchOptions);
 
     // TIERED ALERT LOGIC
     // Phase 2: Broadcast to all (Attempt 4+)
     // Phase 3: Admin Alert (Attempt 6+ or roughly 2 mins)
-    const isPhase2 = attempt >= 4;
     const isPhase3 = attempt >= 6; // ~2 minutes (20s * 6)
 
     if (isPhase3) {

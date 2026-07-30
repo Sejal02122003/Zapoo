@@ -40,7 +40,7 @@ const mapOptions = {
 };
 const LIBRARIES = ['places', 'geometry'];
 
-export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineReceived, zoom = 12 }) => {
+export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineReceived, fallbackPath = [], zoom = 12 }) => {
   const { riderLocation, activeOrder, tripStatus } = useDeliveryStore();
   
   const { isLoaded, loadError } = useJsApiLoader({
@@ -166,6 +166,8 @@ export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineRecei
       const encodedPolyline =
         typeof rawPolyline === 'string' ? rawPolyline : rawPolyline?.points || '';
       if (encodedPolyline && onPolylineReceived) onPolylineReceived(encodedPolyline);
+    } else {
+      console.warn('[LiveMap] DirectionsService failed with status:', status);
     }
   }, [onPolylineReceived]);
 
@@ -229,17 +231,21 @@ export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineRecei
   }, [map, parsedRiderLocation, restaurantPoint, customerPoint]);
 
   const { remainingPath, traveledPath } = useMemo(() => {
-    if (!directions || !parsedRiderLocation || !window.google?.maps) return { remainingPath: [], traveledPath: [] };
+    const pathSource = directions ? directions.routes[0]?.overview_path : fallbackPath;
+    if (!pathSource || pathSource.length === 0 || !parsedRiderLocation || !window.google?.maps) return { remainingPath: [], traveledPath: [] };
     
-    const fullPath = directions.routes[0].overview_path;
-    if (!fullPath || fullPath.length === 0) return { remainingPath: [], traveledPath: [] };
+    const fullPath = pathSource.map(p => {
+      if (typeof p.lat === 'function') return { lat: p.lat(), lng: p.lng() };
+      return { lat: p.lat ?? p.latitude, lng: p.lng ?? p.longitude };
+    });
 
     let closestIndex = 0;
     let minDistance = Infinity;
     const riderLatLng = new window.google.maps.LatLng(parsedRiderLocation.lat, parsedRiderLocation.lng);
 
     for (let i = 0; i < fullPath.length; i++) {
-      const distance = window.google.maps.geometry.spherical.computeDistanceBetween(riderLatLng, fullPath[i]);
+      const pLatLng = new window.google.maps.LatLng(fullPath[i].lat, fullPath[i].lng);
+      const distance = window.google.maps.geometry.spherical.computeDistanceBetween(riderLatLng, pLatLng);
       if (distance < minDistance) {
         minDistance = distance;
         closestIndex = i;
@@ -248,9 +254,11 @@ export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineRecei
 
     let startIndex = closestIndex;
     if (closestIndex < fullPath.length - 1) {
-      const distToCurrent = window.google.maps.geometry.spherical.computeDistanceBetween(riderLatLng, fullPath[closestIndex]);
-      const distToNext = window.google.maps.geometry.spherical.computeDistanceBetween(riderLatLng, fullPath[closestIndex + 1]);
-      const segmentLen = window.google.maps.geometry.spherical.computeDistanceBetween(fullPath[closestIndex], fullPath[closestIndex + 1]);
+      const pCurrent = new window.google.maps.LatLng(fullPath[closestIndex].lat, fullPath[closestIndex].lng);
+      const pNext = new window.google.maps.LatLng(fullPath[closestIndex + 1].lat, fullPath[closestIndex + 1].lng);
+      const distToCurrent = window.google.maps.geometry.spherical.computeDistanceBetween(riderLatLng, pCurrent);
+      const distToNext = window.google.maps.geometry.spherical.computeDistanceBetween(riderLatLng, pNext);
+      const segmentLen = window.google.maps.geometry.spherical.computeDistanceBetween(pCurrent, pNext);
       
       if (distToNext < segmentLen && distToNext < distToCurrent) {
         startIndex = closestIndex + 1;
@@ -258,18 +266,14 @@ export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineRecei
     }
 
     const riderPoint = { lat: parsedRiderLocation.lat, lng: parsedRiderLocation.lng };
-    const toObj = (p) => ({
-      lat: typeof p.lat === 'function' ? p.lat() : p.lat,
-      lng: typeof p.lng === 'function' ? p.lng() : p.lng
-    });
 
-    const traveled = fullPath.slice(0, startIndex).map(toObj);
+    const traveled = fullPath.slice(0, startIndex);
     traveled.push(riderPoint);
 
-    const remaining = [riderPoint, ...fullPath.slice(startIndex).map(toObj)];
+    const remaining = [riderPoint, ...fullPath.slice(startIndex)];
 
     return { remainingPath: remaining, traveledPath: traveled };
-  }, [directions, parsedRiderLocation]);
+  }, [directions, fallbackPath, parsedRiderLocation]);
 
   if (loadError) return <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-red-500 font-bold">Map Load Error</div>;
   if (!isLoaded) return <div className="absolute inset-0 flex items-center justify-center bg-gray-50"><div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" /></div>;

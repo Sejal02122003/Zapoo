@@ -2225,9 +2225,9 @@ function RestaurantDetailsContent() {
                 <div className="flex-1" />
               )}
               {item.preparationTime && String(item.preparationTime).trim() && (
-                <div className="shrink-0 flex items-center gap-1 text-[11px] sm:text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full whitespace-nowrap">
-                  <Clock size={12} className="text-gray-500" />
-                  <span>{String(item.preparationTime).trim()}</span>
+                <div className="shrink-0 flex items-center gap-1.5 text-[11px] sm:text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full whitespace-nowrap min-w-max">
+                  <Clock size={12} className="text-gray-500 flex-shrink-0" />
+                  <span className="whitespace-nowrap leading-none mt-[1px]">{String(item.preparationTime).trim()}</span>
                 </div>
               )}
             </div>

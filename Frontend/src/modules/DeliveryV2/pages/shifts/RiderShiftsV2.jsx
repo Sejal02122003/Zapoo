@@ -13,7 +13,7 @@ export default function RiderShiftsV2() {
     const fetchShifts = async () => {
         try {
             setLoading(true);
-            const response = await apiClient.get('/food/admin/shifts/rider');
+            const response = await apiClient.get('/food/delivery/shifts/rider');
             if (response.data?.success) {
                 setShifts(response.data.data);
                 if (response.data.riderZone) {
@@ -30,7 +30,7 @@ export default function RiderShiftsV2() {
     const fetchPayouts = async () => {
         try {
             setLoading(true);
-            const response = await apiClient.get('/food/admin/shifts/rider/payouts');
+            const response = await apiClient.get('/food/delivery/shifts/rider/payouts');
             if (response.data?.success) {
                 setPayouts(response.data.data);
             }
@@ -50,7 +50,7 @@ export default function RiderShiftsV2() {
         try {
             if (!window.confirm("Are you sure you want to book this shift? You must maintain minimum login hours to get the guarantee.")) return;
             
-            const response = await apiClient.post(`/food/admin/shifts/rider/${shiftId}/book`);
+            const response = await apiClient.post(`/food/delivery/shifts/rider/${shiftId}/book`);
             if (response.data?.success) {
                 alert("Shift booked successfully!");
                 fetchShifts();
