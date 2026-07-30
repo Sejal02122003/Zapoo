@@ -23,12 +23,14 @@ export const getPublicOffers = async () => {
                 id: item._id,
                 restaurantId: r._id,
                 restaurantName: r.restaurantName,
-                restaurantImage: r.profileImage,
-                restaurantRating: r.rating || 0,
-                subtitle: r.cuisines ? r.cuisines.join(', ') : '',
-                location: r.location?.address || r.area || r.city || '',
+                restaurantImage: r.profileImage?.url || r.profileImage || '',
+                offerText: item.offerText,
                 zoneId: r.zoneId,
-                priority: item.priority
+                priority: item.priority,
+                restaurantRating: r.rating || 0,
+                deliveryTime: r.estimatedDeliveryTime || 30,
+                subtitle: r.cuisines ? r.cuisines.join(', ') : '',
+                location: r.location?.address || r.area || r.city || ''
             };
 
             if (item.offerType === 'daily_deal') {
