@@ -53,6 +53,7 @@ const pricingSchema = new mongoose.Schema(
         riderSurgeBonus: { type: Number, default: 0, min: 0 },
         surgeSnapshotId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodSurgeSnapshot', default: null },
         discount: { type: Number, default: 0, min: 0 },
+        deductGstFromRestaurant: { type: Boolean, default: true },
         total: { type: Number, required: true, min: 0 },
         currency: { type: String, default: 'INR' }
     },

@@ -1201,6 +1201,9 @@ export async function cancelOrderAdmin(orderId, adminId, reason, refundDestinati
     }
   }
 
+  if (order.dispatch) {
+    order.dispatch.status = 'cancelled';
+  }
   await order.save();
 
   try {
@@ -1217,6 +1220,47 @@ export async function cancelOrderAdmin(orderId, adminId, reason, refundDestinati
     });
   } catch (err) {
     logger.warn(`cancelOrderAdmin transaction sync failed: ${err?.message || err}`);
+  }
+
+  try {
+    enqueueOrderEvent("order_cancelled_by_admin", {
+      orderMongoId: order._id?.toString?.(),
+      orderId: order._id.toString(),
+      adminId,
+      reason: reason || "Cancelled by Admin",
+    });
+
+    const io = getIO();
+    if (io) {
+      const payload = {
+        orderMongoId: order._id?.toString?.(),
+        orderId: order._id.toString(),
+        orderStatus: order.orderStatus,
+        message: `Order #${order.order_id || order._id} has been cancelled by Admin. Reason: ${reason || "Cancelled by Admin"}`
+      };
+      
+      if (userId) {
+        io.to(rooms.user(userId)).emit("order_status_update", payload);
+      }
+      io.to(rooms.restaurant(order.restaurantId)).emit("order_status_update", payload);
+      
+      const assignedRiderId = order.dispatch?.deliveryPartnerId;
+      if (assignedRiderId) {
+          io.to(rooms.delivery(assignedRiderId)).emit("order_status_update", payload);
+      } else if (Array.isArray(order.dispatch?.offeredTo)) {
+          // If cancelled before a rider accepts it, dismiss the popup for everyone it was offered to
+          const claimedPayload = {
+            orderId: order._id.toString(),
+            orderMongoId: order._id?.toString?.(),
+            claimedBy: 'cancelled',
+          };
+          for (const offer of order.dispatch.offeredTo) {
+            io.to(rooms.delivery(offer.partnerId)).emit('order_claimed', claimedPayload);
+          }
+      }
+    }
+  } catch (err) {
+    logger.warn(`cancelOrderAdmin socket emit failed: ${err?.message || err}`);
   }
 
   return normalizeOrderForClient(order);

@@ -29,7 +29,8 @@ export default function RestaurantCommission() {
     globalGstOnCommission: 18,
     globalPaymentGatewayFee: 2,
     globalTcs: 1,
-    applyGlobalTaxes: true
+    applyGlobalTaxes: true,
+    deductGstFromRestaurant: true
   })
   const [isRestaurantSelectOpen, setIsRestaurantSelectOpen] = useState(false)
   const [selectedCommission, setSelectedCommission] = useState(null)
@@ -119,7 +120,8 @@ export default function RestaurantCommission() {
           globalGstOnCommission: data.globalSettings.globalGstOnCommission || 0,
           globalPaymentGatewayFee: data.globalSettings.globalPaymentGatewayFee || 0,
           globalTcs: data.globalSettings.globalTcs || 0,
-          applyGlobalTaxes: data.globalSettings.applyGlobalTaxes !== false
+          applyGlobalTaxes: data.globalSettings.applyGlobalTaxes !== false,
+          deductGstFromRestaurant: data.globalSettings.deductGstFromRestaurant !== false
         })
       }
     } catch (error) {
@@ -226,7 +228,8 @@ export default function RestaurantCommission() {
         globalGstOnCommission: Number(globalSettings.globalGstOnCommission),
         globalPaymentGatewayFee: Number(globalSettings.globalPaymentGatewayFee),
         globalTcs: Number(globalSettings.globalTcs),
-        applyGlobalTaxes: Boolean(globalSettings.applyGlobalTaxes)
+        applyGlobalTaxes: Boolean(globalSettings.applyGlobalTaxes),
+        deductGstFromRestaurant: Boolean(globalSettings.deductGstFromRestaurant)
       })
       toast.success('Global settings updated successfully')
     } catch (error) {
@@ -447,6 +450,22 @@ export default function RestaurantCommission() {
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                       globalSettings.applyGlobalTaxes ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-700">Deduct GST from Restaurant Payout</span>
+                <button
+                  onClick={() => setGlobalSettings({ ...globalSettings, deductGstFromRestaurant: !globalSettings.deductGstFromRestaurant })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    globalSettings.deductGstFromRestaurant ? "bg-blue-600" : "bg-slate-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      globalSettings.deductGstFromRestaurant ? "translate-x-6" : "translate-x-1"
                     }`}
                   />
                 </button>

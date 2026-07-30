@@ -65,6 +65,9 @@ export default function OrderDetails() {
   const [toastMessage, setToastMessage] = useState("")
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const [showPayoutBreakdown, setShowPayoutBreakdown] = useState(false)
+  const [showCustomerPaidBreakdown, setShowCustomerPaidBreakdown] = useState(false)
+  const [showFeesBreakdown, setShowFeesBreakdown] = useState(false)
+  const [showTaxesBreakdown, setShowTaxesBreakdown] = useState(false)
 
   // Fetch order data from API
   useEffect(() => {
@@ -142,16 +145,19 @@ export default function OrderDetails() {
             )
           const paidAmount = firstNumber(order.payment?.amountDue, order.payment?.amount, total) ?? total
 
-          // Admin and Restaurant Payout calculations
-          const deliveryCostToAdmin = firstNumber(order.riderEarning, 30);
+           const deliveryCostToAdmin = firstNumber(order.riderEarning, 30);
           const deliveryGstToAdmin = deliveryCostToAdmin * 0.18;
           const restaurantCommission = Number(pricing.restaurantCommission) || 0;
           const gstOnItem = Number(pricing.gstOnItem) || 0;
           const gstOnCommission = Number(pricing.gstOnCommission) || 0;
           const paymentGatewayFee = Number(pricing.paymentGatewayFee) || 0;
           const tcs = Number(pricing.tcs) || 0;
-          const totalAdminReceivable = deliveryCostToAdmin + deliveryGstToAdmin + platformFee + taxes + packagingFee + restaurantCommission + gstOnItem + gstOnCommission + paymentGatewayFee + tcs;
-          const restaurantGets = Math.max(0, itemSubtotal + packagingFee - restaurantCommission - gstOnItem - gstOnCommission - paymentGatewayFee - tcs);
+
+          const couponDiscount = firstNumber(pricing.restaurantCouponDiscount, pricing.couponDiscount, order.couponDiscount, pricing.discount, order.discount) ?? 0
+          const orderType = String(order.orderType || 'delivery').toLowerCase();
+          const deductGst = orderType === 'takeaway' ? true : (pricing.deductGstFromRestaurant !== false);
+          const totalAdminReceivable = deliveryCostToAdmin + deliveryGstToAdmin + platformFee + taxes + packagingFee + restaurantCommission + (deductGst ? (gstOnItem + gstOnCommission) : 0) + paymentGatewayFee + tcs;
+          const restaurantGets = Math.max(0, itemSubtotal + packagingFee - restaurantCommission - (deductGst ? (gstOnItem + gstOnCommission) : 0) - paymentGatewayFee - tcs - couponDiscount);
           const deliveryDistance = firstNumber(order.deliveryDistance, order.customer?.distance, 0);
 
           const addressParts = [
@@ -263,7 +269,8 @@ export default function OrderDetails() {
               paymentGatewayFee,
               tcs,
               restaurantGets,
-              deliveryDistance
+              deliveryDistance,
+              deductGstFromRestaurant: deductGst
             },
             deliveryPartnerId: order.deliveryPartnerId || order.dispatch?.deliveryPartnerId || null,
             dispatchStatus: order.dispatch?.status || null,
@@ -913,101 +920,167 @@ export default function OrderDetails() {
               </div>
             </div>
           ))}
-        </div>
+        </div>        {/* Detailed Payout Summary Section */}
+        {(() => {
+          const orderValue = Number(orderData.billing.itemSubtotal) || 0;
+          const amountYouGet = Number(orderData.billing.restaurantGets) || 0;
+          const packagingFee = Number(orderData.billing.packagingFee) || 0;
+          const couponDiscount = Number(orderData.billing.couponDiscount || orderData.billing.discount || 0);
 
-        {/* Detailed Billing Section */}
-        <div className="space-y-4">
-          
+           const orderType = String(orderData.orderType || 'delivery').toLowerCase();
+          const deductGst = orderType === 'takeaway' ? true : (orderData.billing.deductGstFromRestaurant !== false);
+          const totalCustomerPaid = orderValue + packagingFee - couponDiscount;
 
+          const commissionValue = Number(orderData.billing.restaurantCommission) || 0;
+          const pgFee = Number(orderData.billing.paymentGatewayFee) || 0;
+          const commTax = deductGst ? (Number(orderData.billing.gstOnCommission) || 0) : 0;
+          const totalFees = commissionValue + pgFee + commTax;
 
-          {/* Restaurant Payout */}
-          <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100 shadow-sm">
-            <h3 className="text-sm font-bold text-blue-900 mb-3 tracking-wide">Restaurant Payout</h3>
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] text-gray-600 font-medium">Item subtotal</span>
-                <span className="text-[13px] text-gray-900">{formatMoney(orderData.billing.itemSubtotal)}</span>
+          const gstDeduction = deductGst ? (Number(orderData.billing.gstOnItem) || 0) : 0;
+          const tds = Number(orderData.billing.tcs) || 0;
+          const totalTaxes = gstDeduction + tds;
+
+          return (
+            <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden mb-4">
+              {/* Top overview stats */}
+              <div className="p-4 border-b border-slate-50 flex items-center justify-between">
+                <div className="text-center flex-1 border-r border-slate-100">
+                  <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">Order value</span>
+                  <span className="text-base font-bold text-slate-900">{formatMoney(orderValue)}</span>
+                </div>
+                <div className="text-center flex-1">
+                  <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">Amount you get</span>
+                  <span className="text-base font-extrabold text-slate-900">{formatMoney(amountYouGet)}</span>
+                </div>
               </div>
-              {Number(orderData.billing.packagingFee) > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] text-gray-600 font-medium">Packaging fee</span>
-                  <span className="text-[13px] text-gray-900">{formatMoney(orderData.billing.packagingFee)}</span>
-                </div>
-              )}
-              
-              <div 
-                className="flex items-center justify-between cursor-pointer group"
-                onClick={() => setShowPayoutBreakdown(!showPayoutBreakdown)}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] text-gray-600 font-medium group-hover:text-blue-600 transition-colors">GST & Fees</span>
-                  {showPayoutBreakdown ? (
-                    <ChevronUp className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500" />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500" />
-                  )}
-                </div>
-                <span className="text-[13px] text-red-600">
-                  {formatDiscount(
-                    (Number(orderData.billing.restaurantCommission) || 0) + 
-                    (Number(orderData.billing.gstOnItem) || 0) + 
-                    (Number(orderData.billing.gstOnCommission) || 0) + 
-                    (Number(orderData.billing.paymentGatewayFee) || 0) + 
-                    (Number(orderData.billing.tcs) || 0)
-                  )}
+
+              {/* Paid status row */}
+              <div className="bg-slate-50/30 px-4 py-2 flex items-center justify-between text-xs text-slate-500 border-b border-slate-50">
+                <span className="flex items-center gap-1 font-bold text-green-600 bg-green-50/80 px-2 py-0.5 rounded-full text-[10px]">
+                  ✓ {orderData.billing.paymentStatus || "Paid"}
                 </span>
+                <span>Paid on {orderData.date}</span>
               </div>
 
-              {/* Collapsible Breakdown */}
-              <AnimatePresence>
-                {showPayoutBreakdown && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="pl-3 border-l-2 border-blue-100 space-y-2 mt-1 mb-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[12px] text-gray-500 font-medium">Restaurant commission</span>
-                        <span className="text-[12px] text-red-500/80">{formatDiscount(orderData.billing.restaurantCommission)}</span>
-                      </div>
-                      {Number(orderData.billing.gstOnItem) > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-[12px] text-gray-500 font-medium">GST on item</span>
-                          <span className="text-[12px] text-red-500/80">{formatDiscount(orderData.billing.gstOnItem)}</span>
-                        </div>
-                      )}
-                      {Number(orderData.billing.gstOnCommission) > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-[12px] text-gray-500 font-medium">GST on commission</span>
-                          <span className="text-[12px] text-red-500/80">{formatDiscount(orderData.billing.gstOnCommission)}</span>
-                        </div>
-                      )}
-                      {Number(orderData.billing.paymentGatewayFee) > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-[12px] text-gray-500 font-medium">Payment gateway fee</span>
-                          <span className="text-[12px] text-red-500/80">{formatDiscount(orderData.billing.paymentGatewayFee)}</span>
-                        </div>
-                      )}
-                      {Number(orderData.billing.tcs) > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-[12px] text-gray-500 font-medium">TCS</span>
-                          <span className="text-[12px] text-red-500/80">{formatDiscount(orderData.billing.tcs)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Payout breakdown list */}
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between pb-1">
+                  <h4 className="text-[13px] font-bold text-slate-800">Payout Summary</h4>
+                </div>
 
-              <div className="pt-2 mt-2 border-t border-blue-200 flex items-center justify-between">
-                <span className="text-sm font-bold text-blue-900">Restaurant gets</span>
-                <span className="text-sm font-bold text-blue-900">{formatMoney(orderData.billing.restaurantGets)}</span>
+                <div className="space-y-3">
+                  {/* (A) Total Customer Paid */}
+                  <div>
+                    <div 
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => setShowCustomerPaidBreakdown(!showCustomerPaidBreakdown)}
+                    >
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-bold text-slate-700">(A) Total Customer Paid</span>
+                        {showCustomerPaidBreakdown ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+                      </div>
+                      <span className="text-xs font-bold text-slate-900">{formatMoney(totalCustomerPaid)}</span>
+                    </div>
+                    {showCustomerPaidBreakdown && (
+                      <div className="pl-3 mt-1.5 space-y-1 border-l border-slate-100 py-0.5 text-[11px]">
+                        <div className="flex justify-between text-slate-500">
+                          <span>Food Subtotal</span>
+                          <span>{formatMoney(orderValue)}</span>
+                        </div>
+                        {packagingFee > 0 && (
+                          <div className="flex justify-between text-slate-500">
+                            <span>Packaging Fee</span>
+                            <span>{formatMoney(packagingFee)}</span>
+                          </div>
+                        )}
+                        {couponDiscount > 0 && (
+                          <div className="flex justify-between text-slate-500">
+                            <span>Coupon Discount</span>
+                            <span className="text-red-500">-{formatMoney(couponDiscount)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* (B) Total Fees */}
+                  <div>
+                    <div 
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => setShowFeesBreakdown(!showFeesBreakdown)}
+                    >
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-bold text-slate-700">(B) Total Fees</span>
+                        {showFeesBreakdown ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+                      </div>
+                      <span className="text-xs font-bold text-red-600">-{formatMoney(totalFees)}</span>
+                    </div>
+                    {showFeesBreakdown && (
+                      <div className="pl-3 mt-1.5 space-y-1 border-l border-slate-100 py-0.5 text-[11px]">
+                        <div className="flex justify-between text-slate-500">
+                          <span>Commission Value</span>
+                          <span>-{formatMoney(commissionValue)}</span>
+                        </div>
+                        {pgFee > 0 && (
+                          <div className="flex justify-between text-slate-500">
+                            <span>Payment Collection Charges</span>
+                            <span>-{formatMoney(pgFee)}</span>
+                          </div>
+                        )}
+                        {commTax > 0 && (
+                          <div className="flex justify-between text-slate-500">
+                            <span>Commission Tax</span>
+                            <span>-{formatMoney(commTax)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* (C) Complaint & Cancellation Charges */}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-700">(C) Complaint & Cancellation Charges</span>
+                    <span className="font-bold text-slate-900">₹0.00</span>
+                  </div>
+
+                  {/* (D) Total Taxes */}
+                  <div>
+                    <div 
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => setShowTaxesBreakdown(!showTaxesBreakdown)}
+                    >
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-bold text-slate-700">(D) Total Taxes</span>
+                        {showTaxesBreakdown ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+                      </div>
+                      <span className="text-xs font-bold text-red-600">-{formatMoney(totalTaxes)}</span>
+                    </div>
+                    {showTaxesBreakdown && (
+                      <div className="pl-3 mt-1.5 space-y-1 border-l border-slate-100 py-0.5 text-[11px]">
+                        <div className="flex justify-between text-slate-500">
+                          <span>GST Deduction</span>
+                          <span>-{formatMoney(gstDeduction)}</span>
+                        </div>
+                        {tds > 0 && (
+                          <div className="flex justify-between text-slate-500">
+                            <span>TDS</span>
+                            <span>-{formatMoney(tds)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Net Payout summary row */}
+                <div className="pt-2.5 mt-3 border-t border-dashed border-slate-200 flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-slate-950">Net Payout (A+B+C+D)</span>
+                  <span className="text-xs font-extrabold text-green-600">{formatMoney(amountYouGet)}</span>
+                </div>
               </div>
             </div>
-          </div>
+          );
+        })()}
 
           {/* Delivery Info */}
           <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm mb-4">

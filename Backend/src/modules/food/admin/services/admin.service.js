@@ -1697,7 +1697,8 @@ export async function getRestaurantCommissionBootstrap() {
             globalGstOnCommission: feeSettings.globalGstOnCommission || 0,
             globalPaymentGatewayFee: feeSettings.globalPaymentGatewayFee || 0,
             globalTcs: feeSettings.globalTcs || 0,
-            applyGlobalTaxes: feeSettings.applyGlobalTaxes !== false
+            applyGlobalTaxes: feeSettings.applyGlobalTaxes !== false,
+            deductGstFromRestaurant: feeSettings.deductGstFromRestaurant !== false
         }
     };
 }
@@ -1759,7 +1760,7 @@ export async function deleteRestaurantCommission(id) {
 }
 
 export async function updateGlobalRestaurantCommissionSettings(body) {
-    const { globalRestaurantCommission, globalTakeawayRestaurantCommission, globalGstOnItem, globalGstOnCommission, globalPaymentGatewayFee, globalTcs, applyGlobalTaxes } = body;
+    const { globalRestaurantCommission, globalTakeawayRestaurantCommission, globalGstOnItem, globalGstOnCommission, globalPaymentGatewayFee, globalTcs, applyGlobalTaxes, deductGstFromRestaurant } = body;
     let settings = await FoodFeeSettings.findOne({ isActive: true }).sort({ createdAt: -1 });
     if (!settings) {
         settings = new FoodFeeSettings();
@@ -1772,6 +1773,7 @@ export async function updateGlobalRestaurantCommissionSettings(body) {
     if (globalPaymentGatewayFee !== undefined) settings.globalPaymentGatewayFee = Number(globalPaymentGatewayFee);
     if (globalTcs !== undefined) settings.globalTcs = Number(globalTcs);
     if (applyGlobalTaxes !== undefined) settings.applyGlobalTaxes = Boolean(applyGlobalTaxes);
+    if (deductGstFromRestaurant !== undefined) settings.deductGstFromRestaurant = Boolean(deductGstFromRestaurant);
     
     await settings.save();
     return {
@@ -1781,7 +1783,8 @@ export async function updateGlobalRestaurantCommissionSettings(body) {
         globalGstOnCommission: settings.globalGstOnCommission,
         globalPaymentGatewayFee: settings.globalPaymentGatewayFee,
         globalTcs: settings.globalTcs,
-        applyGlobalTaxes: settings.applyGlobalTaxes
+        applyGlobalTaxes: settings.applyGlobalTaxes,
+        deductGstFromRestaurant: settings.deductGstFromRestaurant
     };
 }
 

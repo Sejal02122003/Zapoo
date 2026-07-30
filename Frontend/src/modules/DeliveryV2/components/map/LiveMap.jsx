@@ -63,7 +63,6 @@ export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineRecei
       streetViewControl: false,
       rotateControl: true, // Enabled for front-view navigation
       fullscreenControl: false,
-      tilt: 45, // 3D Perspective
     });
     setMapInternal(mapInstance);
     if (onMapLoad) onMapLoad(mapInstance);
@@ -300,7 +299,6 @@ export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineRecei
         center={parsedRiderLocation || targetLocation || defaultCenter}
         zoom={zoom}
         heading={parsedRiderLocation?.heading || 0}
-        tilt={45}
         onClick={(e) => onMapClick?.(e.latLng.lat(), e.latLng.lng())}
         options={mapOptions}
       >

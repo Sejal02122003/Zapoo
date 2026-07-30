@@ -11,6 +11,7 @@ import { ValidationError } from '../../../../core/auth/errors.js';
 import { haversineKm } from './order.helpers.js';
 import { validateLocationCoupon } from '../../admin/services/locationCoupon.service.js';
 import { logger } from '../../../../utils/logger.js';
+import { getActiveWeatherPolicy, evaluateWeatherPricing } from '../../weatherPricing/services/weatherPricing.service.js';
 
 export async function calculateOrderPricing(userId, dto) {
   const restaurant = await FoodRestaurant.findById(dto.restaurantId)
@@ -456,6 +457,7 @@ export async function calculateOrderPricing(userId, dto) {
       itemDiscount: itemDiscountTotal > 0 ? itemDiscountTotal : undefined,
       couponDiscount: couponDiscount > 0 ? couponDiscount : undefined,
       restaurantCouponDiscount: restaurantCouponDiscount > 0 ? restaurantCouponDiscount : undefined,
+      deductGstFromRestaurant: feeSettings.deductGstFromRestaurant !== false,
       total,
       currency: "INR",
       surgeAmount: surgeAmount > 0 ? surgeAmount : 0,

@@ -1,4 +1,4 @@
-import { WeatherPricingPolicy } from './models/weatherPricing.model.js';
+import { WeatherPricingPolicy } from '../models/weatherPricing.model.js';
 
 export async function getActiveWeatherPolicy() {
     return await WeatherPricingPolicy.findOne({
