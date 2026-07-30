@@ -123,7 +123,7 @@ export default function OrderDetails() {
           const deliveryFee = firstNumber(pricing.deliveryFee, order.deliveryFee) ?? 0
           const platformFee = firstNumber(pricing.platformFee, order.platformFee) ?? 0
           const discount = firstNumber(pricing.discount, order.discount) ?? 0
-          const couponDiscount = firstNumber(pricing.couponDiscount, order.couponDiscount) ?? 0
+          const couponDiscount = firstNumber(pricing.restaurantCouponDiscount, pricing.couponDiscount, order.couponDiscount, pricing.discount, order.discount) ?? 0
           const referralDiscount = firstNumber(pricing.referralDiscount, order.referralDiscount) ?? 0
 
           const total =
@@ -153,7 +153,7 @@ export default function OrderDetails() {
           const paymentGatewayFee = Number(pricing.paymentGatewayFee) || 0;
           const tcs = Number(pricing.tcs) || 0;
 
-          const couponDiscount = firstNumber(pricing.restaurantCouponDiscount, pricing.couponDiscount, order.couponDiscount, pricing.discount, order.discount) ?? 0
+
           const orderType = String(order.orderType || 'delivery').toLowerCase();
           const deductGst = orderType === 'takeaway' ? true : (pricing.deductGstFromRestaurant !== false);
           const totalAdminReceivable = deliveryCostToAdmin + deliveryGstToAdmin + platformFee + taxes + packagingFee + restaurantCommission + (deductGst ? (gstOnItem + gstOnCommission) : 0) + paymentGatewayFee + tcs;
@@ -1096,8 +1096,6 @@ export default function OrderDetails() {
               </div>
             </div>
           </div>
-
-        </div>
 
         {/* Order Timeline Section */}
         <div>
