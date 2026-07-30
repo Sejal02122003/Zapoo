@@ -142,3 +142,28 @@ export const getPublicLandingSettingsController = async (req, res, next) => {
         next(error);
     }
 };
+
+export const getPublicOffersController = async (req, res, next) => {
+    try {
+        const { zoneId } = req.query;
+        // We need to import getPublicOffers from offers.service.js
+        const { getPublicOffers } = await import('../services/offers.service.js');
+        const { dailyDeals, bestOffers } = await getPublicOffers();
+
+        // Zone filtering
+        const filterByZone = (offers) => {
+            if (!zoneId || !mongoose.Types.ObjectId.isValid(zoneId)) return offers;
+            return offers.filter(o => String(o.zoneId || '') === String(zoneId));
+        };
+
+        const filteredDaily = filterByZone(dailyDeals);
+        const filteredBest = filterByZone(bestOffers);
+
+        return sendResponse(res, 200, 'Offers fetched', {
+            dailyDeals: filteredDaily,
+            bestOffers: filteredBest
+        });
+    } catch (error) {
+        next(error);
+    }
+};

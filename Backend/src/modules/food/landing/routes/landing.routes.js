@@ -43,8 +43,16 @@ import {
     getPublicDiningBannersController,
     getPublicExploreIconsController,
     getPublicGourmetController,
-    getPublicLandingSettingsController
+    getPublicLandingSettingsController,
+    getPublicOffersController
 } from '../controllers/publicLanding.controller.js';
+import {
+    getAdminOffersController,
+    addOfferController,
+    updateOfferOrderController,
+    toggleOfferStatusController,
+    deleteOfferController
+} from '../controllers/offersAdmin.controller.js';
 import { detectZonePublicController, listZonesPublicController, listZonesNearbyPublicController } from '../controllers/zonePublic.controller.js';
 import { getPublicEnvController } from '../controllers/publicEnv.controller.js';
 import {
@@ -126,12 +134,20 @@ router.delete('/hero-banners/gourmet/:id', deleteGourmetAdmin);
 router.patch('/hero-banners/gourmet/:id/order', updateGourmetOrderAdmin);
 router.patch('/hero-banners/gourmet/:id/status', toggleGourmetStatusAdmin);
 
+// Admin Offers (hero-banners)
+router.get('/hero-banners/offers', getAdminOffersController);
+router.post('/hero-banners/offers', addOfferController);
+router.delete('/hero-banners/offers/:id', deleteOfferController);
+router.patch('/hero-banners/offers/:id/order', updateOfferOrderController);
+router.patch('/hero-banners/offers/:id/status', toggleOfferStatusController);
+
 // Public landing endpoints (Food user app)
 router.get('/hero-banners/public', getPublicHeroBannersController);
 router.get('/hero-banners/under-99/public', getPublicUnder99BannersController);
 router.get('/hero-banners/ads/public', getPublicDiningBannersController);
 router.get('/explore-icons/public', getPublicExploreIconsController);
 router.get('/hero-banners/gourmet/public', getPublicGourmetController);
+router.get('/hero-banners/offers/public', getPublicOffersController);
 router.get('/landing/settings/public', getPublicLandingSettingsController);
 router.get('/location/reverse-geocode', reverseGeocodePublicController);
 router.post('/location/distance', computeDistancePublicController);

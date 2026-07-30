@@ -5,7 +5,7 @@
 import apiClient, { userClient, restaurantClient, deliveryClient, adminClient } from "./axios.js";
 import { API_ENDPOINTS } from "./config.js";
 import * as authService from "./auth.js";
-import { mockRestaurants, mockOffers, mockMenus } from './mockData.js';
+import { mockRestaurants, mockMenus } from './mockData.js';
 import { convertToWebP } from "../../utils/imageConverter.js";
 
 const stub = () =>
@@ -865,7 +865,7 @@ export const restaurantAPI = {
     return restaurantClient.post("/food/restaurant/profile/menu-images", formData);
   },
   /** Public Offers for users (global/selected restaurant) */
-  getPublicOffers: () => Promise.resolve({ data: { success: true, data: mockOffers } }),
+  getPublicOffers: (params = {}) => userClient.get("/food/hero-banners/offers/public", { params }),
   /** Backward-compat helper used by Cart: returns coupons array for an item by adapting public offers */
   getCouponsByItemIdPublic: (restaurantId, _itemId) =>
     userClient.get("/food/restaurant/offers").then((res) => {
@@ -1167,7 +1167,7 @@ export const restaurantAPI = {
       ...config,
     }),
   getPublicOffers: (params = {}) =>
-    Promise.resolve({ data: { success: true, data: mockOffers } }),
+    userClient.get("/food/hero-banners/offers/public", { params }),
   /** Resend delivery notification (restaurant dashboard) */
   resendDeliveryNotification: (orderId) =>
     restaurantClient.post(`/food/restaurant/orders/${String(orderId)}/resend-notification`, {}),

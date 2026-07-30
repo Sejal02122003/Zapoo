@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, Layout, Tag, UtensilsCrossed, ChefHat, Megaphone, Search } from "lucide-react"
+import { Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, Layout, Tag, UtensilsCrossed, ChefHat, Megaphone, Search, BadgePercent, Plus } from "lucide-react"
 import api from "@food/api"
 import { adminAPI } from "@food/api"
 import { getModuleToken } from "@food/utils/auth"
@@ -114,6 +114,15 @@ export default function LandingPageManagement() {
   const [selectedRestaurantGourmet, setSelectedRestaurantGourmet] = useState("")
   const [selectedZoneGourmet, setSelectedZoneGourmet] = useState("")
 
+  // Offers
+  const [offers, setOffers] = useState([])
+  const [offersLoading, setOffersLoading] = useState(true)
+  const [offersDeleting, setOffersDeleting] = useState(null)
+  const [selectedRestaurantOffer, setSelectedRestaurantOffer] = useState("")
+  const [selectedZoneOffer, setSelectedZoneOffer] = useState("")
+  const [selectedOfferType, setSelectedOfferType] = useState("daily_deal")
+  const [offerText, setOfferText] = useState("")
+
   // Common
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
@@ -206,6 +215,8 @@ export default function LandingPageManagement() {
         fetchGourmetRestaurants()
       } else if (exploreMoreSubTab === 'icons') {
         fetchExploreMore()
+      } else if (exploreMoreSubTab === 'offers') {
+        fetchOffers()
       }
     }
   }, [activeTab, exploreMoreSubTab])
@@ -1413,6 +1424,103 @@ export default function LandingPageManagement() {
     }
   }
 
+
+
+  const fetchOffers = async () => {
+    try {
+      setOffersLoading(true)
+      setError(null)
+      const response = await api.get('/food/hero-banners/offers', getAuthConfig())
+      if (response.data.success) {
+        setOffers(response.data.data.offers || [])
+      }
+    } catch (err) {
+      if (err.response?.status === 401 || err.response?.status === 404) {
+        setOffers([])
+        setError(null)
+      } else {
+        const errorMessage = err.response?.data?.message || 'Failed to load offers'
+        setErrorSafely(errorMessage)
+      }
+    } finally {
+      setOffersLoading(false)
+    }
+  }
+
+  const handleAddOffer = async () => {
+    if (!selectedRestaurantOffer) {
+      setError('Please select a restaurant')
+      return
+    }
+
+    try {
+      setError(null)
+      setSuccess(null)
+      const response = await api.post('/food/hero-banners/offers', {
+        restaurantId: selectedRestaurantOffer,
+        offerType: selectedOfferType,
+        offerText: offerText
+      }, getAuthConfig())
+      if (response.data.success) {
+        setSuccess('Offer added successfully!')
+        setSelectedRestaurantOffer("")
+        setOfferText("")
+        await fetchOffers()
+        setTimeout(() => setSuccess(null), 3000)
+      }
+    } catch (err) {
+      setErrorSafely(err.response?.data?.message || 'Failed to add offer.')
+    }
+  }
+
+  const handleDeleteOffer = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this offer?')) return
+    try {
+      setOffersDeleting(id)
+      setError(null)
+      setSuccess(null)
+      const response = await api.delete(`/food/hero-banners/offers/${id}`, getAuthConfig())
+      if (response.data.success) {
+        setSuccess('Offer removed successfully!')
+        await fetchOffers()
+        setTimeout(() => setSuccess(null), 3000)
+      }
+    } catch (err) {
+      setErrorSafely(err.response?.data?.message || 'Failed to remove offer.')
+    } finally {
+      setOffersDeleting(null)
+    }
+  }
+
+  const handleOfferOrderChange = async (id, direction) => {
+    const offer = offers.find(o => o._id === id)
+    if (!offer) return
+    const newOrder = direction === 'up' ? offer.priority - 1 : offer.priority + 1
+    if (newOrder < 0) return
+    try {
+      setError(null)
+      await api.patch(`/food/hero-banners/offers/${id}/order`, { order: newOrder }, getAuthConfig())
+      await fetchOffers()
+    } catch (err) {
+      setErrorSafely('Failed to update offer order.')
+    }
+  }
+
+  const handleToggleOfferStatus = async (id, currentStatus) => {
+    try {
+      setError(null)
+      setSuccess(null)
+      const response = await api.patch(`/food/hero-banners/offers/${id}/status`, {}, getAuthConfig())
+      if (response.data.success) {
+        setSuccess(`Offer ${currentStatus ? 'deactivated' : 'activated'} successfully!`)
+        await fetchOffers()
+        setTimeout(() => setSuccess(null), 3000)
+      }
+    } catch (err) {
+      setErrorSafely(err.response?.data?.message || 'Failed to update offer status.')
+    }
+  }
+
   // ==================== RENDER ====================
   const tabs = [
     { id: 'banners', label: 'Hero Banners', icon: ImageIcon },
@@ -1425,6 +1533,7 @@ export default function LandingPageManagement() {
   const exploreMoreTabs = [
     { id: 'icons', label: 'Icons', icon: ImageIcon },
     { id: 'gourmet', label: 'Gourmet', icon: ChefHat },
+    { id: 'offers', label: 'Offers', icon: BadgePercent },
   ]
 
   return (
@@ -2339,6 +2448,149 @@ export default function LandingPageManagement() {
                             </div>
                           )
                         })}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Offers Tab Content */}
+            {exploreMoreSubTab === 'offers' && (
+              <>
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">Add Special Offer</h2>
+                  <div className="flex flex-col sm:flex-row gap-4 items-end">
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="zone-offer">Select Zone</Label>
+                      <select
+                        id="zone-offer"
+                        value={selectedZoneOffer}
+                        onChange={(e) => {
+                          setSelectedZoneOffer(e.target.value)
+                          setSelectedRestaurantOffer("")
+                        }}
+                        className="w-full h-10 px-3 py-2 rounded-md border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">All Zones</option>
+                        {zones.map((zone) => (
+                          <option key={zone._id} value={zone._id}>{zone.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="restaurant-offer">Select Restaurant</Label>
+                      <select
+                        id="restaurant-offer"
+                        value={selectedRestaurantOffer}
+                        onChange={(e) => setSelectedRestaurantOffer(e.target.value)}
+                        className="w-full h-10 px-3 py-2 rounded-md border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={allRestaurants.length === 0}
+                      >
+                        <option value="">Select a restaurant...</option>
+                        {allRestaurants
+                          .filter(r => !selectedZoneOffer || String(r.zoneId || '') === selectedZoneOffer)
+                          .map((r) => (
+                            <option key={r._id} value={r._id}>{r.name}</option>
+                          ))}
+                      </select>
+                    </div>
+
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="offer-type">Offer Type</Label>
+                      <select
+                        id="offer-type"
+                        value={selectedOfferType}
+                        onChange={(e) => setSelectedOfferType(e.target.value)}
+                        className="w-full h-10 px-3 py-2 rounded-md border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="daily_deal">Daily Deal</option>
+                        <option value="best_offer">Best Offer</option>
+                      </select>
+                    </div>
+
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="offer-text">Offer Text</Label>
+                      <Input
+                        id="offer-text"
+                        placeholder="e.g. 50% OFF"
+                        value={offerText}
+                        onChange={(e) => setOfferText(e.target.value)}
+                      />
+                    </div>
+
+                    <Button onClick={handleAddOffer} className="bg-blue-600 hover:bg-blue-700 text-white shrink-0">
+                      <Plus className="w-4 h-4 mr-2" /> Add
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                  <h2 className="text-lg font-bold text-slate-900 mb-6">Current Offers</h2>
+                  {offersLoading ? (
+                    <div className="flex items-center justify-center h-32">
+                      <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                    </div>
+                  ) : offers.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                      No offers added yet
+                    </div>
+                  ) : (
+                    <div className="space-y-8">
+                      {/* Group by type */}
+                      {['daily_deal', 'best_offer'].map(type => {
+                        const typeOffers = offers.filter(o => o.offerType === type).sort((a,b) => a.priority - b.priority);
+                        if (typeOffers.length === 0) return null;
+                        return (
+                          <div key={type}>
+                            <h3 className="text-md font-bold mb-4 capitalize">{type.replace('_', ' ')}s</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                              {typeOffers.map((item, index) => {
+                                const rName = item.restaurantId?.restaurantName || item.restaurantId?.name || 'Unknown Restaurant'
+                                const rImage = item.restaurantId?.profileImage || ''
+                                return (
+                                  <div key={item._id} className={`bg-white rounded-lg border ${!item.isActive ? 'border-dashed border-slate-300 opacity-75' : 'border-slate-200'} shadow-sm overflow-hidden flex flex-col group`}>
+                                    <div className="h-24 bg-slate-100 relative">
+                                      {rImage ? (
+                                        <img src={rImage} alt={rName} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                          <ImageIcon className="w-8 h-8" />
+                                        </div>
+                                      )}
+                                      <div className="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
+                                        Order: {item.priority}
+                                      </div>
+                                    </div>
+                                    <div className="p-3 flex-1 flex flex-col justify-between gap-3">
+                                      <div>
+                                        <p className="font-semibold text-sm text-slate-900 truncate" title={rName}>{rName}</p>
+                                        <p className="text-xs text-blue-600 font-bold mt-1 line-clamp-1">{item.offerText || '-'}</p>
+                                      </div>
+                                      <div className="flex items-center justify-between gap-1">
+                                        <div className="flex items-center gap-0.5">
+                                          <button onClick={() => handleOfferOrderChange(item._id, 'up')} disabled={index === 0} className="p-1 rounded hover:bg-slate-100 disabled:opacity-50">
+                                            <ArrowUp className="w-3 h-3 text-slate-600" />
+                                          </button>
+                                          <button onClick={() => handleOfferOrderChange(item._id, 'down')} disabled={index === typeOffers.length - 1} className="p-1 rounded hover:bg-slate-100 disabled:opacity-50">
+                                            <ArrowDown className="w-3 h-3 text-slate-600" />
+                                          </button>
+                                        </div>
+                                        <button onClick={() => handleToggleOfferStatus(item._id, item.isActive)} className={`px-2 py-1 rounded text-[10px] font-medium ${item.isActive ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                                          {item.isActive ? 'Deactivate' : 'Activate'}
+                                        </button>
+                                        <button onClick={() => handleDeleteOffer(item._id)} disabled={offersDeleting === item._id} className="p-1 rounded hover:bg-red-100 text-red-600 disabled:opacity-50">
+                                          {offersDeleting === item._id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>

@@ -9,6 +9,8 @@ import { toast } from "sonner"
 import { RestaurantGridSkeleton } from "@food/components/ui/loading-skeletons"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 
+import { useLocationContext } from "@food/context/LocationContext"
+
 // Import banner image
 import offerBanner from "../../assets/offerpagebanner.svg"
 
@@ -19,6 +21,7 @@ const debugError = (...args) => {}
 export default function Offers() {
   const navigate = useNavigate()
   const goBack = useAppBackNavigation()
+  const { currentZoneId } = useLocationContext()
   const [dailyDeals, setDailyDeals] = useState([])
   const [bestOffers, setBestOffers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -31,7 +34,7 @@ export default function Offers() {
       try {
         setLoading(true)
         setError(null)
-        const response = await restaurantAPI.getPublicOffers()
+        const response = await restaurantAPI.getPublicOffers({ zoneId: currentZoneId || '' })
         const data = response?.data?.data
         
         if (data) {
@@ -50,7 +53,7 @@ export default function Offers() {
     }
 
     fetchOffers()
-  }, [])
+  }, [currentZoneId])
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
