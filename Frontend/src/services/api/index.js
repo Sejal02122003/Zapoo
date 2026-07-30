@@ -866,24 +866,24 @@ export const restaurantAPI = {
   },
   /** Public Offers for users (global/selected restaurant) */
   getPublicOffers: (params = {}) => userClient.get("/food/hero-banners/offers/public", { params }),
-  /** Backward-compat helper used by Cart: returns coupons array for an item by adapting public offers */
+  getAvailableCoupons: (params = {}) => userClient.get("/food/coupons/available", { params }),
+  /** Backward-compat helper used by Cart: returns coupons array for an item by adapting new Coupons API */
   getCouponsByItemIdPublic: (restaurantId, _itemId) =>
-    userClient.get("/food/restaurant/offers").then((res) => {
-      const list = res?.data?.data?.allOffers || res?.data?.allOffers || [];
+    restaurantAPI.getAvailableCoupons().then((res) => {
+      const list = res?.data?.data || res?.data || [];
       const now = Date.now();
       const coupons = list
         .filter((o) => {
-          // Guard: respect selected restaurant scope
-          if (String(o?.restaurantScope) === "selected") {
+          if (String(o?.restaurantScope) === "SPECIFIC") {
             if (!restaurantId) return false;
-            return String(o.restaurantId || "") === String(restaurantId || "");
+            return Array.isArray(o.restaurantIds) && o.restaurantIds.includes(String(restaurantId));
           }
           return true;
         })
         .map((o) => {
-          const isPct = o.discountType === "percentage";
+          const isPct = o.discountType === "PERCENTAGE";
           return {
-            couponCode: o.couponCode,
+            couponCode: o.code,
             discountType: o.discountType,
             discountPercentage: isPct ? Number(o.discountValue) || 0 : 0,
             discountValue: !isPct ? Number(o.discountValue) || 0 : 0,
@@ -891,11 +891,15 @@ export const restaurantAPI = {
             discountedPrice: 0,
             minOrderValue: Number(o.minOrderValue || 0),
             minOrder: Number(o.minOrderValue || 0),
-            maxDiscount: o.maxDiscount != null ? Number(o.maxDiscount) : null,
-            customerGroup: o.customerScope || "all",
-            isGlobalCoupon: true,
-            endDate: o.endDate || null,
-            showInCart: o.showInCart !== false,
+            maxDiscount: o.maxDiscountCap != null ? Number(o.maxDiscountCap) : null,
+            customerGroup: o.userSegment || "ALL",
+            isGlobalCoupon: String(o.restaurantScope) === "ALL",
+            endDate: o.validUntil || null,
+            showInCart: true,
+            rewardType: o.rewardType || 'INSTANT_DISCOUNT',
+            cashbackType: o.cashbackType || 'PERCENTAGE',
+            cashbackValue: Number(o.cashbackValue) || 0,
+            maxCashbackCap: o.maxCashbackCap != null ? Number(o.maxCashbackCap) : null,
             _ts: now,
           };
         });

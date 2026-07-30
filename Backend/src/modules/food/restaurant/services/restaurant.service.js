@@ -6,6 +6,7 @@ import { ValidationError } from '../../../../core/auth/errors.js';
 import mongoose from 'mongoose';
 import { FoodZone } from '../../admin/models/zone.model.js';
 import { FoodOffer } from '../../admin/models/offer.model.js';
+import { Coupon } from '../../admin/models/coupon.model.js';
 import { FoodDiningRestaurant } from '../../dining/models/diningRestaurant.model.js';
 import Promocode from '../../../../models/Promocode.js';
 import { LocationCoupon } from '../../admin/models/locationCoupon.model.js';
@@ -1757,6 +1758,15 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, query = {}) => {
             $or: [{ expiryDate: { $exists: false } }, { expiryDate: null }, { expiryDate: { $gt: now } }]
         }).sort({ createdAt: -1 }).lean();
 
+        const activeCoupons = await Coupon.find({
+            isActive: true,
+            validUntil: { $gt: now },
+            $or: [
+                { restaurantScope: 'ALL' },
+                { restaurantIds: restaurantId }
+            ]
+        }).sort({ createdAt: -1 }).lean();
+
         const mappedAdminOffers = adminOffers.map(o => ({
             id: String(o._id),
             title: o.discountType === 'percentage'
@@ -1790,7 +1800,30 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, query = {}) => {
             discountValue: lc.discountValue
         }));
 
-        return [...mappedAdminOffers, ...mappedPromos, ...mappedLocationCoupons];
+        const mappedCoupons = activeCoupons.map(c => {
+            let title = '';
+            if (c.rewardType === 'CASHBACK') {
+                title = c.cashbackType === 'PERCENTAGE' ? `${Number(c.cashbackValue) || 0}% Cashback` : `Flat ₹${Number(c.cashbackValue) || 0} Cashback`;
+            } else if (c.rewardType === 'BOTH') {
+                title = `${Number(c.discountValue) || 0}${c.discountType === 'PERCENTAGE' ? '%' : '₹'} OFF + ${Number(c.cashbackValue) || 0}${c.cashbackType === 'PERCENTAGE' ? '%' : '₹'} Cashback`;
+            } else {
+                title = c.discountType === 'PERCENTAGE' ? `${Number(c.discountValue) || 0}% OFF` : `Flat ₹${Number(c.discountValue) || 0} OFF`;
+            }
+            return {
+                id: String(c._id),
+                title,
+                code: c.code,
+                description: `Min Order: ₹${c.minOrderValue}`,
+                discountType: c.discountType,
+                discountValue: c.discountValue,
+                cashbackType: c.cashbackType,
+                cashbackValue: c.cashbackValue,
+                rewardType: c.rewardType,
+                maxDiscountCap: c.maxDiscountCap
+            };
+        });
+
+        return [...mappedAdminOffers, ...mappedPromos, ...mappedLocationCoupons, ...mappedCoupons];
     };
 
     let doc = null;

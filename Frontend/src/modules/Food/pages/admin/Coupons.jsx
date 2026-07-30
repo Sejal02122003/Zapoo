@@ -41,7 +41,7 @@ export default function Coupons() {
     setLoading(true);
     try {
       const [couponsRes, restRes] = await Promise.allSettled([
-        adminClient.get("/food/admin/coupons?includeInactive=true"),
+        adminClient.get("/food/admin/coupons"),
         adminClient.get("/food/admin/restaurants")
       ]);
 

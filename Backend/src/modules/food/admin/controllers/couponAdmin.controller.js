@@ -30,6 +30,9 @@ export async function createCoupon(req, res, next) {
             discountValue: Number(body.discountValue),
             maxDiscountCap: body.maxDiscountCap != null ? Number(body.maxDiscountCap) : null,
             rewardType: body.rewardType || 'INSTANT_DISCOUNT',
+            cashbackType: body.cashbackType || 'PERCENTAGE',
+            cashbackValue: body.cashbackValue != null ? Number(body.cashbackValue) : 0,
+            maxCashbackCap: body.maxCashbackCap != null ? Number(body.maxCashbackCap) : null,
             minOrderValue: Number(body.minOrderValue || 0),
             perUserUsageLimit: Number(body.perUserUsageLimit || 1),
             totalUsageLimit: body.totalUsageLimit != null ? Number(body.totalUsageLimit) : null,
@@ -94,6 +97,9 @@ export async function updateCoupon(req, res, next) {
         if (body.discountValue !== undefined) coupon.discountValue = Number(body.discountValue);
         if (body.maxDiscountCap !== undefined) coupon.maxDiscountCap = body.maxDiscountCap != null ? Number(body.maxDiscountCap) : null;
         if (body.rewardType) coupon.rewardType = body.rewardType;
+        if (body.cashbackType) coupon.cashbackType = body.cashbackType;
+        if (body.cashbackValue !== undefined) coupon.cashbackValue = Number(body.cashbackValue);
+        if (body.maxCashbackCap !== undefined) coupon.maxCashbackCap = body.maxCashbackCap != null ? Number(body.maxCashbackCap) : null;
         if (body.minOrderValue !== undefined) coupon.minOrderValue = Number(body.minOrderValue);
         if (body.perUserUsageLimit !== undefined) coupon.perUserUsageLimit = Number(body.perUserUsageLimit);
         if (body.totalUsageLimit !== undefined) coupon.totalUsageLimit = body.totalUsageLimit != null ? Number(body.totalUsageLimit) : null;

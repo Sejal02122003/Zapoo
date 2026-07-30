@@ -923,30 +923,41 @@ export default function Cart() {
 
             // Add coupons, avoiding duplicates
             coupons.forEach(coupon => {
-              if (!uniqueCouponCodes.has(coupon.couponCode)) {
-                uniqueCouponCodes.add(coupon.couponCode)
-                // Convert backend coupon format to frontend format
-                allCoupons.push({
-                  code: coupon.couponCode,
-                  discount: coupon.discountType === "percentage" 
-                    ? (coupon.originalPrice - coupon.discountedPrice) 
-                    : (coupon.discountValue || Math.max(0, (coupon.originalPrice || 0) - (coupon.discountedPrice || 0))),
-                  discountPercentage: coupon.discountPercentage,
-                  discountDisplay: coupon.discountType === "percentage"
-                    ? `${coupon.discountPercentage}% OFF`
-                    : `${RUPEE_SYMBOL}${coupon.discountValue || Math.max(0, (coupon.originalPrice || 0) - (coupon.discountedPrice || 0))} OFF`,
-                  minOrder: coupon.minOrderValue || 0,
-                  description: coupon.discountType === "percentage"
-                    ? `${coupon.discountPercentage}% OFF with '${coupon.couponCode}'`
-                    : `Save ${RUPEE_SYMBOL}${coupon.discountValue || Math.max(0, (coupon.originalPrice || 0) - (coupon.discountedPrice || 0))} with '${coupon.couponCode}'`,
-                  originalPrice: coupon.originalPrice,
-                  discountedPrice: coupon.discountedPrice,
-                  customerGroup: coupon.customerGroup || "all",
-                  isGlobalCoupon: Boolean(coupon.isGlobalCoupon),
-                  itemId: couponItemId,
-                  itemName: cartItem.name,
-                })
-              }
+                if (!uniqueCouponCodes.has(coupon.couponCode)) {
+                  uniqueCouponCodes.add(coupon.couponCode)
+                  
+                  // Calculate dynamic discount based on cart total
+                  const currentSubtotal = cart.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
+                  const isPct = String(coupon.discountType).toUpperCase() === "PERCENTAGE";
+                  let calcDiscount = isPct ? currentSubtotal * ((coupon.discountPercentage || coupon.discountValue || 0) / 100) : (coupon.discountValue || 0);
+                  if (coupon.maxDiscount > 0 && calcDiscount > coupon.maxDiscount) calcDiscount = coupon.maxDiscount;
+                  
+                  const isCbPct = String(coupon.cashbackType).toUpperCase() === "PERCENTAGE";
+                  let calcCashback = isCbPct ? currentSubtotal * ((coupon.cashbackValue || 0) / 100) : (coupon.cashbackValue || 0);
+                  if (coupon.maxCashbackCap > 0 && calcCashback > coupon.maxCashbackCap) calcCashback = coupon.maxCashbackCap;
+
+                  // Convert backend coupon format to frontend format
+                  allCoupons.push({
+                    code: coupon.couponCode,
+                    discount: Math.round(calcDiscount),
+                    discountPercentage: coupon.discountPercentage,
+                    discountDisplay: isPct
+                      ? `${coupon.discountPercentage || coupon.discountValue}% OFF`
+                      : `${RUPEE_SYMBOL}${coupon.discountValue} OFF`,
+                    minOrder: coupon.minOrderValue || 0,
+                    description: isPct
+                      ? `${coupon.discountPercentage || coupon.discountValue}% OFF with '${coupon.couponCode}'`
+                      : `Save ${RUPEE_SYMBOL}${coupon.discountValue} with '${coupon.couponCode}'`,
+                    originalPrice: coupon.originalPrice,
+                    discountedPrice: coupon.discountedPrice,
+                    customerGroup: coupon.customerGroup || "all",
+                    isGlobalCoupon: Boolean(coupon.isGlobalCoupon),
+                    itemId: couponItemId,
+                    itemName: cartItem.name,
+                    rewardType: coupon.rewardType || 'INSTANT_DISCOUNT',
+                    cashbackValue: Math.round(calcCashback)
+                  })
+                }
             })
           }
         } catch (error) {

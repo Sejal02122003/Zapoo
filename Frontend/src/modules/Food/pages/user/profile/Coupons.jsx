@@ -15,12 +15,10 @@ export default function Coupons() {
     const load = async () => {
       try {
         setLoading(true)
-        const res = await restaurantAPI.getPublicOffers()
-        const list = res?.data?.data?.allOffers || res?.data?.allOffers || []
+        const res = await restaurantAPI.getAvailableCoupons()
+        const list = res?.data?.data || res?.data || []
         if (!cancelled) {
-          // Only show offers meant to be visible to users (default true)
-          const visible = Array.isArray(list) ? list.filter((o) => o?.showInCart !== false) : []
-          setOffers(visible)
+          setOffers(list)
         }
       } catch (e) {
         if (!cancelled) setOffers([])
@@ -36,7 +34,7 @@ export default function Coupons() {
 
   const sortedOffers = useMemo(() => {
     if (!Array.isArray(offers)) return []
-    return [...offers].sort((a, b) => String(a?.couponCode || "").localeCompare(String(b?.couponCode || "")))
+    return [...offers].sort((a, b) => String(a?.code || "").localeCompare(String(b?.code || "")))
   }, [offers])
 
   const handleCopy = async (code) => {
@@ -70,10 +68,10 @@ export default function Coupons() {
         ) : sortedOffers.length > 0 ? (
           <div className="space-y-3 pb-6">
             {sortedOffers.map((offer) => {
-              const code = offer?.couponCode || ""
-              const title = offer?.title || ""
+              const code = offer?.code || ""
+              const title = offer?.label || ""
               const restaurantName = offer?.restaurantName || "All Restaurants"
-              const endDate = offer?.endDate ? new Date(offer.endDate) : null
+              const endDate = offer?.validUntil ? new Date(offer.validUntil) : null
               const expiryText =
                 endDate && !Number.isNaN(endDate.getTime())
                   ? `Valid till ${endDate.toLocaleDateString()}`

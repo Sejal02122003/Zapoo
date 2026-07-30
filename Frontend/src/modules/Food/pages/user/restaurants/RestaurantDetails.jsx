@@ -2214,18 +2214,23 @@ function RestaurantDetailsContent() {
 
               return <p className="font-semibold text-gray-900 dark:text-white">{priceStr}</p>;
             })()}
-            {/* Preparation Time - Show if available */}
-            {item.preparationTime && String(item.preparationTime).trim() && (
-              <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                <Clock size={12} className="text-gray-500" />
-                <span>{String(item.preparationTime).trim()}</span>
-              </div>
-            )}
           </div>
 
-          {/* Description - Show if available */}
-          {item.description && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{item.description}</p>
+          {/* Description and Preparation Time - Show if available */}
+          {(item.description || (item.preparationTime && String(item.preparationTime).trim())) && (
+            <div className="flex items-start justify-between gap-3 mt-1.5">
+              {item.description ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 flex-1">{item.description}</p>
+              ) : (
+                <div className="flex-1" />
+              )}
+              {item.preparationTime && String(item.preparationTime).trim() && (
+                <div className="shrink-0 flex items-center gap-1 text-[11px] sm:text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full whitespace-nowrap">
+                  <Clock size={12} className="text-gray-500" />
+                  <span>{String(item.preparationTime).trim()}</span>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Mobile-only action buttons */}

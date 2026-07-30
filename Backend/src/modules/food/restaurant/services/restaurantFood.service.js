@@ -42,6 +42,7 @@ const shouldUploadImageUrl = (value) => {
     const url = toStr(value);
     if (!url) return false;
     if (isCloudinaryUrl(url)) return false;
+    if (url.includes('/images/')) return false;
     if (/^data:/i.test(url) || /^blob:/i.test(url)) return false;
     return /^https?:\/\//i.test(url);
 };

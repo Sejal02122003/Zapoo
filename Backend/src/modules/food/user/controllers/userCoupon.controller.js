@@ -43,12 +43,18 @@ export async function getAvailableCoupons(req, res, next) {
                 discountType: c.discountType,
                 discountValue: c.discountValue,
                 maxDiscountCap: c.maxDiscountCap,
+                cashbackType: c.cashbackType,
+                cashbackValue: c.cashbackValue,
+                maxCashbackCap: c.maxCashbackCap,
                 minOrderValue: c.minOrderValue,
                 validUntil: c.validUntil,
+                restaurantScope: c.restaurantScope,
+                restaurantIds: c.restaurantIds,
+                userSegment: c.userSegment,
                 label,
                 description: c.rewardType === 'CASHBACK'
                     ? `Earn cashback credited to your wallet after order delivery.`
-                    : `Get instant discount on your order subtotal.`
+                    : `Get instant discount on your order total.`
             };
         });
 
