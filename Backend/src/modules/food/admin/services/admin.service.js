@@ -1931,42 +1931,26 @@ export async function upsertFeeSettings(body) {
         const $set = {};
         const $unset = {};
 
-        if (body.deliveryFee === null) $unset.deliveryFee = 1;
-        else if (body.deliveryFee !== undefined) $set.deliveryFee = body.deliveryFee;
+        const keys = [
+            'deliveryFeeType', 'slabDistance', 'slabPrice', 'extraPricePerKm',
+            'deliveryFee', 'deliveryFeeRanges', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
+            'discountDeliveryThreshold', 'discountedDeliveryFee',
+            'riderPayoutType',
+            'riderBasePayout', 'riderPayoutRanges', 'deliveryBonusAmount',
+            'platformFee', 'takeawayPlatformFee', 'packagingFee',
+            'gstRate', 'gstOnDeliveryFee', 'gstOnPlatformFee', 'gstOnTakeawayPlatformFee', 'gstOnPackagingFee',
+            'dispatchRadiusTiers', 'globalRestaurantCommission', 'globalTakeawayRestaurantCommission',
+            'globalGstOnItem', 'globalGstOnCommission', 'globalPaymentGatewayFee', 'globalTcs',
+            'applyGlobalTaxes', 'deductGstFromRestaurant', 'isActive'
+        ];
 
-        if (body.deliveryFeeRanges !== undefined) $set.deliveryFeeRanges = body.deliveryFeeRanges;
-
-        if (body.freeDeliveryUpTo === null) $unset.freeDeliveryUpTo = 1;
-        else if (body.freeDeliveryUpTo !== undefined) $set.freeDeliveryUpTo = body.freeDeliveryUpTo;
-
-        if (body.freeDeliveryThreshold === null) $unset.freeDeliveryThreshold = 1;
-        else if (body.freeDeliveryThreshold !== undefined) $set.freeDeliveryThreshold = body.freeDeliveryThreshold;
-
-        if (body.platformFee === null) $unset.platformFee = 1;
-        else if (body.platformFee !== undefined) $set.platformFee = body.platformFee;
-
-        if (body.packagingFee === null) $unset.packagingFee = 1;
-        else if (body.packagingFee !== undefined) $set.packagingFee = body.packagingFee;
-
-        if (body.gstRate === null) $unset.gstRate = 1;
-        else if (body.gstRate !== undefined) $set.gstRate = body.gstRate;
-
-        if (body.gstOnDeliveryFee === null) $unset.gstOnDeliveryFee = 1;
-        else if (body.gstOnDeliveryFee !== undefined) $set.gstOnDeliveryFee = body.gstOnDeliveryFee;
-
-        if (body.gstOnPlatformFee === null) $unset.gstOnPlatformFee = 1;
-        else if (body.gstOnPlatformFee !== undefined) $set.gstOnPlatformFee = body.gstOnPlatformFee;
-
-        if (body.gstOnPackagingFee === null) $unset.gstOnPackagingFee = 1;
-        else if (body.gstOnPackagingFee !== undefined) $set.gstOnPackagingFee = body.gstOnPackagingFee;
-
-        if (body.deliveryBonusAmount === null) $unset.deliveryBonusAmount = 1;
-        else if (body.deliveryBonusAmount !== undefined) $set.deliveryBonusAmount = body.deliveryBonusAmount;
-
-        if (body.dispatchRadiusTiers === null) $unset.dispatchRadiusTiers = 1;
-        else if (body.dispatchRadiusTiers !== undefined) $set.dispatchRadiusTiers = body.dispatchRadiusTiers;
-
-        if (body.isActive !== undefined) $set.isActive = body.isActive;
+        for (const key of keys) {
+            if (body[key] === null) {
+                $unset[key] = 1;
+            } else if (body[key] !== undefined) {
+                $set[key] = body[key];
+            }
+        }
 
         const update = {};
         if (Object.keys($set).length) update.$set = $set;
@@ -1977,21 +1961,27 @@ export async function upsertFeeSettings(body) {
         return updated;
     }
 
-    const payload = {
-        deliveryFeeRanges: body.deliveryFeeRanges ?? [],
-        isActive: body.isActive !== false
-    };
-    if (body.deliveryFee !== undefined && body.deliveryFee !== null) payload.deliveryFee = body.deliveryFee;
-    if (body.freeDeliveryUpTo !== undefined && body.freeDeliveryUpTo !== null) payload.freeDeliveryUpTo = body.freeDeliveryUpTo;
-    if (body.freeDeliveryThreshold !== undefined && body.freeDeliveryThreshold !== null) payload.freeDeliveryThreshold = body.freeDeliveryThreshold;
-    if (body.platformFee !== undefined && body.platformFee !== null) payload.platformFee = body.platformFee;
-    if (body.packagingFee !== undefined && body.packagingFee !== null) payload.packagingFee = body.packagingFee;
-    if (body.gstRate !== undefined && body.gstRate !== null) payload.gstRate = body.gstRate;
-    if (body.gstOnDeliveryFee !== undefined && body.gstOnDeliveryFee !== null) payload.gstOnDeliveryFee = body.gstOnDeliveryFee;
-    if (body.gstOnPlatformFee !== undefined && body.gstOnPlatformFee !== null) payload.gstOnPlatformFee = body.gstOnPlatformFee;
-    if (body.gstOnPackagingFee !== undefined && body.gstOnPackagingFee !== null) payload.gstOnPackagingFee = body.gstOnPackagingFee;
-    if (body.deliveryBonusAmount !== undefined && body.deliveryBonusAmount !== null) payload.deliveryBonusAmount = body.deliveryBonusAmount;
-    if (body.dispatchRadiusTiers !== undefined && body.dispatchRadiusTiers !== null) payload.dispatchRadiusTiers = body.dispatchRadiusTiers;
+    const payload = {};
+    const keys = [
+        'deliveryFeeType', 'slabDistance', 'slabPrice', 'extraPricePerKm',
+        'deliveryFee', 'deliveryFeeRanges', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
+        'discountDeliveryThreshold', 'discountedDeliveryFee',
+        'riderPayoutType',
+        'riderBasePayout', 'riderPayoutRanges', 'deliveryBonusAmount',
+        'platformFee', 'takeawayPlatformFee', 'packagingFee',
+        'gstRate', 'gstOnDeliveryFee', 'gstOnPlatformFee', 'gstOnTakeawayPlatformFee', 'gstOnPackagingFee',
+        'dispatchRadiusTiers', 'globalRestaurantCommission', 'globalTakeawayRestaurantCommission',
+        'globalGstOnItem', 'globalGstOnCommission', 'globalPaymentGatewayFee', 'globalTcs',
+        'applyGlobalTaxes', 'deductGstFromRestaurant', 'isActive'
+    ];
+    for (const key of keys) {
+        if (body[key] !== undefined && body[key] !== null) {
+            payload[key] = body[key];
+        }
+    }
+    if (payload.isActive === undefined) {
+        payload.isActive = true;
+    }
 
     const created = await FoodFeeSettings.create(payload);
     return created.toObject();

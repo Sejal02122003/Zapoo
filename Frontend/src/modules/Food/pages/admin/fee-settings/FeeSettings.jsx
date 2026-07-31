@@ -11,8 +11,16 @@ const debugError = (...args) => {}
 // Fee Settings Component - Range-based delivery fee configuration
 export default function FeeSettings() {
   const [feeSettings, setFeeSettings] = useState({
+    deliveryFeeType: "range",
+    slabDistance: "",
+    slabPrice: "",
+    extraPricePerKm: "",
     deliveryFee: "",
     deliveryFeeRanges: [],
+    riderPayoutType: "range",
+    riderSlabDistance: "",
+    riderSlabPrice: "",
+    riderExtraPricePerKm: "",
     riderBasePayout: "",
     riderPayoutRanges: [],
     freeDeliveryUpTo: "",
@@ -46,12 +54,19 @@ export default function FeeSettings() {
       const response = await adminAPI.getFeeSettings()
       if (response.data.success && response.data.data.feeSettings) {
         setFeeSettings({
+          deliveryFeeType: response.data.data.feeSettings.deliveryFeeType ?? "range",
+          slabDistance: response.data.data.feeSettings.slabDistance ?? "",
+          slabPrice: response.data.data.feeSettings.slabPrice ?? "",
+          extraPricePerKm: response.data.data.feeSettings.extraPricePerKm ?? "",
           deliveryFee: response.data.data.feeSettings.deliveryFee ?? "",
           deliveryFeeRanges: response.data.data.feeSettings.deliveryFeeRanges || [],
+          riderPayoutType: response.data.data.feeSettings.riderPayoutType ?? "range",
           riderBasePayout: response.data.data.feeSettings.riderBasePayout ?? "",
           riderPayoutRanges: response.data.data.feeSettings.riderPayoutRanges || [],
           freeDeliveryUpTo: response.data.data.feeSettings.freeDeliveryUpTo ?? "",
           freeDeliveryThreshold: response.data.data.feeSettings.freeDeliveryThreshold ?? "",
+          discountDeliveryThreshold: response.data.data.feeSettings.discountDeliveryThreshold ?? "",
+          discountedDeliveryFee: response.data.data.feeSettings.discountedDeliveryFee ?? "",
           platformFee: response.data.data.feeSettings.platformFee ?? "",
           takeawayPlatformFee: response.data.data.feeSettings.takeawayPlatformFee ?? "",
           packagingFee: response.data.data.feeSettings.packagingFee ?? "",
@@ -65,12 +80,19 @@ export default function FeeSettings() {
         })
       } else if (response.data.success && response.data.data.feeSettings === null) {
         setFeeSettings({
+          deliveryFeeType: "range",
+          slabDistance: "",
+          slabPrice: "",
+          extraPricePerKm: "",
           deliveryFee: "",
           deliveryFeeRanges: [],
+          riderPayoutType: "range",
           riderBasePayout: "",
           riderPayoutRanges: [],
           freeDeliveryUpTo: "",
           freeDeliveryThreshold: "",
+          discountDeliveryThreshold: "",
+          discountedDeliveryFee: "",
           platformFee: "",
           takeawayPlatformFee: "",
           packagingFee: "",
@@ -101,12 +123,19 @@ export default function FeeSettings() {
     try {
       setSavingFeeSettings(true)
       const response = await adminAPI.createOrUpdateFeeSettings({
+        deliveryFeeType: feeSettings.deliveryFeeType,
+        slabDistance: feeSettings.slabDistance === "" ? undefined : Number(feeSettings.slabDistance),
+        slabPrice: feeSettings.slabPrice === "" ? undefined : Number(feeSettings.slabPrice),
+        extraPricePerKm: feeSettings.extraPricePerKm === "" ? undefined : Number(feeSettings.extraPricePerKm),
         deliveryFee: feeSettings.deliveryFee === "" ? undefined : Number(feeSettings.deliveryFee),
         deliveryFeeRanges: feeSettings.deliveryFeeRanges,
+        riderPayoutType: feeSettings.riderPayoutType,
         riderBasePayout: feeSettings.riderBasePayout === "" ? undefined : Number(feeSettings.riderBasePayout),
         riderPayoutRanges: feeSettings.riderPayoutRanges,
         freeDeliveryUpTo: feeSettings.freeDeliveryUpTo === "" ? undefined : Number(feeSettings.freeDeliveryUpTo),
         freeDeliveryThreshold: feeSettings.freeDeliveryThreshold === "" ? undefined : Number(feeSettings.freeDeliveryThreshold),
+        discountDeliveryThreshold: feeSettings.discountDeliveryThreshold === "" ? undefined : Number(feeSettings.discountDeliveryThreshold),
+        discountedDeliveryFee: feeSettings.discountedDeliveryFee === "" ? undefined : Number(feeSettings.discountedDeliveryFee),
         platformFee: feeSettings.platformFee === "" ? undefined : Number(feeSettings.platformFee),
         takeawayPlatformFee: feeSettings.takeawayPlatformFee === "" ? undefined : Number(feeSettings.takeawayPlatformFee),
         packagingFee: feeSettings.packagingFee === "" ? undefined : Number(feeSettings.packagingFee),
@@ -126,10 +155,19 @@ export default function FeeSettings() {
         const saved = response?.data?.data?.feeSettings
         if (saved) {
           setFeeSettings({
+            deliveryFeeType: saved.deliveryFeeType ?? "range",
+            slabDistance: saved.slabDistance ?? "",
+            slabPrice: saved.slabPrice ?? "",
+            extraPricePerKm: saved.extraPricePerKm ?? "",
             deliveryFee: saved.deliveryFee ?? "",
             deliveryFeeRanges: saved.deliveryFeeRanges ?? [],
+            riderPayoutType: saved.riderPayoutType ?? "range",
+            riderBasePayout: saved.riderBasePayout ?? "",
+            riderPayoutRanges: saved.riderPayoutRanges ?? [],
             freeDeliveryUpTo: saved.freeDeliveryUpTo ?? "",
             freeDeliveryThreshold: saved.freeDeliveryThreshold ?? "",
+            discountDeliveryThreshold: saved.discountDeliveryThreshold ?? "",
+            discountedDeliveryFee: saved.discountedDeliveryFee ?? "",
             platformFee: saved.platformFee ?? "",
             takeawayPlatformFee: saved.takeawayPlatformFee ?? "",
             packagingFee: saved.packagingFee ?? "",
@@ -412,177 +450,257 @@ export default function FeeSettings() {
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900">Delivery Fee by Distance Range (km)</h3>
+                    <h3 className="text-lg font-semibold text-slate-900">Delivery Fee Configuration</h3>
                     <p className="text-sm text-slate-500 mt-1">
-                      Set delivery fees based on distance slabs
+                      Configure how delivery fees are calculated for customers
                     </p>
                   </div>
                 </div>
 
-                {/* Ranges Table */}
-                {feeSettings.deliveryFeeRanges.length > 0 && (
-                  <div className="mb-4 overflow-x-auto">
-                    <table className="w-full border border-slate-200 rounded-lg">
-                      <thead className="bg-slate-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">Min (km)</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">Max (km)</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">Delivery Fee (₹)</th>
-                          <th className="px-4 py-3 text-center text-sm font-semibold text-slate-700 border-b border-slate-200">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {feeSettings.deliveryFeeRanges
-                          .map((range, originalIndex) => ({ range, originalIndex }))
-                          .sort((a, b) => a.range.min - b.range.min)
-                          .map(({ range, originalIndex }) => {
-                            const isEditing = editingRangeIndex === originalIndex;
-                            return (
-                              <tr key={originalIndex} className={`${isEditing ? 'bg-blue-50' : 'hover:bg-slate-50'} transition-colors`}>
-                                <td className="px-4 py-3 text-sm text-slate-900 border-b border-slate-100">
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      value={newRange.min}
-                                      onChange={(e) => setNewRange({ ...newRange, min: e.target.value })}
-                                      className="w-24 px-2 py-1 border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                                    />
-                                  ) : (
-                                    <>{range.min} km</>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-slate-900 border-b border-slate-100">
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      value={newRange.max}
-                                      onChange={(e) => setNewRange({ ...newRange, max: e.target.value })}
-                                      className="w-24 px-2 py-1 border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                                    />
-                                  ) : (
-                                    <>{range.max} km</>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-sm font-medium text-green-600 border-b border-slate-100">
-                                  {isEditing ? (
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-slate-400">₹</span>
-                                      <input
-                                        type="number"
-                                        value={newRange.fee}
-                                        onChange={(e) => setNewRange({ ...newRange, fee: e.target.value })}
-                                        className="w-24 px-2 py-1 border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-green-600 font-medium"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <>₹{range.fee}</>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-center border-b border-slate-100">
-                                  <div className="flex items-center justify-center gap-2">
-                                    {isEditing ? (
-                                      <>
-                                        <button
-                                          onClick={handleSaveEditRange}
-                                          className="p-1.5 text-green-600 hover:bg-green-100 rounded transition-colors"
-                                          title="Save"
-                                        >
-                                          <Check className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          onClick={handleCancelEdit}
-                                          className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors"
-                                          title="Cancel"
-                                        >
-                                          <X className="w-4 h-4" />
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <button
-                                          onClick={() => handleEditRange(originalIndex)}
-                                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                          title="Edit"
-                                        >
-                                          <Edit className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          onClick={() => handleDeleteRange(originalIndex)}
-                                          className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                          title="Delete"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
-                                      </>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 bg-slate-100 p-4 rounded-lg">
+                  <div>
+                    <span className="text-sm font-semibold text-slate-700 block">Calculation Method</span>
+                    <span className="text-xs text-slate-500">Choose how customer delivery fee is computed</span>
                   </div>
-                )}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFeeSettings({ ...feeSettings, deliveryFeeType: 'range' })}
+                      className={`px-4 py-2 text-xs font-semibold rounded-lg border transition-all ${
+                        feeSettings.deliveryFeeType === 'range'
+                          ? 'bg-green-600 border-green-600 text-white shadow-sm'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      Range-based Slabs
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFeeSettings({ ...feeSettings, deliveryFeeType: 'slab' })}
+                      className={`px-4 py-2 text-xs font-semibold rounded-lg border transition-all ${
+                        feeSettings.deliveryFeeType === 'slab'
+                          ? 'bg-green-600 border-green-600 text-white shadow-sm'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      Slab-based (Flat + Per Km extra)
+                    </button>
+                  </div>
+                </div>
 
-                {/* Add New Range Form - Only show when NOT editing */}
-                {editingRangeIndex === null && (
-                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Plus className="w-4 h-4 text-green-600" />
-                      <h4 className="text-sm font-semibold text-slate-700">Add Distance Range</h4>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {feeSettings.deliveryFeeType === 'slab' ? (
+                  <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 mb-6">
+                    <h4 className="text-sm font-semibold text-slate-700 mb-4">Slab Pricing Parameters</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1">Min Distance (km)</label>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Base Slab Distance (km)</label>
                         <input
                           type="number"
-                          value={newRange.min}
-                          onChange={(e) => setNewRange({ ...newRange, min: e.target.value })}
+                          value={feeSettings.slabDistance}
+                          onChange={(e) => setFeeSettings({ ...feeSettings, slabDistance: e.target.value })}
+                          min="0"
+                          step="0.1"
+                          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                          placeholder="e.g. 5"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">Delivery fee is flat up to this distance</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Flat Slab Price (₹)</label>
+                        <input
+                          type="number"
+                          value={feeSettings.slabPrice}
+                          onChange={(e) => setFeeSettings({ ...feeSettings, slabPrice: e.target.value })}
                           min="0"
                           step="1"
                           className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                          placeholder="0"
+                          placeholder="e.g. 40"
                         />
+                        <p className="text-[10px] text-slate-500 mt-1">Price charged for any distance up to base slab distance</p>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1">Max Distance (km)</label>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Extra Distance Price Per Km (₹)</label>
                         <input
                           type="number"
-                          value={newRange.max}
-                          onChange={(e) => setNewRange({ ...newRange, max: e.target.value })}
+                          value={feeSettings.extraPricePerKm}
+                          onChange={(e) => setFeeSettings({ ...feeSettings, extraPricePerKm: e.target.value })}
                           min="0"
                           step="1"
                           className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                          placeholder="5"
+                          placeholder="e.g. 10"
                         />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1">Delivery Fee (₹)</label>
-                        <input
-                          type="number"
-                          value={newRange.fee}
-                          onChange={(e) => setNewRange({ ...newRange, fee: e.target.value })}
-                          min="0"
-                          step="1"
-                          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                          placeholder="50"
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button
-                          onClick={handleAddRange}
-                          className="bg-green-600 hover:bg-green-700 text-white text-sm w-full flex items-center justify-center gap-2"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add Range
-                        </Button>
+                        <p className="text-[10px] text-slate-500 mt-1">Price charged per km beyond base slab distance</p>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-500 mt-2 italic">
-                      Example: Orders between 0 km and 5 km will charge customer ₹50 delivery fee.
-                    </p>
                   </div>
+                ) : (
+                  <>
+                    {/* Ranges Table */}
+                    {feeSettings.deliveryFeeRanges.length > 0 && (
+                      <div className="mb-4 overflow-x-auto">
+                        <table className="w-full border border-slate-200 rounded-lg">
+                          <thead className="bg-slate-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">Min (km)</th>
+                              <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">Max (km)</th>
+                              <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">Delivery Fee (₹)</th>
+                              <th className="px-4 py-3 text-center text-sm font-semibold text-slate-700 border-b border-slate-200">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {feeSettings.deliveryFeeRanges
+                              .map((range, originalIndex) => ({ range, originalIndex }))
+                              .sort((a, b) => a.range.min - b.range.min)
+                              .map(({ range, originalIndex }) => {
+                                const isEditing = editingRangeIndex === originalIndex;
+                                return (
+                                  <tr key={originalIndex} className={`${isEditing ? 'bg-blue-50' : 'hover:bg-slate-50'} transition-colors`}>
+                                    <td className="px-4 py-3 text-sm text-slate-900 border-b border-slate-100">
+                                      {isEditing ? (
+                                        <input
+                                          type="number"
+                                          value={newRange.min}
+                                          onChange={(e) => setNewRange({ ...newRange, min: e.target.value })}
+                                          className="w-24 px-2 py-1 border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                                        />
+                                      ) : (
+                                        <>{range.min} km</>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-slate-900 border-b border-slate-100">
+                                      {isEditing ? (
+                                        <input
+                                          type="number"
+                                          value={newRange.max}
+                                          onChange={(e) => setNewRange({ ...newRange, max: e.target.value })}
+                                          className="w-24 px-2 py-1 border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                                        />
+                                      ) : (
+                                        <>{range.max} km</>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm font-medium text-green-600 border-b border-slate-100">
+                                      {isEditing ? (
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-slate-400">₹</span>
+                                          <input
+                                            type="number"
+                                            value={newRange.fee}
+                                            onChange={(e) => setNewRange({ ...newRange, fee: e.target.value })}
+                                            className="w-24 px-2 py-1 border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-green-600 font-medium"
+                                          />
+                                        </div>
+                                      ) : (
+                                        <>₹{range.fee}</>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3 text-center border-b border-slate-100">
+                                      <div className="flex items-center justify-center gap-2">
+                                        {isEditing ? (
+                                          <>
+                                            <button
+                                              onClick={handleSaveEditRange}
+                                              className="p-1.5 text-green-600 hover:bg-green-100 rounded transition-colors"
+                                              title="Save"
+                                            >
+                                              <Check className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                              onClick={handleCancelEdit}
+                                              className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors"
+                                              title="Cancel"
+                                            >
+                                              <X className="w-4 h-4" />
+                                            </button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <button
+                                              onClick={() => handleEditRange(originalIndex)}
+                                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                              title="Edit"
+                                            >
+                                              <Edit className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteRange(originalIndex)}
+                                              className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                              title="Delete"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Add New Range Form - Only show when NOT editing */}
+                    {editingRangeIndex === null && (
+                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Plus className="w-4 h-4 text-green-600" />
+                          <h4 className="text-sm font-semibold text-slate-700">Add Distance Range</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Min Distance (km)</label>
+                            <input
+                              type="number"
+                              value={newRange.min}
+                              onChange={(e) => setNewRange({ ...newRange, min: e.target.value })}
+                              min="0"
+                              step="1"
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                              placeholder="0"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Max Distance (km)</label>
+                            <input
+                              type="number"
+                              value={newRange.max}
+                              onChange={(e) => setNewRange({ ...newRange, max: e.target.value })}
+                              min="0"
+                              step="1"
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                              placeholder="5"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Delivery Fee (₹)</label>
+                            <input
+                              type="number"
+                              value={newRange.fee}
+                              onChange={(e) => setNewRange({ ...newRange, fee: e.target.value })}
+                              min="0"
+                              step="1"
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                              placeholder="50"
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            <Button
+                              onClick={handleAddRange}
+                              className="bg-green-600 hover:bg-green-700 text-white text-sm w-full flex items-center justify-center gap-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Range
+                            </Button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-2 italic">
+                          Example: Orders between 0 km and 5 km will charge customer ₹50 delivery fee.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -599,177 +717,178 @@ export default function FeeSettings() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-amber-900 mb-1">
-                      Fixed Rider Base Pay (₹) (Fallback if no range matches)
-                    </label>
-                    <input
-                      type="number"
-                      value={feeSettings.riderBasePayout}
-                      onChange={(e) => setFeeSettings({ ...feeSettings, riderBasePayout: e.target.value })}
-                      min="0"
-                      step="1"
-                      className="w-full px-3 py-2 text-sm border border-amber-300 bg-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none font-medium"
-                      placeholder="e.g. 30"
-                    />
-                    <p className="text-[11px] text-amber-700 mt-1">Default flat payout per order for delivery partner</p>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-amber-900 mb-1">
-                      Additional Delivery Bonus (₹)
-                    </label>
-                    <input
-                      type="number"
-                      value={feeSettings.deliveryBonusAmount}
-                      onChange={(e) => setFeeSettings({ ...feeSettings, deliveryBonusAmount: e.target.value })}
-                      min="0"
-                      step="1"
-                      className="w-full px-3 py-2 text-sm border border-amber-300 bg-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none font-medium"
-                      placeholder="e.g. 10"
-                    />
-                    <p className="text-[11px] text-amber-700 mt-1">Extra bonus added on top of rider earnings per delivery</p>
-                  </div>
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-amber-900 mb-1">
+                          Fixed Rider Base Pay (₹) (Fallback if no range matches)
+                        </label>
+                        <input
+                          type="number"
+                          value={feeSettings.riderBasePayout}
+                          onChange={(e) => setFeeSettings({ ...feeSettings, riderBasePayout: e.target.value })}
+                          min="0"
+                          step="1"
+                          className="w-full px-3 py-2 text-sm border border-amber-300 bg-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none font-medium"
+                          placeholder="e.g. 30"
+                        />
+                        <p className="text-[11px] text-amber-700 mt-1">Default flat payout per order for delivery partner</p>
+                      </div>
 
-                {/* Rider Range Table */}
-                <div className="pt-2">
-                  <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2">Distance-based Rider Payout Slabs</h4>
-                  {(!feeSettings.riderPayoutRanges || feeSettings.riderPayoutRanges.length === 0) ? (
-                    <div className="bg-white p-4 rounded-lg border border-amber-200 text-center text-xs text-amber-800">
-                      No distance-based payout slabs added. Rider will receive the Fixed Base Pay.
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto bg-white rounded-lg border border-amber-200">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-amber-100/60 border-b border-amber-200">
-                            <th className="px-4 py-2.5 text-xs font-bold text-amber-900">Min Distance</th>
-                            <th className="px-4 py-2.5 text-xs font-bold text-amber-900">Max Distance</th>
-                            <th className="px-4 py-2.5 text-xs font-bold text-amber-900">Rider Payout (₹)</th>
-                            <th className="px-4 py-2.5 text-xs font-bold text-amber-900 text-center">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {feeSettings.riderPayoutRanges.map((range, originalIndex) => {
-                            const isEditing = editingRiderRangeIndex === originalIndex;
-                            return (
-                              <tr key={originalIndex} className="border-b border-slate-100 hover:bg-amber-50/30">
-                                <td className="px-4 py-2.5 text-xs font-semibold text-slate-800">
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      value={newRiderRange.min}
-                                      onChange={(e) => setNewRiderRange({ ...newRiderRange, min: e.target.value })}
-                                      className="w-20 px-2 py-1 border border-amber-400 rounded"
-                                    />
-                                  ) : (
-                                    <>{range.min} km</>
-                                  )}
-                                </td>
-                                <td className="px-4 py-2.5 text-xs font-semibold text-slate-800">
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      value={newRiderRange.max}
-                                      onChange={(e) => setNewRiderRange({ ...newRiderRange, max: e.target.value })}
-                                      className="w-20 px-2 py-1 border border-amber-400 rounded"
-                                    />
-                                  ) : (
-                                    <>{range.max} km</>
-                                  )}
-                                </td>
-                                <td className="px-4 py-2.5 text-xs font-bold text-amber-700">
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      value={newRiderRange.pay}
-                                      onChange={(e) => setNewRiderRange({ ...newRiderRange, pay: e.target.value })}
-                                      className="w-20 px-2 py-1 border border-amber-400 rounded text-amber-700 font-bold"
-                                    />
-                                  ) : (
-                                    <>₹{range.pay}</>
-                                  )}
-                                </td>
-                                <td className="px-4 py-2.5 text-center">
-                                  <div className="flex items-center justify-center gap-2">
-                                    {isEditing ? (
-                                      <>
-                                        <button onClick={handleSaveEditRiderRange} className="p-1 text-green-600 hover:bg-green-100 rounded">
-                                          <Check className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={handleCancelRiderEdit} className="p-1 text-red-600 hover:bg-red-100 rounded">
-                                          <X className="w-4 h-4" />
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <button onClick={() => handleEditRiderRange(originalIndex)} className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                                          <Edit className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => handleDeleteRiderRange(originalIndex)} className="p-1 text-red-600 hover:bg-red-50 rounded">
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
-                                      </>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-
-                  {/* Add New Rider Range */}
-                  {editingRiderRangeIndex === null && (
-                    <div className="bg-white p-3.5 rounded-lg border border-amber-200 mt-3">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-bold text-amber-900 mb-1">Min (km)</label>
-                          <input
-                            type="number"
-                            value={newRiderRange.min}
-                            onChange={(e) => setNewRiderRange({ ...newRiderRange, min: e.target.value })}
-                            placeholder="0"
-                            className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-bold text-amber-900 mb-1">Max (km)</label>
-                          <input
-                            type="number"
-                            value={newRiderRange.max}
-                            onChange={(e) => setNewRiderRange({ ...newRiderRange, max: e.target.value })}
-                            placeholder="3"
-                            className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-bold text-amber-900 mb-1">Rider Pay (₹)</label>
-                          <input
-                            type="number"
-                            value={newRiderRange.pay}
-                            onChange={(e) => setNewRiderRange({ ...newRiderRange, pay: e.target.value })}
-                            placeholder="35"
-                            className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 outline-none font-bold text-amber-800"
-                          />
-                        </div>
-                        <div className="flex items-end">
-                          <Button
-                            type="button"
-                            onClick={handleAddRiderRange}
-                            className="bg-amber-600 hover:bg-amber-700 text-white text-xs w-full h-8 flex items-center justify-center gap-1 font-bold"
-                          >
-                            <Plus className="w-3.5 h-3.5" /> Add Slab
-                          </Button>
-                        </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-amber-900 mb-1">
+                          Additional Delivery Bonus (₹)
+                        </label>
+                        <input
+                          type="number"
+                          value={feeSettings.deliveryBonusAmount}
+                          onChange={(e) => setFeeSettings({ ...feeSettings, deliveryBonusAmount: e.target.value })}
+                          min="0"
+                          step="1"
+                          className="w-full px-3 py-2 text-sm border border-amber-300 bg-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none font-medium"
+                          placeholder="e.g. 10"
+                        />
+                        <p className="text-[11px] text-amber-700 mt-1">Extra bonus added on top of rider earnings per delivery</p>
                       </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Rider Range Table */}
+                    <div className="pt-2">
+                      <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2">Distance-based Rider Payout Slabs</h4>
+                      {(!feeSettings.riderPayoutRanges || feeSettings.riderPayoutRanges.length === 0) ? (
+                        <div className="bg-white p-4 rounded-lg border border-amber-200 text-center text-xs text-amber-800">
+                          No distance-based payout slabs added. Rider will receive the Fixed Base Pay.
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto bg-white rounded-lg border border-amber-200">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-amber-100/60 border-b border-amber-200">
+                                <th className="px-4 py-2.5 text-xs font-bold text-amber-900">Min Distance</th>
+                                <th className="px-4 py-2.5 text-xs font-bold text-amber-900">Max Distance</th>
+                                <th className="px-4 py-2.5 text-xs font-bold text-amber-900">Rider Payout (₹)</th>
+                                <th className="px-4 py-2.5 text-xs font-bold text-amber-900 text-center">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {feeSettings.riderPayoutRanges.map((range, originalIndex) => {
+                                const isEditing = editingRiderRangeIndex === originalIndex;
+                                return (
+                                  <tr key={originalIndex} className="border-b border-slate-100 hover:bg-amber-50/30">
+                                    <td className="px-4 py-2.5 text-xs font-semibold text-slate-800">
+                                      {isEditing ? (
+                                        <input
+                                          type="number"
+                                          value={newRiderRange.min}
+                                          onChange={(e) => setNewRiderRange({ ...newRiderRange, min: e.target.value })}
+                                          className="w-20 px-2 py-1 border border-amber-400 rounded"
+                                        />
+                                      ) : (
+                                        <>{range.min} km</>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2.5 text-xs font-semibold text-slate-800">
+                                      {isEditing ? (
+                                        <input
+                                          type="number"
+                                          value={newRiderRange.max}
+                                          onChange={(e) => setNewRiderRange({ ...newRiderRange, max: e.target.value })}
+                                          className="w-20 px-2 py-1 border border-amber-400 rounded"
+                                        />
+                                      ) : (
+                                        <>{range.max} km</>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2.5 text-xs font-bold text-amber-700">
+                                      {isEditing ? (
+                                        <input
+                                          type="number"
+                                          value={newRiderRange.pay}
+                                          onChange={(e) => setNewRiderRange({ ...newRiderRange, pay: e.target.value })}
+                                          className="w-20 px-2 py-1 border border-amber-400 rounded text-amber-700 font-bold"
+                                        />
+                                      ) : (
+                                        <>₹{range.pay}</>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2.5 text-center">
+                                      <div className="flex items-center justify-center gap-2">
+                                        {isEditing ? (
+                                          <>
+                                            <button onClick={handleSaveEditRiderRange} className="p-1 text-green-600 hover:bg-green-100 rounded">
+                                              <Check className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={handleCancelRiderEdit} className="p-1 text-red-600 hover:bg-red-100 rounded">
+                                              <X className="w-4 h-4" />
+                                            </button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <button onClick={() => handleEditRiderRange(originalIndex)} className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                                              <Edit className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => handleDeleteRiderRange(originalIndex)} className="p-1 text-red-600 hover:bg-red-50 rounded">
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* Add New Rider Range */}
+                      {editingRiderRangeIndex === null && (
+                        <div className="bg-white p-3.5 rounded-lg border border-amber-200 mt-3">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div>
+                              <label className="block text-[11px] font-bold text-amber-900 mb-1">Min (km)</label>
+                              <input
+                                type="number"
+                                value={newRiderRange.min}
+                                onChange={(e) => setNewRiderRange({ ...newRiderRange, min: e.target.value })}
+                                placeholder="0"
+                                className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-amber-900 mb-1">Max (km)</label>
+                              <input
+                                type="number"
+                                value={newRiderRange.max}
+                                onChange={(e) => setNewRiderRange({ ...newRiderRange, max: e.target.value })}
+                                placeholder="3"
+                                className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-amber-900 mb-1">Rider Pay (₹)</label>
+                              <input
+                                type="number"
+                                value={newRiderRange.pay}
+                                onChange={(e) => setNewRiderRange({ ...newRiderRange, pay: e.target.value })}
+                                placeholder="35"
+                                className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 outline-none font-bold text-amber-800"
+                              />
+                            </div>
+                            <div className="flex items-end">
+                              <Button
+                                type="button"
+                                onClick={handleAddRiderRange}
+                                className="bg-amber-600 hover:bg-amber-700 text-white text-xs w-full h-8 flex items-center justify-center gap-1 font-bold"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Add Slab
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-200 pt-6 mt-6">
@@ -790,6 +909,44 @@ export default function FeeSettings() {
                   />
                   <p className="text-xs text-slate-500">
                     Orders at or above this amount get free delivery
+                  </p>
+                </div>
+
+                {/* Discounted Delivery Threshold */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">
+                    Discount Delivery Threshold (₹)
+                  </label>
+                  <input
+                    type="number"
+                    value={feeSettings.discountDeliveryThreshold}
+                    onChange={(e) => setFeeSettings({ ...feeSettings, discountDeliveryThreshold: e.target.value })}
+                    min="0"
+                    step="1"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                    placeholder="300"
+                  />
+                  <p className="text-xs text-slate-500">
+                    Orders at or above this amount get a discounted delivery fee
+                  </p>
+                </div>
+
+                {/* Discounted Delivery Fee */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">
+                    Discounted Delivery Fee (₹)
+                  </label>
+                  <input
+                    type="number"
+                    value={feeSettings.discountedDeliveryFee}
+                    onChange={(e) => setFeeSettings({ ...feeSettings, discountedDeliveryFee: e.target.value })}
+                    min="0"
+                    step="1"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                    placeholder="10"
+                  />
+                  <p className="text-xs text-slate-500">
+                    The lower delivery fee to charge when threshold is met
                   </p>
                 </div>
 

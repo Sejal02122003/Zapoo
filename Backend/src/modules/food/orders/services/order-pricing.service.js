@@ -129,6 +129,34 @@ export async function calculateOrderPricing(userId, dto) {
     subtotal >= freeUpTo
   ) {
     deliveryFee = 0;
+  } else if (
+    Number.isFinite(Number(feeSettings.discountDeliveryThreshold)) &&
+    Number(feeSettings.discountDeliveryThreshold) > 0 &&
+    subtotal >= Number(feeSettings.discountDeliveryThreshold)
+  ) {
+    deliveryFee = Number(feeSettings.discountedDeliveryFee || 0);
+  } else if (feeSettings.deliveryFeeType === 'slab') {
+    const slabDist = Number(feeSettings.slabDistance || 0);
+    const slabPr = Number(feeSettings.slabPrice || 0);
+    const extraPr = Number(feeSettings.extraPricePerKm || 0);
+    if (Number.isFinite(distanceKm)) {
+      if (distanceKm <= slabDist) {
+        deliveryFee = slabPr;
+      } else {
+        const extraKm = distanceKm - slabDist;
+        deliveryFee = slabPr + extraKm * extraPr;
+      }
+      deliveryFeeBreakdown = {
+        source: "slab",
+        distanceKm,
+        slabDistance: slabDist,
+        slabPrice: slabPr,
+        extraPricePerKm: extraPr,
+        fee: deliveryFee
+      };
+    } else {
+      deliveryFee = slabPr;
+    }
   } else {
     const ranges = Array.isArray(feeSettings.deliveryFeeRanges)
       ? [...feeSettings.deliveryFeeRanges]

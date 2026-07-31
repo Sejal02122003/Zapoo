@@ -14,12 +14,19 @@ const riderRangeSchema = z.object({
 });
 
 const feeSettingsUpsertSchema = z.object({
+    deliveryFeeType: z.enum(['range', 'slab']).optional(),
+    slabDistance: z.number().min(0).nullable().optional(),
+    slabPrice: z.number().min(0).nullable().optional(),
+    extraPricePerKm: z.number().min(0).nullable().optional(),
     deliveryFee: z.number().min(0).nullable().optional(),
     deliveryFeeRanges: z.array(rangeSchema).optional(),
+    riderPayoutType: z.enum(['range']).optional(),
     riderBasePayout: z.number().min(0).nullable().optional(),
     riderPayoutRanges: z.array(riderRangeSchema).optional(),
     freeDeliveryUpTo: z.number().min(0).nullable().optional(),
     freeDeliveryThreshold: z.number().min(0).nullable().optional(),
+    discountDeliveryThreshold: z.number().min(0).nullable().optional(),
+    discountedDeliveryFee: z.number().min(0).nullable().optional(),
     platformFee: z.number().min(0).nullable().optional(),
     takeawayPlatformFee: z.number().min(0).nullable().optional(),
     packagingFee: z.number().min(0).nullable().optional(),
@@ -35,6 +42,13 @@ const feeSettingsUpsertSchema = z.object({
 
 export const validateFeeSettingsUpsertDto = (body) => {
     const normalized = {
+        deliveryFeeType: body?.deliveryFeeType || undefined,
+        slabDistance:
+            body?.slabDistance === null ? null : body?.slabDistance !== undefined ? Number(body.slabDistance) : undefined,
+        slabPrice:
+            body?.slabPrice === null ? null : body?.slabPrice !== undefined ? Number(body.slabPrice) : undefined,
+        extraPricePerKm:
+            body?.extraPricePerKm === null ? null : body?.extraPricePerKm !== undefined ? Number(body.extraPricePerKm) : undefined,
         deliveryFee:
             body?.deliveryFee === null
                 ? null
@@ -48,6 +62,13 @@ export const validateFeeSettingsUpsertDto = (body) => {
                 fee: Number(r?.fee)
             }))
             : undefined,
+        riderPayoutType: body?.riderPayoutType || undefined,
+        riderSlabDistance:
+            body?.riderSlabDistance === null ? null : body?.riderSlabDistance !== undefined ? Number(body.riderSlabDistance) : undefined,
+        riderSlabPrice:
+            body?.riderSlabPrice === null ? null : body?.riderSlabPrice !== undefined ? Number(body.riderSlabPrice) : undefined,
+        riderExtraPricePerKm:
+            body?.riderExtraPricePerKm === null ? null : body?.riderExtraPricePerKm !== undefined ? Number(body.riderExtraPricePerKm) : undefined,
         riderBasePayout:
             body?.riderBasePayout === null
                 ? null

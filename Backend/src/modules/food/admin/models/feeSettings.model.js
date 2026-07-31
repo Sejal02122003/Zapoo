@@ -21,12 +21,19 @@ const riderPayoutRangeSchema = new mongoose.Schema(
 const feeSettingsSchema = new mongoose.Schema(
     {
         // Customer Delivery Fee Settings
+        deliveryFeeType: { type: String, enum: ['range', 'slab'], default: 'range' },
+        slabDistance: { type: Number, min: 0, default: 0 },
+        slabPrice: { type: Number, min: 0, default: 0 },
+        extraPricePerKm: { type: Number, min: 0, default: 0 },
         deliveryFee: { type: Number, min: 0 },
         deliveryFeeRanges: { type: [deliveryFeeRangeSchema], default: [] },
         freeDeliveryUpTo: { type: Number, min: 0 },
         freeDeliveryThreshold: { type: Number, min: 0 },
+        discountDeliveryThreshold: { type: Number, min: 0 },
+        discountedDeliveryFee: { type: Number, min: 0 },
 
         // Rider Payout Settings (Separate from Customer Charges)
+        riderPayoutType: { type: String, enum: ['range'], default: 'range' },
         riderBasePayout: { type: Number, min: 0 },
         riderPayoutRanges: { type: [riderPayoutRangeSchema], default: [] },
         deliveryBonusAmount: { type: Number, min: 0, default: 0 },

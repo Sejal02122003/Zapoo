@@ -85,6 +85,7 @@ async function getRiderEarning(distanceKm) {
 
   const feeSettings = await FoodFeeSettings.findOne({ isActive: true }).lean();
   if (feeSettings) {
+
     const riderRanges = Array.isArray(feeSettings.riderPayoutRanges) ? feeSettings.riderPayoutRanges : [];
     if (riderRanges.length > 0) {
       const sorted = [...riderRanges].sort((a, b) => Number(a.min) - Number(b.min));
