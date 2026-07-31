@@ -127,15 +127,24 @@ export async function getRestaurantFinance(restaurantId, query = {}) {
         'settlement.isRestaurantSettled': { $ne: true }
     })
         .populate('orderId', 'orderStatus')
-        .select('amounts.restaurantShare orderId')
+        .select('amounts.restaurantShare orderId updatedAt')
         .lean();
 
     const deliveredUnsettledTransactions = allUnsettledTransactions.filter(tx => tx.orderId && tx.orderId.orderStatus === 'delivered');
 
-    const globalEstimatedPayout = deliveredUnsettledTransactions.reduce(
-        (sum, tx) => sum + (Number(tx.amounts?.restaurantShare) || 0),
-        0
-    );
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    let globalEstimatedPayout = 0;
+    let pendingClearancePayout = 0;
+
+    deliveredUnsettledTransactions.forEach(tx => {
+        const share = Number(tx.amounts?.restaurantShare) || 0;
+        // tx.updatedAt represents when it was last updated (likely when delivered)
+        if (new Date(tx.updatedAt) <= twentyFourHoursAgo) {
+            globalEstimatedPayout += share;
+        } else {
+            pendingClearancePayout += share;
+        }
+    });
 
     // Deduct all effective withdrawals from available balance.
     // Both pending and approved reduce withdrawable amount; rejected should not.
@@ -157,6 +166,7 @@ export async function getRestaurantFinance(restaurantId, query = {}) {
         totalEarnings: currentCycleEstimatedPayout, // We still show current cycle earnings label
         totalWithdrawn: totalEffectiveWithdrawals,
         estimatedPayout: availableBalance, // This is what UI shows as "Estimated Payout" (Available Balance)
+        pendingClearance: pendingClearancePayout, // Earnings on 24h hold
         totalOrders: currentCycleOrders.length,
         payoutDate: null,
         orders: currentCycleOrders

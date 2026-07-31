@@ -795,6 +795,13 @@ export default function HubFinance() {
                     <p className="text-4xl font-bold text-gray-900 mb-2">
                       ₹{(financeData?.currentCycle?.estimatedPayout || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
+                    {financeData?.currentCycle?.pendingClearance > 0 && (
+                      <div className="mb-3">
+                        <span className="text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                          Pending Clearance (24h hold): ₹{financeData.currentCycle.pendingClearance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
                     <p className="text-sm text-gray-600 mb-2">
                       {financeData?.currentCycle?.totalOrders || 0} {financeData?.currentCycle?.totalOrders === 1 ? 'order' : 'orders'}
                     </p>
