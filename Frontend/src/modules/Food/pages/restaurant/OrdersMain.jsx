@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import BottomNavOrders from "@food/components/restaurant/BottomNavOrders";
 import RestaurantNavbar from "@food/components/restaurant/RestaurantNavbar";
 import notificationSound from "@food/assets/audio/alert.mp3";
+import cancelSound from "@food/assets/audio/order cancellation.mpeg";
 import { restaurantAPI, diningAPI } from "@food/api";
 import { isModuleAuthenticated } from "@food/utils/auth";
 import { useRestaurantNotifications } from "@food/hooks/useRestaurantNotifications";
@@ -1387,6 +1388,7 @@ export default function OrdersMain() {
   const [acceptSwipeProgress, setAcceptSwipeProgress] = useState(0);
   const [isAcceptingOrder, setIsAcceptingOrder] = useState(false);
   const audioRef = useRef(null);
+  const cancelAudioRef = useRef(null);
   const shownOrdersRef = useRef(new Set()); // Track orders already shown in popup
   const acceptSliderRef = useRef(null);
   const acceptSwipeStartXRef = useRef(0);
@@ -1836,6 +1838,11 @@ export default function OrdersMain() {
       } else {
         toast.info("Order cancelled");
       }
+
+      if (!isMutedRef.current && cancelAudioRef.current) {
+        cancelAudioRef.current.currentTime = 0;
+        cancelAudioRef.current.play().catch(console.error);
+      }
     };
 
     window.addEventListener("restaurantOrderStatusUpdate", onRestaurantOrderStatusUpdate);
@@ -1857,11 +1864,15 @@ export default function OrdersMain() {
     newOrderRef.current = newOrder;
   }, [newOrder]);
 
-  // Initialize audio object for popup loop
+  // Initialize audio object for popup loop and cancel sound
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio(notificationSound);
       audioRef.current.preload = "auto";
+    }
+    if (!cancelAudioRef.current) {
+      cancelAudioRef.current = new Audio(cancelSound);
+      cancelAudioRef.current.preload = "auto";
     }
   }, []);
 
@@ -2996,10 +3007,16 @@ export default function OrdersMain() {
         </AnimatePresence>
       </div>
 
-      {/* Audio element */}
+      {/* Audio elements */}
       <audio
         ref={audioRef}
         src={notificationSound}
+        preload="auto"
+        playsInline
+      />
+      <audio
+        ref={cancelAudioRef}
+        src={cancelSound}
         preload="auto"
         playsInline
       />

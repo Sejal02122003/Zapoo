@@ -202,7 +202,8 @@ router.get('/business-settings', businessSettingsController.getBusinessSettings)
 router.patch('/business-settings', upload.fields([
     { name: 'logo', maxCount: 1 },
     { name: 'favicon', maxCount: 1 },
-    { name: 'termsAndConditionsPdf', maxCount: 1 }
+    { name: 'termsAndConditionsPdf', maxCount: 1 },
+    { name: 'heroBannerMedia', maxCount: 1 }
 ]), businessSettingsController.updateBusinessSettings);
 
 // ----- Delivery Cash Limit -----

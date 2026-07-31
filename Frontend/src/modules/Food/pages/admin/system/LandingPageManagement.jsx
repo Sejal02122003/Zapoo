@@ -857,7 +857,7 @@ export default function LandingPageManagement() {
     }
   }
 
-  // ==================== UNDER 250 BANNERS ====================
+  // ==================== UNDER 99 BANNERS ====================
   const fetchUnder99Banners = async () => {
     try {
       setUnder99BannersLoading(true)
@@ -875,7 +875,7 @@ export default function LandingPageManagement() {
         setUnder99Banners([])
         setError(null)
       } else {
-        const errorMessage = err.response?.data?.message || 'Failed to load under 250 banners'
+        const errorMessage = err.response?.data?.message || 'Failed to load under 99 banners'
         setErrorSafely(errorMessage)
       }
     } finally {
@@ -917,12 +917,12 @@ export default function LandingPageManagement() {
         headers: { 'Content-Type': 'multipart/form-data' } }))
 
       if (response.data.success) {
-        setSuccess(`${response.data.data.banners?.length || files.length} under 250 banner(s) uploaded successfully!`)
+        setSuccess(`${response.data.data.banners?.length || files.length} under 99 banner(s) uploaded successfully!`)
         await fetchUnder99Banners()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Failed to upload under 250 banners'
+      const errorMessage = err.response?.data?.message || 'Failed to upload under 99 banners'
       setErrorSafely(errorMessage)
 
       setUnder99BannersUploadProgress({ current: 0, total: 0 })
@@ -932,7 +932,7 @@ export default function LandingPageManagement() {
   }
 
   const handleDeleteUnder99Banner = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this under 250 banner?')) return
+    if (!window.confirm('Are you sure you want to delete this under 99 banner?')) return
     try {
       setUnder99BannersDeleting(id)
       setError(null)
@@ -1524,7 +1524,7 @@ export default function LandingPageManagement() {
   // ==================== RENDER ====================
   const tabs = [
     { id: 'banners', label: 'Hero Banners', icon: ImageIcon },
-    { id: 'under-99', label: '250 Banner', icon: Tag },
+    { id: 'under-99', label: 'Under 99 Banners', icon: Tag },
     { id: 'dining', label: 'Ads Banner', icon: Megaphone },
     { id: 'explore-more', label: 'Explore More', icon: Layout },
     { id: 'brand-landing', label: 'Brand Landing Page', icon: Layout },
@@ -1818,7 +1818,7 @@ export default function LandingPageManagement() {
                 <input
                   ref={under99BannersFileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   multiple
                   onChange={handleUnder99BannerFileSelect}
                   className="hidden"
@@ -1870,7 +1870,7 @@ export default function LandingPageManagement() {
               ) : under99Banners.length === 0 ? (
                 <div className="text-center py-12 text-slate-500">
                   <Tag className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-                  <p>No under 250 banners uploaded yet.</p>
+                  <p>No under 99 banners uploaded yet.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

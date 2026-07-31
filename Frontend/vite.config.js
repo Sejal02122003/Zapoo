@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  assetsInclude: ['**/*.mpeg'],
   resolve: {
     alias: {
       '@food/api': path.resolve(__dirname, './src/services/api'),
@@ -16,6 +17,7 @@ export default defineConfig({
       '@delivery': path.resolve(__dirname, './src/modules/DeliveryV2'),
       '@': path.resolve(__dirname, './src'),
     },
+    dedupe: ['react', 'react-dom', 'react-router-dom'],
   },
   server: {
     port: 5173,

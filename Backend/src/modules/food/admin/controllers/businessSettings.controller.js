@@ -1,6 +1,6 @@
 import { FoodBusinessSettings } from '../models/businessSettings.model.js';
 import { sendResponse } from '../../../../utils/response.js';
-import { uploadFileBufferDetailed } from '../../../../services/cloudinary.service.js';
+import { uploadFileBufferDetailed, uploadMediaBufferDetailed } from '../../../../services/cloudinary.service.js';
 import { processAndSaveImage } from '../../../../utils/sharp.util.js';
 import { STORAGE_CATEGORIES } from '../../../../config/storage.config.js';
 
@@ -126,6 +126,28 @@ export async function updateBusinessSettings(req, res, next) {
                 settings.outerZoneDeliveryRangeKm = range;
             }
         }
+        
+        let homeHeroBannerData = data.homeHeroBanner;
+        if (typeof homeHeroBannerData === 'string') {
+            try {
+                homeHeroBannerData = JSON.parse(homeHeroBannerData);
+            } catch (e) {
+                // Ignore parse errors
+            }
+        }
+        
+        if (homeHeroBannerData !== undefined && typeof homeHeroBannerData === 'object') {
+            if (!settings.homeHeroBanner) {
+                settings.homeHeroBanner = {};
+            }
+            Object.assign(settings.homeHeroBanner, homeHeroBannerData);
+        }
+
+        if (data.removeBackgroundMedia === 'true' || data.removeBackgroundMedia === true) {
+            if (settings.homeHeroBanner && settings.homeHeroBanner.backgroundMedia) {
+                settings.homeHeroBanner.backgroundMedia = undefined;
+            }
+        }
 
         // Handle file uploads
         if (req.files) {
@@ -152,6 +174,17 @@ export async function updateBusinessSettings(req, res, next) {
                 settings.termsAndConditionsPdf = {
                     url: pdfResult.secure_url,
                     publicId: pdfResult.public_id
+                };
+            }
+            if (req.files.heroBannerMedia) {
+                const mediaFile = req.files.heroBannerMedia[0];
+                const mediaResult = await uploadMediaBufferDetailed(mediaFile.buffer, 'business/hero_banners');
+                
+                settings.homeHeroBanner = settings.homeHeroBanner || {};
+                settings.homeHeroBanner.backgroundMedia = {
+                    url: mediaResult.secure_url,
+                    publicId: mediaResult.public_id,
+                    resourceType: mediaResult.resource_type // 'image' or 'video'
                 };
             }
         }

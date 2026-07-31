@@ -33,7 +33,7 @@ import { ProfileDetailsV2 } from './pages/profile/ProfileDetailsV2';
 import TermsAndConditionsV2 from './pages/TermsAndConditionsV2';
 import PrivacyPolicyV2 from './pages/PrivacyPolicyV2';
 import NotificationsV2 from './pages/NotificationsV2';
-const RiderShiftsV2 = lazy(() => import('./pages/shifts/RiderShiftsV2'));
+import RiderShiftsV2 from './pages/shifts/RiderShiftsV2';
 
 
 

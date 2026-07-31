@@ -1425,14 +1425,14 @@ export default function Under99() {
       </AnimatePresence>
 
       {/* Seamless Hero Background Section */}
-      <div className="relative w-full overflow-hidden bg-gradient-to-b from-primary via-orange-400 to-white dark:to-[#0a0a0a] pt-4 sm:pt-8 pb-10 sm:pb-12">
+      <div className={`relative w-full overflow-hidden ${bannerImages.length === 0 ? 'bg-gradient-to-b from-primary via-orange-400 to-white dark:to-[#0a0a0a] pt-4 sm:pt-8 pb-10 sm:pb-12' : 'bg-white dark:bg-[#0a0a0a] pb-6'}`}>
 
         {bannerImages.length > 0 && (
-          <div className="px-4 md:px-8">
+          <div className="w-full">
             <div
               ref={bannerShellRef}
               data-banner-shell="true"
-              className="relative w-full h-[clamp(180px,35vw,360px)] md:h-[clamp(240px,35vw,400px)] rounded-2xl md:rounded-3xl overflow-hidden shadow-xl"
+              className="relative w-full h-[clamp(200px,45vw,450px)] overflow-hidden shadow-sm"
             >
               <div
                 className="w-full h-full relative z-0"
@@ -1444,19 +1444,47 @@ export default function Under99() {
                   className="flex h-full w-full transition-transform duration-500 ease-out"
                   style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}
                 >
-                  {bannerImages.map((bannerImage, index) => (
-                    <div key={`${bannerImage}-${index}`} className="relative h-full w-full shrink-0">
-                      <OptimizedImage
-                        src={bannerImage}
-                        alt={`Under 99 Banner ${index + 1}`}
-                        className="w-full h-full"
-                        objectFit="cover"
-                        priority={index === 0}
-                        sizes="(max-width: 768px) 100vw, 80vw"
-                      />
-                    </div>
-                  ))}
+                  {bannerImages.map((bannerImage, index) => {
+                    const isVideo = bannerImage.toLowerCase().endsWith('.mp4') || bannerImage.toLowerCase().endsWith('.webm');
+                    return (
+                      <div key={`${bannerImage}-${index}`} className="relative h-full w-full shrink-0">
+                        {isVideo ? (
+                          <video
+                            src={bannerImage}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <OptimizedImage
+                            src={bannerImage}
+                            alt={`Under 99 Banner ${index + 1}`}
+                            className="w-full h-full"
+                            objectFit="cover"
+                            priority={index === 0}
+                            sizes="100vw"
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+
+                {bannerImages.length > 1 && (
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+                    {bannerImages.map((_, idx) => (
+                      <button
+                        key={idx}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          idx === currentBannerIndex ? "bg-white w-6" : "bg-white/50"
+                        }`}
+                        onClick={() => setCurrentBannerIndex(idx)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

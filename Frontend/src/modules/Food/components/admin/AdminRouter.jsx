@@ -48,6 +48,7 @@ const Cashback = lazy(() => import("@food/pages/admin/Cashback"));
 const ItemDiscounts = lazy(() => import("@food/pages/admin/ItemDiscounts"));
 const Banners = lazy(() => import("@food/pages/admin/Banners"));
 const PromotionalBanner = lazy(() => import("@food/pages/admin/PromotionalBanner"));
+const HeroBannerSettings = lazy(() => import("@food/pages/admin/HeroBannerSettings"));
 const NewAdvertisement = lazy(() => import("@food/pages/admin/advertisement/NewAdvertisement"));
 const AdRequests = lazy(() => import("@food/pages/admin/advertisement/AdRequests"));
 const AdsList = lazy(() => import("@food/pages/admin/advertisement/AdsList"));
@@ -242,6 +243,7 @@ export default function AdminRouter() {
             <Route path="item-discounts" element={<ItemDiscounts />} />
             <Route path="banners" element={<Banners />} />
             <Route path="promotional-banner" element={<PromotionalBanner />} />
+            <Route path="hero-banner-settings" element={<HeroBannerSettings />} />
             <Route path="advertisement" element={<AdsList />} />
             <Route path="advertisement/new" element={<NewAdvertisement />} />
             <Route path="advertisement/requests" element={<AdRequests />} />

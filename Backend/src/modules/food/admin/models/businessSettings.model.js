@@ -35,7 +35,18 @@ const businessSettingsSchema = new mongoose.Schema(
         customerRegistration: { type: Boolean, default: true },
         restaurantRegistration: { type: Boolean, default: true },
         deliveryRegistration: { type: Boolean, default: true },
-        outerZoneDeliveryRangeKm: { type: Number, default: 15 } // Max customizable range in km for outer zone delivery
+        outerZoneDeliveryRangeKm: { type: Number, default: 15 }, // Max customizable range in km for outer zone delivery
+        homeHeroBanner: {
+            badgeText: { type: String, default: 'Hot Offers' },
+            titleLine1: { type: String, default: 'HUNGRY?' },
+            titleLine2: { type: String, default: 'WE GOT YOU!' },
+            subtitle: { type: String, default: 'Free delivery on first order' },
+            backgroundMedia: {
+                url: { type: String, default: '' },
+                publicId: { type: String, default: '' },
+                resourceType: { type: String, default: 'image' } // 'image' or 'video'
+            }
+        }
     },
     { timestamps: true }
 );

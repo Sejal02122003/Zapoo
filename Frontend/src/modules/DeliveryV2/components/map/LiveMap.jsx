@@ -274,20 +274,26 @@ export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineRecei
     return { remainingPath: remaining, traveledPath: traveled };
   }, [directions, fallbackPath, parsedRiderLocation]);
 
+  const directionsServiceOptions = useMemo(() => {
+    if (!parsedRiderLocation || !targetLocation) return null;
+    return {
+      origin: { lat: parsedRiderLocation.lat, lng: parsedRiderLocation.lng },
+      destination: { lat: targetLocation.lat, lng: targetLocation.lng },
+      travelMode: 'DRIVING',
+    };
+  }, [parsedRiderLocation?.lat, parsedRiderLocation?.lng, targetLocation?.lat, targetLocation?.lng]);
+
+  const baselineServiceOptions = useMemo(() => {
+    if (!restaurantPoint || !customerPoint) return null;
+    return {
+      origin: { lat: restaurantPoint.lat, lng: restaurantPoint.lng },
+      destination: { lat: customerPoint.lat, lng: customerPoint.lng },
+      travelMode: 'DRIVING',
+    };
+  }, [restaurantPoint?.lat, restaurantPoint?.lng, customerPoint?.lat, customerPoint?.lng]);
+
   if (loadError) return <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-red-500 font-bold">Map Load Error</div>;
   if (!isLoaded) return <div className="absolute inset-0 flex items-center justify-center bg-gray-50"><div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" /></div>;
-
-  const directionsServiceOptions = (parsedRiderLocation && targetLocation) ? {
-    origin: parsedRiderLocation,
-    destination: targetLocation,
-    travelMode: 'DRIVING',
-  } : null;
-
-  const baselineServiceOptions = (restaurantPoint && customerPoint) ? {
-    origin: restaurantPoint,
-    destination: customerPoint,
-    travelMode: 'DRIVING',
-  } : null;
 
   const defaultCenter = { lat: 22.7196, lng: 75.8577 }; // Center on Indore as fallback
 

@@ -355,6 +355,29 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [categoryFoods, setCategoryFoods] = useState([]);
   const [isFoodsLoading, setIsFoodsLoading] = useState(false);
+
+  const [homeHeroBannerText, setHomeHeroBannerText] = useState({
+    badgeText: "Hot Offers",
+    titleLine1: "HUNGRY?",
+    titleLine2: "WE GOT YOU!",
+    subtitle: "Free delivery on first order"
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchHeroBanner = async () => {
+      try {
+        const res = await api.get("/food/admin/business-settings/public");
+        if (isMounted && res?.data?.data?.homeHeroBanner) {
+          setHomeHeroBannerText(prev => ({ ...prev, ...res.data.data.homeHeroBanner }));
+        }
+      } catch (err) {
+        debugError("Failed to load hero banner settings", err);
+      }
+    };
+    fetchHeroBanner();
+    return () => { isMounted = false; };
+  }, []);
   
   const isHandlingSwitchOff = useRef(false);
   const heroShellRef = useRef(null);
@@ -2290,7 +2313,23 @@ export default function Home() {
           <div className="relative z-40 w-full rounded-b-[3rem] shadow-2xl bg-gradient-to-b from-slate-800 to-slate-600 transition-all duration-300 overflow-hidden">
             {/* Background Effects Container */}
             <div className="absolute inset-0 pointer-events-none z-0">
-              {/* Lightning Flash Effect */}
+              {homeHeroBannerText?.backgroundMedia?.url ? (
+                homeHeroBannerText.backgroundMedia.resourceType === 'video' ? (
+                  <video 
+                    src={homeHeroBannerText.backgroundMedia.url} 
+                    autoPlay loop muted playsInline 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <img 
+                    src={homeHeroBannerText.backgroundMedia.url} 
+                    alt="Hero Banner" 
+                    className="w-full h-full object-cover" 
+                  />
+                )
+              ) : (
+                <>
+                  {/* Lightning Flash Effect */}
               <motion.div
                 className="absolute inset-0 bg-white"
                 animate={{ opacity: [0, 0, 0.4, 0, 0, 0.15, 0, 0] }}
@@ -2315,6 +2354,8 @@ export default function Home() {
                   transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
                   className="absolute right-[-20px] top-[-50px] w-[200px] h-[200px] bg-white/10 rounded-full blur-2xl pointer-events-none"
                 />
+              )}
+                </>
               )}
             </div>
 
@@ -2348,7 +2389,7 @@ export default function Home() {
                   >
                     <span className="inline-flex items-center gap-1 bg-white text-[#FE593B] text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-widest shadow-md">
                       <Flame className="w-3 h-3 text-[#FE593B] fill-[#FE593B]" />
-                      Hot Offers
+                      {homeHeroBannerText.badgeText || "Hot Offers"}
                     </span>
                   </motion.div>
 
@@ -2358,8 +2399,8 @@ export default function Home() {
                     transition={{ delay: 0.2, type: "spring", stiffness: 120 }}
                     className="text-white font-black text-[26px] sm:text-3xl leading-[1.05] mt-2.5 drop-shadow-[0_2px_10px_rgba(0,0,0,0.15)]"
                   >
-                    HUNGRY?<br />
-                    <span className="text-yellow-300">WE GOT YOU!</span>
+                    {homeHeroBannerText.titleLine1 || "HUNGRY?"}<br />
+                    <span className="text-yellow-300">{homeHeroBannerText.titleLine2 || "WE GOT YOU!"}</span>
                   </motion.h2>
 
                   <motion.p
@@ -2368,18 +2409,20 @@ export default function Home() {
                     transition={{ delay: 0.3, type: "spring", stiffness: 120 }}
                     className="text-white/90 text-xs sm:text-sm font-bold mt-1.5"
                   >
-                    Free delivery on first order
+                    {homeHeroBannerText.subtitle || "Free delivery on first order"}
                   </motion.p>
                 </div>
 
-                {/* Mascots Container */}
-                <div className="flex items-end justify-end h-full pb-4">
-                  <AnimatedChai className="z-0 mb-1 mr-[-10px] sm:mr-0" />
-                  <div className="relative flex items-end">
-                    <AnimatedSamosa className="z-10 relative mr-[-25px] sm:mr-[-35px]" scale={0.75} delay={0.5} />
-                    <AnimatedSamosa className="z-20 relative" scale={0.85} isHoldingUmbrella={true} />
+                {/* Mascots Container - only show if no custom background */}
+                {!homeHeroBannerText?.backgroundMedia?.url && (
+                  <div className="flex items-end justify-end h-full pb-4">
+                    <AnimatedChai className="z-0 mb-1 mr-[-10px] sm:mr-0" />
+                    <div className="relative flex items-end">
+                      <AnimatedSamosa className="z-10 relative mr-[-25px] sm:mr-[-35px]" scale={0.75} delay={0.5} />
+                      <AnimatedSamosa className="z-20 relative" scale={0.85} isHoldingUmbrella={true} />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -2396,6 +2439,14 @@ export default function Home() {
                   transition={{ duration: 0.3 }}
                   className="bg-transparent dark:bg-transparent"
                 >
+
+                  {/* Admin Hero Banners Section - Removed per user request */}
+                  {/* <HeroBanner
+                    images={heroBannerImages}
+                    bannersData={heroBannersData}
+                    loading={showBannerSkeleton}
+                    shellRef={heroShellRef}
+                  /> */}
 
                   {/* "What's on your mind today?" Section - Now with Sticky Logic */}
                   <div ref={categoryAnchorRef} className="h-0 w-full" />
@@ -2468,15 +2519,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Removed Dynamic Sticky Header (Search + Slider + Filters) */}
 
-                  {/* Admin Hero Banners Section - Now below categories */}
-                  <HeroBanner
-                    images={heroBannerImages}
-                    bannersData={heroBannersData}
-                    loading={showBannerSkeleton}
-                    shellRef={heroShellRef}
-                  />
 
 
                   {/* Sticky Search Bar */}

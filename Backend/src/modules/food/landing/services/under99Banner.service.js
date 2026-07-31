@@ -16,7 +16,7 @@ export const createUnder99BannersFromFiles = async (files, meta = {}) => {
         try {
             const uploadResult = await new Promise((resolve, reject) => {
                 const stream = cloudinary.uploader.upload_stream(
-                    { folder: 'food/under-99-banners', resource_type: 'image' },
+                    { folder: 'food/under-99-banners', resource_type: 'auto' },
                     (error, result) => {
                         if (error) return reject(error);
                         return resolve(result);
@@ -53,7 +53,8 @@ export const deleteUnder99Banner = async (id) => {
 
     if (doc.publicId) {
         try {
-            await cloudinary.uploader.destroy(doc.publicId);
+            const isVideo = doc.imageUrl && (doc.imageUrl.endsWith('.mp4') || doc.imageUrl.endsWith('.webm'));
+            await cloudinary.uploader.destroy(doc.publicId, { resource_type: isVideo ? 'video' : 'image' });
         } catch {
             // ignore cloudinary deletion errors
         }
