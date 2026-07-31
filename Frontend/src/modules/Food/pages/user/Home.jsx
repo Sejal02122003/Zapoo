@@ -1069,10 +1069,7 @@ export default function Home() {
   useEffect(() => {
     if (effectiveZoneLoading) return;
 
-    if (homePageCache.heroBannersFetched && homePageCache.effectiveZoneId === effectiveZoneId) {
-      setLoadingBanners(false);
-      return;
-    }
+
     let cancelled = false;
     setLoadingBanners(true);
     publicGetOnce("/food/hero-banners/public", { params: { zoneId: effectiveZoneId } })
@@ -1117,10 +1114,7 @@ export default function Home() {
   useEffect(() => {
     if (effectiveZoneLoading) return;
 
-    if (homePageCache.adsBannersFetched && homePageCache.effectiveZoneId === effectiveZoneId) {
-      setLoadingAdsBanners(false);
-      return;
-    }
+
     let cancelled = false;
     setLoadingAdsBanners(true);
     publicGetOnce("/food/hero-banners/ads/public", { params: { zoneId: effectiveZoneId } })

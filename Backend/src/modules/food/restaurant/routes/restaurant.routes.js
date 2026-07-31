@@ -28,6 +28,7 @@ import {
     createWithdrawalRequestController,
     listMyWithdrawalsController
 } from '../controllers/withdrawal.controller.js';
+import { createAdRequest, getRestaurantAdRequests, payAdRequest, initiateAdRequestPayment, verifyAdRequestPayment } from '../../admin/controllers/adRequest.controller.js';
 import {
     listCategoriesController,
     createCategoryController,
@@ -238,6 +239,23 @@ router.get('/active-promotions', authMiddleware, requireRestaurant, getSellerAct
 
 // Delete account (Bearer RESTAURANT)
 router.delete('/account', authMiddleware, requireRestaurant, deleteRestaurantAccountController);
+
+// Sponsored Ad Campaigns (Restaurant)
+router.post('/ad-requests', authMiddleware, requireRestaurant, upload.fields([{ name: 'media', maxCount: 1 }]), createAdRequest);
+router.get('/ad-requests', authMiddleware, requireRestaurant, getRestaurantAdRequests);
+router.post('/ad-requests/:id/pay', authMiddleware, requireRestaurant, payAdRequest);
+router.post('/ad-requests/:id/initiate-payment', authMiddleware, requireRestaurant, initiateAdRequestPayment);
+router.post('/ad-requests/:id/verify-payment', authMiddleware, requireRestaurant, verifyAdRequestPayment);
+
+import { FoodZone } from '../../admin/models/zone.model.js';
+router.get('/zones', authMiddleware, requireRestaurant, async (req, res) => {
+    try {
+        const zones = await FoodZone.find({ isActive: true });
+        res.status(200).json({ success: true, data: zones });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 export default router;
 

@@ -30,7 +30,8 @@ import {
   MapPin,
   LogOut,
   Ticket,
-  Award } from "lucide-react"
+  Award,
+  Megaphone } from "lucide-react"
 import { Card, CardContent } from "@food/components/ui/card"
 import { DateRangeCalendar } from "@food/components/ui/date-range-calendar"
 import { clearModuleAuth, clearAuthData, getCurrentUser } from "@food/utils/auth"
@@ -762,6 +763,7 @@ export default function ExploreMore() {
     // { id: 3, label: "Dining Reservations", icon: Calendar, route: "/food/restaurant/reservations" },
     { id: 4, label: "Menu categories", icon: Settings, route: "/food/restaurant/menu-categories" },
     { id: 6, label: "Promo Codes", icon: Ticket, route: "/food/restaurant/promocodes" },
+    { id: 7, label: "Sponsored Ads", icon: Megaphone, route: "/food/restaurant/advertise" },
   ]
 
   const settingsItems = [

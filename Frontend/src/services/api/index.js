@@ -748,6 +748,14 @@ export const adminAPI = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+
+  // Sponsored Ads Requests Management
+  getAdRequests: () => adminClient.get("/food/admin/ad-requests"),
+  setAdRequestPrice: (id, price) => adminClient.patch(`/food/admin/ad-requests/${id}/price`, { price }),
+  approveAdRequest: (id, formData) => adminClient.patch(`/food/admin/ad-requests/${id}/approve`, formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  }),
+  rejectAdRequest: (id, reason) => adminClient.patch(`/food/admin/ad-requests/${id}/reject`, { reason }),
 };
 
 /** Restaurant API - OTP login via new backend; no email/password. */
@@ -796,6 +804,16 @@ export const restaurantAPI = {
   createPromocode: (data) => restaurantClient.post("/food/promocodes", data),
   togglePromocodeStatus: (id, isActive) => restaurantClient.patch(`/food/promocodes/${id}`, { isActive }),
   deletePromocode: (id) => restaurantClient.delete(`/food/promocodes/${id}`),
+
+  // Sponsored Ads Campaigns (Restaurant)
+  getAdRequests: () => restaurantClient.get("/food/restaurant/ad-requests"),
+  createAdRequest: (formData) => restaurantClient.post("/food/restaurant/ad-requests", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  }),
+  payAdRequest: (id) => restaurantClient.post(`/food/restaurant/ad-requests/${id}/pay`),
+  initiateAdRequestPayment: (id) => restaurantClient.post(`/food/restaurant/ad-requests/${id}/initiate-payment`),
+  verifyAdRequestPayment: (id, payload) => restaurantClient.post(`/food/restaurant/ad-requests/${id}/verify-payment`, payload),
+  getZones: () => restaurantClient.get("/food/restaurant/zones"),
 
   /** Update restaurant profile fields (name/cuisines/location/menuImages). */
   updateProfile: (body) =>

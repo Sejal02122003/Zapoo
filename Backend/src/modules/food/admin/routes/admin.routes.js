@@ -12,6 +12,7 @@ import * as orderController from '../../orders/controllers/order.controller.js';
 import { getAdminPageController, upsertAdminPageController } from '../controllers/pageContent.controller.js';
 import * as liveMonitorController from '../controllers/liveMonitor.controller.js';
 import * as appIntroAdController from '../controllers/appIntroAd.controller.js';
+import { getAdminAdRequests, setAdRequestPrice, approveAdRequest, rejectAdRequest } from '../controllers/adRequest.controller.js';
 import * as auditLogController from '../controllers/auditLog.controller.js';
 import * as analyticsController from '../controllers/analytics.controller.js';
 import { upload } from '../../../../middleware/upload.js';
@@ -335,5 +336,11 @@ router.get('/broadcasts', emergencyBroadcastController.getBroadcasts);
 router.get('/broadcasts/:id', emergencyBroadcastController.getBroadcastDetails);
 router.post('/broadcasts/:id/cancel', emergencyBroadcastController.cancelBroadcast);
 router.post('/broadcasts/:id/retry', emergencyBroadcastController.retryBroadcast);
+
+// ----- Sponsored Ad Campaign Requests (Admin) -----
+router.get('/ad-requests', requireAdmin, getAdminAdRequests);
+router.patch('/ad-requests/:id/price', requireAdmin, setAdRequestPrice);
+router.patch('/ad-requests/:id/approve', requireAdmin, upload.fields([{ name: 'media', maxCount: 1 }]), approveAdRequest);
+router.patch('/ad-requests/:id/reject', requireAdmin, rejectAdRequest);
 
 export default router;
