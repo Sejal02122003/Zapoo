@@ -141,10 +141,10 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
           <div>
             <p className="text-white/80 text-[10px] font-bold uppercase tracking-widest mb-1">Incoming Request</p>
             <div className="flex items-end gap-2">
-              <h2 className="text-2xl sm:text-4xl font-bold tracking-tighter">â‚¹{Number(earnings || 0).toFixed(2)}</h2>
+              <h2 className="text-2xl sm:text-4xl font-bold tracking-tighter">₹{Number(earnings || 0).toFixed(2)}</h2>
               {bonus > 0 && (
                 <p className="text-white/70 text-xs font-semibold mb-1">
-                  (â‚¹{Number(baseEarnings).toFixed(0)} + â‚¹{Number(bonus).toFixed(0)} Bonus)
+                  (₹{Number(baseEarnings).toFixed(0)} + ₹{Number(bonus).toFixed(0)} Bonus)
                 </p>
               )}
             </div>
@@ -157,7 +157,7 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
         {queuedOrders.length > 1 && (
           <div className="px-4 sm:px-6 py-3 bg-gray-50 border-b border-gray-100">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
-              {queuedOrders.length} orders available â€” tap to switch
+              {queuedOrders.length} orders available — tap to switch
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1">
               {queuedOrders.map((queuedOrder, index) => {
@@ -184,10 +184,10 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
                     }`}
                   >
                     <span className="block text-[10px] font-bold uppercase tracking-wider opacity-80">
-                      {label.length > 12 ? `${label.slice(0, 12)}â€¦` : label}
+                      {label.length > 12 ? `${label.slice(0, 12)}...` : label}
                     </span>
                     <span className="block text-sm font-bold mt-0.5">
-                      â‚¹{Number(earnings || 0).toFixed(0)}
+                      ₹{Number(earnings || 0).toFixed(0)}
                     </span>
                   </button>
                 );
@@ -257,7 +257,7 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
                 <FastForward className="w-4 h-4 text-orange-600" />
               </div>
               <div>
-                <p className="text-xs font-bold text-orange-800 uppercase tracking-wider">Bonus Added (â‚¹{bonus})</p>
+                <p className="text-xs font-bold text-orange-800 uppercase tracking-wider">Bonus Added (₹{bonus})</p>
                 <p className="text-xs text-orange-700 font-medium">{bonusReason}</p>
               </div>
             </div>
@@ -270,7 +270,7 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
               label="Slide to Accept" 
               onConfirm={() => onAccept(order)} 
               color="bg-black"
-              successLabel="Order Accepted âœ“"
+              successLabel="Order Accepted ✓"
             />
 
             <div className="flex justify-between items-center px-4 pt-2">

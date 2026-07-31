@@ -1473,7 +1473,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                              </div>
                            )}
                         </div>
-                        <ActionSlider label="Slide to Arrive" successLabel="Arrived âœ“" disabled={!isWithinRange} onConfirm={reachDrop} color="bg-blue-600" />
+                        <ActionSlider label="Slide to Arrive" successLabel="Arrived ✓" disabled={!isWithinRange} onConfirm={reachDrop} color="bg-blue-600" />
                       </div>
                     ) : (
                       <button 
