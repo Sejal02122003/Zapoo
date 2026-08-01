@@ -450,6 +450,14 @@ export default function Advertise() {
                     <input
                       type="date"
                       required
+                      min={(() => {
+                        const now = new Date();
+                        const isPast9PM = now.getHours() >= 21;
+                        const minDate = new Date();
+                        minDate.setDate(now.getDate() + (isPast9PM ? 2 : 1));
+                        const offset = minDate.getTimezoneOffset();
+                        return new Date(minDate.getTime() - (offset*60*1000)).toISOString().split('T')[0];
+                      })()}
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-hidden focus:border-orange-500 focus:bg-white transition-all"
@@ -460,6 +468,14 @@ export default function Advertise() {
                     <input
                       type="date"
                       required
+                      min={startDate || (() => {
+                        const now = new Date();
+                        const isPast9PM = now.getHours() >= 21;
+                        const minDate = new Date();
+                        minDate.setDate(now.getDate() + (isPast9PM ? 2 : 1));
+                        const offset = minDate.getTimezoneOffset();
+                        return new Date(minDate.getTime() - (offset*60*1000)).toISOString().split('T')[0];
+                      })()}
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-hidden focus:border-orange-500 focus:bg-white transition-all"
