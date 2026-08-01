@@ -164,7 +164,6 @@ export default function AdminHome() {
     `Comm: ${formatCurrency(commissionTotal)}`,
     `Platform: ${formatCurrency(platformFeeTotal)}`,
     `Delivery Net: ${formatCurrency(deliveryProfit)}`,
-    `GST: ${formatCurrency(gstTotal)}`,
   ].join(" + ")
 
   return (
@@ -254,7 +253,7 @@ export default function AdminHome() {
             <MetricCard
               title="Delivery fee"
               value={formatCurrency(deliveryFeeTotal)}
-              helper={`Total delivery fees: ${periodLabel}`}
+              helper={`Net Delivery: ${formatCurrency(deliveryProfit)}`}
               icon={<Truck className="h-5 w-5 text-blue-600" />}
               accent="bg-blue-200/40"
               path="/admin/food/transaction-report"

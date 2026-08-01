@@ -2387,10 +2387,12 @@ export default function Home() {
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.1, type: "spring", stiffness: 120 }}
                   >
-                    <span className="inline-flex items-center gap-1 bg-white text-[#FE593B] text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-widest shadow-md">
-                      <Flame className="w-3 h-3 text-[#FE593B] fill-[#FE593B]" />
-                      {homeHeroBannerText.badgeText || "Hot Offers"}
-                    </span>
+                    {(homeHeroBannerText.badgeText ?? "Hot Offers") && (
+                      <span className="inline-flex items-center gap-1 bg-white text-[#FE593B] text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-widest shadow-md">
+                        <Flame className="w-3 h-3 text-[#FE593B] fill-[#FE593B]" />
+                        {homeHeroBannerText.badgeText ?? "Hot Offers"}
+                      </span>
+                    )}
                   </motion.div>
 
                   <motion.h2
@@ -2399,8 +2401,9 @@ export default function Home() {
                     transition={{ delay: 0.2, type: "spring", stiffness: 120 }}
                     className="text-white font-black text-[26px] sm:text-3xl leading-[1.05] mt-2.5 drop-shadow-[0_2px_10px_rgba(0,0,0,0.15)]"
                   >
-                    {homeHeroBannerText.titleLine1 || "HUNGRY?"}<br />
-                    <span className="text-yellow-300">{homeHeroBannerText.titleLine2 || "WE GOT YOU!"}</span>
+                    {homeHeroBannerText.titleLine1 ?? "HUNGRY?"}
+                    {(homeHeroBannerText.titleLine1 ?? "HUNGRY?") && (homeHeroBannerText.titleLine2 ?? "WE GOT YOU!") && <br />}
+                    <span className="text-yellow-300">{homeHeroBannerText.titleLine2 ?? "WE GOT YOU!"}</span>
                   </motion.h2>
 
                   <motion.p
@@ -2409,7 +2412,7 @@ export default function Home() {
                     transition={{ delay: 0.3, type: "spring", stiffness: 120 }}
                     className="text-white/90 text-xs sm:text-sm font-bold mt-1.5"
                   >
-                    {homeHeroBannerText.subtitle || "Free delivery on first order"}
+                    {homeHeroBannerText.subtitle ?? "Free delivery on first order"}
                   </motion.p>
                 </div>
 

@@ -18,6 +18,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
 import dayjs from "dayjs"
 import { determineStepToShow } from "@food/utils/onboardingUtils"
+import publicAPI from "@food/../../services/api/publicAPI"
 import { toast } from "sonner"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
@@ -571,6 +572,24 @@ export default function RestaurantOnboarding() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isRegistrationClosed, setIsRegistrationClosed] = useState(false)
+  const [isSettingsLoading, setIsSettingsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await publicAPI.getBusinessSettings()
+        if (response.data?.success && response.data?.data) {
+          setIsRegistrationClosed(response.data.data.restaurantRegistration === false)
+        }
+      } catch (error) {
+        console.error("Error fetching business settings:", error)
+      } finally {
+        setIsSettingsLoading(false)
+      }
+    }
+    fetchSettings()
+  }, [])
 
   const handleLogout = async () => {
     if (isLoggingOut) return
@@ -2235,6 +2254,7 @@ export default function RestaurantOnboarding() {
           <Label className="text-xs font-medium text-gray-700">Restaurant profile image</Label>
           <div className="flex items-center gap-4">
             <div className="relative">
+
               <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
                 {step2.profileImage ? (
                   (() => {
@@ -2723,6 +2743,41 @@ export default function RestaurantOnboarding() {
     if (step === 1) return renderStep1()
     if (step === 2) return renderStep2()
     return renderStep3()
+  }
+
+  if (!verifiedPhoneNumber && !hasExistingRestaurantProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (isSettingsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (isRegistrationClosed) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md bg-white p-8 rounded-xl shadow-md border border-gray-100">
+          <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Closed</h2>
+          <p className="text-gray-600 mb-6">
+            We are currently not accepting new restaurant applications. Please try again later.
+          </p>
+          <Button onClick={handleLogout} className="w-full bg-orange-500 hover:bg-orange-600">
+            Log Out
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (

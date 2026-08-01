@@ -356,6 +356,12 @@ export default function TaxReport() {
                     <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                       Total Tax
                     </th>
+                    <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                      Tax (5%)
+                    </th>
+                    <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                      Tax (18%)
+                    </th>
                     <th className="px-4 py-3 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                       Action
                     </th>
@@ -375,6 +381,12 @@ export default function TaxReport() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-sm font-medium text-slate-900">{report.totalTax}</span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm font-medium text-slate-900">{report.totalTax5}</span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm font-medium text-slate-900">{report.totalTax18}</span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button 
@@ -444,7 +456,9 @@ export default function TaxReport() {
                       <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Order ID</th>
                       <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Date</th>
                       <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">Amount</th>
-                      <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">Tax</th>
+                      <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">Total Tax</th>
+                      <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">Tax (5%)</th>
+                      <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">Tax (18%)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -454,6 +468,8 @@ export default function TaxReport() {
                         <td className="px-4 py-3 text-sm text-slate-600">{new Date(order.date).toLocaleDateString('en-IN')}</td>
                         <td className="px-4 py-3 text-sm text-right text-slate-700">{order.totalAmount}</td>
                         <td className="px-4 py-3 text-sm text-right font-semibold text-red-600">{order.taxAmount}</td>
+                        <td className="px-4 py-3 text-sm text-right font-semibold text-red-600">{order.tax5Amount}</td>
+                        <td className="px-4 py-3 text-sm text-right font-semibold text-red-600">{order.tax18Amount}</td>
                       </tr>
                     ))}
                   </tbody>

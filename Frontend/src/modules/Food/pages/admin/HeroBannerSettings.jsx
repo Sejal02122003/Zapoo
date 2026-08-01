@@ -25,10 +25,10 @@ export default function HeroBannerSettings() {
       const res = await api.get("/food/admin/business-settings");
       if (res.data?.success && res.data?.data?.homeHeroBanner) {
         setHomeHeroBanner({
-          badgeText: res.data.data.homeHeroBanner.badgeText || "Hot Offers",
-          titleLine1: res.data.data.homeHeroBanner.titleLine1 || "HUNGRY?",
-          titleLine2: res.data.data.homeHeroBanner.titleLine2 || "WE GOT YOU!",
-          subtitle: res.data.data.homeHeroBanner.subtitle || "Free delivery on first order",
+          badgeText: res.data.data.homeHeroBanner.badgeText ?? "Hot Offers",
+          titleLine1: res.data.data.homeHeroBanner.titleLine1 ?? "HUNGRY?",
+          titleLine2: res.data.data.homeHeroBanner.titleLine2 ?? "WE GOT YOU!",
+          subtitle: res.data.data.homeHeroBanner.subtitle ?? "Free delivery on first order",
           backgroundMedia: res.data.data.homeHeroBanner.backgroundMedia || null
         });
       }

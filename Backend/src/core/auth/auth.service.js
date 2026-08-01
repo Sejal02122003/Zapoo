@@ -7,6 +7,7 @@ import { FoodRestaurant } from "../../modules/food/restaurant/models/restaurant.
 import { FoodDeliveryPartner } from "../../modules/food/delivery/models/deliveryPartner.model.js";
 import { FoodReferralSettings } from "../../modules/food/admin/models/referralSettings.model.js";
 import { FoodReferralLog } from "../../modules/food/admin/models/referralLog.model.js";
+import { FoodBusinessSettings } from "../../modules/food/admin/models/businessSettings.model.js";
 import { createOrUpdateOtp, verifyOtp } from "../otp/otp.service.js";
 import { signAccessToken, signRefreshToken } from "./token.util.js";
 import { FoodRefreshToken } from "../refreshTokens/refreshToken.model.js";
@@ -116,6 +117,13 @@ export const verifyUserOtpAndLogin = async (
 ) => {
   const trimmedName = typeof name === "string" ? name.trim() : "";
   const existingUser = await FoodUser.findOne({ phone });
+
+  if (!existingUser) {
+    const settings = await FoodBusinessSettings.findOne().lean();
+    if (settings && settings.customerRegistration === false) {
+      throw new AuthError("Customer registration is currently disabled.");
+    }
+  }
 
   // For first-time signup, require name before OTP verification so OTP is not consumed prematurely.
   if (!existingUser && !trimmedName) {

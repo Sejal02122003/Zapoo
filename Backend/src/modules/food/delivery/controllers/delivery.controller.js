@@ -7,8 +7,14 @@ import { validateDeliveryRegisterDto, validateDeliveryProfileUpdateDto, validate
 import { sendResponse } from '../../../../utils/response.js';
 import { getDeliveryReferralStats } from '../services/deliveryReferral.service.js';
 
+import { FoodBusinessSettings } from '../../admin/models/businessSettings.model.js';
+
 export const registerDeliveryPartnerController = async (req, res, next) => {
     try {
+        const settings = await FoodBusinessSettings.findOne().lean();
+        if (settings && settings.deliveryRegistration === false) {
+            return res.status(403).json({ success: false, message: 'Delivery partner registration is currently disabled.' });
+        }
         const validated = validateDeliveryRegisterDto(req.body);
         const partner = await registerDeliveryPartner(validated, req.files);
         return sendResponse(res, 201, 'Delivery partner registered successfully', partner);

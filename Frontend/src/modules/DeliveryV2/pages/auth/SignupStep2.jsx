@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Upload, X, Check, Camera, Image as ImageIcon } from "lucide-react"
 import { deliveryAPI } from "@food/api"
+import publicAPI from "@food/../../services/api/publicAPI"
 import { toast } from "sonner"
 import { isFlutterBridgeAvailable, openCamera } from "@food/utils/imageUploadUtils"
 import bgImg from "@/assets/delivery_bg_new.png"
@@ -232,6 +233,24 @@ export default function SignupStep2() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploading, setUploading] = useState({})
   const [isSuccess, setIsSuccess] = useState(false)
+  const [isRegistrationClosed, setIsRegistrationClosed] = useState(false)
+  const [isSettingsLoading, setIsSettingsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await publicAPI.getBusinessSettings()
+        if (response.data?.success && response.data?.data) {
+          setIsRegistrationClosed(response.data.data.deliveryRegistration === false)
+        }
+      } catch (error) {
+        console.error("Error fetching business settings:", error)
+      } finally {
+        setIsSettingsLoading(false)
+      }
+    }
+    fetchSettings()
+  }, [])
 
   // Hydrate files from IndexedDB on load
   useEffect(() => {
@@ -571,6 +590,33 @@ export default function SignupStep2() {
             />
           </div>
         )}
+      </div>
+    )
+  }
+
+  if (isSettingsLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 border-4 border-[#FFA500] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (isRegistrationClosed) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md bg-white p-8 rounded-xl shadow-md border border-gray-100">
+          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Closed</h2>
+          <p className="text-gray-600 mb-6">
+            We are currently not accepting new delivery partner applications. Please try again later.
+          </p>
+          <button onClick={() => navigate("/delivery/login")} className="w-full bg-[#FFA500] hover:bg-orange-600 text-white py-3 px-4 rounded-xl">
+            Go to Login
+          </button>
+        </div>
       </div>
     )
   }

@@ -154,18 +154,10 @@ export default function AdminEarningReport() {
                     const packagingFee = breakdown.packagingFee || 0
                     const deliveryFeeUser = tx.deliveryCharge || (breakdown.deliveryProfit || 0) + (breakdown.deliveryCostToAdmin || 0) + (breakdown.deliveryGstToAdmin || 0)
                     
-                    const totalAdmin = 
-                      (deliveryFeeUser || 0) -
-                      (breakdown.deliveryCostToAdmin || 0) -
-                      (breakdown.deliveryGstToAdmin || 0) +
-                      (breakdown.platformFee || 0) + 
-                      (breakdown.restaurantCommission || 0) + 
-                      (breakdown.gstOnItem || 0) +
-                      (breakdown.gstOnCommission || 0) +
-                      (breakdown.paymentGatewayFee || 0) + 
-                      (breakdown.tcs || 0) +
-                      (breakdown.gstCollectedFromUser || 0) +
-                      (breakdown.packagingFee || 0)
+                    const totalAdmin = Number(
+                      tx.amounts?.platformNetProfit ?? 
+                      ((deliveryFeeUser || 0) - (breakdown.deliveryCostToAdmin || 0) + (breakdown.platformFee || 0) + (breakdown.restaurantCommission || 0))
+                    )
 
                     const restaurantCommission = Number(breakdown.restaurantCommission) || 0
                     const gstOnItem = Number(breakdown.gstOnItem) || 0

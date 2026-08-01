@@ -108,10 +108,10 @@ export async function createInitialTransaction(order) {
     const restaurantCouponDiscount = Number(order.pricing?.restaurantCouponDiscount) || 0;
     const restaurantNet = (order.pricing?.subtotal || 0) + (order.pricing?.packagingFee || 0) - restaurantCommission - (deductGst ? (gstOnItem + gstOnCommission) : 0) - paymentGatewayFee - tcs - restaurantCouponDiscount;
 
-    const calculatedPlatformNetProfit = (order.pricing?.platformFee || 0) + (order.pricing?.deliveryFee || 0) + restaurantCommission + (deductGst ? gstOnItem : (-gstOnItem - gstOnCommission)) + paymentGatewayFee + tcs - riderShare;
+    const calculatedPlatformNetProfit = (order.pricing?.platformFee || 0) + (order.pricing?.deliveryFee || 0) + restaurantCommission - riderShare;
     const platformNetProfit = order.platformProfit !== undefined
         ? order.platformProfit
-        : Math.max(0, calculatedPlatformNetProfit);
+        : calculatedPlatformNetProfit;
 
     const transaction = new FoodTransaction({
         orderId: order._id,

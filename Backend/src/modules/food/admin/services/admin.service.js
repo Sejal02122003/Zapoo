@@ -501,9 +501,29 @@ export async function getDashboardStats(query = {}) {
                             $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.tax', 0] }, 0] 
                         } 
                     },
+                    riderEarningTotal: {
+                        $sum: {
+                            $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$riderEarning', 0] }, 0]
+                        }
+                    },
                     adminNetProfit: { 
                         $sum: { 
-                            $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$platformProfit', 0] }, 0] 
+                            $cond: [
+                                DELIVERED_ORDER_STATUS_EXPR, 
+                                { 
+                                    $subtract: [
+                                        { 
+                                            $add: [
+                                                { $ifNull: ['$pricing.restaurantCommission', 0] },
+                                                DASHBOARD_PLATFORM_FEE_EXPR,
+                                                DASHBOARD_DELIVERY_FEE_EXPR
+                                            ] 
+                                        },
+                                        { $ifNull: ['$riderEarning', 0] }
+                                    ] 
+                                }, 
+                                0
+                            ] 
                         } 
                     }
                 }
@@ -701,8 +721,8 @@ export async function getDashboardStats(query = {}) {
         platformFee: { total: Number(totals.platformFeeTotal || 0) },
         deliveryFee: { total: Number(totals.deliveryFeeTotal || 0) },
         gst: { total: Number(totals.gstTotal || 0) },
-        totalAdminEarnings: Number(totals.adminNetProfit || 0) + Number(totals.gstTotal || 0),
-        deliveryProfit: Number(totals.adminNetProfit || 0) - Number(totals.commissionTotal || 0) - Number(totals.platformFeeTotal || 0),
+        totalAdminEarnings: Number(totals.adminNetProfit || 0),
+        deliveryProfit: Number(totals.deliveryFeeTotal || 0) - Number(totals.riderEarningTotal || 0),
         restaurants: {
             total: Number(restaurantsTotal || 0),
             pendingRequests: Number(restaurantsPending || 0)
@@ -1135,6 +1155,8 @@ export async function getTaxReport(query = {}) {
                 _id: '$restaurantId',
                 totalIncome: { $sum: { $ifNull: ['$pricing.total', 0] } },
                 totalTax: { $sum: { $ifNull: ['$pricing.tax', 0] } },
+                totalTax5: { $sum: { $ifNull: ['$pricing.gstOnItem', 0] } },
+                totalTax18: { $sum: { $ifNull: ['$pricing.gstOnCommission', 0] } },
                 orderCount: { $sum: 1 }
             }
         },
@@ -1152,6 +1174,8 @@ export async function getTaxReport(query = {}) {
                 incomeSource: { $ifNull: ['$restaurant.restaurantName', 'Unknown Restaurant'] },
                 totalIncome: 1,
                 totalTax: 1,
+                totalTax5: 1,
+                totalTax18: 1,
                 orderCount: 1
             }
         },
@@ -1160,18 +1184,24 @@ export async function getTaxReport(query = {}) {
 
     const stats = {
         totalIncome: 0,
-        totalTax: 0
+        totalTax: 0,
+        totalTax5: 0,
+        totalTax18: 0
     };
 
     const reports = taxData.map((item, index) => {
         stats.totalIncome += item.totalIncome;
         stats.totalTax += item.totalTax;
+        stats.totalTax5 += item.totalTax5 || 0;
+        stats.totalTax18 += item.totalTax18 || 0;
         return {
             sl: index + 1,
             id: item._id,
             incomeSource: item.incomeSource,
             totalIncome: `\u20B9${item.totalIncome.toFixed(2)}`,
             totalTax: `\u20B9${item.totalTax.toFixed(2)}`,
+            totalTax5: `\u20B9${(item.totalTax5 || 0).toFixed(2)}`,
+            totalTax18: `\u20B9${(item.totalTax18 || 0).toFixed(2)}`,
             orderCount: item.orderCount
         };
     });
@@ -1180,7 +1210,9 @@ export async function getTaxReport(query = {}) {
         reports,
         stats: {
             totalIncome: `\u20B9${stats.totalIncome.toFixed(2)}`,
-            totalTax: `\u20B9${stats.totalTax.toFixed(2)}`
+            totalTax: `\u20B9${stats.totalTax.toFixed(2)}`,
+            totalTax5: `\u20B9${stats.totalTax5.toFixed(2)}`,
+            totalTax18: `\u20B9${stats.totalTax18.toFixed(2)}`
         }
     };
 }
@@ -1214,6 +1246,8 @@ export async function getTaxReportDetail(restaurantId, query = {}) {
             orderId: o.orderId,
             totalAmount: `\u20B9${(o.pricing?.total || 0).toFixed(2)}`,
             taxAmount: `\u20B9${(o.pricing?.tax || 0).toFixed(2)}`,
+            tax5Amount: `\u20B9${(o.pricing?.gstOnItem || 0).toFixed(2)}`,
+            tax18Amount: `\u20B9${(o.pricing?.gstOnCommission || 0).toFixed(2)}`,
             date: o.createdAt
         }))
     };

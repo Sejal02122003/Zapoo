@@ -11,6 +11,8 @@ import AppIntroSplash from "./AppIntroSplash"
 import { LocationProvider } from "@food/context/LocationProvider"
 import { useAppLocation } from "@food/hooks/useAppLocation"
 import LocationGuard from "./LocationGuard"
+import MaintenanceScreen from "../MaintenanceScreen"
+import publicAPI from "@food/../../services/api/publicAPI"
 
 const debugWarn = (...args) => {}
 
@@ -132,6 +134,32 @@ export default function UserLayout() {
   const [introFinished, setIntroFinished] = useState(() => {
     return !!(typeof window !== 'undefined' && sessionStorage.getItem("appIntroSeen"))
   })
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false)
+  const [isSettingsLoading, setIsSettingsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await publicAPI.getBusinessSettings()
+        if (response.data?.success && response.data?.data) {
+          setIsMaintenanceMode(!!response.data.data.maintenanceMode)
+        }
+      } catch (error) {
+        console.error("Error fetching business settings:", error)
+      } finally {
+        setIsSettingsLoading(false)
+      }
+    }
+    fetchSettings()
+  }, [])
+
+  if (isSettingsLoading) {
+    return <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center"></div>
+  }
+
+  if (isMaintenanceMode) {
+    return <MaintenanceScreen />
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] transition-colors duration-200">

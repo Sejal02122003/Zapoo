@@ -271,6 +271,21 @@ export default function Cashback() {
               </div>
 
               <div className="space-y-3 pt-3 border-t">
+                <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider">Order Type Target</label>
+                <div>
+                  <select
+                    value={formData.orderType}
+                    onChange={e => setFormData({ ...formData, orderType: e.target.value })}
+                    className="w-full p-3 border border-slate-300 rounded-xl text-sm bg-white font-semibold"
+                  >
+                    <option value="BOTH">Both (Delivery & Takeaway)</option>
+                    <option value="DELIVERY">Delivery Only</option>
+                    <option value="TAKEAWAY">Takeaway Only</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-3 border-t">
                 <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider">Eligibility & Stacking</label>
 
                 <div className="bg-purple-50 p-3.5 rounded-xl border border-purple-200">
@@ -336,6 +351,9 @@ export default function Cashback() {
                         </div>
                         <p className="text-xs text-slate-600 mt-1">
                           Earns <strong className="text-purple-600">{cb.cashbackType === "PERCENTAGE" ? `${cb.cashbackValue}%` : `₹${cb.cashbackValue}`} cashback</strong> on min order ₹{cb.minOrderValue} (Capped at ₹{cb.maxCashbackAmount || "Unlimited"}, Valid for {cb.expiryDays} days).
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Order Type: <strong className="text-slate-700">{cb.orderType === 'DELIVERY' ? 'Delivery Only' : cb.orderType === 'TAKEAWAY' ? 'Takeaway Only' : 'Both (Delivery & Takeaway)'}</strong>
                         </p>
                       </div>
 

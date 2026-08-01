@@ -316,20 +316,19 @@ export default function Cart() {
       if (couponsToApply.length > 0) {
          const combinationKey = codes.join('-');
          if (!shownAutoPopupFor.includes(combinationKey)) {
-             setAutoApplyPopupData({
-               savings: totalSaved,
-               cashback: totalCashback,
-               isCashback: isCashback,
-               isCombo: isCombo || (isCashback && totalSaved > 0), // Combo is true if BOTH or if we have both discount and cashback combined
-               codes: codes.join(" & "),
-               couponsToApply: couponsToApply
-             });
-             setShowAutoApplyPopup(true);
+             // Set the coupons directly instead of showing a popup
+             if (bestAdminCoupon) {
+               setAppliedCoupon(bestAdminCoupon);
+             }
+             if (bestRestaurantCoupon) {
+               setAppliedRestaurantCoupon(bestRestaurantCoupon);
+             }
+             toast.success(`Auto-applied best offer: ${codes.join(' & ')}!`);
              setShownAutoPopupFor(prev => [...prev, combinationKey]);
          }
       }
     }
-  }, [availableCoupons, subtotal, loadingCoupons, cart.length, userProfile, appliedCoupon, appliedRestaurantCoupon]);
+  }, [availableCoupons, subtotal, loadingCoupons, cart.length, userProfile, appliedCoupon, appliedRestaurantCoupon, shownAutoPopupFor]);
 
 
   // Fee settings from database (used for platform fee and GST fallback only)

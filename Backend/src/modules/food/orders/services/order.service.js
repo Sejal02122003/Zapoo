@@ -274,16 +274,11 @@ export async function createOrder(userId, dto) {
   normalizedPricing.paymentGatewayFee = commissionSnapshot.paymentGatewayFee || 0;
   normalizedPricing.tcs = commissionSnapshot.tcs || 0;
 
-  const platformProfit = Math.max(
-    0,
+  const platformProfit =
     (Number.isFinite(normalizedPricing.deliveryFee) ? normalizedPricing.deliveryFee : 0) +
-      (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) +
-      normalizedPricing.restaurantCommission + 
-      normalizedPricing.gstOnItem +
-      normalizedPricing.paymentGatewayFee + 
-      normalizedPricing.tcs -
-      riderEarning,
-  );
+    (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) +
+    normalizedPricing.restaurantCommission -
+    riderEarning;
 
   const order = new FoodOrder({
     userId: new mongoose.Types.ObjectId(userId),

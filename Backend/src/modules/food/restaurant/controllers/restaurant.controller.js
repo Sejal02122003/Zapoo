@@ -25,6 +25,11 @@ import { sendRestaurantOnboardingEmail } from '../../../../utils/email.js';
 
 export const registerRestaurantController = async (req, res, next) => {
     try {
+        const settings = await FoodBusinessSettings.findOne().lean();
+        if (settings && settings.restaurantRegistration === false) {
+            return res.status(403).json({ success: false, message: 'Restaurant registration is currently disabled.' });
+        }
+        
         const validated = validateRestaurantRegisterDto(req.body);
         const restaurant = await registerRestaurant(validated, req.files);
 
