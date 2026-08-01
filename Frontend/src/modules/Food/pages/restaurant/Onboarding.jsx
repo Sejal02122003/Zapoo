@@ -12,13 +12,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue } from "@food/components/ui/select"
-import { restaurantAPI, zoneAPI, uploadAPI, api } from "@food/api"
+import { restaurantAPI, zoneAPI, uploadAPI, api, publicAPI } from "@food/api"
 import { TimePicker } from "@mui/x-date-pickers/TimePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
 import dayjs from "dayjs"
 import { determineStepToShow } from "@food/utils/onboardingUtils"
-import publicAPI from "@food/../../services/api/publicAPI"
 import { toast } from "sonner"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"

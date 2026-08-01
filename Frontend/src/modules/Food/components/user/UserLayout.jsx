@@ -12,7 +12,7 @@ import { LocationProvider } from "@food/context/LocationProvider"
 import { useAppLocation } from "@food/hooks/useAppLocation"
 import LocationGuard from "./LocationGuard"
 import MaintenanceScreen from "../MaintenanceScreen"
-import publicAPI from "@food/../../services/api/publicAPI"
+import { publicAPI } from "@food/api"
 
 const debugWarn = (...args) => {}
 
