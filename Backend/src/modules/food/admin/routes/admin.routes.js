@@ -12,9 +12,16 @@ import * as orderController from '../../orders/controllers/order.controller.js';
 import { getAdminPageController, upsertAdminPageController } from '../controllers/pageContent.controller.js';
 import * as liveMonitorController from '../controllers/liveMonitor.controller.js';
 import * as appIntroAdController from '../controllers/appIntroAd.controller.js';
-import { getAdminAdRequests, setAdRequestPrice, approveAdRequest, rejectAdRequest } from '../controllers/adRequest.controller.js';
+import {
+    getAdminAdRequests,
+    setAdRequestPrice,
+    approveAdRequest,
+    rejectAdRequest,
+    cancelAdRequest
+} from '../controllers/adRequest.controller.js';
 import * as auditLogController from '../controllers/auditLog.controller.js';
 import * as analyticsController from '../controllers/analytics.controller.js';
+import * as promoBannerController from '../../landing/controllers/promoBanner.controller.js';
 import { upload } from '../../../../middleware/upload.js';
 import menuBulkRoutes from './menuBulk.routes.js';
 import locationCouponRoutes from './locationCoupon.routes.js';
@@ -343,5 +350,10 @@ router.get('/ad-requests', requireAdmin, getAdminAdRequests);
 router.patch('/ad-requests/:id/price', requireAdmin, setAdRequestPrice);
 router.patch('/ad-requests/:id/approve', requireAdmin, upload.fields([{ name: 'media', maxCount: 1 }]), approveAdRequest);
 router.patch('/ad-requests/:id/reject', requireAdmin, rejectAdRequest);
+router.patch('/ad-requests/:id/cancel', requireAdmin, cancelAdRequest);
+
+// ----- Promo Banners (from Ad Requests) -----
+router.post('/promo-banners', requireAdmin, upload.single('media'), promoBannerController.createPromoBanner);
+router.get('/promo-banners', requireAdmin, promoBannerController.getPromoBanners);
 
 export default router;

@@ -6,6 +6,7 @@ import SettingsDialog from "@food/components/admin/orders/SettingsDialog"
 import { exportAdvertisementsToCSV, exportAdvertisementsToExcel, exportAdvertisementsToPDF, exportAdvertisementsToJSON } from "@food/components/admin/advertisements/advertisementsExportUtils"
 import { adminAPI } from "@food/api"
 import { toast } from "sonner"
+import CreatePromoBannerModal from "./CreatePromoBannerModal"
 
 export default function AdRequests() {
   const [activeTab, setActiveTab] = useState("pending_pricing")
@@ -15,6 +16,7 @@ export default function AdRequests() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isViewOpen, setIsViewOpen] = useState(false)
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState(null)
   
   // Pricing state
@@ -31,6 +33,9 @@ export default function AdRequests() {
   const [approveMediaPreview, setApproveMediaPreview] = useState("")
   const [isApproving, setIsApproving] = useState(false)
   const approveFileInputRef = useRef(null)
+
+  const [isCreateBannerOpen, setIsCreateBannerOpen] = useState(false)
+  const [createBannerData, setCreateBannerData] = useState(null)
 
   const [filters, setFilters] = useState({
     scope: "",
@@ -235,6 +240,24 @@ export default function AdRequests() {
       }
     } catch (err) {
       toast.error("Failed to reject request")
+    }
+  }
+
+  const handleOpenCancel = (request) => {
+    setSelectedRequest(request)
+    setIsCancelDialogOpen(true)
+  }
+
+  const handleConfirmCancel = async () => {
+    try {
+      const res = await adminAPI.cancelAdRequest(selectedRequest._id)
+      if (res.data?.success) {
+        toast.success("Ad request cancelled successfully")
+        setIsCancelDialogOpen(false)
+        fetchRequests()
+      }
+    } catch (err) {
+      toast.error("Failed to cancel request")
     }
   }
 
@@ -505,12 +528,29 @@ export default function AdRequests() {
                             )}
 
                             {request.status === "paid" && (
-                              <button
-                                onClick={() => handleOpenApprove(request)}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
-                              >
-                                Make Live
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setCreateBannerData({
+                                      title: request.title,
+                                      scope: request.scope,
+                                      restaurantId: request.restaurantId,
+                                      restaurantName: request.restaurantName,
+                                      adRequestId: request._id
+                                    })
+                                    setIsCreateBannerOpen(true)
+                                  }}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                                >
+                                  Create Banner
+                                </button>
+                                <button
+                                  onClick={() => handleOpenApprove(request)}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                                >
+                                  Make Live
+                                </button>
+                              </>
                             )}
 
                             {(request.status === "pending_pricing" || request.status === "paid") && (
@@ -518,6 +558,16 @@ export default function AdRequests() {
                                 onClick={() => handleOpenReject(request)}
                                 className="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs p-1.5 rounded-lg border border-rose-200 transition-colors"
                                 title="Reject Request"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            )}
+
+                            {request.status === "live" && (
+                              <button
+                                onClick={() => handleOpenCancel(request)}
+                                className="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs p-1.5 rounded-lg border border-rose-200 transition-colors"
+                                title="Cancel Campaign"
                               >
                                 <XCircle className="w-4 h-4" />
                               </button>
@@ -794,6 +844,45 @@ export default function AdRequests() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Cancel Campaign Dialog */}
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <DialogContent className="max-w-md bg-white p-6">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-rose-600">Cancel Live Campaign</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this live campaign? This will immediately remove all associated banners and ads from the user app.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2 border-t border-slate-100">
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsCancelDialogOpen(false)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl transition-all text-sm"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={handleConfirmCancel}
+                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl transition-all text-sm shadow-sm"
+              >
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Promo Banner Modal */}
+      <CreatePromoBannerModal
+        isOpen={isCreateBannerOpen}
+        onClose={() => setIsCreateBannerOpen(false)}
+        initialData={createBannerData}
+        onSuccess={() => {
+          fetchRequests()
+        }}
+      />
     </div>
   )
 }

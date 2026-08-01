@@ -13,6 +13,9 @@ const foodDiningBannerSchema = new mongoose.Schema(
         title: {
             type: String
         },
+        subtitle: {
+            type: String
+        },
         ctaText: {
             type: String
         },

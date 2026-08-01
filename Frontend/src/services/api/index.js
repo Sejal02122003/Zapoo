@@ -756,6 +756,11 @@ export const adminAPI = {
     headers: { "Content-Type": "multipart/form-data" }
   }),
   rejectAdRequest: (id, reason) => adminClient.patch(`/food/admin/ad-requests/${id}/reject`, { reason }),
+  cancelAdRequest: (id) => adminClient.patch(`/food/admin/ad-requests/${id}/cancel`),
+
+  createPromoBanner: (formData) => adminClient.post("/food/admin/promo-banners", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  }),
 };
 
 /** Restaurant API - OTP login via new backend; no email/password. */

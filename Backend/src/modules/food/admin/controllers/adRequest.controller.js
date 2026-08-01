@@ -1,7 +1,8 @@
 import AdRequest from '../models/adRequest.model.js';
 import AppIntroAd from '../models/appIntroAd.model.js';
-import { FoodDiningBanner } from '../../landing/models/diningBanner.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
+import { FoodDiningBanner } from '../../landing/models/diningBanner.model.js';
+import { PromoBanner } from '../../landing/models/promoBanner.model.js';
 import { createRazorpayOrder, getRazorpayKeyId, isRazorpayConfigured, verifyPaymentSignature } from '../../orders/helpers/razorpay.helper.js';
 import { processAndSaveImage } from '../../../../utils/sharp.util.js';
 import { uploadVideoBuffer } from '../../../../services/cloudinary.service.js';
@@ -218,6 +219,31 @@ export const rejectAdRequest = async (req, res) => {
         await adReq.save();
 
         res.status(200).json({ success: true, data: adReq, message: 'Ad request rejected' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+    }
+};
+
+// Cancel Ad request (Admin) - especially for live campaigns
+export const cancelAdRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const adReq = await AdRequest.findById(id);
+        if (!adReq) {
+            return res.status(404).json({ success: false, message: 'Ad request not found' });
+        }
+
+        adReq.status = 'rejected';
+        adReq.rejectionReason = 'Cancelled by admin after going live';
+        await adReq.save();
+
+        // Deactivate associated banners if any
+        await FoodDiningBanner.updateMany({ publicId: `ad_${id}` }, { isActive: false });
+        await AppIntroAd.updateMany({ title: `${adReq.restaurantName} - ${adReq.title}` }, { isActive: false });
+        await PromoBanner.updateMany({ adRequestId: id }, { isActive: false });
+
+        res.status(200).json({ success: true, data: adReq, message: 'Ad request cancelled and banners deactivated' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server Error', error: error.message });
     }

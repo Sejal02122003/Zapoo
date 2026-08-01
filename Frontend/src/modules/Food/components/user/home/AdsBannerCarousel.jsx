@@ -34,6 +34,8 @@ export default function AdsBannerCarousel({ banners = [], data = [] }) {
       const firstRestaurant = linkedRestaurants[0];
       const restaurantSlug = firstRestaurant.slug || firstRestaurant.restaurantId || firstRestaurant._id;
       navigate(`/food/user/restaurants/${restaurantSlug}`);
+    } else if (currentData?.ctaLink) {
+      navigate(currentData.ctaLink);
     }
   };
 
@@ -90,8 +92,38 @@ export default function AdsBannerCarousel({ banners = [], data = [] }) {
           />
         </AnimatePresence>
         
-        {/* Subtle overlay for better contrast if image is too bright */}
-        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent z-[5]" />
+        {/* Subtle overlay for better contrast if image is too bright or has text */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-[5]" />
+
+        {/* Text Overlay */}
+        <div className="absolute inset-0 z-20 flex flex-col justify-end p-3 sm:p-4">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.4 }}
+              className="w-full"
+            >
+              {currentData?.title && (
+                <h3 className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow-md mb-0.5 sm:mb-1 line-clamp-1">
+                  {currentData.title}
+                </h3>
+              )}
+              {currentData?.subtitle && (
+                <p className="text-white/90 text-[11px] sm:text-xs font-semibold drop-shadow-md mb-1.5 sm:mb-2 line-clamp-1">
+                  {currentData.subtitle}
+                </p>
+              )}
+              {currentData?.ctaText && (
+                <div className="inline-flex items-center text-[10px] sm:text-xs font-bold text-yellow-400 bg-black/40 backdrop-blur-sm px-2 sm:px-2.5 py-1 rounded-md border border-yellow-400/30">
+                  {currentData.ctaText}
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
