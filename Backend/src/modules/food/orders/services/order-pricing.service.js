@@ -247,12 +247,12 @@ export async function calculateOrderPricing(userId, dto) {
   const gstOnDeliveryFee = feeSettings.gstOnDeliveryFee != null ? Number(feeSettings.gstOnDeliveryFee) : 0;
   const gstOnPackagingFee = feeSettings.gstOnPackagingFee != null ? Number(feeSettings.gstOnPackagingFee) : 0;
 
-  const itemTax = (Number.isFinite(gstRate) && gstRate > 0) ? (subtotal * (gstRate / 100)) : 0;
+  let itemTax = (Number.isFinite(gstRate) && gstRate > 0) ? (subtotal * (gstRate / 100)) : 0;
   const deliveryTax = (Number.isFinite(gstOnDeliveryFee) && gstOnDeliveryFee > 0) ? (deliveryFee * (gstOnDeliveryFee / 100)) : 0;
   const platformTax = (Number.isFinite(gstOnPlatformFee) && gstOnPlatformFee > 0) ? (platformFee * (gstOnPlatformFee / 100)) : 0;
   const packagingTax = (Number.isFinite(gstOnPackagingFee) && gstOnPackagingFee > 0) ? (packagingFee * (gstOnPackagingFee / 100)) : 0;
 
-  const tax = Math.round(itemTax + deliveryTax + platformTax + packagingTax + weatherGST);
+  let tax = Math.round(itemTax + deliveryTax + platformTax + packagingTax + weatherGST);
 
   let discount = 0;
   let appliedCoupon = null;
@@ -269,7 +269,7 @@ export async function calculateOrderPricing(userId, dto) {
         couponCode: codeRaw,
         userId,
         restaurantId: dto.restaurantId,
-        orderSubtotal: eligibleSubtotalForCoupon > 0 ? eligibleSubtotalForCoupon : subtotal,
+        orderSubtotal: eligibleSubtotalForCoupon,
         orderType: dto.orderType || 'DELIVERY'
       });
 
@@ -354,7 +354,7 @@ export async function calculateOrderPricing(userId, dto) {
         const scopeOk =
           offer.restaurantScope !== "selected" ||
           String(offer.restaurantId || "") === String(dto.restaurantId || "");
-        const minOk = subtotal >= (Number(offer.minOrderValue) || 0);
+        const minOk = eligibleSubtotalForCoupon >= (Number(offer.minOrderValue) || 0);
         let usageOk = true;
         if (
           Number(offer.usageLimit) > 0 &&
@@ -460,6 +460,12 @@ export async function calculateOrderPricing(userId, dto) {
 
   const couponDiscount = discount;
   const totalDiscount = couponDiscount + restaurantCouponDiscount;
+  
+  // Recalculate itemTax and total tax based on reduced subtotal due to restaurant discount
+  const taxableSubtotal = Math.max(0, subtotal - restaurantCouponDiscount);
+  itemTax = (Number.isFinite(gstRate) && gstRate > 0) ? (taxableSubtotal * (gstRate / 100)) : 0;
+  tax = Math.round(itemTax + deliveryTax + platformTax + packagingTax + weatherGST);
+
   const totalBeforeDiscount = subtotal + deliveryFee + tax + platformFee + packagingFee + weatherFee;
   const total = Math.max(0, totalBeforeDiscount - totalDiscount);
 

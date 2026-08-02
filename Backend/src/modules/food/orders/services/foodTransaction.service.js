@@ -31,7 +31,7 @@ export function computeRestaurantCommissionAmount(baseAmount, rule) {
 }
 
 export async function getRestaurantCommissionSnapshot(orderDoc) {
-    const baseAmount = Number(orderDoc?.pricing?.subtotal ?? 0) || 0;
+    const baseAmount = (Number(orderDoc?.pricing?.subtotal ?? 0) || 0) + (Number(orderDoc?.pricing?.itemDiscount ?? 0) || 0);
     const restaurantIdRaw =
         orderDoc?.restaurantId?._id ?? orderDoc?.restaurantId ?? null;
     const orderType = String(orderDoc?.orderType || 'delivery').toLowerCase();
@@ -68,10 +68,11 @@ export async function getRestaurantCommissionSnapshot(orderDoc) {
     const tcs = applyTaxes ? (Number(globalSettings.globalTcs) || 0) : 0;
 
     const totalPaid = Number(orderDoc?.pricing?.total) || 0;
+    const pgBaseAmount = Number(orderDoc?.pricing?.subtotal ?? 0) + (Number(orderDoc?.pricing?.packagingFee) || 0) - (Number(orderDoc?.pricing?.restaurantCouponDiscount) || 0);
 
     result.gstOnItem = Math.round(baseAmount * (gstOnItemRate / 100) * 100) / 100;
     result.gstOnCommission = Math.round(result.commissionAmount * (gstOnCommission / 100) * 100) / 100;
-    result.paymentGatewayFee = Math.round(totalPaid * (pgFee / 100) * 100) / 100;
+    result.paymentGatewayFee = Math.round(pgBaseAmount * (pgFee / 100) * 100) / 100;
     result.tcs = Math.round(baseAmount * (tcs / 100) * 100) / 100;
 
     return result;
@@ -93,7 +94,7 @@ export async function createInitialTransaction(order) {
             ? restaurantCommissionFromOrder
             : (commissionSnapshot.commissionAmount || 0);
 
-    const gstOnItemFromOrder = Number(order.pricing?.gstOnItem);
+    const gstOnItemFromOrder = Number(order.pricing?.taxBreakdown?.itemTax ?? order.pricing?.gstOnItem);
     const gstOnItem = Number.isFinite(gstOnItemFromOrder)
         ? gstOnItemFromOrder
         : (commissionSnapshot.gstOnItem || 0);
@@ -108,7 +109,7 @@ export async function createInitialTransaction(order) {
     const restaurantCouponDiscount = Number(order.pricing?.restaurantCouponDiscount) || 0;
     const restaurantNet = (order.pricing?.subtotal || 0) + (order.pricing?.packagingFee || 0) - restaurantCommission - (deductGst ? gstOnCommission : 0) - paymentGatewayFee - tcs - restaurantCouponDiscount;
 
-    const calculatedPlatformNetProfit = (order.pricing?.platformFee || 0) + (order.pricing?.deliveryFee || 0) + restaurantCommission - riderShare;
+    const calculatedPlatformNetProfit = (order.pricing?.platformFee || 0) + (order.pricing?.deliveryFee || 0) + (order.pricing?.weatherFee || 0) + restaurantCommission - riderShare - (order.pricing?.discount || 0);
     const platformNetProfit = order.platformProfit !== undefined
         ? order.platformProfit
         : calculatedPlatformNetProfit;
@@ -155,7 +156,7 @@ export async function createInitialTransaction(order) {
         },
         amounts: {
             totalCustomerPaid,
-            restaurantShare: Math.max(0, restaurantNet),
+            restaurantShare: restaurantNet, // Allowed to be negative
             restaurantCommission,
             gstOnItem,
             gstOnCommission,
