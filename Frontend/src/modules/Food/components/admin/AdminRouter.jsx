@@ -12,6 +12,8 @@ const AdminSettings = lazy(() => import("@food/pages/admin/AdminSettings"));
 const NewRefundRequests = lazy(() => import("@food/pages/admin/refunds/NewRefundRequests"));
 const FoodApproval = lazy(() => import("@food/pages/admin/restaurant/FoodApproval"));
 const OrdersPage = lazy(() => import("@food/pages/admin/orders/OrdersPage"));
+const InvoiceView = lazy(() => import("@food/pages/admin/orders/InvoiceView"));
+const CustomerReceiptView = lazy(() => import("@food/pages/admin/orders/CustomerReceiptView"));
 const OrderDetectDelivery = lazy(() => import("@food/pages/admin/OrderDetectDelivery"));
 const Category = lazy(() => import("@food/pages/admin/categories/Category"));
 const FeeSettings = lazy(() => import("@food/pages/admin/fee-settings/FeeSettings"));
@@ -182,6 +184,8 @@ export default function AdminRouter() {
             <Route path="settings" element={<AdminSettings />} />
             
             {/* ORDER MANAGEMENT */}
+            <Route path="orders/:id/invoice" element={<InvoiceView />} />
+            <Route path="orders/:id/receipt" element={<CustomerReceiptView />} />
             <Route path="orders/all" element={<OrdersPage statusKey="all" />} />
             <Route path="orders/scheduled" element={<OrdersPage statusKey="scheduled" />} />
             <Route path="orders/pending" element={<OrdersPage statusKey="pending" />} />

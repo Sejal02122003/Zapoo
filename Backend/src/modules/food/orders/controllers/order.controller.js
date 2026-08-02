@@ -89,6 +89,18 @@ export async function getOrderPaymentsUserController(req, res, next) {
     }
 }
 
+import * as invoiceService from '../services/invoice.service.js';
+
+export async function getOrderInvoiceController(req, res, next) {
+    try {
+        const orderId = req.params.orderId;
+        const result = await invoiceService.generateOrderInvoice(orderId);
+        return sendResponse(res, 200, 'Invoice generated', result);
+    } catch (err) {
+        next(err);
+    }
+}
+
 export async function cancelOrderController(req, res, next) {
     try {
         const userId = req.user?.userId;
