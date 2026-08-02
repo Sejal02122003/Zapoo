@@ -24,11 +24,23 @@ export const shiftRepository = {
     // --- Bookings ---
     createBooking: async (data, options = {}) => FoodShiftBooking.create(data, options),
     getBookingByRiderAndShift: async (riderId, shiftId) => FoodShiftBooking.findOne({ riderId, shiftId }),
+    getBookingsByRider: async (riderIds) => {
+        const ids = Array.isArray(riderIds) ? riderIds : [riderIds];
+        return FoodShiftBooking.find({ riderId: { $in: ids } })
+            .populate('shiftId')
+            .sort({ bookedAt: -1 });
+    },
     getBookingCountForShift: async (shiftId) => FoodShiftBooking.countDocuments({ 
         $or: [{ shiftId }, { shiftId: String(shiftId) }], 
         status: { $in: ['BOOKED', 'COMPLETED'] } 
     }),
-    updateBookingStatus: async (riderId, shiftId, status) => FoodShiftBooking.findOneAndUpdate({ riderId, shiftId }, { status }, { new: true }),
+    updateBookingStatus: async (riderId, shiftId, status) => {
+        return FoodShiftBooking.findOneAndUpdate(
+            { $or: [{ riderId, shiftId }, { _id: shiftId }, { shiftId, riderId }] },
+            { status, cancelledAt: status === 'CANCELLED' ? new Date() : undefined },
+            { new: true }
+        );
+    },
     getBookingsForSettlement: async (shiftId) => FoodShiftBooking.find({ shiftId, status: { $in: ['BOOKED', 'COMPLETED'] } }),
 
     // --- Attendance ---

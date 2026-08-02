@@ -275,7 +275,9 @@ export async function notifyRestaurantNewOrder(orderDoc) {
           type: "new_order",
           orderId: orderDoc._id.toString(),
           orderMongoId: orderDoc._id?.toString?.() || "",
-          link: `/restaurant/orders/${orderDoc._id?.toString?.() || ""}`,
+          link: `/food/restaurant/orders/${orderDoc._id?.toString?.() || ""}`,
+          targetUrl: `/food/restaurant/orders/${orderDoc._id?.toString?.() || ""}`,
+          click_action: `/food/restaurant/orders/${orderDoc._id?.toString?.() || ""}`,
         },
       },
     );

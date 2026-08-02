@@ -156,8 +156,8 @@ export default function OrderDetails() {
 
           const orderType = String(order.orderType || 'delivery').toLowerCase();
           const deductGst = orderType === 'takeaway' ? true : (pricing.deductGstFromRestaurant !== false);
-          const totalAdminReceivable = deliveryCostToAdmin + deliveryGstToAdmin + platformFee + taxes + packagingFee + restaurantCommission + (deductGst ? (gstOnItem + gstOnCommission) : 0) + paymentGatewayFee + tcs;
-          const restaurantGets = Math.max(0, itemSubtotal + packagingFee - restaurantCommission - (deductGst ? (gstOnItem + gstOnCommission) : 0) - paymentGatewayFee - tcs - couponDiscount);
+          const totalAdminReceivable = deliveryCostToAdmin + deliveryGstToAdmin + platformFee + taxes + packagingFee + restaurantCommission + (deductGst ? gstOnCommission : 0) + paymentGatewayFee + tcs;
+          const restaurantGets = Math.max(0, itemSubtotal + packagingFee - restaurantCommission - (deductGst ? gstOnCommission : 0) - paymentGatewayFee - tcs - couponDiscount);
           const deliveryDistance = firstNumber(order.deliveryDistance, order.customer?.distance, 0);
 
           const addressParts = [
@@ -936,7 +936,7 @@ export default function OrderDetails() {
           const commTax = deductGst ? (Number(orderData.billing.gstOnCommission) || 0) : 0;
           const totalFees = commissionValue + pgFee + commTax;
 
-          const gstDeduction = deductGst ? (Number(orderData.billing.gstOnItem) || 0) : 0;
+          const gstDeduction = 0;
           const tds = Number(orderData.billing.tcs) || 0;
           const totalTaxes = gstDeduction + tds;
 

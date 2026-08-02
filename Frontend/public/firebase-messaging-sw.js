@@ -191,8 +191,35 @@ self.addEventListener("notificationclick", (event) => {
     event?.notification?.data?.link ||
     event?.notification?.data?.click_action ||
     event?.notification?.data?.targetUrl ||
-    "/";
-  const targetUrl = String(rawLink || "/").startsWith("/") ? String(rawLink || "/") : "/";
+    event?.notification?.data?.url ||
+    "";
+
+  let targetUrl = "";
+  if (rawLink) {
+    try {
+      const parsed = new URL(rawLink, self.location.origin);
+      if (parsed.origin === self.location.origin) {
+        targetUrl = parsed.pathname + parsed.search + parsed.hash;
+      } else if (String(rawLink).startsWith("/")) {
+        targetUrl = String(rawLink);
+      }
+    } catch {
+      if (String(rawLink).startsWith("/")) {
+        targetUrl = String(rawLink);
+      }
+    }
+  }
+
+  if (!targetUrl || targetUrl === "/") {
+    const title = String(event?.notification?.title || "").toLowerCase();
+    const dataStr = JSON.stringify(event?.notification?.data || {}).toLowerCase();
+    if (dataStr.includes("restaurant") || title.includes("order") || title.includes("restaurant")) {
+      targetUrl = "/food/restaurant";
+    } else {
+      targetUrl = "/";
+    }
+  }
+
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
       const client = windowClients.find((c) => c.url.includes(self.location.origin));

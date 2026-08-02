@@ -331,6 +331,36 @@ export const shiftService = {
         return shiftRepository.updateBookingStatus(riderId, shiftId, 'CANCELLED');
     },
 
+    getRiderBookedShifts: async (riderId) => {
+        let partner = null;
+        if (mongoose.Types.ObjectId.isValid(riderId)) {
+            partner = await FoodDeliveryPartner.findById(riderId);
+        }
+        if (!partner) {
+            partner = await FoodDeliveryPartner.findOne({ userId: String(riderId) });
+        }
+
+        const riderIds = [riderId];
+        if (partner && partner._id) riderIds.push(partner._id);
+        if (partner && partner.userId) riderIds.push(partner.userId);
+
+        const bookings = await shiftRepository.getBookingsByRider(riderIds);
+        const now = new Date();
+
+        return bookings.map((b) => {
+            const bookingObj = b.toObject();
+            const shift = bookingObj.shiftId || {};
+            const endTime = shift.endTime ? new Date(shift.endTime) : null;
+            const startTime = shift.startTime ? new Date(shift.startTime) : null;
+
+            return {
+                ...bookingObj,
+                canCancel: bookingObj.status === 'BOOKED' && startTime && now < startTime,
+                isPast: endTime ? now > endTime : false,
+            };
+        });
+    },
+
     // --- ATTENDANCE ---
 
     recordHeartbeat: async (riderId, shiftId, gpsCoordinates) => {

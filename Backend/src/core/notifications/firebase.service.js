@@ -174,6 +174,14 @@ const buildMessagePayload = (payload = {}, token) => {
         }
     }
 
+    // Ensure click_action, link, and targetUrl are populated in data for deep-linking
+    const rawLink = data.link || data.targetUrl || data.url || payload.link || payload.targetUrl || '';
+    if (rawLink) {
+        data.link = rawLink;
+        data.targetUrl = rawLink;
+        data.click_action = rawLink;
+    }
+
     // Always include the text in data so the frontend can retrieve it even if 'notification' block is stripped or missing
     if (!data.title) data.title = notification.title;
     if (!data.body) data.body = notification.body;
@@ -184,7 +192,7 @@ const buildMessagePayload = (payload = {}, token) => {
         priority: 'high',
         notification: {
             channel_id: 'default',
-            // sound: 'default',
+            click_action: 'FLUTTER_NOTIFICATION_CLICK',
             default_vibrate_timings: true,
             default_light_settings: true
         }

@@ -184,6 +184,16 @@ export const shiftController = {
         }
     },
 
+    getRiderBookedShifts: async (req, res) => {
+        try {
+            const riderId = req.user?.userId || req.user?._id || req.user?.id;
+            const bookedShifts = await shiftService.getRiderBookedShifts(riderId);
+            res.status(200).json({ success: true, data: bookedShifts });
+        } catch (error) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
     // --- ATTENDANCE APIs ---
 
     heartbeat: async (req, res) => {

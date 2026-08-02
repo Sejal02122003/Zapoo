@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Tool, Wrench } from 'lucide-react';
+import { Settings, Wrench } from 'lucide-react';
 
 export default function MaintenanceScreen() {
   return (

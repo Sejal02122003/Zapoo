@@ -126,6 +126,49 @@ export default function OutletInfo() {
     }
   }
 
+  // Handle profile image deletion
+  const handleProfileImageDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete your profile photo?")) return
+    try {
+      setUploadingImage(true)
+      setImageType('profile')
+      await restaurantAPI.updateProfile({ profileImage: "" })
+      setThumbnailImage("https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&h=200&fit=crop")
+      setRestaurantData(prev => prev ? { ...prev, profileImage: null } : null)
+      toast.success("Profile photo deleted successfully!")
+    } catch (error) {
+      debugError("Error deleting profile image:", error)
+      toast.error("Failed to delete profile photo. Please try again.")
+    } finally {
+      setUploadingImage(false)
+      setImageType(null)
+    }
+  }
+
+  // Handle cover image deletion
+  const handleCoverImageDelete = async (indexToDelete = 0) => {
+    if (!window.confirm("Are you sure you want to remove this cover image?")) return
+    try {
+      setUploadingImage(true)
+      setImageType('menu')
+      const updated = coverImages.filter((_, idx) => idx !== indexToDelete)
+      await restaurantAPI.updateProfile({ menuImages: updated, coverImages: updated })
+      setCoverImages(updated)
+      if (updated.length > 0) {
+        setMainImage(updated[0].url)
+      } else {
+        setMainImage("https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&h=400&fit=crop")
+      }
+      toast.success("Cover image removed successfully!")
+    } catch (error) {
+      debugError("Error removing cover image:", error)
+      toast.error("Failed to remove cover image.")
+    } finally {
+      setUploadingImage(false)
+      setImageType(null)
+    }
+  }
+
   // Handle multiple cover images addition
   const handleCoverImageAdd = async (files) => {
     if (!files || (Array.isArray(files) && files.length === 0)) return
@@ -250,29 +293,6 @@ export default function OutletInfo() {
     }
   }
 
-  const handleCoverImageDelete = async (indexToDelete) => {
-    if (!window.confirm("Are you sure you want to delete this cover image?")) return
-    try {
-      setUploadingImage(true)
-      setImageType('menu')
-      const updatedImages = coverImages.filter((_, index) => index !== indexToDelete)
-      const menuImagesForBackend = updatedImages.map(img => ({ url: img.url, publicId: img.publicId || null }))
-      await restaurantAPI.updateProfile({ menuImages: menuImagesForBackend })
-      setCoverImages(updatedImages)
-      if (indexToDelete === 0 && updatedImages.length > 0) {
-        setMainImage(updatedImages[0].url)
-      } else if (updatedImages.length === 0) {
-        setMainImage("https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&h=400&fit=crop")
-      }
-      toast.success("Image deleted successfully")
-    } catch (error) {
-      toast.error("Failed to delete image.")
-    } finally {
-      setUploadingImage(false)
-      setImageType(null)
-    }
-  }
-
   const formatDate = (dateString) => {
     if (!dateString) return "N/A"
     const d = new Date(dateString)
@@ -313,10 +333,10 @@ export default function OutletInfo() {
             >
               {uploadingImage && imageType === 'menu' ? 'Uploading...' : 'Add image'}
             </button>
-            {mainImage && (
+            {coverImages.length > 0 && (
               <button 
                 disabled={uploadingImage}
-                className="bg-[#FF3B4D] text-white px-4 py-2 rounded-xl text-xs font-bold disabled:opacity-70 transition-colors shadow-sm" 
+                className="bg-[#FF3B4D] hover:bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold disabled:opacity-70 transition-colors shadow-sm" 
                 onClick={() => handleCoverImageDelete(0)}
               >
                 Remove
@@ -345,12 +365,13 @@ export default function OutletInfo() {
                 className="bg-[#111827] text-white px-4 py-2.5 rounded-xl text-[13px] font-bold disabled:opacity-70 shadow-sm transition-colors" 
                 onClick={() => handleImageClick('profile', profileImageInputRef, "Update Profile Photo")}
               >
-                {uploadingImage && imageType === 'profile' ? 'Uploading...' : 'Add image'}
+                {uploadingImage && imageType === 'profile' ? 'Uploading...' : restaurantData?.profileImage?.url ? 'Change image' : 'Add image'}
               </button>
-              {thumbnailImage && (
+              {Boolean(restaurantData?.profileImage?.url) && (
                 <button 
-                  className="bg-[#FF3B4D] text-white px-4 py-2.5 rounded-xl text-[13px] font-bold shadow-sm transition-colors"
-                  // onClick={() => {/* handle profile image delete if needed */}}
+                  disabled={uploadingImage}
+                  onClick={handleProfileImageDelete}
+                  className="bg-[#FF3B4D] hover:bg-red-600 text-white px-4 py-2.5 rounded-xl text-[13px] font-bold disabled:opacity-70 shadow-sm transition-colors"
                 >
                   Delete
                 </button>

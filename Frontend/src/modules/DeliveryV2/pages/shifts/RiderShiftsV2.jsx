@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 
 export default function RiderShiftsV2() {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('available'); // 'available' | 'payouts'
+    const [activeTab, setActiveTab] = useState('available'); // 'available' | 'my-shifts' | 'payouts'
     const [shifts, setShifts] = useState([]);
+    const [myShifts, setMyShifts] = useState([]);
     const [payouts, setPayouts] = useState([]);
     const [riderZone, setRiderZone] = useState({ zoneId: null, zoneName: '' });
     const [loading, setLoading] = useState(true);
@@ -27,6 +28,20 @@ export default function RiderShiftsV2() {
         }
     };
 
+    const fetchMyShifts = async () => {
+        try {
+            setLoading(true);
+            const response = await apiClient.get('/food/delivery/shifts/rider/my-shifts');
+            if (response.data?.success) {
+                setMyShifts(response.data.data || []);
+            }
+        } catch (error) {
+            console.error("Error fetching my booked shifts", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchPayouts = async () => {
         try {
             setLoading(true);
@@ -43,6 +58,7 @@ export default function RiderShiftsV2() {
 
     useEffect(() => {
         if (activeTab === 'available') fetchShifts();
+        if (activeTab === 'my-shifts') fetchMyShifts();
         if (activeTab === 'payouts') fetchPayouts();
     }, [activeTab]);
 
@@ -60,6 +76,22 @@ export default function RiderShiftsV2() {
         } catch (error) {
             console.error(error);
             alert(error.response?.data?.message || "Error booking shift");
+        }
+    };
+
+    const handleCancelBooking = async (bookingId) => {
+        try {
+            if (!window.confirm("Are you sure you want to cancel this shift booking?")) return;
+            const response = await apiClient.post(`/food/delivery/shifts/rider/${bookingId}/cancel`);
+            if (response.data?.success) {
+                alert("Shift booking cancelled successfully!");
+                fetchMyShifts();
+            } else {
+                alert(response.data?.message || "Failed to cancel shift booking");
+            }
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || "Error cancelling shift booking");
         }
     };
 
@@ -82,16 +114,22 @@ export default function RiderShiftsV2() {
                 </div>
 
                 {/* Sub tabs */}
-                <div className="flex border-b border-gray-100 gap-4 text-xs font-bold pt-1">
+                <div className="flex border-b border-gray-100 gap-4 text-xs font-bold pt-1 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('available')}
-                        className={`pb-2 border-b-2 transition ${activeTab === 'available' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'}`}
+                        className={`pb-2 border-b-2 transition whitespace-nowrap ${activeTab === 'available' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'}`}
                     >
                         Available Shifts
                     </button>
                     <button
+                        onClick={() => setActiveTab('my-shifts')}
+                        className={`pb-2 border-b-2 transition whitespace-nowrap ${activeTab === 'my-shifts' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'}`}
+                    >
+                        My Shifts
+                    </button>
+                    <button
                         onClick={() => setActiveTab('payouts')}
-                        className={`pb-2 border-b-2 transition ${activeTab === 'payouts' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'}`}
+                        className={`pb-2 border-b-2 transition whitespace-nowrap ${activeTab === 'payouts' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'}`}
                     >
                         My Shift Payouts
                     </button>
@@ -164,6 +202,91 @@ export default function RiderShiftsV2() {
                                                 </button>
                                             )}
                                         </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </>
+                )}
+
+                {activeTab === 'my-shifts' && (
+                    <>
+                        {loading ? (
+                            <div className="text-center py-10 text-gray-500 text-xs">Loading booked shifts...</div>
+                        ) : myShifts.length === 0 ? (
+                            <div className="text-center py-10 bg-white rounded-xl border border-gray-100 shadow-sm">
+                                <div className="text-4xl mb-3">📅</div>
+                                <h3 className="text-gray-800 font-semibold mb-1 text-sm">No Booked Shifts</h3>
+                                <p className="text-gray-500 text-xs px-6 mb-4">You haven't booked any shifts yet. Explore available shifts to start earning minimum guarantees!</p>
+                                <button 
+                                    onClick={() => setActiveTab('available')}
+                                    className="px-4 py-2 bg-orange-500 text-white font-bold text-xs rounded-lg shadow-sm hover:bg-orange-600 transition"
+                                >
+                                    Browse Available Shifts
+                                </button>
+                            </div>
+                        ) : (
+                            myShifts.map((booking) => {
+                                const shift = booking.shiftId || {};
+                                const statusColors = {
+                                    BOOKED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    COMPLETED: 'bg-blue-50 text-blue-700 border-blue-200',
+                                    CANCELLED: 'bg-gray-100 text-gray-600 border-gray-200',
+                                    NO_SHOW: 'bg-red-50 text-red-700 border-red-200'
+                                };
+
+                                const rules = booking.snapshotRules || {};
+                                const guaranteeAmount = rules.guaranteeAmount ?? shift.guaranteeAmount;
+                                const minimumOrders = rules.minimumOrders ?? shift.minimumOrders;
+                                const minimumLoginPercentage = rules.minimumLoginPercentage ?? shift.minimumLoginPercentage;
+
+                                return (
+                                    <div key={booking._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4 space-y-3">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="text-base font-bold text-gray-800">{shift.name || 'Shift Booking'}</h3>
+                                                <div className="text-gray-500 text-xs mt-1 flex items-center gap-1.5">
+                                                    <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                    {shift.startTime ? new Date(shift.startTime).toLocaleString([], {hour: '2-digit', minute:'2-digit', month: 'short', day: 'numeric'}) : 'N/A'} - {shift.endTime ? new Date(shift.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}
+                                                </div>
+                                            </div>
+                                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${statusColors[booking.status] || 'bg-gray-50 text-gray-700 border-gray-200'}`}>
+                                                {booking.status === 'BOOKED' ? 'ACTIVE / BOOKED' : booking.status}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex gap-2 text-xs">
+                                            {shift.zoneName && (
+                                                <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full text-[11px] font-medium flex items-center gap-1">
+                                                    📍 {shift.zoneName}
+                                                </span>
+                                            )}
+                                            <span className="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-full text-[11px] font-medium flex items-center gap-1">
+                                                📅 Booked: {new Date(booking.bookedAt || booking.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                            </span>
+                                        </div>
+
+                                        {guaranteeAmount > 0 && (
+                                            <div className="bg-green-50/60 rounded-lg p-3 border border-green-100 text-xs space-y-1">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-green-800 font-semibold">Minimum Guarantee</span>
+                                                    <span className="text-green-600 font-bold text-sm">₹{guaranteeAmount}</span>
+                                                </div>
+                                                <div className="text-[11px] text-green-700 flex justify-between pt-1 border-t border-green-100/60">
+                                                    <span>Min Orders: {minimumOrders}</span>
+                                                    <span>Required Online: {minimumLoginPercentage}%</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {booking.canCancel && (
+                                            <button
+                                                onClick={() => handleCancelBooking(booking._id)}
+                                                className="w-full py-2.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl font-bold text-xs transition"
+                                            >
+                                                Cancel Booking
+                                            </button>
+                                        )}
                                     </div>
                                 );
                             })

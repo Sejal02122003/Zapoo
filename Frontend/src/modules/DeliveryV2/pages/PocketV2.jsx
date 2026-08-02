@@ -264,19 +264,34 @@ export const PocketV2 = () => {
           {/* SHIFT SLOTS & GUARANTEES CARD */}
           <div
             onClick={() => navigate('/food/delivery/shifts')}
-            className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-4 text-white shadow-md cursor-pointer flex items-center justify-between transition-all active:scale-[0.98]"
+            className="rounded-2xl p-4.5 cursor-pointer flex items-center justify-between transition-all active:scale-[0.98] shadow-lg border border-orange-600/20 my-2"
+            style={{
+              background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)',
+              color: '#ffffff',
+              boxShadow: '0 4px 14px 0 rgba(234, 88, 12, 0.35)'
+            }}
           >
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="w-4 h-4 text-yellow-300" />
-                <h3 className="text-sm font-extrabold uppercase tracking-wider">Shift Slots & Guarantees</h3>
+            <div className="flex-1 pr-3">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-6 h-6 rounded-full bg-amber-300/30 flex items-center justify-center border border-amber-200/40 shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-200" />
+                </div>
+                <h3 
+                  className="text-sm font-black uppercase tracking-wider drop-shadow-sm"
+                  style={{ color: '#ffffff' }}
+                >
+                  Shift Slots & Guarantees
+                </h3>
               </div>
-              <p className="text-xs text-orange-100 font-medium">
+              <p 
+                className="text-xs font-semibold leading-relaxed drop-shadow-sm"
+                style={{ color: '#ffedd5' }}
+              >
                 Book 11 AM - 11 PM shifts to unlock minimum earnings guarantees & payouts!
               </p>
             </div>
-            <div className="bg-white text-orange-600 p-2 rounded-xl shrink-0 ml-3">
-              <ChevronRight className="w-5 h-5 font-bold" />
+            <div className="bg-white text-orange-600 p-2.5 rounded-xl shrink-0 ml-2 shadow-md border border-orange-100 flex items-center justify-center">
+              <ChevronRight className="w-5 h-5 font-extrabold stroke-[3]" />
             </div>
           </div>
 

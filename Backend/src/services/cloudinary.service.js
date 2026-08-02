@@ -1,5 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { config } from '../config/env.js';
+import { processAndSaveImage } from '../utils/sharp.util.js';
+import { STORAGE_CATEGORIES } from '../config/storage.config.js';
 
 cloudinary.config({
     cloud_name: config.cloudinaryCloudName,
@@ -12,12 +14,31 @@ export const uploadImageBuffer = async (buffer, folder = 'uploads') => {
         throw new Error('File buffer is required');
     }
 
+    const hasCloudinary = Boolean(config.cloudinaryCloudName && config.cloudinaryApiKey && config.cloudinaryApiSecret);
+    if (!hasCloudinary) {
+        const categoryMap = {
+            'food/restaurants/profile': STORAGE_CATEGORIES.RESTAURANTS,
+            'food/restaurants/menu': STORAGE_CATEGORIES.MENU,
+            'food/restaurants/cover': STORAGE_CATEGORIES.RESTAURANTS,
+            'food/delivery/profile': STORAGE_CATEGORIES.USERS,
+            'food/users': STORAGE_CATEGORIES.USERS
+        };
+        const category = categoryMap[folder] || STORAGE_CATEGORIES.RESTAURANTS;
+        const res = await processAndSaveImage(buffer, category);
+        return res.fullUrl;
+    }
+
     return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
             { folder, resource_type: 'image' },
-            (error, result) => {
+            async (error, result) => {
                 if (error) {
-                    return reject(error);
+                    try {
+                        const res = await processAndSaveImage(buffer, STORAGE_CATEGORIES.RESTAURANTS);
+                        return resolve(res.fullUrl);
+                    } catch (fallbackErr) {
+                        return reject(error);
+                    }
                 }
                 return resolve(result.secure_url);
             }

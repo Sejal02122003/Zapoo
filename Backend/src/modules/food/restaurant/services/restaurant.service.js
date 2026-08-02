@@ -1,5 +1,5 @@
 import { FoodRestaurant } from '../models/restaurant.model.js';
-import { uploadFileBuffer } from '../../../../services/cloudinary.service.js';
+import { uploadImageBuffer, uploadFileBuffer } from '../../../../services/cloudinary.service.js';
 import { processAndSaveImage } from '../../../../utils/sharp.util.js';
 import { STORAGE_CATEGORIES } from '../../../../config/storage.config.js';
 import { ValidationError } from '../../../../core/auth/errors.js';

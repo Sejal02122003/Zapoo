@@ -81,6 +81,10 @@ const AppRoutes = () => {
       <Route path="/delivery/auth/*" element={<AuthApp />} />
       <Route path="/restaurant/auth/*" element={<AuthApp />} />
 
+      {/* Direct Module Routing Shortcuts */}
+      <Route path="/restaurant/*" element={<RedirectToFood />} />
+      <Route path="/delivery/*" element={<RedirectToFood />} />
+
       {/* Food Module - Handle both /food and root / for the user app */}
       <Route path="/food/*" element={<FoodAppWrapper />} />
 

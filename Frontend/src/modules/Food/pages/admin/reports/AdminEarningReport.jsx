@@ -160,12 +160,11 @@ export default function AdminEarningReport() {
                     )
 
                     const restaurantCommission = Number(breakdown.restaurantCommission) || 0
-                    const gstOnItem = Number(breakdown.gstOnItem) || 0
                     const gstOnCommission = Number(breakdown.gstOnCommission) || 0
                     const paymentGatewayFee = Number(breakdown.paymentGatewayFee) || 0
                     const tcs = Number(breakdown.tcs) || 0
                     
-                    const totalDeductions = restaurantCommission + gstOnItem + gstOnCommission + paymentGatewayFee + tcs
+                    const totalDeductions = restaurantCommission + gstOnCommission + paymentGatewayFee + tcs
                     const restaurantGets = Math.max(0, itemSubtotal + packagingFee - totalDeductions)
                     const isExpanded = !!expandedCards[tx.id]
 
@@ -319,12 +318,6 @@ export default function AdminEarningReport() {
                                         <span className="text-[12px] text-gray-500 font-medium">Restaurant commission</span>
                                         <span className="text-[12px] text-red-500/80">{formatDiscount(restaurantCommission)}</span>
                                       </div>
-                                      {gstOnItem > 0 && (
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-[12px] text-gray-500 font-medium">GST on item</span>
-                                          <span className="text-[12px] text-red-500/80">{formatDiscount(gstOnItem)}</span>
-                                        </div>
-                                      )}
                                       {gstOnCommission > 0 && (
                                         <div className="flex items-center justify-between">
                                           <span className="text-[12px] text-gray-500 font-medium">GST on commission</span>

@@ -28,6 +28,7 @@ shiftRoutes.post('/:id/riders/:riderId/pay', shiftController.payRiderForShift);
 
 // --- RIDER SHIFT & PAYOUT APIs ---
 shiftRoutes.get('/rider', shiftController.getAvailableShifts);
+shiftRoutes.get('/rider/my-shifts', shiftController.getRiderBookedShifts);
 shiftRoutes.post('/rider/:id/book', shiftController.bookShift);
 shiftRoutes.post('/rider/:id/cancel', shiftController.cancelBooking);
 shiftRoutes.get('/rider/payouts', payoutController.getRiderPayouts);
