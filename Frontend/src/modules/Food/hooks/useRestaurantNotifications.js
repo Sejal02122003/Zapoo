@@ -641,7 +641,7 @@ export const useRestaurantNotifications = () => {
     // WebSocket-first for instant delivery; polling is the automatic fallback.
     socketRef.current = io(socketUrl, {
       path: '/socket.io/',
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       upgrade: true,
       reconnection: true,
       reconnectionDelay: 1000,

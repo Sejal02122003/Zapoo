@@ -186,15 +186,10 @@ function createUserSocket(userId, token) {
   connectionUserId = String(userId);
 
   socket = io(origin, {
-
     path: '/socket.io/',
-
-    transports: ['websocket', 'polling'],
-
+    transports: ['polling', 'websocket'],
     reconnection: true,
-
     auth: { token },
-
     query: { token } });
 
 

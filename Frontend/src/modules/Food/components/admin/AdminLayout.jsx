@@ -17,7 +17,7 @@ export default function AdminLayout() {
   useEffect(() => {
     // Connect to global admin socket for SOS alerts
     const backendUrl = API_BASE_URL?.replace("/api/v1", "") || "http://localhost:5000"
-    const socket = io(backendUrl, { transports: ["websocket", "polling"] })
+    const socket = io(backendUrl, { transports: ["polling", "websocket"] })
     
     socket.on("connect", () => {
       socket.emit("join-admin-orders") // Re-using admin room

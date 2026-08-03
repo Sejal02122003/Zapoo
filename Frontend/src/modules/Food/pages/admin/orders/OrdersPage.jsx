@@ -600,7 +600,7 @@ export default function OrdersPage({ statusKey = "all" }) {
     }
 
     const socket = io(backendUrl, {
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket"],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
