@@ -85,11 +85,31 @@ function createModuleClient(moduleName) {
   };
 
   const onRefreshFailed = () => {
+    // Check if they were actually logged in before we clear, to avoid redirect loops for public users
+    const wasLoggedIn = 
+      localStorage.getItem(`${moduleName}_authenticated`) === "true" || 
+      !!localStorage.getItem(`${moduleName}_accessToken`) ||
+      !!localStorage.getItem("accessToken");
+
     clearModuleAuth(moduleName);
     subscribers.forEach((cb) => cb(null));
     subscribers = [];
+    
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("authRefreshFailed", { detail: { module: moduleName } }));
+      
+      // If their session expired, forcefully redirect them to the correct login page to clear React state
+      if (wasLoggedIn && !window.location.pathname.includes('/auth') && !window.location.pathname.includes('/login')) {
+        let redirectPath = "/food/user/auth/login";
+        if (moduleName === "restaurant" || window.location.pathname.includes('/restaurant/')) {
+          redirectPath = "/food/restaurant/auth";
+        } else if (moduleName === "delivery" || window.location.pathname.includes('/delivery/')) {
+          redirectPath = "/food/delivery/auth";
+        } else if (moduleName === "admin" || window.location.pathname.includes('/admin/')) {
+          redirectPath = "/food/admin/auth";
+        }
+        window.location.href = redirectPath;
+      }
     }
   };
 
