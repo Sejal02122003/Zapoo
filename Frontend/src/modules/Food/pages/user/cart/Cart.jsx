@@ -128,6 +128,7 @@ export default function Cart() {
   const [couponCode, setCouponCode] = useState("")
   const [manualCouponCode, setManualCouponCode] = useState("")
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("cash")
+  const [useWalletBalance, setUseWalletBalance] = useState(false)
   const [showPaymentSheet, setShowPaymentSheet] = useState(false)
   const [walletBalance, setWalletBalance] = useState(0)
   const [isLoadingWallet, setIsLoadingWallet] = useState(false)
@@ -1916,6 +1917,7 @@ export default function Cart() {
         restaurantNote: restaurantNote || "",
         sendCutlery: sendCutlery !== false,
         paymentMethod: selectedPaymentMethod,
+        useWalletBalance: useWalletBalance,
         // `useZone()` can return `null`. Zod expects string/undefined, not null.
         zoneId: zoneId || undefined,
         scheduledAt: isScheduled ? new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString() : undefined,
@@ -1927,7 +1929,8 @@ export default function Cart() {
         restaurantName: finalRestaurantName,
         itemCount: orderItems.length,
         totalAmount: orderPricing.total,
-        paymentMethod: orderPayload.paymentMethod
+        paymentMethod: orderPayload.paymentMethod,
+        useWalletBalance: orderPayload.useWalletBalance
       });
 
       // Check wallet balance if wallet payment selected
@@ -3514,6 +3517,24 @@ export default function Cart() {
                       </button>
                     </div>
 
+                    {walletBalance > 0 && walletBalance < total && (
+                      <label className="flex items-center justify-between p-4 mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <Wallet className="w-5 h-5 text-blue-600" />
+                          <div>
+                            <p className="text-sm font-bold text-blue-900 dark:text-blue-100">Use Wallet Balance</p>
+                            <p className="text-xs font-semibold text-blue-600/80">Available: {RUPEE_SYMBOL}{walletBalance.toFixed(0)}</p>
+                          </div>
+                        </div>
+                        <input 
+                          type="checkbox" 
+                          className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500" 
+                          checked={useWalletBalance}
+                          onChange={(e) => setUseWalletBalance(e.target.checked)}
+                        />
+                      </label>
+                    )}
+
                     <div className="space-y-3 overflow-y-auto pr-1 custom-scrollbar pb-4 flex-1 min-h-0">
                       {[
                         {
@@ -3622,7 +3643,9 @@ export default function Cart() {
                     >
                       <div className="flex-shrink-0">
                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Total Pay</p>
-                         <p className="text-xl font-black text-primary tabular-nums">{RUPEE_SYMBOL}{total.toFixed(0)}</p>
+                         <p className="text-xl font-black text-primary tabular-nums">
+                            {RUPEE_SYMBOL}{(useWalletBalance && selectedPaymentMethod === 'razorpay' ? Math.max(0, total - walletBalance) : total).toFixed(0)}
+                         </p>
                        </div>
                        <Button
                         onClick={() => setShowPaymentSheet(false)}

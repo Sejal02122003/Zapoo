@@ -39,6 +39,7 @@ const foodTransactionSchema = new mongoose.Schema({
         restaurantCouponCode: { type: String, default: null },
         couponDiscountTotal: { type: Number, default: 0 },
         total: { type: Number, default: 0 },
+        walletAmountUsed: { type: Number, default: 0 },
         currency: { type: String, default: 'INR', trim: true },
     },
 

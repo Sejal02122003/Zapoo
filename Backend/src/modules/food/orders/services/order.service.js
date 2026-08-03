@@ -182,10 +182,10 @@ export async function createOrder(userId, dto) {
       : undefined,
   };
 
-  const paymentMethod =
+  let paymentMethod =
     dto.paymentMethod === "card" ? "razorpay" : dto.paymentMethod;
   const isCash = paymentMethod === "cash";
-  const isWallet = paymentMethod === "wallet";
+  let isWallet = paymentMethod === "wallet";
 
   // Ensure pricing is present and consistent.
   const computedSubtotal = (dto.items || []).reduce((sum, item) => {
@@ -202,6 +202,7 @@ export async function createOrder(userId, dto) {
     platformFee: Number(dto.pricing?.platformFee ?? 0),
     discount: Number(dto.pricing?.discount ?? 0),
     total: Number(dto.pricing?.total ?? 0),
+    walletAmountUsed: 0,
     currency: String(dto.pricing?.currency || "INR"),
   };
   const computedTotal = Math.max(
@@ -230,10 +231,37 @@ export async function createOrder(userId, dto) {
     normalizedPricing.total = computedTotal;
   }
 
+  // Handle Split Payment Logic
+  let payableAmount = normalizedPricing.total;
+  let walletAmountToUse = 0;
+  
+  if (isWallet) {
+    walletAmountToUse = normalizedPricing.total;
+    normalizedPricing.walletAmountUsed = walletAmountToUse;
+    payableAmount = 0;
+  } else if (dto.useWalletBalance && paymentMethod === "razorpay") {
+    try {
+      const wallet = await userWalletService.getUserWallet(userId);
+      const balance = wallet ? wallet.balance : 0;
+      if (balance > 0) {
+        walletAmountToUse = Math.min(balance, normalizedPricing.total);
+        normalizedPricing.walletAmountUsed = walletAmountToUse;
+        payableAmount = Number((normalizedPricing.total - walletAmountToUse).toFixed(2));
+        
+        if (payableAmount === 0) {
+          paymentMethod = "wallet";
+          isWallet = true;
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch wallet for split payment:", err.message);
+    }
+  }
+
   const payment = {
     method: paymentMethod,
     status: isCash ? "cod_pending" : isWallet ? "paid" : "created",
-    amountDue: normalizedPricing.total ?? 0,
+    amountDue: payableAmount,
     razorpay: {},
     qr: {},
   };
@@ -318,7 +346,7 @@ export async function createOrder(userId, dto) {
   let razorpayPayload = null;
 
   if (paymentMethod === "razorpay" && isRazorpayConfigured()) {
-    const amountPaise = Math.round((normalizedPricing.total ?? 0) * 100);
+    const amountPaise = Math.round((payableAmount ?? 0) * 100);
     if (amountPaise < 100)
       throw new ValidationError("Amount too low for online payment");
     try {
@@ -339,9 +367,9 @@ export async function createOrder(userId, dto) {
 
   await order.save();
 
-  if (isWallet) {
+  if (walletAmountToUse > 0) {
     try {
-      await userWalletService.deductWalletBalance(userId, order.pricing.total, `Payment for order #${order.order_id || order._id}`, { orderId: order._id });
+      await userWalletService.deductWalletBalance(userId, walletAmountToUse, `Payment for order #${order.order_id || order._id}`, { orderId: order._id });
     } catch (err) {
       // If wallet deduction fails (e.g. insufficient balance), we should not have saved the order or we should delete/cancel it.
       // But since we already saved it, let's at least throw the error so the user knows.
@@ -928,12 +956,25 @@ export async function cancelOrder(orderId, userId, reason, refundDestination = "
           processedAt: new Date()
         };
       } else {
-        const refundResult = await initiateRazorpayRefund(
-          order.payment.razorpay.paymentId,
-          order.pricing.total
-        );
+        const razorpayAmount = order.payment.amountDue > 0 ? order.payment.amountDue : order.pricing.total;
+        
+        let refundResult = { success: true, refundId: 'split_wallet_only' };
+        if (razorpayAmount > 0) {
+            refundResult = await initiateRazorpayRefund(
+              order.payment.razorpay.paymentId,
+              razorpayAmount
+            );
+        }
 
         if (refundResult.success) {
+          if (order.pricing.walletAmountUsed > 0) {
+            await userWalletService.refundWalletBalance(
+              userId,
+              order.pricing.walletAmountUsed,
+              `Refund for cancelled order #${order.order_id || order._id}`,
+              { orderId: order._id, source: "order_refund_wallet" }
+            );
+          }
           order.payment.status = "refunded";
           order.payment.refund = {
             status: "processed",
@@ -943,11 +984,10 @@ export async function cancelOrder(orderId, userId, reason, refundDestination = "
             processedAt: new Date()
           };
         } else {
-          // Log failure but let order cancellation proceed
           order.payment.refund = {
             status: "failed",
             destination: "source",
-            amount: order.pricing.total
+            amount: order.pricing.total,
           };
         }
       }
@@ -1146,12 +1186,25 @@ export async function cancelOrderAdmin(orderId, adminId, reason, refundDestinati
           processedAt: new Date()
         };
       } else {
-        const refundResult = await initiateRazorpayRefund(
-          order.payment.razorpay.paymentId,
-          order.pricing.total
-        );
+        const razorpayAmount = order.payment.amountDue > 0 ? order.payment.amountDue : order.pricing.total;
+        
+        let refundResult = { success: true, refundId: 'split_wallet_only' };
+        if (razorpayAmount > 0) {
+            refundResult = await initiateRazorpayRefund(
+              order.payment.razorpay.paymentId,
+              razorpayAmount
+            );
+        }
 
         if (refundResult.success) {
+          if (order.pricing.walletAmountUsed > 0) {
+            await userWalletService.refundWalletBalance(
+              userId,
+              order.pricing.walletAmountUsed,
+              `Refund for cancelled order #${order.order_id || order._id}`,
+              { orderId: order._id, source: "order_refund_wallet" }
+            );
+          }
           order.payment.status = "refunded";
           order.payment.refund = {
             status: "processed",
@@ -1164,7 +1217,7 @@ export async function cancelOrderAdmin(orderId, adminId, reason, refundDestinati
           order.payment.refund = {
             status: "failed",
             destination: "source",
-            amount: order.pricing.total
+            amount: order.pricing.total,
           };
         }
       }
@@ -1613,12 +1666,25 @@ export async function updateOrderStatusRestaurant(
       (!order.payment.refund || order.payment.refund.status !== "processed")
     ) {
       try {
-        const refundResult = await initiateRazorpayRefund(
-          order.payment.razorpay.paymentId,
-          order.pricing.total
-        );
+        const razorpayAmount = order.payment.amountDue > 0 ? order.payment.amountDue : order.pricing.total;
+        
+        let refundResult = { success: true, refundId: 'split_wallet_only' };
+        if (razorpayAmount > 0) {
+            refundResult = await initiateRazorpayRefund(
+              order.payment.razorpay.paymentId,
+              razorpayAmount
+            );
+        }
 
         if (refundResult.success) {
+          if (order.pricing.walletAmountUsed > 0) {
+            await userWalletService.refundWalletBalance(
+              order.userId,
+              order.pricing.walletAmountUsed,
+              `Refund for order #${order.order_id || order._id} cancelled by restaurant`,
+              { orderId: order._id, source: "order_refund_wallet" }
+            );
+          }
           order.payment.status = "refunded";
           order.payment.refund = {
             status: "processed",

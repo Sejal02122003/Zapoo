@@ -55,6 +55,7 @@ const pricingSchema = new mongoose.Schema(
         discount: { type: Number, default: 0, min: 0 },
         deductGstFromRestaurant: { type: Boolean, default: true },
         total: { type: Number, required: true, min: 0 },
+        walletAmountUsed: { type: Number, default: 0, min: 0 },
         currency: { type: String, default: 'INR' }
     },
     { _id: false }
