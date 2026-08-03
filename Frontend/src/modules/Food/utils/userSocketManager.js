@@ -25,9 +25,30 @@ let isConnected = false;
 
 
 function getAuthToken() {
-
-  return localStorage.getItem('user_accessToken') || localStorage.getItem('accessToken') || '';
-
+  const token = localStorage.getItem('user_accessToken') || localStorage.getItem('accessToken') || '';
+  if (token) {
+    try {
+      // Decode JWT payload without external library
+      const payloadBase64 = token.split('.')[1];
+      if (payloadBase64) {
+        const payload = JSON.parse(atob(payloadBase64));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          console.warn("[UserSocket] Token expired. Forcing logout to prevent socket loops.");
+          localStorage.removeItem('user_accessToken');
+          localStorage.removeItem('user_refreshToken');
+          localStorage.removeItem('user_authenticated');
+          localStorage.removeItem('user_user');
+          if (typeof window !== "undefined") {
+            window.location.replace('/food/user/auth/login');
+          }
+          return null;
+        }
+      }
+    } catch (e) {
+      console.error("[UserSocket] Invalid token format", e);
+    }
+  }
+  return token;
 }
 
 
