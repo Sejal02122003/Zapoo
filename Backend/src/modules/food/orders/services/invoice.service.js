@@ -1,7 +1,7 @@
 import { FoodOrder } from '../models/order.model.js';
 import { FoodTransaction } from '../models/foodTransaction.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
-import { FoodUser } from '../../user/models/user.model.js';
+import { FoodUser } from '../../../../core/users/user.model.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 
 // Number to Words Converter (Indian Numbering System)
