@@ -142,7 +142,7 @@ const buildDeliveryOrderNotification = (orderData = {}) => {
     tag: `delivery-order-${orderId}`,
     data: {
       orderId,
-      targetUrl: '/delivery' } };
+      targetUrl: '/food/delivery' } };
 }
 
 const triggerWebViewNativeNotification = async (orderData = {}) => {
@@ -153,7 +153,7 @@ const triggerWebViewNativeNotification = async (orderData = {}) => {
     body: `Order #${orderData?.orderId || orderData?.orderMongoId || orderData?.id || ''}`.trim(),
     orderId: orderData?.orderId || orderData?.order_id || '',
     orderMongoId: orderData?.orderMongoId || orderData?.order_mongo_id || '',
-    targetUrl: '/delivery' };
+    targetUrl: '/food/delivery' };
 
   try {
     if (

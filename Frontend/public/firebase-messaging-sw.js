@@ -213,7 +213,9 @@ self.addEventListener("notificationclick", (event) => {
   if (!targetUrl || targetUrl === "/") {
     const title = String(event?.notification?.title || "").toLowerCase();
     const dataStr = JSON.stringify(event?.notification?.data || {}).toLowerCase();
-    if (dataStr.includes("restaurant") || title.includes("order") || title.includes("restaurant")) {
+    if (dataStr.includes("delivery") || title.includes("delivery") || title.includes("pickup") || title.includes("rider")) {
+      targetUrl = "/food/delivery";
+    } else if (dataStr.includes("restaurant") || title.includes("order") || title.includes("restaurant")) {
       targetUrl = "/food/restaurant";
     } else {
       targetUrl = "/";
