@@ -1,6 +1,17 @@
 /* eslint-disable no-undef */
+/* sw_version: 2 — force browser to detect new SW and clear stale chunk cache */
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js");
+
+// Force immediate SW activation — no waiting for tab close
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((names) => Promise.all(names.map((n) => caches.delete(n))))
+      .then(() => self.clients.claim())
+  );
+});
 
 const sanitize = (value) => String(value || "").trim().replace(/^['"]|['"]$/g, "");
 const PUSH_DEBUG_PREFIX = "[push-sw]";
@@ -134,22 +145,22 @@ async function loadFirebaseWebConfig() {
     // To prevent double notifications (one from browser, one from our manual call),
     // we only call showNotification manually if 'notification' is missing (Data-only message)
     // AND there is no visible window for the user.
-    if (!visibleClient && !payload.notification) {
-      const title = payload?.data?.title || "New Notification";
-      const body = payload?.data?.body || "";
+    // For delivery order alerts, ALWAYS show notification even if app is open.
+    // Riders need the system alert even when app is in the foreground/locked screen.
+    const isDeliveryOrderAlert = 
+      payload?.data?.type === 'new_order' ||
+      String(payload?.data?.targetUrl || '').includes('/food/delivery') ||
+      String(payload?.data?.link || '').includes('/food/delivery');
+
+    if (!payload.notification && (isDeliveryOrderAlert || !visibleClient)) {
+      const title = payload?.data?.title || (isDeliveryOrderAlert ? "🚴 New Order!" : "New Notification");
+      const body = payload?.data?.body || (isDeliveryOrderAlert ? "A new delivery order is waiting for you!" : "");
       const image =
         payload?.data?.image ||
         payload?.data?.imageUrl ||
         undefined;
       const notificationKey = getNotificationKey(payload);
       
-      pushDebugLog(PUSH_DEBUG_PREFIX, "Showing manual service worker notification (Data-only message)", {
-        title,
-        body,
-        image,
-        notificationKey,
-      });
-  
       self.registration.showNotification(title, {
         body,
         icon: "/logo.png",
@@ -157,7 +168,7 @@ async function loadFirebaseWebConfig() {
         tag: notificationKey,
         renotify: true,
         silent: false,
-        requireInteraction: true,
+        requireInteraction: isDeliveryOrderAlert ? true : true,
         vibrate: [200, 100, 200, 100, 300],
         data: payload?.data || {},
       });
