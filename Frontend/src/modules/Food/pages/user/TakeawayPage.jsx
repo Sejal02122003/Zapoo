@@ -821,7 +821,7 @@ export default function TakeawayPage() {
               const menuResponse = await restaurantAPI.getMenuByRestaurantId(restaurantId)
               const menu = getMenuFromResponse(menuResponse)
               const menuItems = flattenMenuItems(menu)
-                .filter((item) => Number(item?.price || 0) <= under99PriceLimit && item?.isAvailable !== false)
+                .filter((item) => item?.isAvailable !== false)
                 .map((item) => {
                   const foodType = String(item?.foodType || "").toLowerCase()
                   const isVeg = foodType.includes("veg") && !foodType.includes("non")
@@ -1604,8 +1604,8 @@ export default function TakeawayPage() {
         ) : sortedAndFilteredRestaurants.length === 0 ? (
           <div className="flex justify-center items-center py-12">
             <div className="text-gray-500 dark:text-gray-400">
-              {under99Restaurants.length === 0 && !loadingRestaurants
-                ? `No restaurants with dishes under ${RUPEE_SYMBOL}${under99PriceLimit} found.`
+              {!loadingRestaurants
+                ? `No takeaway restaurants found.`
                 : "No restaurants match the selected filters."}
             </div>
           </div>
