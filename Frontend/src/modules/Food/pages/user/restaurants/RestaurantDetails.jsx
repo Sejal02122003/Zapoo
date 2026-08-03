@@ -2271,17 +2271,19 @@ function RestaurantDetailsContent() {
         </div>
 
         {/* Right Side - Image and Add Button Wrapper */}
-        <div className="relative w-32 h-32 flex-shrink-0">
+        <div className={`relative flex-shrink-0 ${item.image ? "w-32 h-32" : "w-24 sm:w-28 md:w-32 self-center flex items-center justify-center"}`}>
           {/* Image Container with rounded-2xl overflow-hidden */}
-          <div className="w-full h-full bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm">
-            <DishImage src={item.image} alt={item.name} className="w-full h-full object-cover" />
-          </div>
-          {/* Button overlay - rendered outside of overflow-hidden image container to prevent clipping */}
+          {item.image && (
+            <div className="w-full h-full bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm">
+              <DishImage src={item.image} alt={item.name} className="w-full h-full object-cover" />
+            </div>
+          )}
+          {/* Button overlay */}
           {quantity > 0 ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              className={`absolute -bottom-3 sm:-bottom-4 left-1/2 -translate-x-1/2 rounded-full h-8 sm:h-9 md:h-10 px-3 sm:px-4 flex items-center justify-between gap-3 min-w-[90px] md:min-w-[100px] z-10 transition-all duration-300 ${
+              className={`${item.image ? "absolute -bottom-3 sm:-bottom-4 left-1/2 -translate-x-1/2" : "relative w-full"} rounded-full h-8 sm:h-9 md:h-10 px-3 sm:px-4 flex items-center justify-between gap-3 min-w-[90px] md:min-w-[100px] z-10 transition-all duration-300 ${
                 shouldShowGrayscale 
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-50 shadow-none border border-gray-300' 
                   : 'shadow-[0_4px_14px_0_rgba(0,183,97,0.39)] bg-[#00B761] hover:bg-[#00A055] text-white'
@@ -2323,7 +2325,7 @@ function RestaurantDetailsContent() {
                 }
               }}
               disabled={shouldShowGrayscale}
-              className={`absolute -bottom-3 sm:-bottom-4 left-1/2 -translate-x-1/2 rounded-full h-8 sm:h-9 md:h-10 px-5 sm:px-7 text-[12px] sm:text-[14px] md:text-[16px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap min-w-[90px] md:min-w-[100px] z-10 ${shouldShowGrayscale
+              className={`${item.image ? "absolute -bottom-3 sm:-bottom-4 left-1/2 -translate-x-1/2" : "relative w-full"} rounded-full h-8 sm:h-9 md:h-10 px-5 sm:px-7 text-[12px] sm:text-[14px] md:text-[16px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap min-w-[90px] md:min-w-[100px] z-10 ${shouldShowGrayscale
                 ? 'bg-gray-200 dark:bg-gray-800 text-gray-500 cursor-not-allowed opacity-50 shadow-none border border-gray-300'
                 : 'bg-[#E23744] hover:bg-[#D12B37] text-white shadow-[0_6px_16px_0_rgba(226,55,68,0.35)] hover:shadow-[0_8px_20px_rgba(226,55,68,0.45)] border border-[#E23744]/20'
                 }`}
