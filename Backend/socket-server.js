@@ -2,7 +2,7 @@ import http from 'http';
 import express from 'express';
 import { config } from './src/config/env.js';
 import { connectDB } from './src/config/db.js';
-import { loadEnvFromDb } from './src/config/dbEnvLoader.js';
+import { loadEnvFromDb } from './src/config/envLoader.js';
 import { initializeFirebaseRealtime } from './src/config/firebase.js';
 import { initSocket } from './src/config/socket.js';
 import { logger } from './src/utils/logger.js';
