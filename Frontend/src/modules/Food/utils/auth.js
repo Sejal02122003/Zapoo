@@ -138,7 +138,10 @@ export function getCurrentUser(module) {
  */
 export function isModuleAuthenticated(module) {
   const token = getModuleToken(module);
-  return !!token && !isTokenExpired(token);
+  const refreshToken = getModuleRefreshToken(module);
+  if (token && !isTokenExpired(token)) return true;
+  if (refreshToken && !isTokenExpired(refreshToken)) return true;
+  return false;
 }
 
 /**
