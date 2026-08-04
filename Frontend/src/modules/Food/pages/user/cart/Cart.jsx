@@ -86,7 +86,6 @@ export default function Cart() {
   const orderSuccessAudioRef = useRef(null)
   const hasRestoredRecipientRef = useRef(false)
   const hasRestoredNoteRef = useRef(false)
-  const lastSuggestedCouponsRef = useRef("")
 
   // Defensive check: Ensure CartProvider is available
   let cartContext;
@@ -199,8 +198,6 @@ export default function Cart() {
   const [placedOrderId, setPlacedOrderId] = useState(null)
   const [selectedAddressId, setSelectedAddressId] = useState(null)
   const [orderType, setOrderType] = useState('delivery')
-  const [showAutoApplyPopup, setShowAutoApplyPopup] = useState(false)
-  const [autoApplyPopupData, setAutoApplyPopupData] = useState(null)
   const [deliveryAddressMode, setDeliveryAddressMode] = useState(() => {
     try {
       if (typeof window === "undefined") return "saved"
@@ -209,6 +206,9 @@ export default function Cart() {
       return "saved"
     }
   })
+  
+  const [showAutoApplyPopup, setShowAutoApplyPopup] = useState(false)
+  const [autoApplyPopupData, setAutoApplyPopupData] = useState(null)
 
   useEffect(() => {
     const audio = new Audio(zoopSound)
@@ -270,8 +270,11 @@ export default function Cart() {
   const [userOrderCount, setUserOrderCount] = useState(0)
 
   // Auto-apply logic — runs whenever coupons finish loading or subtotal changes.
+  // Only fires when: coupons are ready, subtotal > 0, and no coupon is already applied.
   useEffect(() => {
     if (loadingCoupons || availableCoupons.length === 0 || cart.length === 0 || subtotal <= 0) return;
+    // If a coupon is already applied, don't override it
+    if (appliedCoupon && appliedRestaurantCoupon) return;
 
     const userOrderCountValue = userProfile?.orderCount || userProfile?.orders?.length || 0;
     let bestAdminCoupon = null;
@@ -295,51 +298,24 @@ export default function Cart() {
     });
 
     const codes = [];
-    const couponsToApply = [];
-    let savings = 0;
-    let cashback = 0;
+    let applied = false;
 
-    if (bestAdminCoupon) {
-      couponsToApply.push(bestAdminCoupon);
+    if (bestAdminCoupon && !appliedCoupon) {
+      setAppliedCoupon(bestAdminCoupon);
+      setCouponCode(bestAdminCoupon.code);
       codes.push(bestAdminCoupon.code);
-      savings += bestAdminCoupon.discount || 0;
-      cashback += bestAdminCoupon.cashbackValue || 0;
+      applied = true;
     }
-    if (bestRestaurantCoupon) {
-      couponsToApply.push(bestRestaurantCoupon);
+    if (bestRestaurantCoupon && !appliedRestaurantCoupon) {
+      setAppliedRestaurantCoupon(bestRestaurantCoupon);
       codes.push(bestRestaurantCoupon.code);
-      savings += bestRestaurantCoupon.discount || 0;
-      cashback += bestRestaurantCoupon.cashbackValue || 0;
+      applied = true;
     }
 
-    console.log("Auto-apply logic evaluated", { bestAdminCoupon, bestRestaurantCoupon, codes });
-    
-    if (couponsToApply.length > 0) {
-      const suggestedCodes = codes.join(' & ');
-      console.log("Coupons to apply exist", suggestedCodes, "Previous:", lastSuggestedCouponsRef.current);
-      
-      if (lastSuggestedCouponsRef.current !== suggestedCodes) {
-        lastSuggestedCouponsRef.current = suggestedCodes;
-        
-        // We no longer auto-apply here. We just show the popup.
-        // The user must click the APPLY button in the popup to actually apply them.
-
-        console.log("Triggering auto-apply popup!");
-        setAutoApplyPopupData({
-          isCombo: savings > 0 && cashback > 0,
-          isCashback: savings === 0 && cashback > 0,
-          savings: savings,
-          cashback: cashback,
-          codes: suggestedCodes,
-          couponsToApply: couponsToApply
-        });
-        setShowAutoApplyPopup(true);
-      }
-    } else {
-      // Reset if no coupons qualify anymore, so we can show it again if they add items
-      lastSuggestedCouponsRef.current = "";
+    if (applied && codes.length > 0) {
+      toast.success(`🎉 Best offer auto-applied: ${codes.join(' & ')}!`);
     }
-  }, [availableCoupons, loadingCoupons, subtotal, cart.length, userProfile]);
+  }, [availableCoupons, loadingCoupons, subtotal, cart.length]);
 
 
   // Fee settings from database (used for platform fee and GST fallback only)
@@ -3909,7 +3885,7 @@ export default function Cart() {
           {showAutoApplyPopup && autoApplyPopupData && (
             <motion.div 
               key="auto-apply-popup"
-              className="fixed inset-0 z-[99999] flex flex-col justify-end sm:items-center sm:justify-center p-0 sm:p-6"
+              className="fixed inset-0 z-[100] flex flex-col justify-end"
             >
               <motion.div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -3926,7 +3902,7 @@ export default function Cart() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
                   onClick={() => setShowAutoApplyPopup(false)}
-                  className="mb-3 bg-[#333333] text-white p-2.5 rounded-full hover:bg-black transition-colors z-20 shadow-lg"
+                  className="mb-4 bg-[#333333] text-white p-2.5 rounded-full hover:bg-black transition-colors z-10"
                 >
                   <X className="w-5 h-5" strokeWidth={2.5} />
                 </motion.button>
@@ -3936,42 +3912,39 @@ export default function Cart() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: "100%" }}
                   transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                  className="relative w-full bg-white sm:rounded-3xl rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col pt-10 pb-6 px-6"
+                  className="relative w-full bg-gradient-to-b from-[#e0eeff] to-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col pt-10 pb-8 px-6"
                 >
-                  {/* Light blue gradient header */}
-                  <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-[#e0eeff] to-white pointer-events-none" />
-
                   {/* Sun rays background */}
-                  <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-[600px] h-[600px] opacity-30 pointer-events-none"
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] opacity-20 pointer-events-none"
                     style={{
                       background: 'repeating-conic-gradient(from 0deg, transparent 0deg 10deg, #ffffff 10deg 20deg)'
                     }}
                   />
 
                   {/* Jagged Badge Icon */}
-                  <div className="relative z-10 flex justify-center mb-5">
-                    <div className="relative w-24 h-24 text-[#4a84f3]">
+                  <div className="relative z-10 flex justify-center mb-6">
+                    <div className="relative w-28 h-28 text-[#4a84f3]">
                       <svg viewBox="0 0 100 100" fill="currentColor" className="w-full h-full drop-shadow-md">
                         <path d="M50 2.5L56.5 9L65.5 7L69 15.5L78 17L78 26L85.5 31L81.5 39.5L86.5 47L81.5 54.5L85.5 63L78 68L78 77L69 78.5L65.5 87L56.5 85L50 91.5L43.5 85L34.5 87L31 78.5L22 77L22 68L14.5 63L18.5 54.5L13.5 47L18.5 39.5L14.5 31L22 26L22 17L31 15.5L34.5 7L43.5 9L50 2.5Z" />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center text-white">
-                        <Percent strokeWidth={4} className="w-10 h-10" />
+                        <Percent strokeWidth={4} className="w-12 h-12" />
                       </div>
                     </div>
                   </div>
 
                   {/* Text Content */}
                   <div className="relative z-10 text-center">
-                    <p className="text-[10px] font-bold tracking-[0.15em] text-gray-800 mb-3 flex items-center justify-center gap-2 uppercase">
+                    <p className="text-[11px] font-bold tracking-[0.2em] text-gray-800 mb-3 flex items-center justify-center gap-2">
                       <Sparkles className="w-3 h-3" />
                       EXCLUSIVELY FOR YOU
                       <Sparkles className="w-3 h-3" />
                     </p>
                     
-                    <h3 className="text-[22px] font-bold text-[#1a1a1a] mb-1">
+                    <h3 className="text-2xl font-bold text-[#1a1a1a] mb-1">
                       {autoApplyPopupData.isCombo ? (
                         <>
-                          Save <span className="text-[#4a84f3]">{RUPEE_SYMBOL}{autoApplyPopupData.savings}</span> & Earn <span className="text-[#4a84f3]">{RUPEE_SYMBOL}{autoApplyPopupData.cashback}</span>
+                          Save <span className="text-[#4a84f3]">{RUPEE_SYMBOL}{autoApplyPopupData.savings}</span> & Earn <span className="text-[#4a84f3]">{RUPEE_SYMBOL}{autoApplyPopupData.cashback}</span> Cashback
                         </>
                       ) : autoApplyPopupData.isCashback ? (
                         <>
@@ -3984,28 +3957,30 @@ export default function Cart() {
                       )}
                     </h3>
                     
-                    <p className="text-[13px] text-gray-500 mb-2">
+                    <p className="text-sm text-gray-600 mb-1">
                       with coupon '{autoApplyPopupData.codes}'
                     </p>
                     
-                    <p className="text-[13px] font-semibold text-gray-700 mb-6">
+                    <p className="text-sm text-gray-600 mb-6">
                       Tap on 'APPLY' to avail this
                     </p>
                     
                     <button
                       onClick={() => {
-                        autoApplyPopupData.couponsToApply.forEach(coupon => {
-                          if (coupon.isGlobalCoupon) {
-                            setAppliedCoupon(coupon);
-                            setCouponCode(coupon.code);
-                          } else {
-                            setAppliedRestaurantCoupon(coupon);
-                            setRestaurantCouponCode(coupon.code);
-                          }
-                        });
+                        if (autoApplyPopupData?.couponsToApply) {
+                          autoApplyPopupData.couponsToApply.forEach(coupon => {
+                            if (coupon.isGlobalCoupon) {
+                              setAppliedCoupon(coupon);
+                              setCouponCode(coupon.code);
+                            } else {
+                              setAppliedRestaurantCoupon(coupon);
+                              setRestaurantCouponCode(coupon.code);
+                            }
+                          });
+                        }
                         setShowAutoApplyPopup(false);
                       }}
-                      className="w-full py-3.5 bg-[#ef4f5f] text-white rounded-xl font-bold text-[15px] hover:bg-[#e03142] active:scale-[0.98] transition-all shadow-md tracking-wide"
+                      className="w-full py-3.5 bg-[#f54254] text-white rounded-xl font-bold text-lg hover:bg-[#e03142] active:scale-[0.98] transition-all shadow-md"
                     >
                       APPLY
                     </button>
