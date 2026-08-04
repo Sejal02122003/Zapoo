@@ -537,7 +537,7 @@ export default function Feedback() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-50"
+              className="fixed inset-0 bg-black/50 z-[70]"
               onClick={() => setIsDateSelectorOpen(false)}
             />
             <motion.div
@@ -545,7 +545,7 @@ export default function Feedback() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1a1a1a] rounded-t-3xl shadow-2xl z-50 p-4"
+              className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1a1a1a] rounded-t-3xl shadow-2xl z-[70] p-4"
             >
               <div className="flex justify-center mb-4">
                 <div className="h-1 w-10 rounded-full bg-gray-300 dark:bg-gray-700" />
@@ -580,14 +580,14 @@ export default function Feedback() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-[60]"
+              className="fixed inset-0 bg-black/50 z-[80]"
               onClick={() => setIsCustomDateOpen(false)}
             />
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="fixed inset-0 m-auto w-[90%] max-w-sm h-fit bg-white dark:bg-[#1a1a1a] rounded-3xl shadow-2xl z-[60] p-6"
+              className="fixed inset-0 m-auto w-[90%] max-w-sm h-fit bg-white dark:bg-[#1a1a1a] rounded-3xl shadow-2xl z-[80] p-6"
             >
               <DateRangeCalendar
                 startDate={customDateRange.start}
@@ -616,7 +616,7 @@ export default function Feedback() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm"
+              className="fixed inset-0 bg-black/40 z-[70] backdrop-blur-sm"
               onClick={() => setIsComplaintsFilterOpen(false)}
             />
             <motion.div
@@ -624,7 +624,7 @@ export default function Feedback() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1a1a1a] rounded-t-[32px] shadow-2xl z-50 overflow-hidden"
+              className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1a1a1a] rounded-t-[32px] shadow-2xl z-[70] overflow-hidden"
               style={{ maxHeight: "80vh" }}
             >
               <div className="p-6 flex flex-col h-full">

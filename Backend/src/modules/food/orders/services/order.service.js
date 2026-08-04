@@ -35,6 +35,9 @@ import { calculateOrderPricing } from './order-pricing.service.js';
 import * as dispatchService from './order-dispatch.service.js';
 import * as deliveryService from './order-delivery.service.js';
 import * as paymentService from './order-payment.service.js';
+import { redeemCouponAtomic } from '../../admin/services/coupon.service.js';
+import { evaluateCashbackRule, createPendingCashbackLedger } from '../../admin/services/cashback.service.js';
+import { Coupon } from '../../admin/models/coupon.model.js';
 import {
   enqueueOrderEvent,
   haversineKm,
@@ -463,6 +466,66 @@ export async function createOrder(userId, dto) {
       { $inc: { usageCount: 1 } }
     );
   }
+
+  // --- Coupon Redemption (new Coupon model) + Cashback Pipeline ---
+  // redeemCouponAtomic creates CouponRedemption record and, for CASHBACK/BOTH
+  // reward types, a PENDING CashbackLedger entry that gets credited on delivery.
+  if (couponCode) {
+    try {
+      const newStyleCoupon = await Coupon.findOne({ code: couponCode, isActive: true }).lean();
+      if (newStyleCoupon) {
+        // Determine cashback amount from pricing (already computed by calculateOrderPricing)
+        const cashbackAmount =
+          newStyleCoupon.rewardType === 'CASHBACK' || newStyleCoupon.rewardType === 'BOTH'
+            ? (() => {
+                const sub = normalizedPricing.subtotal;
+                const cType = newStyleCoupon.cashbackType || newStyleCoupon.discountType;
+                const cValue = newStyleCoupon.cashbackValue ?? newStyleCoupon.discountValue ?? 0;
+                const cCap = newStyleCoupon.maxCashbackCap ?? newStyleCoupon.maxDiscountCap ?? 0;
+                let raw = cType === 'PERCENTAGE' ? (sub * cValue) / 100 : cValue;
+                if (cCap > 0) raw = Math.min(raw, cCap);
+                return Math.max(0, Math.floor(raw));
+              })()
+            : normalizedPricing.discount;
+        await redeemCouponAtomic({
+          couponId: newStyleCoupon._id,
+          userId,
+          orderId: order._id,
+          amount: cashbackAmount,
+          rewardType: newStyleCoupon.rewardType || 'INSTANT_DISCOUNT'
+        });
+        logger.info(`[COUPON] Redeemed coupon ${couponCode} for order ${order._id}, rewardType=${newStyleCoupon.rewardType}`);
+      }
+    } catch (err) {
+      // Non-fatal: log but do not block order completion
+      logger.warn(`[COUPON] Failed to atomically redeem coupon ${couponCode} for order ${order._id}: ${err?.message}`);
+    }
+  }
+
+  // --- Rule-based Cashback: evaluate and create PENDING ledger entry ---
+  try {
+    const cashbackResult = await evaluateCashbackRule({
+      restaurantId: dto.restaurantId,
+      userId,
+      orderSubtotal: normalizedPricing.subtotal,
+      orderType: orderType.toUpperCase(),
+      hasCouponApplied: Boolean(couponCode)
+    });
+    if (cashbackResult && cashbackResult.amount > 0) {
+      await createPendingCashbackLedger({
+        orderId: order._id,
+        userId,
+        cashbackRuleId: cashbackResult.rule._id,
+        couponId: null,
+        sourceType: 'RULE',
+        amount: cashbackResult.amount
+      });
+      logger.info(`[CASHBACK] Created PENDING cashback ₹${cashbackResult.amount} for order ${order._id} via rule ${cashbackResult.rule._id}`);
+    }
+  } catch (err) {
+    logger.warn(`[CASHBACK] Rule evaluation failed for order ${order._id}: ${err?.message}`);
+  }
+  // --- End Cashback Pipeline ---
 
   const dispatchableStatuses = [
     "confirmed",
@@ -1784,6 +1847,10 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
 
 export async function rejectOrderDelivery(orderId, deliveryPartnerId) {
   return deliveryService.rejectOrderDelivery(orderId, deliveryPartnerId);
+}
+
+export async function cancelOrderDelivery(orderId, deliveryPartnerId, reason) {
+  return deliveryService.cancelOrderDelivery(orderId, deliveryPartnerId, reason);
 }
 
 export async function confirmReachedPickupDelivery(orderId, deliveryPartnerId) {

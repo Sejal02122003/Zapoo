@@ -55,6 +55,7 @@ router.get('/orders/available', authMiddleware, requireRoles('DELIVERY_PARTNER')
 router.get('/orders/:orderId', authMiddleware, requireRoles('DELIVERY_PARTNER'), orderController.getOrderByIdDeliveryController);
 router.patch('/orders/:orderId/accept', authMiddleware, requireRoles('DELIVERY_PARTNER'), orderController.acceptOrderDeliveryController);
 router.patch('/orders/:orderId/reject', authMiddleware, requireRoles('DELIVERY_PARTNER'), orderController.rejectOrderDeliveryController);
+router.patch('/orders/:orderId/cancel', authMiddleware, requireRoles('DELIVERY_PARTNER'), orderController.cancelOrderDeliveryController);
 router.patch('/orders/:orderId/reached-pickup', authMiddleware, requireRoles('DELIVERY_PARTNER'), orderController.confirmReachedPickupDeliveryController);
 router.post('/orders/:orderId/request-pickup-otp', authMiddleware, requireRoles('DELIVERY_PARTNER'), orderController.requestPickupOtpController);
 router.patch('/orders/:orderId/confirm-pickup', authMiddleware, requireRoles('DELIVERY_PARTNER'), orderController.confirmPickupDeliveryController);

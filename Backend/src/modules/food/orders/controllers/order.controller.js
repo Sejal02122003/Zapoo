@@ -222,6 +222,18 @@ export async function rejectOrderDeliveryController(req, res, next) {
     }
 }
 
+export async function cancelOrderDeliveryController(req, res, next) {
+    try {
+        const deliveryPartnerId = req.user?.userId;
+        const orderId = req.params.orderId;
+        const reason = req.body?.reason || req.body?.cancelReason || "Cancelled by Rider";
+        const order = await orderService.cancelOrderDelivery(orderId, deliveryPartnerId, reason);
+        return sendResponse(res, 200, 'Delivery cancelled', { order });
+    } catch (err) {
+        next(err);
+    }
+}
+
 export async function confirmReachedPickupDeliveryController(req, res, next) {
     try {
         const deliveryPartnerId = req.user?.userId;

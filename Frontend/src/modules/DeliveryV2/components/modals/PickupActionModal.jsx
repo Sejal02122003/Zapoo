@@ -218,7 +218,7 @@ export const PickupActionModal = ({
                    const reason = window.prompt("Reason for cancellation / Issue:");
                    if (reason !== null && reason.trim() !== "") {
                       import('@food/api').then(({ deliveryAPI }) => {
-                         deliveryAPI.rejectOrder(order.orderId || order._id, { reason })
+                         deliveryAPI.cancelOrder(order.orderId || order._id, { reason })
                            .then(() => {
                               toast.success("Delivery cancelled successfully.");
                               if (onMinimize) onMinimize();

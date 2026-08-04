@@ -746,6 +746,68 @@ export async function rejectOrderDelivery(orderId, deliveryPartnerId, reason = '
   return order.toObject();
 }
 
+export async function cancelOrderDelivery(orderId, deliveryPartnerId, reason = '') {
+  const identity = buildOrderIdentityFilter(orderId);
+  if (!identity) throw new ValidationError('Order id required');
+
+  const order = await FoodOrder.findOne(identity).select('+deliveryOtp');
+  if (!order) throw new NotFoundError('Order not found');
+  if (order.dispatch.deliveryPartnerId?.toString() !== deliveryPartnerId.toString()) {
+    throw new ForbiddenError('Not your assigned order');
+  }
+
+  const cancellableStatuses = ['confirmed', 'preparing', 'ready_for_pickup', 'reached_pickup', 'picked_up', 'reached_drop'];
+  if (!cancellableStatuses.includes(order.orderStatus)) {
+    throw new ValidationError(`Order cannot be cancelled by rider in status: ${order.orderStatus}`);
+  }
+
+  // If rider cancels mid-delivery, it's an exception requiring admin intervention
+  order.dispatch.status = 'needs_manual_assignment';
+  order.orderStatus = 'needs_manual_assignment';
+  
+  order.dispatch.deliveryPartnerId = undefined;
+  
+  pushStatusHistory(order, {
+    byRole: 'DELIVERY_PARTNER',
+    byId: deliveryPartnerId,
+    from: order.orderStatus,
+    to: 'needs_manual_assignment',
+    note: `Delivery Partner cancelled mid-delivery. Reason: ${reason || 'Not provided'}`,
+  });
+
+  // Cancel Incentive if exists and pending
+  if (order.deliveryAssignment && order.deliveryAssignment.incentiveStatus === 'PENDING') {
+    const previousIncentiveAmount = order.deliveryAssignment.incentive;
+    order.deliveryAssignment.incentiveStatus = 'CANCELLED';
+    
+    try {
+      const { FoodAuditLog } = await import('../../admin/models/auditLog.model.js');
+      await FoodAuditLog.create({
+        action: "INCENTIVE_CANCELLED",
+        performedBy: order.deliveryAssignment.assignedBy,
+        orderId: order._id,
+        riderId: deliveryPartnerId,
+        incentiveAmount: previousIncentiveAmount,
+        reason: `Rider cancelled mid-delivery: ${reason || 'No reason'}`,
+        metadata: { trigger: "RIDER_CANCELLED" }
+      });
+    } catch (err) {
+      logger.error(`[Incentive] Failed to log INCENTIVE_CANCELLED: ${err.message}`);
+    }
+  }
+
+  await order.save();
+
+  // Alert admins/socket
+  enqueueOrderEvent('order_needs_manual_assignment', {
+    orderMongoId: order._id?.toString?.(),
+    orderId: order._id.toString(),
+    reason: `Rider Cancelled: ${reason}`
+  });
+
+  return order.toObject();
+}
+
 export async function confirmReachedPickupDelivery(orderId, deliveryPartnerId) {
   const identity = buildOrderIdentityFilter(orderId);
   if (!identity) throw new ValidationError('Order id required');

@@ -120,9 +120,6 @@ export default function Cart() {
 
   const [showCoupons, setShowCoupons] = useState(false)
   const [appliedCoupon, setAppliedCoupon] = useState(null)
-  const [showAutoApplyPopup, setShowAutoApplyPopup] = useState(false)
-  const [autoApplyPopupData, setAutoApplyPopupData] = useState(null)
-  const [shownAutoPopupFor, setShownAutoPopupFor] = useState([])
   const [appliedRestaurantCoupon, setAppliedRestaurantCoupon] = useState(null)
   const [restaurantCouponCode, setRestaurantCouponCode] = useState("")
   const [couponCode, setCouponCode] = useState("")
@@ -269,67 +266,53 @@ export default function Cart() {
   const [loadingCoupons, setLoadingCoupons] = useState(false)
   const [userOrderCount, setUserOrderCount] = useState(0)
 
-  // Auto-apply logic
+  // Auto-apply logic — runs whenever coupons finish loading or subtotal changes.
+  // Only fires when: coupons are ready, subtotal > 0, and no coupon is already applied.
   useEffect(() => {
-    if (availableCoupons.length > 0 && cart.length > 0 && !loadingCoupons && subtotal > 0) {
-      const userOrderCountValue = userProfile?.orderCount || userProfile?.orders?.length || 0;
-      let bestAdminCoupon = null;
-      let bestRestaurantCoupon = null;
-      
-      availableCoupons.forEach(coupon => {
-        if (subtotal >= (Number(coupon.minOrder) || 0) && !(coupon.customerGroup === "new" && userOrderCountValue > 0)) {
-          if (coupon.isGlobalCoupon) {
-            if (!bestAdminCoupon || (coupon.discount || 0) > (bestAdminCoupon.discount || 0)) {
-              bestAdminCoupon = coupon;
-            }
-          } else {
-            if (!bestRestaurantCoupon || (coupon.discount || 0) > (bestRestaurantCoupon.discount || 0)) {
-              bestRestaurantCoupon = coupon;
-            }
+    if (loadingCoupons || availableCoupons.length === 0 || cart.length === 0 || subtotal <= 0) return;
+    // If a coupon is already applied, don't override it
+    if (appliedCoupon && appliedRestaurantCoupon) return;
+
+    const userOrderCountValue = userProfile?.orderCount || userProfile?.orders?.length || 0;
+    let bestAdminCoupon = null;
+    let bestRestaurantCoupon = null;
+
+    availableCoupons.forEach(coupon => {
+      if (
+        subtotal >= (Number(coupon.minOrder) || 0) &&
+        !(coupon.customerGroup === "new" && userOrderCountValue > 0)
+      ) {
+        if (coupon.isGlobalCoupon) {
+          if (!bestAdminCoupon || (coupon.discount || 0) > (bestAdminCoupon.discount || 0)) {
+            bestAdminCoupon = coupon;
+          }
+        } else {
+          if (!bestRestaurantCoupon || (coupon.discount || 0) > (bestRestaurantCoupon.discount || 0)) {
+            bestRestaurantCoupon = coupon;
           }
         }
-      });
+      }
+    });
 
-      let totalSaved = 0;
-      let totalCashback = 0;
-      let isCashback = false;
-      let isCombo = false;
-      let codes = [];
-      let couponsToApply = [];
-      
-      if (bestAdminCoupon && (!appliedCoupon || appliedCoupon.code !== bestAdminCoupon.code)) {
-        totalSaved += (bestAdminCoupon.discount || 0);
-        totalCashback += (bestAdminCoupon.cashbackValue || 0);
-        isCashback = isCashback || bestAdminCoupon.rewardType === 'CASHBACK' || bestAdminCoupon.rewardType === 'BOTH';
-        isCombo = isCombo || bestAdminCoupon.rewardType === 'BOTH';
-        codes.push(bestAdminCoupon.code);
-        couponsToApply.push(bestAdminCoupon);
-      }
-      if (bestRestaurantCoupon && (!appliedRestaurantCoupon || appliedRestaurantCoupon.code !== bestRestaurantCoupon.code)) {
-        totalSaved += (bestRestaurantCoupon.discount || 0);
-        totalCashback += (bestRestaurantCoupon.cashbackValue || 0);
-        isCashback = isCashback || bestRestaurantCoupon.rewardType === 'CASHBACK' || bestRestaurantCoupon.rewardType === 'BOTH';
-        isCombo = isCombo || bestRestaurantCoupon.rewardType === 'BOTH';
-        codes.push(bestRestaurantCoupon.code);
-        couponsToApply.push(bestRestaurantCoupon);
-      }
+    const codes = [];
+    let applied = false;
 
-      if (couponsToApply.length > 0) {
-         const combinationKey = codes.join('-');
-         if (!shownAutoPopupFor.includes(combinationKey)) {
-             // Set the coupons directly instead of showing a popup
-             if (bestAdminCoupon) {
-               setAppliedCoupon(bestAdminCoupon);
-             }
-             if (bestRestaurantCoupon) {
-               setAppliedRestaurantCoupon(bestRestaurantCoupon);
-             }
-             toast.success(`Auto-applied best offer: ${codes.join(' & ')}!`);
-             setShownAutoPopupFor(prev => [...prev, combinationKey]);
-         }
-      }
+    if (bestAdminCoupon && !appliedCoupon) {
+      setAppliedCoupon(bestAdminCoupon);
+      setCouponCode(bestAdminCoupon.code);
+      codes.push(bestAdminCoupon.code);
+      applied = true;
     }
-  }, [availableCoupons, subtotal, loadingCoupons, cart.length, userProfile, appliedCoupon, appliedRestaurantCoupon, shownAutoPopupFor]);
+    if (bestRestaurantCoupon && !appliedRestaurantCoupon) {
+      setAppliedRestaurantCoupon(bestRestaurantCoupon);
+      codes.push(bestRestaurantCoupon.code);
+      applied = true;
+    }
+
+    if (applied && codes.length > 0) {
+      toast.success(`🎉 Best offer auto-applied: ${codes.join(' & ')}!`);
+    }
+  }, [availableCoupons, loadingCoupons, subtotal, cart.length]);
 
 
   // Fee settings from database (used for platform fee and GST fallback only)

@@ -1719,6 +1719,11 @@ export const deliveryAPI = {
       `/food/delivery/orders/${String(orderId)}/reject`,
       body ?? {}
     ),
+  cancelOrder: (orderId, body = {}) =>
+    deliveryClient.patch(
+      `/food/delivery/orders/${String(orderId)}/cancel`,
+      body ?? {}
+    ),
   /**
    * PATCH /food/delivery/orders/:orderId/reached-pickup
    * Marks "reached pickup" (arrival at restaurant) in backend order deliveryState.
