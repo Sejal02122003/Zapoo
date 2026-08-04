@@ -753,7 +753,12 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
     let myUserId = null;
     try {
       if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        let payloadStr = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        const pad = payloadStr.length % 4;
+        if (pad) {
+          payloadStr += new Array(5 - pad).join('=');
+        }
+        const payload = JSON.parse(atob(payloadStr));
         myUserId = payload.userId;
       }
     } catch (e) {}

@@ -44,7 +44,12 @@ export default function DeliveryOTP() {
         try {
           const parts = token.split('.')
           if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+            let payloadStr = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+            const pad = payloadStr.length % 4;
+            if (pad) {
+              payloadStr += new Array(5 - pad).join('=');
+            }
+            const payload = JSON.parse(atob(payloadStr))
             const now = Math.floor(Date.now() / 1000)
             if (payload.exp && payload.exp > now) {
               navigate("/food/delivery", { replace: true })
