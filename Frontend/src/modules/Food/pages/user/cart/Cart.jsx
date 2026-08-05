@@ -396,6 +396,14 @@ export default function Cart() {
 
   const cartCount = getCartCount()
   const getAddressId = (address) => address?.id || address?._id || null
+  
+  // Determine if restaurant is currently closed
+  const isRestaurantClosed = useMemo(() => {
+    if (!restaurantData) return false
+    const targetDate = isScheduled && scheduledDate ? new Date(scheduledDate) : new Date()
+    return !getRestaurantAvailabilityStatus(restaurantData, targetDate).isOpen
+  }, [restaurantData, isScheduled, scheduledDate])
+
   const normalizeAddressLabel = (label) => {
     if (!label) return ""
     const value = String(label).trim().toLowerCase()
@@ -1751,6 +1759,12 @@ export default function Cart() {
           }))
         });
         alert('Error: Restaurant information is missing. Please refresh the page and try again.');
+        setIsPlacingOrder(false);
+        return;
+      }
+
+      if (isRestaurantClosed) {
+        toast.error("Restaurant is currently closed. Cannot place order.");
         setIsPlacingOrder(false);
         return;
       }
@@ -3144,7 +3158,7 @@ export default function Cart() {
             {/* Place Order Button */}
             <button
               onClick={handlePlaceOrder}
-              disabled={isPlacingOrder || (selectedPaymentMethod === "wallet" && walletBalance < total)}
+              disabled={isPlacingOrder || (selectedPaymentMethod === "wallet" && walletBalance < total) || isRestaurantClosed}
               className="w-full bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-[#3c0f3d] text-white px-6 h-12 md:h-14 rounded-2xl font-bold shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between transition-transform active:scale-[0.98]"
             >
               {(selectedPaymentMethod === "razorpay" || selectedPaymentMethod === "wallet" || selectedPaymentMethod === "cash") && (
@@ -3156,9 +3170,11 @@ export default function Cart() {
               <div className="flex items-center gap-1 mx-auto text-sm md:text-lg tracking-wide">
                 {isPlacingOrder
                   ? "Processing..."
-                  : !hasSavedAddress
-                    ? "Select Address"
-                    : "Place Order"}
+                  : isRestaurantClosed
+                    ? "Restaurant Closed"
+                    : !hasSavedAddress
+                      ? "Select Address"
+                      : "Place Order"}
                 <div className="flex align-center h-full">
                   <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
                 </div>

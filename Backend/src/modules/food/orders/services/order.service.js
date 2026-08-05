@@ -55,6 +55,7 @@ import {
   notifyRestaurantNewOrder,
   isStatusAdvance,
 } from './order.helpers.js';
+import { getOutletTimingsForRestaurant } from '../../restaurant/services/outletTimings.service.js';
 
 
 
@@ -164,6 +165,46 @@ export async function createOrder(userId, dto) {
     throw new ValidationError("Restaurant not accepting orders");
   if (restaurant.isAcceptingOrders === false)
     throw new ValidationError("Restaurant not accepting orders");
+
+  // Check outlet timings
+  const { outletTimings } = await getOutletTimingsForRestaurant(dto.restaurantId);
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const currentDay = days[new Date().getDay()];
+  
+  if (outletTimings && outletTimings[currentDay]) {
+    const todayTiming = outletTimings[currentDay];
+    if (todayTiming.isOpen === false) {
+      throw new ValidationError("Restaurant is closed today");
+    }
+    
+    // Check time window if present
+    if (todayTiming.openingTime && todayTiming.closingTime) {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      const parseTime = (timeStr) => {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+      };
+      
+      const openingMinutes = parseTime(todayTiming.openingTime);
+      const closingMinutes = parseTime(todayTiming.closingTime);
+      
+      let isOpenNow = true;
+      if (openingMinutes === closingMinutes) {
+        isOpenNow = true;
+      } else if (closingMinutes > openingMinutes) {
+        isOpenNow = currentMinutes >= openingMinutes && currentMinutes <= closingMinutes;
+      } else {
+        // Overnight, e.g., 20:00 to 02:00
+        isOpenNow = currentMinutes >= openingMinutes || currentMinutes <= closingMinutes;
+      }
+      
+      if (!isOpenNow) {
+        throw new ValidationError("Restaurant is currently closed");
+      }
+    }
+  }
 
 
   const settings = await getDispatchSettings();
