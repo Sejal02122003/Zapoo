@@ -1866,12 +1866,20 @@ export default function OrdersMain() {
 
   // Initialize audio object for popup loop and cancel sound
   useEffect(() => {
+    const resolveAudioSource = (source, cacheKey) => {
+      if (!source) return source;
+      const url = typeof source === 'object' ? (source.default || source) : source;
+      if (!import.meta.env.DEV) return url;
+      const separator = url.includes('?') ? '&' : '?';
+      return `${url}${separator}devcache=${cacheKey}`;
+    };
+
     if (!audioRef.current) {
-      audioRef.current = new Audio(notificationSound);
+      audioRef.current = new Audio(resolveAudioSource(notificationSound, 'ordersmain-notify'));
       audioRef.current.preload = "auto";
     }
     if (!cancelAudioRef.current) {
-      cancelAudioRef.current = new Audio(cancelSound);
+      cancelAudioRef.current = new Audio(resolveAudioSource(cancelSound, 'ordersmain-cancel'));
       cancelAudioRef.current.preload = "auto";
     }
   }, []);
@@ -3010,7 +3018,7 @@ export default function OrdersMain() {
       {/* Audio elements */}
       <audio
         ref={audioRef}
-        src={notificationSound}
+        src={import.meta.env.DEV ? `${notificationSound}?devcache=ordersmain-html` : notificationSound}
         preload="auto"
         playsInline
       />

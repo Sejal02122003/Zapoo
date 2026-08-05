@@ -400,6 +400,18 @@ export default function Cart() {
   // Determine if restaurant is currently closed
   const isRestaurantClosed = useMemo(() => {
     if (!restaurantData) return false
+    
+    // Explicit manual overrides from backend
+    if (
+      restaurantData.isClosed === true || 
+      restaurantData.status === 'inactive' || 
+      restaurantData.isOpen === false || 
+      restaurantData.isActive === false || 
+      restaurantData.isAcceptingOrders === false
+    ) {
+      return true;
+    }
+    
     const targetDate = isScheduled && scheduledDate ? new Date(scheduledDate) : new Date()
     return !getRestaurantAvailabilityStatus(restaurantData, targetDate).isOpen
   }, [restaurantData, isScheduled, scheduledDate])

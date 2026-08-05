@@ -210,7 +210,12 @@ function createModuleClient(moduleName) {
           original.headers.Authorization = `Bearer ${newAccessToken}`;
           return client(original);
         }
-      } catch (_) {
+      } catch (error) {
+        // Only logout if the backend explicitly rejected the refresh token (4xx/5xx).
+        // If it's a network error (e.g., delivery boy loses internet), do NOT log them out.
+        if (!error.response || error.code === 'ERR_NETWORK') {
+          return Promise.reject(err);
+        }
         onRefreshFailed();
         return Promise.reject(err);
       } finally {

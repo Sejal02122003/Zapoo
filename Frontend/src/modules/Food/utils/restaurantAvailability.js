@@ -151,6 +151,16 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
   const isActive = restaurant.isActive !== false
   const isAcceptingOrders = restaurant.isAcceptingOrders !== false
 
+  // Explicit manual overrides from backend
+  if (restaurant.isClosed === true || restaurant.status === 'inactive' || restaurant.isOpen === false) {
+    return {
+      isOpen: false,
+      isActive: false,
+      isAcceptingOrders: false,
+      isWithinTimings: false,
+      reason: "manually-closed" }
+  }
+
   if (!ignoreOperationalStatus && !isActive) {
     return {
       isOpen: false,

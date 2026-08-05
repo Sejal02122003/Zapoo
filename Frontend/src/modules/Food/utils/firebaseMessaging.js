@@ -40,11 +40,19 @@ function isRecord(value) {
 }
 
 function getPushSoundSources(moduleName = normalizeModuleFromPath()) {
+  const resolve = (source) => {
+    if (!source) return '';
+    const url = typeof source === 'object' ? (source.default || source) : source;
+    if (!import.meta.env.DEV) return url;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}devcache=fcm-alert`;
+  };
+
   // Delivery and restaurant should always use the alert tone for FCM pushes.
   if (moduleName === "delivery" || moduleName === "restaurant") {
-    return [fallbackNotificationSound];
+    return [resolve(fallbackNotificationSound)];
   }
-  return [pushNotificationSoundPath, fallbackNotificationSound];
+  return [resolve(pushNotificationSoundPath), resolve(fallbackNotificationSound)];
 }
 
 function isSupportedBrowser() {

@@ -10,7 +10,11 @@ const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 const resolveAudioSource = (source) => {
-  return source;
+  if (!source) return '';
+  const url = typeof source === 'object' ? (source.default || source) : source;
+  if (!import.meta.env.DEV) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}devcache=restaurant-alert`;
 }
 
 const supportsBrowserNotifications = () =>

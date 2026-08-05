@@ -257,7 +257,7 @@ export default function Gourmet() {
           <h2 className="text-white/80 text-sm font-bold mb-3 uppercase tracking-wider">Top Offers</h2>
           
           {/* Horizontal Scroll offers */}
-          <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
             <div className="min-w-[130px] flex-shrink-0 bg-[#1a1a1a]/80 backdrop-blur-md rounded-2xl p-4 flex flex-col justify-center items-center group cursor-pointer hover:bg-[#222]/90 hover:shadow-[0_0_20px_rgba(249,115,22,0.1)] transition-all border border-transparent hover:border-orange-500/20">
               <span className="text-[10px] text-orange-200/50 font-bold tracking-[0.1em] mb-1">FLAT</span>
               <div className="flex items-center gap-1.5">
@@ -283,7 +283,7 @@ export default function Gourmet() {
 
       {/* Filter Chips */}
       <div className="px-4 md:px-8 max-w-2xl mx-auto mb-8 mt-4 sticky top-0 z-30 bg-[#0f0f13]/80 backdrop-blur-xl py-3 -mx-4 md:mx-0 md:px-0 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-        <div className="flex overflow-x-auto gap-2.5 no-scrollbar px-4 md:px-0">
+        <div className="flex overflow-x-auto gap-2.5 scrollbar-hide px-4 md:px-0">
           <button className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 bg-white/5 rounded-full text-xs font-medium text-gray-200 hover:bg-white/10 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)] transition-all">
             <span>Filter</span>
             <Settings2 className="w-3.5 h-3.5" />

@@ -47,9 +47,10 @@ if (typeof window !== 'undefined') {
 
 const resolveAudioSource = (source) => {
   if (!source) return '';
-  // Handle ES6 module imports where the URL might be in a 'default' property
   const url = typeof source === 'object' ? (source.default || source) : source;
-  return url;
+  if (!import.meta.env.DEV) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}devcache=delivery-alert`;
 };
 
 const safeReadJson = (key) => {
