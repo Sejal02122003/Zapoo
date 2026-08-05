@@ -100,15 +100,9 @@ function createModuleClient(moduleName) {
       
       // If their session expired, forcefully redirect them to the correct login page to clear React state
       if (wasLoggedIn && !window.location.pathname.includes('/auth') && !window.location.pathname.includes('/login')) {
-        let redirectPath = "/food/user/auth/login";
-        if (moduleName === "restaurant" || window.location.pathname.includes('/restaurant/')) {
-          redirectPath = "/food/restaurant/auth";
-        } else if (moduleName === "delivery" || window.location.pathname.includes('/delivery/')) {
-          redirectPath = "/food/delivery/auth";
-        } else if (moduleName === "admin" || window.location.pathname.includes('/admin/')) {
-          redirectPath = "/food/admin/auth";
-        }
-        window.location.href = redirectPath;
+        // We removed the window.location.href hard redirect because it causes a white screen flash and redirect loops.
+        // Instead, we rely on the dispatched 'authRefreshFailed' event which the app listens to (e.g. DeliveryHomeV2)
+        // to gracefully handle logout and route navigation.
       }
     }
   };
@@ -169,6 +163,15 @@ function createModuleClient(moduleName) {
       // 401 handling (Unauthorized / Expired)
       if (err?.response?.status !== 401 || !original || original._retry) {
         return Promise.reject(err);
+      }
+
+      const currentToken = getAccessToken(moduleName);
+      const requestToken = original.headers.Authorization?.replace('Bearer ', '');
+
+      // Prevent stale 401s from logging out a newly logged-in user
+      if (requestToken && currentToken && requestToken !== currentToken) {
+        original.headers.Authorization = `Bearer ${currentToken}`;
+        return client(original);
       }
 
       const refreshToken = getRefreshToken(moduleName);
