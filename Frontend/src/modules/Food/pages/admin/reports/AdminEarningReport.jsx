@@ -163,6 +163,7 @@ export default function AdminEarningReport() {
                     const gstOnCommission = Number(breakdown.gstOnCommission) || 0
                     const paymentGatewayFee = Number(breakdown.paymentGatewayFee) || 0
                     const tcs = Number(breakdown.tcs) || 0
+                    const gstOnItem = Number(breakdown.gstOnItem) || 0
                     
                     const totalDeductions = restaurantCommission + gstOnCommission + paymentGatewayFee + tcs
                     const restaurantGets = Math.max(0, itemSubtotal + packagingFee - totalDeductions)
