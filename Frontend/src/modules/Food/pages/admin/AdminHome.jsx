@@ -219,7 +219,7 @@ export default function AdminHome() {
         <div className="space-y-6 px-6 py-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <MetricCard
-              title="Gross revenue"
+              title="Total revenue"
               value={formatCurrency(revenueTotal)}
               helper={`Net Profit: ${formatCurrency(totalAdminEarnings)}`}
               icon={<ShoppingBag className="h-5 w-5 text-emerald-600" />}
@@ -345,7 +345,7 @@ export default function AdminHome() {
               <CardHeader className="flex flex-col gap-2 border-b border-neutral-200 pb-4">
                 <CardTitle className="text-lg text-neutral-900">Revenue trajectory</CardTitle>
                 <p className="text-sm text-neutral-500">
-                  Commission and gross revenue with monthly order volume
+                  Commission and total revenue with monthly order volume
                 </p>
               </CardHeader>
               <CardContent className="min-w-0 pt-4">
@@ -377,7 +377,7 @@ export default function AdminHome() {
                         stroke="#0ea5e9"
                         fillOpacity={1}
                         fill="url(#revFill)"
-                        name="Gross revenue"
+                        name="Total revenue"
                       />
                       <Area
                         type="monotone"
