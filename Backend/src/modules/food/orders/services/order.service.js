@@ -166,10 +166,15 @@ export async function createOrder(userId, dto) {
   if (restaurant.isAcceptingOrders === false)
     throw new ValidationError("Restaurant not accepting orders");
 
-  // Check outlet timings
+  // Check outlet timings using IST timezone (+5:30)
   const { outletTimings } = await getOutletTimingsForRestaurant(dto.restaurantId);
+  
+  const now = new Date();
+  const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
+  const istTime = new Date(utcTime + (330 * 60000));
+  
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const currentDay = days[new Date().getDay()];
+  const currentDay = days[istTime.getDay()];
   
   if (outletTimings && outletTimings[currentDay]) {
     const todayTiming = outletTimings[currentDay];
@@ -179,8 +184,7 @@ export async function createOrder(userId, dto) {
     
     // Check time window if present
     if (todayTiming.openingTime && todayTiming.closingTime) {
-      const now = new Date();
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const currentMinutes = istTime.getHours() * 60 + istTime.getMinutes();
       
       const parseTime = (timeStr) => {
         const [h, m] = timeStr.split(':').map(Number);
