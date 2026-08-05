@@ -356,12 +356,31 @@ export default function TaxReport() {
                     <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                       Total Tax
                     </th>
-                    <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                      Tax (5%)
-                    </th>
-                    <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                      Tax (18%)
-                    </th>
+                    {(filters.taxRate === "Select Tax Rate" || filters.taxRate === "5%") && (
+                      <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                        Tax (5%)
+                      </th>
+                    )}
+                    {(filters.taxRate === "Select Tax Rate" || filters.taxRate === "10%") && (
+                      <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                        Tax (10%)
+                      </th>
+                    )}
+                    {(filters.taxRate === "Select Tax Rate" || filters.taxRate === "15%") && (
+                      <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                        Tax (15%)
+                      </th>
+                    )}
+                    {(filters.taxRate === "Select Tax Rate" || filters.taxRate === "18%") && (
+                      <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                        Tax (18%)
+                      </th>
+                    )}
+                    {(filters.taxRate === "Select Tax Rate" || filters.taxRate === "20%") && (
+                      <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                        Tax (20%)
+                      </th>
+                    )}
                     <th className="px-4 py-3 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                       Action
                     </th>
@@ -382,12 +401,31 @@ export default function TaxReport() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-sm font-medium text-slate-900">{report.totalTax}</span>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-900">{report.totalTax5}</span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-900">{report.totalTax18}</span>
-                      </td>
+                      {(filters.taxRate === "Select Tax Rate" || filters.taxRate === "5%") && (
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm font-medium text-slate-900">{report.totalTax5}</span>
+                        </td>
+                      )}
+                      {(filters.taxRate === "Select Tax Rate" || filters.taxRate === "10%") && (
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm font-medium text-slate-900">{report.totalTax10 || "₹0.00"}</span>
+                        </td>
+                      )}
+                      {(filters.taxRate === "Select Tax Rate" || filters.taxRate === "15%") && (
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm font-medium text-slate-900">{report.totalTax15 || "₹0.00"}</span>
+                        </td>
+                      )}
+                      {(filters.taxRate === "Select Tax Rate" || filters.taxRate === "18%") && (
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm font-medium text-slate-900">{report.totalTax18}</span>
+                        </td>
+                      )}
+                      {(filters.taxRate === "Select Tax Rate" || filters.taxRate === "20%") && (
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm font-medium text-slate-900">{report.totalTax20 || "₹0.00"}</span>
+                        </td>
+                      )}
                       <td className="px-4 py-3 text-center">
                         <button 
                           onClick={() => handleViewDetails(report)}
