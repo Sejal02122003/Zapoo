@@ -86,7 +86,7 @@ export async function createInitialTransaction(order) {
 
     // Split logic
     const totalCustomerPaid = order.pricing?.total || 0;
-    const riderShare = order.riderEarning || 0;
+    const riderShare = order.riderEarning || order.pricing?.deliveryFee || 0;
 
     const restaurantCommissionFromOrder = Number(order.pricing?.restaurantCommission);
     const restaurantCommission =

@@ -101,7 +101,11 @@ async function getRiderEarning(distanceKm) {
         const isLast = i === sorted.length - 1;
         const inRange = isLast ? d >= min && d <= max : d >= min && d < max;
         if (inRange && Number.isFinite(pay)) {
-          return Math.round(pay);
+          if (r.payType === 'per_km') {
+            return Math.round(pay * d);
+          } else {
+            return Math.round(pay);
+          }
         }
       }
     }
@@ -330,6 +334,9 @@ export async function createOrder(userId, dto) {
   }
 
   let riderEarning = await getRiderEarning(distanceKm);
+  if (!riderEarning || riderEarning === 0) {
+      riderEarning = Number(normalizedPricing.deliveryFee || 0);
+  }
   
   // Apply delivery bonus from fee settings
   const feeSettings = await FoodFeeSettings.findOne({ isActive: true }).lean();

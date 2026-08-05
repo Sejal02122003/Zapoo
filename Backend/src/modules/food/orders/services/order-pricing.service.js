@@ -157,6 +157,69 @@ export async function calculateOrderPricing(userId, dto) {
     } else {
       deliveryFee = slabPr;
     }
+  } else if (feeSettings.deliveryFeeType === 'matrix') {
+    const matrices = Array.isArray(feeSettings.deliveryFeeMatrix)
+      ? [...feeSettings.deliveryFeeMatrix]
+      : [];
+    if (matrices.length > 0 && Number.isFinite(distanceKm)) {
+      matrices.sort((a, b) => Number(a.minDistance) - Number(b.minDistance));
+      let matchedMatrix = null;
+      for (let i = 0; i < matrices.length; i++) {
+        const m = matrices[i];
+        const min = Number(m.minDistance);
+        const max = m.maxDistance != null ? Number(m.maxDistance) : Infinity;
+        const isLast = i === matrices.length - 1;
+        const inRange = isLast
+          ? distanceKm >= min && distanceKm <= max
+          : distanceKm >= min && distanceKm < max;
+        if (inRange) {
+          matchedMatrix = m;
+          break;
+        }
+      }
+      
+      if (matchedMatrix && Array.isArray(matchedMatrix.amountRules)) {
+        const rules = [...matchedMatrix.amountRules].sort((a, b) => Number(a.minAmount) - Number(b.minAmount));
+        let matchedFee = null;
+        for (let i = 0; i < rules.length; i++) {
+          const r = rules[i];
+          const minAmt = Number(r.minAmount);
+          const maxAmt = r.maxAmount != null ? Number(r.maxAmount) : Infinity;
+          const isLastRule = i === rules.length - 1;
+          const inAmtRange = isLastRule
+            ? subtotal >= minAmt && subtotal <= maxAmt
+            : subtotal >= minAmt && subtotal < maxAmt;
+            
+          if (inAmtRange) {
+            if (r.feeType === 'per_km') {
+               matchedFee = Number(r.fee) * distanceKm;
+            } else {
+               matchedFee = Number(r.fee);
+            }
+            break;
+          }
+        }
+        if (matchedFee !== null) {
+          deliveryFee = matchedFee;
+          deliveryFeeBreakdown = {
+            source: "matrix",
+            distanceKm,
+            minKm: matchedMatrix.minDistance,
+            maxKm: matchedMatrix.maxDistance,
+            subtotal,
+            fee: deliveryFee
+          };
+        } else {
+           throw new ValidationError(`No delivery fee rules configured for this cart value (₹${subtotal.toFixed(2)}).`);
+        }
+      } else {
+         throw new ValidationError(`Delivery is not available at this distance (${distanceKm.toFixed(1)} km). Please select a closer address.`);
+      }
+    } else if (!Number.isFinite(distanceKm)) {
+        deliveryFee = Number(feeSettings.deliveryFee || 0);
+    } else {
+        throw new ValidationError(`Delivery is not available at this distance (${distanceKm.toFixed(1)} km). Please select a closer address.`);
+    }
   } else {
     const ranges = Array.isArray(feeSettings.deliveryFeeRanges)
       ? [...feeSettings.deliveryFeeRanges]

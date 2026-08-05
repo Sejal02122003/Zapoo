@@ -1,5 +1,24 @@
 import mongoose from 'mongoose';
 
+const deliveryFeeAmountRuleSchema = new mongoose.Schema(
+    {
+        minAmount: { type: Number, required: true, min: 0 },
+        maxAmount: { type: Number, default: null }, // null means above this amount
+        fee: { type: Number, required: true, min: 0 },
+        feeType: { type: String, enum: ['flat', 'per_km'], default: 'flat' }
+    },
+    { _id: false }
+);
+
+const deliveryFeeMatrixRuleSchema = new mongoose.Schema(
+    {
+        minDistance: { type: Number, required: true, min: 0 },
+        maxDistance: { type: Number, default: null },
+        amountRules: { type: [deliveryFeeAmountRuleSchema], default: [] }
+    },
+    { _id: false }
+);
+
 const deliveryFeeRangeSchema = new mongoose.Schema(
     {
         min: { type: Number, required: true, min: 0 },
@@ -13,7 +32,8 @@ const riderPayoutRangeSchema = new mongoose.Schema(
     {
         min: { type: Number, required: true, min: 0 },
         max: { type: Number, required: true, min: 0 },
-        pay: { type: Number, required: true, min: 0 }
+        pay: { type: Number, required: true, min: 0 },
+        payType: { type: String, enum: ['flat', 'per_km'], default: 'flat' }
     },
     { _id: false }
 );
@@ -21,12 +41,13 @@ const riderPayoutRangeSchema = new mongoose.Schema(
 const feeSettingsSchema = new mongoose.Schema(
     {
         // Customer Delivery Fee Settings
-        deliveryFeeType: { type: String, enum: ['range', 'slab'], default: 'range' },
+        deliveryFeeType: { type: String, enum: ['range', 'slab', 'matrix'], default: 'range' },
         slabDistance: { type: Number, min: 0, default: 0 },
         slabPrice: { type: Number, min: 0, default: 0 },
         extraPricePerKm: { type: Number, min: 0, default: 0 },
         deliveryFee: { type: Number, min: 0 },
         deliveryFeeRanges: { type: [deliveryFeeRangeSchema], default: [] },
+        deliveryFeeMatrix: { type: [deliveryFeeMatrixRuleSchema], default: [] },
         freeDeliveryUpTo: { type: Number, min: 0 },
         freeDeliveryThreshold: { type: Number, min: 0 },
         discountDeliveryThreshold: { type: Number, min: 0 },

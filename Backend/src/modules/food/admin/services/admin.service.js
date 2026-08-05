@@ -886,14 +886,16 @@ export async function getTransactionReport(query = {}) {
             completedTransaction += tx.amounts?.totalCustomerPaid || 0;
             adminEarning += tx.amounts?.platformNetProfit || 0;
             restaurantEarning += tx.amounts?.restaurantShare || 0;
-            deliverymanEarning += tx.amounts?.riderShare || 0;
-
             // Breakdown
             const order = tx.orderId || {};
             const pricing = order.pricing || {};
             
             const deliveryFeeUser = Number(pricing.deliveryFee || 0);
-            const deliveryCostAdmin = Number(tx.amounts?.riderShare) || Number(order.riderEarning) || 30;
+            const rShare = Number(tx.amounts?.riderShare) || Number(order.riderEarning) || deliveryFeeUser || 0;
+            
+            deliverymanEarning += rShare;
+            
+            const deliveryCostAdmin = rShare || 30;
             const deliveryGstAdmin = deliveryCostAdmin * 0.18;
             
             adminEarningBreakdown.deliveryProfit += (deliveryFeeUser - deliveryCostAdmin - deliveryGstAdmin);
