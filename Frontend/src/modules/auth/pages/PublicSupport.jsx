@@ -14,7 +14,7 @@ import { adminAPI } from "@food/api"
 export default function PublicSupport() {
   const navigate = useNavigate()
   const [settings, setSettings] = useState({
-    supportEmail: "switcheatsofficial@gmail.com",
+    supportEmail: "support@zapoo.in",
     supportPhone: "8919142335",
     supportHours: "Merchant support is available from 8 AM to 12 AM, 7 days a week."
   })
@@ -25,7 +25,7 @@ export default function PublicSupport() {
         const data = res?.data?.data || res?.data
         if (data) {
           setSettings({
-            supportEmail: data.supportEmail || "switcheatsofficial@gmail.com",
+            supportEmail: data.supportEmail || "support@zapoo.in",
             supportPhone: data.supportPhone || "8919142335",
             supportHours: data.supportHours || "Merchant support is available from 8 AM to 12 AM, 7 days a week."
           })
@@ -145,7 +145,7 @@ export default function PublicSupport() {
         {/* Footer */}
         <div className="text-center pb-8">
           <p className="text-[9px] font-bold text-gray-400 tracking-widest uppercase mb-1">Last Updated: June 2, 2026</p>
-          <p className="text-[9px] font-bold text-gray-400 tracking-widest uppercase">&copy; 2026 Switcheats. All Rights Reserved.</p>
+          <p className="text-[9px] font-bold text-gray-400 tracking-widest uppercase">&copy; 2026 Zapoo. All Rights Reserved.</p>
         </div>
 
       </div>
