@@ -847,6 +847,7 @@ export async function getTransactionReport(query = {}) {
             platformFee,
             orderAmount: tx.amounts?.totalCustomerPaid || pricing.total || 0,
             status: tx.status,
+            orderStatus: order.orderStatus || 'unknown',
             adminEarningBreakdown: {
                 deliveryProfit: deliveryFeeUser - deliveryCostAdmin - deliveryGstAdmin,
                 platformFee: platformFee,
@@ -882,7 +883,7 @@ export async function getTransactionReport(query = {}) {
 
     for (const tx of transactionRows) {
         // Calculate Summary
-        if ((tx.status === 'captured' || tx.status === 'settled') && (tx.orderId && tx.orderId.orderStatus === 'delivered')) {
+        if (tx.orderId && tx.orderId.orderStatus === 'delivered') {
             completedTransaction += tx.amounts?.totalCustomerPaid || 0;
             adminEarning += tx.amounts?.platformNetProfit || 0;
             restaurantEarning += tx.amounts?.restaurantShare || 0;

@@ -54,9 +54,9 @@ export default function AdminEarningReport() {
         const response = await adminAPI.getTransactionReport(params)
 
         if (response?.data?.success && response.data.data) {
-          // Filter to only successful transactions (delivered, captured, settled) to show earnings
+          // Filter to only successful orders (where order is delivered) to match dashboard earnings
           const validTx = response.data.data.transactions.filter(t => 
-            ['delivered', 'captured', 'settled'].includes(String(t.status).toLowerCase())
+            String(t.orderStatus).toLowerCase() === 'delivered'
           )
           setTransactions(validTx || [])
         } else {
@@ -119,6 +119,47 @@ export default function AdminEarningReport() {
             {transactions.length} Transactions Found
           </div>
         </div>
+
+        {/* Summary Cards */}
+        {transactions.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Total Admin Earning</p>
+                <p className="text-2xl font-black text-emerald-600">
+                  {formatMoney(
+                    transactions.reduce((sum, tx) => {
+                      const breakdown = tx.adminEarningBreakdown || {}
+                      const deliveryFeeUser = tx.deliveryCharge || (breakdown.deliveryProfit || 0) + (breakdown.deliveryCostToAdmin || 0) + (breakdown.deliveryGstToAdmin || 0)
+                      const adminEarning = Number(
+                        tx.amounts?.platformNetProfit ?? 
+                        ((deliveryFeeUser || 0) - (breakdown.deliveryCostToAdmin || 0) + (breakdown.platformFee || 0) + (breakdown.restaurantCommission || 0))
+                      )
+                      return sum + (Number(breakdown.totalAdminReceivable) || adminEarning || 0)
+                    }, 0)
+                  )}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-emerald-600" />
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-1">Total Platform Fee</p>
+                <p className="text-2xl font-black text-purple-600">
+                  {formatMoney(
+                    transactions.reduce((sum, tx) => sum + (Number(tx.adminEarningBreakdown?.platformFee) || Number(tx.platformFee) || 0), 0)
+                  )}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content Grid */}
         {transactions.length === 0 ? (

@@ -248,7 +248,7 @@ export default function AdminHome() {
               helper={`Platform service fees: ${periodLabel}`}
               icon={<CreditCard className="h-5 w-5 text-purple-600" />}
               accent="bg-purple-200/40"
-              path="/admin/food/fee-settings"
+              path="/admin/food/admin-earning-report"
             />
             <MetricCard
               title="Delivery fee"
