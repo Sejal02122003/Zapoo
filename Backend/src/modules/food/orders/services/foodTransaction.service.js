@@ -107,7 +107,7 @@ export async function createInitialTransaction(order) {
     const deductGst = orderType === 'takeaway' ? true : (order.pricing?.deductGstFromRestaurant !== false);
 
     const restaurantCouponDiscount = Number(order.pricing?.restaurantCouponDiscount) || 0;
-    const restaurantNet = (order.pricing?.subtotal || 0) + (order.pricing?.packagingFee || 0) - restaurantCommission - (deductGst ? gstOnCommission : 0) - paymentGatewayFee - tcs - restaurantCouponDiscount;
+    const restaurantNet = (order.pricing?.subtotal || 0) + (order.pricing?.packagingFee || 0) - restaurantCommission - (deductGst ? gstOnCommission : 0) - tcs - restaurantCouponDiscount;
 
     const calculatedPlatformNetProfit = (order.pricing?.platformFee || 0) + (order.pricing?.deliveryFee || 0) + (order.pricing?.weatherFee || 0) + restaurantCommission - riderShare - (order.pricing?.discount || 0);
     const platformNetProfit = order.platformProfit !== undefined

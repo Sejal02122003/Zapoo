@@ -156,8 +156,8 @@ export default function OrderDetails() {
 
           const orderType = String(order.orderType || 'delivery').toLowerCase();
           const deductGst = orderType === 'takeaway' ? true : (pricing.deductGstFromRestaurant !== false);
-          const totalAdminReceivable = deliveryCostToAdmin + deliveryGstToAdmin + platformFee + taxes + packagingFee + restaurantCommission + (deductGst ? gstOnCommission : 0) + paymentGatewayFee + tcs;
-          const restaurantGets = Math.max(0, itemSubtotal + packagingFee - restaurantCommission - (deductGst ? gstOnCommission : 0) - paymentGatewayFee - tcs - couponDiscount);
+          const totalAdminReceivable = deliveryCostToAdmin + deliveryGstToAdmin + platformFee + taxes + packagingFee + restaurantCommission + (deductGst ? gstOnCommission : 0) + tcs;
+          const restaurantGets = Math.max(0, itemSubtotal + packagingFee - restaurantCommission - (deductGst ? gstOnCommission : 0) - tcs - couponDiscount);
           const deliveryDistance = firstNumber(order.deliveryDistance, order.customer?.distance, 0);
 
           const addressParts = [
@@ -266,7 +266,7 @@ export default function OrderDetails() {
               restaurantCommission,
               gstOnItem,
               gstOnCommission,
-              paymentGatewayFee,
+
               tcs,
               restaurantGets,
               deliveryDistance,
@@ -501,9 +501,7 @@ export default function OrderDetails() {
       if (Number(orderData.billing.gstOnCommission) > 0) {
         billRows.push(["GST on Commission:", formatPdfDiscount(orderData.billing.gstOnCommission)])
       }
-      if (Number(orderData.billing.paymentGatewayFee) > 0) {
-        billRows.push(["Payment Gateway Fee:", formatPdfDiscount(orderData.billing.paymentGatewayFee)])
-      }
+
       if (Number(orderData.billing.tcs) > 0) {
         billRows.push(["TCS:", formatPdfDiscount(orderData.billing.tcs)])
       }
@@ -932,7 +930,7 @@ export default function OrderDetails() {
           const totalCustomerPaid = orderValue + packagingFee - couponDiscount;
 
           const commissionValue = Number(orderData.billing.restaurantCommission) || 0;
-          const pgFee = Number(orderData.billing.paymentGatewayFee) || 0;
+          const pgFee = 0; // Removed from calculation
           const commTax = deductGst ? (Number(orderData.billing.gstOnCommission) || 0) : 0;
           const totalFees = commissionValue + pgFee + commTax;
 
@@ -1021,12 +1019,6 @@ export default function OrderDetails() {
                           <span>Commission Value</span>
                           <span>-{formatMoney(commissionValue)}</span>
                         </div>
-                        {pgFee > 0 && (
-                          <div className="flex justify-between text-slate-500">
-                            <span>Payment Collection Charges</span>
-                            <span>-{formatMoney(pgFee)}</span>
-                          </div>
-                        )}
                         {commTax > 0 && (
                           <div className="flex justify-between text-slate-500">
                             <span>Commission Tax</span>

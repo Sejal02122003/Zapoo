@@ -3,6 +3,7 @@ import { FoodTransaction } from '../models/foodTransaction.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { FoodUser } from '../../../../core/users/user.model.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
+import { FoodBusinessSettings } from '../../admin/models/businessSettings.model.js';
 
 // Number to Words Converter (Indian Numbering System)
 function numberToWords(num) {
@@ -56,6 +57,8 @@ export async function generateOrderInvoice(orderId) {
 
     const restaurant = order.restaurantId;
     const items = Array.isArray(order.items) ? order.items : [];
+
+    const businessSettings = await FoodBusinessSettings.findOne().lean() || {};
 
     // --- Restaurant Invoice Data ---
     const gstRate = 5; // Standard 5% GST for restaurants without ITC
@@ -156,11 +159,12 @@ export async function generateOrderInvoice(orderId) {
     const platformTotal = taxablePlatformAmount + platformCgst + platformSgst;
 
     const platformInvoice = {
-        legalEntityName: 'Zapoo Technologies Pvt Ltd',
-        address: 'Sector V, Salt Lake, Kolkata, West Bengal 700091',
-        pan: 'AAZCS8726L',
-        cin: 'U72900WB2024PTC259987',
-        gstin: '19AAZCS8726L1Z5',
+        legalEntityName: businessSettings.companyName || 'Zapoo Technologies Pvt Ltd',
+        address: businessSettings.address || 'Sector V, Salt Lake, Kolkata, West Bengal 700091',
+        pan: businessSettings.pan || 'AAZCS8726L',
+        cin: businessSettings.cin || 'U72900WB2024PTC259987',
+        gstin: businessSettings.gstin || '19AAZCS8726L1Z5',
+        fssai: businessSettings.fssai || '',
         invoiceDate: invoiceDate,
         invoiceNo: `ZAP-${order.orderId}`,
         customerName: customerName,
@@ -219,7 +223,7 @@ export async function generateOrderInvoice(orderId) {
         platformPromo: platformPromo, // Free delivery with Gold, etc
         total: customerTotalAmount,
         restaurantFssai: restaurant?.fssaiLicense || '12822013001445',
-        platformFssai: '10019064001810' // Mock platform FSSAI
+        platformFssai: feeSettings.platformFssai || '10019064001810'
     };
 
     return {

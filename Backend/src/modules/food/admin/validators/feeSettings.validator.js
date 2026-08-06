@@ -13,13 +13,27 @@ const riderRangeSchema = z.object({
     pay: z.number().min(0)
 });
 
+const deliveryFeeAmountRuleSchema = z.object({
+    minAmount: z.number().min(0),
+    maxAmount: z.number().min(0).nullable().optional(),
+    fee: z.number().min(0),
+    feeType: z.enum(['flat', 'per_km']).optional()
+});
+
+const deliveryFeeMatrixRuleSchema = z.object({
+    minDistance: z.number().min(0),
+    maxDistance: z.number().min(0).nullable().optional(),
+    amountRules: z.array(deliveryFeeAmountRuleSchema).optional()
+});
+
 const feeSettingsUpsertSchema = z.object({
-    deliveryFeeType: z.enum(['range', 'slab']).optional(),
+    deliveryFeeType: z.enum(['range', 'slab', 'matrix']).optional(),
     slabDistance: z.number().min(0).nullable().optional(),
     slabPrice: z.number().min(0).nullable().optional(),
     extraPricePerKm: z.number().min(0).nullable().optional(),
     deliveryFee: z.number().min(0).nullable().optional(),
     deliveryFeeRanges: z.array(rangeSchema).optional(),
+    deliveryFeeMatrix: z.array(deliveryFeeMatrixRuleSchema).optional(),
     riderPayoutType: z.enum(['range']).optional(),
     riderBasePayout: z.number().min(0).nullable().optional(),
     riderPayoutRanges: z.array(riderRangeSchema).optional(),
@@ -60,6 +74,18 @@ export const validateFeeSettingsUpsertDto = (body) => {
                 min: Number(r?.min),
                 max: Number(r?.max),
                 fee: Number(r?.fee)
+            }))
+            : undefined,
+        deliveryFeeMatrix: Array.isArray(body?.deliveryFeeMatrix)
+            ? body.deliveryFeeMatrix.map((m) => ({
+                minDistance: Number(m?.minDistance),
+                maxDistance: m?.maxDistance !== null && m?.maxDistance !== undefined ? Number(m?.maxDistance) : null,
+                amountRules: Array.isArray(m?.amountRules) ? m.amountRules.map(r => ({
+                    minAmount: Number(r?.minAmount),
+                    maxAmount: r?.maxAmount !== null && r?.maxAmount !== undefined ? Number(r?.maxAmount) : null,
+                    fee: Number(r?.fee),
+                    feeType: r?.feeType || 'flat'
+                })) : []
             }))
             : undefined,
         riderPayoutType: body?.riderPayoutType || undefined,

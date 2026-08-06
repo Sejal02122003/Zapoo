@@ -27,8 +27,6 @@ export default function RestaurantCommission() {
     globalRestaurantCommission: 0,
     globalGstOnItem: 0,
     globalGstOnCommission: 18,
-    globalPaymentGatewayFee: 2,
-    globalTcs: 1,
     applyGlobalTaxes: true,
     deductGstFromRestaurant: true
   })
@@ -119,7 +117,6 @@ export default function RestaurantCommission() {
           globalGstOnItem: data.globalSettings.globalGstOnItem || 0,
           globalGstOnCommission: data.globalSettings.globalGstOnCommission || 0,
           globalPaymentGatewayFee: data.globalSettings.globalPaymentGatewayFee || 0,
-          globalTcs: data.globalSettings.globalTcs || 0,
           applyGlobalTaxes: data.globalSettings.applyGlobalTaxes !== false,
           deductGstFromRestaurant: data.globalSettings.deductGstFromRestaurant !== false
         })
@@ -227,7 +224,6 @@ export default function RestaurantCommission() {
         globalGstOnItem: Number(globalSettings.globalGstOnItem),
         globalGstOnCommission: Number(globalSettings.globalGstOnCommission),
         globalPaymentGatewayFee: Number(globalSettings.globalPaymentGatewayFee),
-        globalTcs: Number(globalSettings.globalTcs),
         applyGlobalTaxes: Boolean(globalSettings.applyGlobalTaxes),
         deductGstFromRestaurant: Boolean(globalSettings.deductGstFromRestaurant)
       })

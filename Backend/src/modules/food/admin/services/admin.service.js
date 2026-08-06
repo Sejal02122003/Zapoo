@@ -1160,8 +1160,15 @@ export async function getTaxReport(query = {}) {
                 _id: '$restaurantId',
                 totalIncome: { $sum: { $ifNull: ['$pricing.total', 0] } },
                 totalTax: { $sum: { $ifNull: ['$pricing.tax', 0] } },
-                totalTax5: { $sum: { $ifNull: ['$pricing.gstOnItem', 0] } },
-                totalTax18: { $sum: { $ifNull: ['$pricing.gstOnCommission', 0] } },
+                totalTax5: { $sum: { $ifNull: ['$pricing.taxBreakdown.itemTax', { $ifNull: ['$pricing.gstOnItem', 0] }] } },
+                totalTax18: { 
+                    $sum: {
+                        $subtract: [
+                            { $ifNull: ['$pricing.tax', 0] },
+                            { $ifNull: ['$pricing.taxBreakdown.itemTax', { $ifNull: ['$pricing.gstOnItem', 0] }] }
+                        ]
+                    }
+                },
                 orderCount: { $sum: 1 }
             }
         },
@@ -1251,8 +1258,8 @@ export async function getTaxReportDetail(restaurantId, query = {}) {
             orderId: o.orderId,
             totalAmount: `\u20B9${(o.pricing?.total || 0).toFixed(2)}`,
             taxAmount: `\u20B9${(o.pricing?.tax || 0).toFixed(2)}`,
-            tax5Amount: `\u20B9${(o.pricing?.gstOnItem || 0).toFixed(2)}`,
-            tax18Amount: `\u20B9${(o.pricing?.gstOnCommission || 0).toFixed(2)}`,
+            tax5Amount: `\u20B9${(o.pricing?.taxBreakdown?.itemTax ?? o.pricing?.gstOnItem ?? 0).toFixed(2)}`,
+            tax18Amount: `\u20B9${((o.pricing?.tax || 0) - (o.pricing?.taxBreakdown?.itemTax ?? o.pricing?.gstOnItem ?? 0)).toFixed(2)}`,
             date: o.createdAt
         }))
     };
@@ -1737,7 +1744,13 @@ export async function getRestaurantCommissionBootstrap() {
             globalPaymentGatewayFee: feeSettings.globalPaymentGatewayFee || 0,
             globalTcs: feeSettings.globalTcs || 0,
             applyGlobalTaxes: feeSettings.applyGlobalTaxes !== false,
-            deductGstFromRestaurant: feeSettings.deductGstFromRestaurant !== false
+            deductGstFromRestaurant: feeSettings.deductGstFromRestaurant !== false,
+            platformLegalEntityName: feeSettings.platformLegalEntityName || '',
+            platformAddress: feeSettings.platformAddress || '',
+            platformPan: feeSettings.platformPan || '',
+            platformCin: feeSettings.platformCin || '',
+            platformGstin: feeSettings.platformGstin || '',
+            platformFssai: feeSettings.platformFssai || ''
         }
     };
 }
@@ -1799,7 +1812,7 @@ export async function deleteRestaurantCommission(id) {
 }
 
 export async function updateGlobalRestaurantCommissionSettings(body) {
-    const { globalRestaurantCommission, globalTakeawayRestaurantCommission, globalGstOnItem, globalGstOnCommission, globalPaymentGatewayFee, globalTcs, applyGlobalTaxes, deductGstFromRestaurant } = body;
+    const { globalRestaurantCommission, globalTakeawayRestaurantCommission, globalGstOnItem, globalGstOnCommission, globalPaymentGatewayFee, globalTcs, applyGlobalTaxes, deductGstFromRestaurant, platformLegalEntityName, platformAddress, platformPan, platformCin, platformGstin, platformFssai } = body;
     let settings = await FoodFeeSettings.findOne({ isActive: true }).sort({ createdAt: -1 });
     if (!settings) {
         settings = new FoodFeeSettings();
@@ -1814,6 +1827,13 @@ export async function updateGlobalRestaurantCommissionSettings(body) {
     if (applyGlobalTaxes !== undefined) settings.applyGlobalTaxes = Boolean(applyGlobalTaxes);
     if (deductGstFromRestaurant !== undefined) settings.deductGstFromRestaurant = Boolean(deductGstFromRestaurant);
     
+    if (platformLegalEntityName !== undefined) settings.platformLegalEntityName = platformLegalEntityName;
+    if (platformAddress !== undefined) settings.platformAddress = platformAddress;
+    if (platformPan !== undefined) settings.platformPan = platformPan;
+    if (platformCin !== undefined) settings.platformCin = platformCin;
+    if (platformGstin !== undefined) settings.platformGstin = platformGstin;
+    if (platformFssai !== undefined) settings.platformFssai = platformFssai;
+    
     await settings.save();
     return {
         globalRestaurantCommission: settings.globalRestaurantCommission,
@@ -1823,7 +1843,13 @@ export async function updateGlobalRestaurantCommissionSettings(body) {
         globalPaymentGatewayFee: settings.globalPaymentGatewayFee,
         globalTcs: settings.globalTcs,
         applyGlobalTaxes: settings.applyGlobalTaxes,
-        deductGstFromRestaurant: settings.deductGstFromRestaurant
+        deductGstFromRestaurant: settings.deductGstFromRestaurant,
+        platformLegalEntityName: settings.platformLegalEntityName,
+        platformAddress: settings.platformAddress,
+        platformPan: settings.platformPan,
+        platformCin: settings.platformCin,
+        platformGstin: settings.platformGstin,
+        platformFssai: settings.platformFssai
     };
 }
 
@@ -1972,7 +1998,7 @@ export async function upsertFeeSettings(body) {
 
         const keys = [
             'deliveryFeeType', 'slabDistance', 'slabPrice', 'extraPricePerKm',
-            'deliveryFee', 'deliveryFeeRanges', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
+            'deliveryFee', 'deliveryFeeRanges', 'deliveryFeeMatrix', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
             'discountDeliveryThreshold', 'discountedDeliveryFee',
             'riderPayoutType',
             'riderBasePayout', 'riderPayoutRanges', 'deliveryBonusAmount',
@@ -2003,7 +2029,7 @@ export async function upsertFeeSettings(body) {
     const payload = {};
     const keys = [
         'deliveryFeeType', 'slabDistance', 'slabPrice', 'extraPricePerKm',
-        'deliveryFee', 'deliveryFeeRanges', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
+        'deliveryFee', 'deliveryFeeRanges', 'deliveryFeeMatrix', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
         'discountDeliveryThreshold', 'discountedDeliveryFee',
         'riderPayoutType',
         'riderBasePayout', 'riderPayoutRanges', 'deliveryBonusAmount',

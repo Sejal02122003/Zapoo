@@ -206,7 +206,7 @@ export default function AdminEarningReport() {
                     const tcs = Number(breakdown.tcs) || 0
                     const gstOnItem = Number(breakdown.gstOnItem) || 0
                     
-                    const totalDeductions = restaurantCommission + gstOnCommission + paymentGatewayFee + tcs
+                    const totalDeductions = restaurantCommission + gstOnCommission + tcs
                     const restaurantGets = Math.max(0, itemSubtotal + packagingFee - totalDeductions)
                     const isExpanded = !!expandedCards[tx.id]
 
@@ -306,12 +306,7 @@ export default function AdminEarningReport() {
                                         <span className="text-[13px] text-gray-900">{formatMoney(gstOnCommission)}</span>
                                       </div>
                                     )}
-                                    {paymentGatewayFee > 0 && (
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-[13px] text-gray-600 font-medium">Payment gateway fee</span>
-                                        <span className="text-[13px] text-gray-900">{formatMoney(paymentGatewayFee)}</span>
-                                      </div>
-                                    )}
+
                                     {tcs > 0 && (
                                       <div className="flex items-center justify-between">
                                         <span className="text-[13px] text-gray-600 font-medium">TCS</span>
@@ -366,12 +361,7 @@ export default function AdminEarningReport() {
                                           <span className="text-[12px] text-red-500/80">{formatDiscount(gstOnCommission)}</span>
                                         </div>
                                       )}
-                                      {paymentGatewayFee > 0 && (
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-[12px] text-gray-500 font-medium">Payment gateway fee</span>
-                                          <span className="text-[12px] text-red-500/80">{formatDiscount(paymentGatewayFee)}</span>
-                                        </div>
-                                      )}
+
                                       {tcs > 0 && (
                                         <div className="flex items-center justify-between">
                                           <span className="text-[12px] text-gray-500 font-medium">TCS</span>

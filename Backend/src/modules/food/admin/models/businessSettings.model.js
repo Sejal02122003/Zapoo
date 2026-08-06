@@ -14,6 +14,8 @@ const businessSettingsSchema = new mongoose.Schema(
         region: { type: String, default: 'India' },
         fssai: { type: String, default: '' },
         gstin: { type: String, default: '' },
+        pan: { type: String, default: '' },
+        cin: { type: String, default: '' },
         logo: {
             url: { type: String, default: '' },
             publicId: { type: String, default: '' }

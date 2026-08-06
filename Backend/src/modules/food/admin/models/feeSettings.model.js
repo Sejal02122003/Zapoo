@@ -76,6 +76,7 @@ const feeSettingsSchema = new mongoose.Schema(
         globalTcs: { type: Number, min: 0, max: 100, default: 1 },
         applyGlobalTaxes: { type: Boolean, default: true },
         deductGstFromRestaurant: { type: Boolean, default: true },
+        
         isActive: { type: Boolean, default: true, index: true }
     },
     { collection: 'food_fee_settings', timestamps: true }
