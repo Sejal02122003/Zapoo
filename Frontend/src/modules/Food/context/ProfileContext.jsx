@@ -230,7 +230,9 @@ export function ProfileProvider({ children }) {
             (addr) => normalizeAddressLabel(addr?.label) !== normalizeAddressLabel(normalizedNewAddress?.label)
           )
           const updated = dedupeAddressesByLabel([...filtered, normalizedNewAddress])
-          localStorage.setItem("userAddresses", JSON.stringify(updated))
+          setTimeout(() => {
+            localStorage.setItem("userAddresses", JSON.stringify(updated))
+          }, 0)
           return updated
         })
         return normalizedNewAddress
@@ -252,7 +254,9 @@ export function ProfileProvider({ children }) {
           const updated = dedupeAddressesByLabel(
             prev.map((addr) => (String(getAddressId(addr)) === String(id) ? normalizedUpdatedAddress : normalizeAddress(addr)))
           )
-          localStorage.setItem("userAddresses", JSON.stringify(updated))
+          setTimeout(() => {
+            localStorage.setItem("userAddresses", JSON.stringify(updated))
+          }, 0)
           return updated
         })
         return normalizedUpdatedAddress
@@ -268,7 +272,9 @@ export function ProfileProvider({ children }) {
       await userAPI.deleteAddress(id)
       setAddresses((prev) => {
         const newAddresses = prev.filter((addr) => String(getAddressId(addr)) !== String(id))
-        localStorage.setItem("userAddresses", JSON.stringify(newAddresses))
+        setTimeout(() => {
+          localStorage.setItem("userAddresses", JSON.stringify(newAddresses))
+        }, 0)
         return newAddresses
       })
     } catch (error) {
@@ -284,75 +290,77 @@ export function ProfileProvider({ children }) {
         ...addr,
         isDefault: String(getAddressId(addr)) === String(id) }))
 
-      localStorage.setItem("userAddresses", JSON.stringify(updatedAddresses))
-      notifyDeliveryModeUpdated('saved')
+      setTimeout(() => {
+        localStorage.setItem("userAddresses", JSON.stringify(updatedAddresses))
+        notifyDeliveryModeUpdated('saved')
 
-      const selectedAddress =
-        updatedAddresses.find((addr) => addr.isDefault) || updatedAddresses[0]
+        const selectedAddress =
+          updatedAddresses.find((addr) => addr.isDefault) || updatedAddresses[0]
 
-      if (selectedAddress) {
-        const coordinates = selectedAddress?.location?.coordinates
-        const lngFromCoords =
-          Array.isArray(coordinates) && coordinates.length >= 2
-            ? Number(coordinates[0])
-            : null
-        const latFromCoords =
-          Array.isArray(coordinates) && coordinates.length >= 2
-            ? Number(coordinates[1])
-            : null
-        const lat = Number(
-          Number.isFinite(latFromCoords)
-            ? latFromCoords
-            : selectedAddress?.latitude ?? selectedAddress?.lat,
-        )
-        const lng = Number(
-          Number.isFinite(lngFromCoords)
-            ? lngFromCoords
-            : selectedAddress?.longitude ?? selectedAddress?.lng,
-        )
+        if (selectedAddress) {
+          const coordinates = selectedAddress?.location?.coordinates
+          const lngFromCoords =
+            Array.isArray(coordinates) && coordinates.length >= 2
+              ? Number(coordinates[0])
+              : null
+          const latFromCoords =
+            Array.isArray(coordinates) && coordinates.length >= 2
+              ? Number(coordinates[1])
+              : null
+          const lat = Number(
+            Number.isFinite(latFromCoords)
+              ? latFromCoords
+              : selectedAddress?.latitude ?? selectedAddress?.lat,
+          )
+          const lng = Number(
+            Number.isFinite(lngFromCoords)
+              ? lngFromCoords
+              : selectedAddress?.longitude ?? selectedAddress?.lng,
+          )
 
-        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-          let existingLocation = {}
-          try {
-            const raw = localStorage.getItem("userLocation")
-            existingLocation = raw ? JSON.parse(raw) || {} : {}
-          } catch {
-            existingLocation = {}
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            let existingLocation = {}
+            try {
+              const raw = localStorage.getItem("userLocation")
+              existingLocation = raw ? JSON.parse(raw) || {} : {}
+            } catch {
+              existingLocation = {}
+            }
+
+            const parts = [
+              selectedAddress?.additionalDetails,
+              selectedAddress?.street,
+              selectedAddress?.city,
+              selectedAddress?.state,
+              selectedAddress?.zipCode,
+            ].filter(Boolean)
+
+            const resolvedAddress =
+              parts.length > 0
+                ? parts.join(", ")
+                : selectedAddress?.formattedAddress || selectedAddress?.address || ""
+
+            const syncedLocation = {
+              ...existingLocation,
+              latitude: lat,
+              longitude: lng,
+              area:
+                selectedAddress?.additionalDetails ||
+                selectedAddress?.street ||
+                selectedAddress?.area ||
+                existingLocation?.area ||
+                "",
+              city: selectedAddress?.city || existingLocation?.city || "",
+              state: selectedAddress?.state || existingLocation?.state || "",
+              address: resolvedAddress || existingLocation?.address || "",
+              formattedAddress:
+                resolvedAddress || existingLocation?.formattedAddress || "" }
+
+            persistUserLocation(syncedLocation, { mode: 'saved' })
+            notifyLocationUpdated(syncedLocation)
           }
-
-          const parts = [
-            selectedAddress?.additionalDetails,
-            selectedAddress?.street,
-            selectedAddress?.city,
-            selectedAddress?.state,
-            selectedAddress?.zipCode,
-          ].filter(Boolean)
-
-          const resolvedAddress =
-            parts.length > 0
-              ? parts.join(", ")
-              : selectedAddress?.formattedAddress || selectedAddress?.address || ""
-
-          const syncedLocation = {
-            ...existingLocation,
-            latitude: lat,
-            longitude: lng,
-            area:
-              selectedAddress?.additionalDetails ||
-              selectedAddress?.street ||
-              selectedAddress?.area ||
-              existingLocation?.area ||
-              "",
-            city: selectedAddress?.city || existingLocation?.city || "",
-            state: selectedAddress?.state || existingLocation?.state || "",
-            address: resolvedAddress || existingLocation?.address || "",
-            formattedAddress:
-              resolvedAddress || existingLocation?.formattedAddress || "" }
-
-          persistUserLocation(syncedLocation, { mode: 'saved' })
-          notifyLocationUpdated(syncedLocation)
         }
-      }
+      }, 0)
 
       return updatedAddresses
     })
