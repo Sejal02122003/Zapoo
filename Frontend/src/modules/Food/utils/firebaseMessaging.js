@@ -788,8 +788,8 @@ export async function registerWebPushForCurrentModule(pathname = window.location
         serviceWorkerRegistration: registration });
 
       if (!token) return;
-      console.log(`%c🔥 [FCM WEB TOKEN]: ${token}`, "background: #222; color: #bada55; font-size: 14px; font-weight: bold; padding: 4px 8px; rounded: 4px;");
-      console.log("🔥 FCM TOKEN RAW STRING:\n" + token);
+      // console.log(`%c🔥 [FCM WEB TOKEN]: ${token}`, "background: #222; color: #bada55; font-size: 14px; font-weight: bold; padding: 4px 8px; rounded: 4px;");
+      // console.log("🔥 FCM TOKEN RAW STRING:\n" + token);
 
       pushDebugLog(PUSH_DEBUG_PREFIX, "FCM token resolved", {
         moduleName,
