@@ -894,7 +894,9 @@ export async function getTransactionReport(query = {}) {
             const deliveryFeeUser = Number(pricing.deliveryFee || 0);
             const rShare = Number(tx.amounts?.riderShare) || Number(order.riderEarning) || deliveryFeeUser || 0;
             
-            deliverymanEarning += rShare;
+            if (tx.deliveryManId || tx.riderId || tx.deliveryPartnerId || order.deliveryPartnerId) {
+                deliverymanEarning += rShare;
+            }
             
             const deliveryCostAdmin = rShare || 30;
             const deliveryGstAdmin = deliveryCostAdmin * 0.18;

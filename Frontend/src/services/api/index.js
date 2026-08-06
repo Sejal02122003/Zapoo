@@ -203,6 +203,11 @@ export const notificationAPI = {
 
 /** Admin API - new backend only (GET /auth/me, PATCH /auth/admin/profile, POST /auth/admin/change-password) */
 export const adminAPI = {
+  // Disbursements
+  getDisbursements: (params = {}) => adminClient.get("/food/admin/disbursements", { params }),
+  createDisbursement: (body) => adminClient.post("/food/admin/disbursements", body),
+  updateDisbursementStatus: (id, body) => adminClient.patch(`/food/admin/disbursements/${id}/status`, body),
+
   // Sub Admins
   getSubAdmins: (params = {}) => adminClient.get("/food/admin/sub-admins", { params }),
   createSubAdmin: (body) => adminClient.post("/food/admin/sub-admins", body),

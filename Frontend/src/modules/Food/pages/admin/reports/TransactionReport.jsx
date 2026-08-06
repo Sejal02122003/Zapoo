@@ -354,7 +354,11 @@ export default function TransactionReport() {
             </div>
 
             {/* Restaurant Earning */}
-            <div className="rounded-lg shadow-sm border border-slate-200 p-3" style={{ backgroundColor: '#f1f5f9' }}>
+            <div 
+              className="rounded-lg shadow-sm border border-slate-200 p-3 cursor-pointer hover:shadow-md transition-all" 
+              style={{ backgroundColor: '#f1f5f9' }}
+              onClick={() => navigate('/admin/food/disbursement-report/restaurants', { state: { filters, searchQuery } })}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -372,7 +376,11 @@ export default function TransactionReport() {
             </div>
 
             {/* Deliveryman Earning */}
-            <div className="rounded-lg shadow-sm border border-slate-200 p-3" style={{ backgroundColor: '#f1f5f9' }}>
+            <div 
+              className="rounded-lg shadow-sm border border-slate-200 p-3 cursor-pointer hover:shadow-md transition-all" 
+              style={{ backgroundColor: '#f1f5f9' }}
+              onClick={() => navigate('/admin/food/disbursement-report/deliverymen', { state: { filters, searchQuery } })}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">

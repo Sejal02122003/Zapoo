@@ -22,6 +22,7 @@ import {
 import * as auditLogController from '../controllers/auditLog.controller.js';
 import * as analyticsController from '../controllers/analytics.controller.js';
 import * as promoBannerController from '../../landing/controllers/promoBanner.controller.js';
+import * as disbursementController from '../controllers/disbursement.controller.js';
 import { upload } from '../../../../middleware/upload.js';
 import menuBulkRoutes from './menuBulk.routes.js';
 import locationCouponRoutes from './locationCoupon.routes.js';
@@ -127,6 +128,12 @@ router.get('/reports/restaurants', adminController.getRestaurantReport);
 router.get('/reports/transactions', adminController.getTransactionReport);
 router.get('/reports/tax', adminController.getTaxReport);
 router.get('/reports/tax/:id', adminController.getTaxReportDetail);
+
+// ----- Disbursements -----
+router.get('/disbursements', disbursementController.getDisbursements);
+router.post('/disbursements', disbursementController.createDisbursement);
+router.patch('/disbursements/:id/status', disbursementController.updateDisbursementStatus);
+
 router.get('/restaurants/pending', adminController.getPendingRestaurants);
 router.get('/restaurants/reviews', adminController.getRestaurantReviews);
 router.get('/restaurants/:id/menu-pdf', adminController.getRestaurantMenuPdfDownloadUrl);

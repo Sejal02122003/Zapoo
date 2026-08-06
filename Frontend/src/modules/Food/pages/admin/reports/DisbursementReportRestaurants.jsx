@@ -1,56 +1,123 @@
-import { useState, useMemo } from "react"
-import { Search, Download, ChevronDown, Filter, UtensilsCrossed, Eye, ArrowUpDown, Info, Settings, FileText, FileSpreadsheet, Code } from "lucide-react"
+import { useState, useMemo, useEffect } from "react"
+import { Search, Download, ChevronDown, Filter, UtensilsCrossed, Eye, ArrowUpDown, Info, Settings, FileText, FileSpreadsheet, Code, ArrowLeft } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import { emptyDisbursementReportRestaurants, emptyDisbursementStats } from "@food/utils/adminFallbackData"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@food/components/ui/dialog"
 import { exportReportsToCSV, exportReportsToExcel, exportReportsToPDF, exportReportsToJSON } from "@food/components/admin/reports/reportsExportUtils"
+import { adminAPI } from "@food/api"
+import { toast } from "sonner"
 
 // Import icons from Transaction-report-icons
-import pendingIcon from "@food/assets/Transaction-report-icons/trx1.png"
-import completedIcon from "@food/assets/Transaction-report-icons/trx3.png"
-import canceledIcon from "@food/assets/Transaction-report-icons/trx5.png"
+import pendingIcon from "@food/assets/Dashboard-icons/pending.svg"
+import completedIcon from "@food/assets/Dashboard-icons/delivered.svg"
+import canceledIcon from "@food/assets/Dashboard-icons/canceled.svg"
 
 export default function DisbursementReportRestaurants() {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
-  const [disbursements, setDisbursements] = useState(emptyDisbursementReportRestaurants)
+  const [disbursements, setDisbursements] = useState([])
+  const [stats, setStats] = useState(emptyDisbursementStats)
+  const [isLoading, setIsLoading] = useState(false)
+  const [selectedDisbursement, setSelectedDisbursement] = useState(null)
+  const [zones, setZones] = useState([])
+
   const [filters, setFilters] = useState({
     zone: "All Zones",
     restaurant: "All restaurants",
     paymentMethod: "All Payment Method",
     status: "All status",
-    time: "All Time" })
+    time: "All Time" 
+  })
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
-  const filteredDisbursements = useMemo(() => {
-    let result = [...disbursements]
-    
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
-      result = result.filter(disbursement =>
-        disbursement.id.toLowerCase().includes(query) ||
-        disbursement.restaurantName.toLowerCase().includes(query)
-      )
+  const fetchDisbursements = async () => {
+    setIsLoading(true)
+    try {
+        const { data } = await adminAPI.getDisbursements({
+          targetType: "restaurant",
+          search: searchQuery
+        })
+      if (data.success) {
+        // Map the backend data to frontend format
+        const mappedData = data.data.disbursements.map((d, index) => ({
+          sl: index + 1,
+          id: d._id.substring(d._id.length - 6).toUpperCase(), // Shorten ID
+          restaurantName: d.targetId ? d.targetId.restaurantName : 'Unknown',
+          zoneName: d.targetId?.zone?.name || 'Unknown',
+          createdAt: new Date(d.createdAt).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          disburseAmount: d.amount,
+          paymentMethod: d.paymentMethod,
+          status: d.status.charAt(0).toUpperCase() + d.status.slice(1)
+        }))
+        setDisbursements(mappedData)
+        setStats(data.data.stats || emptyDisbursementStats)
+      } else {
+        toast.error(data.message || "Failed to fetch disbursements")
+      }
+    } catch (error) {
+      toast.error("Error connecting to server")
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  // Fetch when search changes (or initially)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchDisbursements()
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  useEffect(() => {
+    adminAPI.getZones().then(res => {
+      if (res?.data?.success) {
+        setZones(res.data.data.zones || res.data.data)
+      }
+    }).catch(err => console.error("Error fetching zones", err))
+  }, [])
+
+  const filteredDisbursements = disbursements.filter(d => {
+    let match = true
+
+    // Note: We might not have zoneName for restaurants populated, this requires backend support.
     if (filters.zone !== "All Zones") {
-      // Filter by zone if needed
-    }
-
-    if (filters.restaurant !== "All restaurants") {
-      result = result.filter(d => d.restaurantName === filters.restaurant)
-    }
-
-    if (filters.paymentMethod !== "All Payment Method") {
-      result = result.filter(d => d.paymentMethod === filters.paymentMethod)
+      if (d.zoneName && d.zoneName !== "Unknown" && d.zoneName !== filters.zone) match = false
     }
 
     if (filters.status !== "All status") {
-      result = result.filter(d => d.status.toLowerCase() === filters.status.toLowerCase())
+      if (d.status.toLowerCase() !== filters.status.toLowerCase()) match = false
     }
 
-    return result
-  }, [disbursements, searchQuery, filters])
+    if (filters.paymentMethod !== "All Payment Method") {
+      const pmMap = { "UPI": "upi", "Bank Transfer": "bank_transfer", "Cash": "cash" }
+      const normalizedPM = pmMap[filters.paymentMethod] || filters.paymentMethod.toLowerCase()
+      if (d.paymentMethod !== normalizedPM) match = false
+    }
+
+    if (filters.restaurant !== "All Restaurants") {
+      if (d.restaurantName !== filters.restaurant) match = false
+    }
+
+    if (filters.time !== "All Time") {
+      const date = new Date(d.createdAt)
+      const now = new Date()
+      if (filters.time === "Today") {
+        if (date.toDateString() !== now.toDateString()) match = false
+      } else if (filters.time === "This Week") {
+        const weekAgo = new Date(now.setDate(now.getDate() - 7))
+        if (date < weekAgo) match = false
+      } else if (filters.time === "This Month") {
+        const monthAgo = new Date(now.setMonth(now.getMonth() - 1))
+        if (date < monthAgo) match = false
+      }
+    }
+
+    return match
+  })
+
 
   const totalDisbursements = filteredDisbursements.length
 
@@ -80,6 +147,13 @@ export default function DisbursementReportRestaurants() {
     // Filters are already applied via useMemo
   }
 
+  const formatCurrency = (amount) => {
+    if (amount >= 1000) {
+      return `\u20B9 ${(amount / 1000).toFixed(2)}K`
+    }
+    return `\u20B9 ${Number(amount || 0).toFixed(2)}`
+  }
+
   const handleResetFilters = () => {
     setFilters({
       zone: "All Zones",
@@ -97,6 +171,12 @@ export default function DisbursementReportRestaurants() {
         {/* Page Header */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
           <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate(-1)}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
               <UtensilsCrossed className="w-5 h-5 text-white" />
             </div>
@@ -117,7 +197,7 @@ export default function DisbursementReportRestaurants() {
               <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4 relative">
                 <img src={pendingIcon} alt="Pending" className="w-10 h-10" />
               </div>
-              <p className="text-2xl font-bold text-green-600 mb-1">{emptyDisbursementStats.pending}</p>
+              <p className="text-2xl font-bold text-green-600 mb-1">{formatCurrency(stats.pending || 0)}</p>
               <p className="text-sm text-slate-600">Pending Disbursements</p>
             </div>
           </div>
@@ -133,7 +213,7 @@ export default function DisbursementReportRestaurants() {
               <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center mb-4">
                 <img src={completedIcon} alt="Completed" className="w-10 h-10" />
               </div>
-              <p className="text-2xl font-bold text-slate-900 mb-1">{emptyDisbursementStats.completed}</p>
+              <p className="text-2xl font-bold text-slate-900 mb-1">{formatCurrency(stats.completed || 0)}</p>
               <p className="text-sm text-slate-600">Completed Disbursements</p>
             </div>
           </div>
@@ -149,7 +229,7 @@ export default function DisbursementReportRestaurants() {
               <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-4 relative">
                 <img src={canceledIcon} alt="Canceled" className="w-10 h-10" />
               </div>
-              <p className="text-2xl font-bold text-red-600 mb-1">{emptyDisbursementStats.canceled}</p>
+              <p className="text-2xl font-bold text-red-600 mb-1">{formatCurrency(stats.canceled || 0)}</p>
               <p className="text-sm text-slate-600">Canceled Transactions</p>
             </div>
           </div>
@@ -170,9 +250,9 @@ export default function DisbursementReportRestaurants() {
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="All Zones">All Zones</option>
-                  <option value="Zone 1">Zone 1</option>
-                  <option value="Zone 2">Zone 2</option>
-                  <option value="Zone 3">Zone 3</option>
+                  {zones?.length > 0 && zones.map(z => (
+                    <option key={z._id} value={z.name}>{z.name}</option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-2 bottom-2.5 w-4 h-4 text-slate-500 pointer-events-none" />
               </div>
@@ -186,10 +266,10 @@ export default function DisbursementReportRestaurants() {
                   onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="All restaurants">All restaurants</option>
-                  <option value="Caf� Monarch">Caf� Monarch</option>
-                  <option value="Hungry Puppets">Hungry Puppets</option>
-                  <option value="Redcliff Cafe">Redcliff Cafe</option>
+                  <option value="All Restaurants">All Restaurants</option>
+                  {Array.from(new Set(disbursements.map(d => d.restaurantName))).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-2 bottom-2.5 w-4 h-4 text-slate-500 pointer-events-none" />
               </div>
@@ -204,8 +284,9 @@ export default function DisbursementReportRestaurants() {
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="All Payment Method">All Payment Method</option>
-                  <option value="6cash">6cash</option>
+                  <option value="UPI">UPI</option>
                   <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cash">Cash</option>
                 </select>
                 <ChevronDown className="absolute right-2 bottom-2.5 w-4 h-4 text-slate-500 pointer-events-none" />
               </div>
@@ -404,7 +485,7 @@ export default function DisbursementReportRestaurants() {
                         <span className="text-sm text-slate-700">{disbursement.createdAt}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-900">{disbursement.disburseAmount}</span>
+                        <span className="text-sm font-medium text-slate-900">{formatCurrency(disbursement.disburseAmount)}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-slate-700">{disbursement.paymentMethod}</span>
@@ -416,6 +497,7 @@ export default function DisbursementReportRestaurants() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <button
+                          onClick={() => setSelectedDisbursement(disbursement)}
                           className="p-1.5 rounded text-blue-600 hover:bg-blue-50 transition-colors"
                           title="View Details"
                         >
@@ -430,6 +512,58 @@ export default function DisbursementReportRestaurants() {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!selectedDisbursement} onOpenChange={(open) => !open && setSelectedDisbursement(null)}>
+        <DialogContent className="sm:max-w-lg p-6 bg-white rounded-2xl">
+          <DialogHeader className="pb-4 border-b border-slate-100">
+            <DialogTitle className="text-xl font-bold text-slate-800">Disbursement Details</DialogTitle>
+          </DialogHeader>
+          {selectedDisbursement && (
+            <div className="py-4">
+              <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">ID</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedDisbursement.id}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Restaurant Info</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedDisbursement.restaurantName}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Created At</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedDisbursement.createdAt}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Disburse Amount</p>
+                  <p className="text-lg font-bold text-slate-900">{formatCurrency(selectedDisbursement.disburseAmount)}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Payment Method</p>
+                  <p className="text-sm font-semibold text-slate-900 capitalize">{selectedDisbursement.paymentMethod.replace('_', ' ')}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Status</p>
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                    selectedDisbursement.status.toLowerCase() === 'completed' ? 'bg-green-100 text-green-700' : 
+                    selectedDisbursement.status.toLowerCase() === 'pending' ? 'bg-orange-100 text-orange-700' : 
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {selectedDisbursement.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="pt-4 border-t border-slate-100 sm:justify-end">
+            <button
+              onClick={() => setSelectedDisbursement(null)}
+              className="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
+            >
+              Close
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Settings Dialog */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
