@@ -29,7 +29,7 @@ const startTrackingWorker = () => {
     });
     
     // Silence high-frequency logs in production for health but log major errors
-    worker.on('completed', (job) => logger.debug(`Tracking job ${job.id} completed`));
+    worker.on('completed', (job) => logger.info(`Tracking job ${job.id} completed`));
     worker.on('failed', (job, err) => logger.error(`Tracking job ${job?.id} failed: ${err.message}`));
     worker.on('error', (err) => logger.error(`Tracking worker error: ${err.message}`));
     

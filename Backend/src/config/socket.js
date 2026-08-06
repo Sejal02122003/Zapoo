@@ -326,7 +326,7 @@ export const initSocket = async (server) => {
                 }
             } catch (err) {
                 // Silently skip if Firebase not initialized yet
-                logger.debug(`Firebase RTDB sync skipped: ${err.message}`);
+                logger.info(`Firebase RTDB sync skipped: ${err.message}`);
             }
         });
 

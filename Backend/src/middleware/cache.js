@@ -36,7 +36,7 @@ export const cacheResponse = (ttlInSeconds = 300, prefix = 'api_cache') => {
                 }
             } catch (err) {
                 // Ignore parsing errors, fallback to raw url
-                logger.debug(`Cache URL parsing error: ${err.message}`);
+                logger.info(`Cache URL parsing error: ${err.message}`);
             }
         }
         
@@ -45,7 +45,7 @@ export const cacheResponse = (ttlInSeconds = 300, prefix = 'api_cache') => {
         try {
             const cachedData = await redis.get(key);
             if (cachedData) {
-                // logger.debug(`[Cache Hit] key=${key}`);
+                // logger.info(`[Cache Hit] key=${key}`);
                 return res.json(JSON.parse(cachedData));
             }
 
@@ -60,7 +60,7 @@ export const cacheResponse = (ttlInSeconds = 300, prefix = 'api_cache') => {
                 return originalJson(body);
             };
 
-            // logger.debug(`[Cache Miss] key=${key}`);
+            // logger.info(`[Cache Miss] key=${key}`);
             next();
         } catch (err) {
             logger.warn(`Cache middleware error: ${err.message}`);
