@@ -381,13 +381,7 @@ const orderSchema = new mongoose.Schema(
             type: { type: String, enum: ['Point'] },
             coordinates: { type: [Number] }
         },
-        /** Petpooja integration sync state */
-        petpoojaIntegration: {
-            syncStatus: { type: String, enum: ['pending', 'synced', 'failed', 'not_applicable'], default: 'not_applicable' },
-            petpoojaOrderId: { type: String, default: '' },
-            lastSyncAttempt: { type: Date },
-            failureReason: { type: String }
-        }
+
     },
     {
         collection: 'food_orders',
@@ -425,7 +419,7 @@ const settingsSchema = new mongoose.Schema(
     {
         key: { type: String, required: true, unique: true, trim: true },
         dispatchMode: { type: String, enum: ['auto'], default: 'auto' },
-        petpoojaGlobalSync: { type: Boolean, default: true },
+
         maxManualIncentive: { type: Number, default: 500, min: 0 },
         updatedBy: {
             role: { type: String },
