@@ -1160,15 +1160,8 @@ export async function getTaxReport(query = {}) {
                 _id: '$restaurantId',
                 totalIncome: { $sum: { $ifNull: ['$pricing.total', 0] } },
                 totalTax: { $sum: { $ifNull: ['$pricing.tax', 0] } },
-                totalTax5: { $sum: { $ifNull: ['$pricing.taxBreakdown.itemTax', { $ifNull: ['$pricing.gstOnItem', 0] }] } },
-                totalTax18: { 
-                    $sum: {
-                        $subtract: [
-                            { $ifNull: ['$pricing.tax', 0] },
-                            { $ifNull: ['$pricing.taxBreakdown.itemTax', { $ifNull: ['$pricing.gstOnItem', 0] }] }
-                        ]
-                    }
-                },
+                totalTax5: { $sum: { $ifNull: ['$pricing.gstOnItem', 0] } },
+                totalTax18: { $sum: { $ifNull: ['$pricing.gstOnCommission', 0] } },
                 orderCount: { $sum: 1 }
             }
         },
@@ -1258,8 +1251,8 @@ export async function getTaxReportDetail(restaurantId, query = {}) {
             orderId: o.orderId,
             totalAmount: `\u20B9${(o.pricing?.total || 0).toFixed(2)}`,
             taxAmount: `\u20B9${(o.pricing?.tax || 0).toFixed(2)}`,
-            tax5Amount: `\u20B9${(o.pricing?.taxBreakdown?.itemTax ?? o.pricing?.gstOnItem ?? 0).toFixed(2)}`,
-            tax18Amount: `\u20B9${((o.pricing?.tax || 0) - (o.pricing?.taxBreakdown?.itemTax ?? o.pricing?.gstOnItem ?? 0)).toFixed(2)}`,
+            tax5Amount: `\u20B9${(o.pricing?.gstOnItem || 0).toFixed(2)}`,
+            tax18Amount: `\u20B9${(o.pricing?.gstOnCommission || 0).toFixed(2)}`,
             date: o.createdAt
         }))
     };
@@ -1998,7 +1991,7 @@ export async function upsertFeeSettings(body) {
 
         const keys = [
             'deliveryFeeType', 'slabDistance', 'slabPrice', 'extraPricePerKm',
-            'deliveryFee', 'deliveryFeeRanges', 'deliveryFeeMatrix', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
+            'deliveryFee', 'deliveryFeeRanges', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
             'discountDeliveryThreshold', 'discountedDeliveryFee',
             'riderPayoutType',
             'riderBasePayout', 'riderPayoutRanges', 'deliveryBonusAmount',
@@ -2029,7 +2022,7 @@ export async function upsertFeeSettings(body) {
     const payload = {};
     const keys = [
         'deliveryFeeType', 'slabDistance', 'slabPrice', 'extraPricePerKm',
-        'deliveryFee', 'deliveryFeeRanges', 'deliveryFeeMatrix', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
+        'deliveryFee', 'deliveryFeeRanges', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
         'discountDeliveryThreshold', 'discountedDeliveryFee',
         'riderPayoutType',
         'riderBasePayout', 'riderPayoutRanges', 'deliveryBonusAmount',
