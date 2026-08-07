@@ -10,6 +10,8 @@ import { FaLocationDot } from "react-icons/fa6"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import quickSpicyLogo from "@food/assets/appzetologo.png"
 import { toast } from "sonner"
+import { useProfile } from "@food/context/ProfileContext"
+import { userAPI } from "@food/api"
 
 export default function PageNavbar({
   textColor = "white",
@@ -22,8 +24,10 @@ export default function PageNavbar({
   const { getCartCount } = useCart()
   const { openLocationSelector } = useLocationSelector()
   const cartCount = getCartCount()
+  const { userProfile } = useProfile()
   const [logoUrl, setLogoUrl] = useState(null)
   const [companyName, setCompanyName] = useState(null)
+  const [walletBalance, setWalletBalance] = useState(null)
   const autoLocationAttemptedRef = useRef(false)
   const requestLocationRef = useRef(requestLocation)
   const enableLocationDebugLogs = false
@@ -163,6 +167,24 @@ export default function PageNavbar({
       window.removeEventListener('businessSettingsUpdated', handleSettingsUpdate)
     }
   }, [])
+
+  // Fetch Wallet Balance
+  useEffect(() => {
+      if (!userProfile) {
+          setWalletBalance(null)
+          return
+      }
+      const fetchWallet = async () => {
+          try {
+              const response = await userAPI.getWallet()
+              const walletData = response?.data?.data?.wallet || response?.data?.wallet
+              if (walletData) {
+                  setWalletBalance(walletData.balance ?? walletData.totalBalance ?? 0)
+              }
+          } catch (err) {}
+      }
+      fetchWallet()
+  }, [userProfile])
 
   // Function to extract location parts for display
   // Main location: First 2 parts only (e.g., "Mama Loca, G-2")
@@ -1088,13 +1110,15 @@ export default function PageNavbar({
           <Link to="/user/wallet">
             <Button
               variant="ghost"
-              size="icon"
-              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full p-0 hover:opacity-80 transition-opacity"
+              className="h-8 sm:h-9 px-2 sm:px-3 rounded-full p-0 hover:bg-white/10 dark:hover:bg-black/10 transition-colors flex items-center gap-1.5 sm:gap-2 shadow-sm border border-gray-100/50 dark:border-white/10"
               title="Wallet"
             >
-              <div className={`h-full w-full rounded-full bg-transparent flex items-center justify-center shadow-md border border-gray-100/50 dark:border-white/10`}>
-                <WalletIcon className={`h-4.5 w-4.5 sm:h-5.5 sm:w-5.5`} />
-              </div>
+              <WalletIcon className="h-4.5 w-4.5 sm:h-5.5 sm:w-5.5" />
+              {walletBalance !== null && (
+                  <span className={`font-bold text-xs sm:text-sm ${textColor === "white" ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                      ₹{walletBalance.toLocaleString("en-IN")}
+                  </span>
+              )}
             </Button>
           </Link>
  

@@ -9,6 +9,7 @@ import { useLocation as useLocationHook } from "@food/hooks/useLocation"
 import { useCart } from "@food/context/CartContext"
 import { useLocationSelector, useSearchOverlay } from "./UserLayout"
 import { useProfile } from "@food/context/ProfileContext"
+import { userAPI } from "@food/api"
 import { FaLocationDot } from "react-icons/fa6"
 import { AnimatePresence, motion } from "framer-motion"
 import quickSpicyLogo from "@food/assets/appzetologo.png"
@@ -27,9 +28,10 @@ export default function DesktopNavbar({ showLogo = true }) {
     const { getCartCount } = useCart()
     const { openLocationSelector } = useLocationSelector()
     const { setSearchValue } = useSearchOverlay()
-    const { vegMode, setVegMode } = useProfile()
+    const { vegMode, setVegMode, userProfile } = useProfile()
     const { zoneId } = useAppLocation()
     const [heroSearch, setHeroSearch] = useState("")
+    const [walletBalance, setWalletBalance] = useState(null)
     const [logoUrl, setLogoUrl] = useState(() => localStorage.getItem('user_app_logo') || null)
     const [companyName, setCompanyName] = useState(null)
     const [hasScrolledPastBanner, setHasScrolledPastBanner] = useState(false)
@@ -204,8 +206,23 @@ export default function DesktopNavbar({ showLogo = true }) {
                     setShowDining(true)
                 }
             })
+
+        // Fetch Wallet Balance
+        if (userProfile) {
+            userAPI.getWallet()
+                .then(response => {
+                    if (!cancelled) {
+                        const walletData = response?.data?.data?.wallet || response?.data?.wallet
+                        if (walletData) {
+                            setWalletBalance(walletData.balance ?? walletData.totalBalance ?? 0)
+                        }
+                    }
+                })
+                .catch(() => {})
+        }
+
         return () => { cancelled = true }
-    }, [zoneId])
+    }, [zoneId, userProfile])
 
     return (
         <nav
@@ -336,10 +353,15 @@ export default function DesktopNavbar({ showLogo = true }) {
                             <Link to="/food/user/wallet">
                                 <Button
                                     variant="ghost"
-                                    className="h-12 w-12 lg:h-14 lg:w-14 rounded-full p-0 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                    className="h-10 lg:h-12 px-3 lg:px-4 rounded-full p-0 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 border border-gray-100 dark:border-gray-800"
                                     title="Wallet"
                                 >
                                     <WalletIcon className="!h-5 !w-5 lg:!h-6 lg:!w-6 object-contain drop-shadow-sm" />
+                                    {walletBalance !== null && (
+                                        <span className="font-bold text-sm lg:text-base text-gray-900 dark:text-white">
+                                            ₹{walletBalance.toLocaleString("en-IN")}
+                                        </span>
+                                    )}
                                 </Button>
                             </Link>
 

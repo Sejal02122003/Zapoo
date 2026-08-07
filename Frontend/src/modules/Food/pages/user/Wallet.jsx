@@ -69,7 +69,7 @@ export default function Wallet() {
     fetchCashbackHistory()
   }, [])
 
-  const currentBalance = wallet?.balance || 0
+  const currentBalance = wallet?.totalBalance ?? wallet?.balance ?? 0
 
   const referralEarnings = useMemo(() => {
     if (wallet?.referralEarnings != null) {

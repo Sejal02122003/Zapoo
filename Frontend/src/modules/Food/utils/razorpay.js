@@ -61,6 +61,12 @@ export const initRazorpayPayment = async (options) => {
       throw new Error('Razorpay SDK not available');
     }
 
+    let finalImage = options.image || '/appzetologo.png';
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocalhost && finalImage.startsWith('/')) {
+      finalImage = 'https://ui-avatars.com/api/?name=Zapoo&background=E23744&color=fff';
+    }
+
     const razorpayOptions = {
       key: options.key,
       amount: options.amount,
@@ -68,7 +74,7 @@ export const initRazorpayPayment = async (options) => {
       order_id: options.order_id,
       name: options.name || 'Zapoo Food',
       description: options.description || 'Order Payment',
-      image: options.image || '/appzetologo.png',
+      image: finalImage,
       prefill: {
         name: options.prefill?.name || '',
         email: options.prefill?.email || '',

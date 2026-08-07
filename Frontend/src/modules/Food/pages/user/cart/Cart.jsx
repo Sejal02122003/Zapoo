@@ -1054,7 +1054,7 @@ export default function Cart() {
         setIsLoadingWallet(true)
         const response = await userAPI.getWallet()
         if (response?.data?.success && response?.data?.data?.wallet) {
-          setWalletBalance(response.data.data.wallet.balance || 0)
+          setWalletBalance(response.data.data.wallet.totalBalance ?? response.data.data.wallet.balance ?? 0)
         }
       } catch (error) {
         debugError("Error fetching wallet balance:", error)
@@ -2062,9 +2062,9 @@ export default function Cart() {
         name: companyName,
         description: `Order ${order._id || order.orderId} - ${RUPEE_SYMBOL}${(razorpay.amount / 100).toFixed(2)}`,
         prefill: {
-          name: userName,
-          email: userEmail,
-          contact: formattedPhone
+          name: userName || 'Zapoo User',
+          email: userEmail || 'test@zapoo.in',
+          contact: formattedPhone || '9999999999'
         },
         notes: {
           orderId: order._id || order.orderId,
