@@ -755,9 +755,8 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                       className="w-10 h-10 object-contain"
                       loading="lazy"
                       onError={(e) => {
-                        if (!e.target.src.includes("user_logo.jpeg")) {
-                          e.target.src = quickSpicyLogo
-                        }
+                        e.target.onerror = null;
+                        e.target.src = quickSpicyLogo;
                       }}
                     />
                   ) : (
@@ -779,9 +778,8 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                       className="w-10 h-10 object-contain"
                       loading="lazy"
                       onError={(e) => {
-                        if (!e.target.src.includes("user_logo.jpeg")) {
-                          e.target.src = quickSpicyLogo
-                        }
+                        e.target.onerror = null;
+                        e.target.src = quickSpicyLogo;
                       }}
                     />
                   ) : (
