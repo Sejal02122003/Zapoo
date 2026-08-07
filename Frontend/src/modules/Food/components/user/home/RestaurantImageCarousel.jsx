@@ -339,11 +339,11 @@ const RestaurantImageCarousel = React.memo(
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}>
-        {showShimmer && !isImageUnavailable && Boolean(renderSrc) && (
-          <div className="absolute inset-0 z-[1] overflow-hidden bg-gray-200">
-            <div className="h-full w-full animate-pulse bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200" />
-          </div>
-        )}
+        <div 
+          className={`absolute inset-0 z-[1] overflow-hidden bg-gray-200 transition-opacity duration-300 ${showShimmer && !isImageUnavailable && Boolean(renderSrc) ? "opacity-100" : "opacity-0 hidden pointer-events-none"}`}
+        >
+          <div className="h-full w-full animate-pulse bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200" />
+        </div>
 
         <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-110">
           {renderSrc && (
