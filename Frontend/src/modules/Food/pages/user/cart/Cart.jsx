@@ -1009,7 +1009,8 @@ export default function Cart() {
           items,
           restaurantId: resolvedRestaurantId,
           deliveryAddress: defaultAddress,
-          couponCode: resolvedCouponCode
+          couponCode: resolvedCouponCode,
+          orderType: orderType
         })
 
         if (response?.data?.success && response?.data?.data?.pricing) {
@@ -1045,7 +1046,7 @@ export default function Cart() {
     }
 
     calculatePricing()
-  }, [cart, defaultAddress, appliedCoupon, couponCode, restaurantId])
+  }, [cart, defaultAddress, appliedCoupon, couponCode, restaurantId, orderType])
 
   // Fetch wallet balance
   useEffect(() => {
@@ -1486,7 +1487,8 @@ export default function Cart() {
           items,
           restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
           deliveryAddress: defaultAddress,
-          couponCode: coupon.code
+          couponCode: coupon.code,
+          orderType: orderType
         })
 
         const pricingData = response?.data?.data?.pricing
@@ -1557,7 +1559,8 @@ export default function Cart() {
         items,
         restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
         deliveryAddress: defaultAddress,
-        couponCode: inputCode
+        couponCode: inputCode,
+        orderType: orderType
       })
 
       const pricingData = response?.data?.data?.pricing
@@ -1622,7 +1625,8 @@ export default function Cart() {
           items,
           restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
           deliveryAddress: defaultAddress,
-          couponCode: null
+          couponCode: null,
+          orderType: orderType
         })
 
         if (response?.data?.success && response?.data?.data?.pricing) {
