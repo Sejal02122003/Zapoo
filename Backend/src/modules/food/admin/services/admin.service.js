@@ -1991,7 +1991,7 @@ export async function upsertFeeSettings(body) {
 
         const keys = [
             'deliveryFeeType', 'slabDistance', 'slabPrice', 'extraPricePerKm',
-            'deliveryFee', 'deliveryFeeRanges', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
+            'deliveryFee', 'deliveryFeeRanges', 'deliveryFeeMatrix', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
             'discountDeliveryThreshold', 'discountedDeliveryFee',
             'riderPayoutType',
             'riderBasePayout', 'riderPayoutRanges', 'deliveryBonusAmount',
@@ -2022,7 +2022,7 @@ export async function upsertFeeSettings(body) {
     const payload = {};
     const keys = [
         'deliveryFeeType', 'slabDistance', 'slabPrice', 'extraPricePerKm',
-        'deliveryFee', 'deliveryFeeRanges', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
+        'deliveryFee', 'deliveryFeeRanges', 'deliveryFeeMatrix', 'freeDeliveryUpTo', 'freeDeliveryThreshold',
         'discountDeliveryThreshold', 'discountedDeliveryFee',
         'riderPayoutType',
         'riderBasePayout', 'riderPayoutRanges', 'deliveryBonusAmount',
