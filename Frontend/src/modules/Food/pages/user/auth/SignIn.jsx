@@ -196,7 +196,7 @@ export default function SignIn() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   maxLength={10}
-                  placeholder="Enter your 10-digit number"
+                  placeholder="Mobile Number"
                   value={formData.phone}
                   onChange={handleChange}
                   className="w-full bg-transparent border-0 outline-none focus:border-transparent focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-gray-800 dark:text-white font-semibold text-base placeholder:text-gray-400 placeholder:font-medium"

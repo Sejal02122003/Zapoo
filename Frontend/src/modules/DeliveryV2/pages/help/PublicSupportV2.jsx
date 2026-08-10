@@ -1,9 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Phone, Mail, MessageSquare, Clock } from 'lucide-react';
+import { adminAPI } from '@food/api';
 
 export const PublicSupportV2 = () => {
   const navigate = useNavigate();
+  const [settings, setSettings] = useState({
+    supportEmail: "support@zapoo.in",
+    supportPhone: "+918919142335"
+  });
+
+  useEffect(() => {
+    adminAPI.getPublicBusinessSettings()
+      .then(res => {
+        const data = res?.data?.data || res?.data;
+        if (data) {
+          setSettings({
+            supportEmail: data.supportEmail || "support@zapoo.in",
+            supportPhone: data.supportPhone || "+918919142335"
+          });
+        }
+      })
+      .catch(() => null);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#121212] flex flex-col font-['Inter',sans-serif]">
@@ -21,23 +40,23 @@ export const PublicSupportV2 = () => {
       <div className="flex-1 p-4 flex flex-col gap-4 max-w-lg w-full mx-auto pb-8">
         
         {/* Email Support Card */}
-        <a href="mailto:support@zapoo.in" className="bg-white dark:bg-[#1a1a1a] rounded-[20px] p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow">
+        <a href={`mailto:${settings.supportEmail}`} className="bg-white dark:bg-[#1a1a1a] rounded-[20px] p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow">
           <div className="w-14 h-14 rounded-[18px] border-[1.5px] border-[#E53935] flex items-center justify-center mb-4">
             <Mail className="w-6 h-6 text-[#E53935]" strokeWidth={2} />
           </div>
           <h3 className="text-[13px] font-bold text-[#1A2642] dark:text-gray-200 tracking-wider mb-1.5 uppercase">DELIVERY SUPPORT</h3>
-          <p className="text-[15px] text-[#2c3e50] dark:text-gray-400 font-medium mb-3">support@zapoo.in</p>
+          <p className="text-[15px] text-[#2c3e50] dark:text-gray-400 font-medium mb-3">{settings.supportEmail}</p>
           <span className="text-[#E53935] text-[11px] font-bold tracking-wider uppercase">EMAIL SUPPORT</span>
         </a>
 
         {/* Phone Support Card */}
-        <a href="tel:+919917675609" className="bg-white dark:bg-[#1a1a1a] rounded-[20px] p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow">
+        <a href={`tel:${settings.supportPhone.replace(/[^0-9+]/g, '')}`} className="bg-white dark:bg-[#1a1a1a] rounded-[20px] p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow">
           <div className="w-14 h-14 rounded-[18px] border-[1.5px] border-[#E53935] flex items-center justify-center mb-4">
             <Phone className="w-6 h-6 text-[#E53935]" strokeWidth={2} />
           </div>
           <h3 className="text-[13px] font-bold text-[#1A2642] dark:text-gray-200 tracking-wider mb-1.5 uppercase">DELIVERY HELPLINE</h3>
-          <p className="text-[15px] text-[#2c3e50] dark:text-gray-400 font-medium mb-3">9917675609</p>
-          <span className="text-[#E53935] text-[11px] font-bold tracking-wider uppercase">INSTANT CALL</span>
+          <p className="text-[15px] text-[#2c3e50] dark:text-gray-400 font-medium mb-3">{settings.supportPhone}</p>
+          <span className="text-[#E53935] text-[11px] font-bold tracking-wider uppercase">CALL SUPPORT</span>
         </a>
 
         {/* FAQs Section */}

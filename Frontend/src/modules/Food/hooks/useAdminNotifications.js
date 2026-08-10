@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { adminAPI } from "@food/api";
+import { toast } from "sonner";
 
 const STORAGE_KEY = "admin_notifications_dismissed_v1";
 const UPDATE_EVENT = "adminNotificationsUpdated";
@@ -185,9 +186,29 @@ const mapExpiredFssai = (response) => {
     metaLabel: joinMeta(item?.restaurantName, item?.ownerName, item?.ownerPhone, item?.fssaiNumber) }));
 };
 
+const mapNewOrders = (response) => {
+  const payload = response?.data?.data;
+  const rows = payload?.orders || payload?.items || payload?.data || response?.data?.orders || [];
+
+  return (Array.isArray(rows) ? rows : [])
+    .filter(item => ["pending"].includes(String(item?.orderStatus || "").toLowerCase()))
+    .map((item) => ({
+      id: `new-order-${String(item?._id || item?.id || "")}`,
+      title: "New Order Placed",
+      message: `Order #${item?.orderId || "Unknown"} placed at ${item?.restaurant?.restaurantName || item?.restaurantName || "Restaurant"}.`,
+      type: "order",
+      category: "new_order",
+      path: "/admin/food/orders",
+      createdAt: item?.createdAt || item?.updatedAt,
+      timeLabel: toDateLabel(item?.createdAt || item?.updatedAt),
+      metaLabel: joinMeta(item?.orderId, item?.restaurant?.restaurantName || item?.restaurantName) }));
+};
+
 export default function useAdminNotifications(options = {}) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(Boolean(options?.autoload !== false));
+  const isInitialLoad = useRef(true);
+  const prevIds = useRef(new Set());
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -201,6 +222,7 @@ export default function useAdminNotifications(options = {}) {
         supportRes,
         deliverySupportRes,
         fssaiExpiredRes,
+        newOrdersRes,
       ] = await Promise.all([
         adminAPI.getPendingRestaurants(),
         adminAPI.getDeliveryPartnerJoinRequests({ page: 1, limit: 50 }),
@@ -208,6 +230,7 @@ export default function useAdminNotifications(options = {}) {
         adminAPI.getSupportTicketsAdmin({ page: 1, limit: 50, source: "all" }),
         adminAPI.getDeliverySupportTickets({ page: 1, limit: 50 }),
         adminAPI.getExpiredFssaiNotifications(),
+        adminAPI.getOrders({ status: "pending", limit: 20 }),
       ]);
 
       const restaurantRows =
@@ -222,9 +245,25 @@ export default function useAdminNotifications(options = {}) {
         ...mapUserRestaurantSupport(supportRes),
         ...mapDeliverySupport(deliverySupportRes),
         ...mapExpiredFssai(fssaiExpiredRes),
+        ...mapNewOrders(newOrdersRes),
       ])
         .filter((item) => !dismissed.has(item.id))
         .sort((a, b) => toDateValue(b.createdAt) - toDateValue(a.createdAt));
+
+      if (!isInitialLoad.current) {
+        const newItems = aggregated.filter(i => !prevIds.current.has(i.id));
+        newItems.forEach(item => {
+          if (["restaurant_approval", "delivery_approval", "new_order"].includes(item.category)) {
+            toast.info(item.title, {
+              description: item.message,
+              duration: 5000,
+            });
+          }
+        });
+      }
+      
+      prevIds.current = new Set(aggregated.map(i => i.id));
+      isInitialLoad.current = false;
 
       setItems(aggregated);
     } catch {

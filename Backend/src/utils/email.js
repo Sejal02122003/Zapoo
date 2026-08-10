@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+ï»¿import nodemailer from 'nodemailer';
 import { config } from '../config/env.js';
 import { logger } from './logger.js';
 
@@ -36,7 +36,7 @@ export async function sendAdminResetOtpEmail(to, otp) {
         return false;
     }
     const from = config.emailFrom || config.emailUser;
-    const subject = 'Your password reset code – Zapoo Admin';
+    const subject = 'Your password reset code ï¿½ Zapoo Admin';
     const html = `
 <!DOCTYPE html>
 <html>
@@ -130,6 +130,29 @@ export async function sendRestaurantOnboardingEmail(to, restaurantName, pdfUrl) 
 /**
  * Send approval email to restaurant.
  */
+export async function sendDeliveryPartnerApprovalEmail(to, partnerName) {
+    const trans = getTransporter();
+    if (!trans) { return false; }
+    const from = config.emailFrom || config.emailUser;
+    const subject = `Your delivery partner application has been approved - Zapoo`;
+    const html = `<p>Hello <b>${partnerName}</b>,</p><p>Your delivery partner application has been approved by the admin. You can now go online and start earning!</p><p>Best,<br>Zapoo Team</p>`;
+    const text = "Hello ${partnerName},\n\nYour delivery partner application has been approved by the admin. You can now go online and start earning!\n\nBest,\nZapoo Team";
+    try {
+        await trans.sendMail({
+            from: typeof from === 'string' && from.includes('<') ? from : `Zapoo <${from}>`,
+            to,
+            subject,
+            text,
+            html
+        });
+        logger.info(`Delivery partner approval email sent to ${to}`);
+        return true;
+    } catch (err) {
+        logger.error(`Failed to send approval email to ${to}:`, err.message);
+        return false;
+    }
+}
+
 export async function sendRestaurantApprovalEmail(to, restaurantName) {
     const trans = getTransporter();
     if (!trans) { return false; }

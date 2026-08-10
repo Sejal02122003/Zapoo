@@ -27,7 +27,7 @@ const FILES_STORE = "files"
 const openDeliveryFilesDB = () => {
   return new Promise((resolve, reject) => {
     try {
-      const request = indexedDB.open(DELIVERY_FILES_DB, 1)
+      const request = indexedDB.open(DELIVERY_FILES_DB, 2)
       request.onupgradeneeded = (e) => {
         const db = e.target.result
         if (!db.objectStoreNames.contains(FILES_STORE)) {
@@ -281,13 +281,13 @@ export default function SignupStep2() {
 
       setUploadedDocs(prev => ({
         ...prev,
-        ...(prof && { profilePhoto: { file: true } }),
-        ...(aadharFront && { aadharFrontPhoto: { file: true } }),
-        ...(aadharBack && { aadharBackPhoto: { file: true } }),
-        ...(pan && { panPhoto: { file: true } }),
-        ...(dlFront && { drivingLicenseFrontPhoto: { file: true } }),
-        ...(dlBack && { drivingLicenseBackPhoto: { file: true } }),
-        ...(rc && { rcPhoto: { file: true } })
+        profilePhoto: prof ? { file: true } : null,
+        aadharFrontPhoto: aadharFront ? { file: true } : null,
+        aadharBackPhoto: aadharBack ? { file: true } : null,
+        panPhoto: pan ? { file: true } : null,
+        drivingLicenseFrontPhoto: dlFront ? { file: true } : null,
+        drivingLicenseBackPhoto: dlBack ? { file: true } : null,
+        rcPhoto: rc ? { file: true } : null
       }))
     }
     loadFiles()

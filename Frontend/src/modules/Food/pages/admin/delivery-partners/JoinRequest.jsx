@@ -750,7 +750,7 @@ export default function JoinRequest() {
                             )}
                             {viewDetails.documents.aadhar.front && (
                               <a 
-                                href={viewDetails.documents.aadhar.front} 
+                                href={viewDetails.documents.aadhar.front?.url || viewDetails.documents.aadhar.front} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 block"
@@ -760,7 +760,7 @@ export default function JoinRequest() {
                             )}
                             {viewDetails.documents.aadhar.back && (
                               <a 
-                                href={viewDetails.documents.aadhar.back} 
+                                href={viewDetails.documents.aadhar.back?.url || viewDetails.documents.aadhar.back} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 block mt-1"
@@ -770,7 +770,7 @@ export default function JoinRequest() {
                             )}
                             {!viewDetails.documents.aadhar.front && viewDetails.documents.aadhar.document && (
                               <a 
-                                href={viewDetails.documents.aadhar.document} 
+                                href={viewDetails.documents.aadhar.document?.url || viewDetails.documents.aadhar.document} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 block"
@@ -792,7 +792,7 @@ export default function JoinRequest() {
                             )}
                             {viewDetails.documents.pan.document && (
                               <a 
-                                href={viewDetails.documents.pan.document} 
+                                href={viewDetails.documents.pan.document?.url || viewDetails.documents.pan.document} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
@@ -819,7 +819,7 @@ export default function JoinRequest() {
                             )}
                             {viewDetails.documents.drivingLicense.front && (
                               <a 
-                                href={viewDetails.documents.drivingLicense.front} 
+                                href={viewDetails.documents.drivingLicense.front?.url || viewDetails.documents.drivingLicense.front} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 block"
@@ -829,7 +829,7 @@ export default function JoinRequest() {
                             )}
                             {viewDetails.documents.drivingLicense.back && (
                               <a 
-                                href={viewDetails.documents.drivingLicense.back} 
+                                href={viewDetails.documents.drivingLicense.back?.url || viewDetails.documents.drivingLicense.back} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 block mt-1"
@@ -839,7 +839,7 @@ export default function JoinRequest() {
                             )}
                             {!viewDetails.documents.drivingLicense.front && viewDetails.documents.drivingLicense.document && (
                               <a 
-                                href={viewDetails.documents.drivingLicense.document} 
+                                href={viewDetails.documents.drivingLicense.document?.url || viewDetails.documents.drivingLicense.document} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 block"
@@ -861,7 +861,7 @@ export default function JoinRequest() {
                             )}
                             {viewDetails.documents.vehicleRC.document && (
                               <a 
-                                href={viewDetails.documents.vehicleRC.document} 
+                                href={viewDetails.documents.vehicleRC.document?.url || viewDetails.documents.vehicleRC.document} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"

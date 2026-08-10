@@ -63,7 +63,7 @@ export default function RestaurantLogin() {
     }
   }
 
-  const primaryColor = "#7e3866"
+  const primaryColor = "#2563eb"
 
   return (
     <div 

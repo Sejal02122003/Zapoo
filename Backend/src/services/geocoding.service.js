@@ -10,11 +10,13 @@ function parseGoogleComponents(components = []) {
         components.find((c) => types.some((t) => (c.types || []).includes(t)))?.long_name || '';
 
     const subLocality1 = find('sublocality_level_1');
+    const subLocality2 = find('sublocality_level_2');
+    const subLocality3 = find('sublocality_level_3');
     const subLocality = find('sublocality');
     const neighborhood = find('neighborhood');
 
     return {
-        area: subLocality1 || subLocality || neighborhood || '',
+        area: neighborhood || subLocality3 || subLocality2 || subLocality1 || subLocality || '',
         city: find('locality', 'administrative_area_level_2'),
         state: find('administrative_area_level_1'),
         country: find('country') || 'India',

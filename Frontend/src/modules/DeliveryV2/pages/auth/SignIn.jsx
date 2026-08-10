@@ -158,7 +158,7 @@ export default function DeliverySignIn() {
                     localStorage.setItem("delivery_draft_phone", val);
                   }}
                   maxLength={10}
-                  className="flex-1 min-w-0 bg-transparent border-0 outline-none focus:border-transparent focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-gray-900 dark:text-white font-bold text-base sm:text-lg placeholder:text-gray-400 placeholder:font-medium placeholder:text-sm py-2 px-1"
+                  className="flex-1 min-w-0 bg-transparent border-0 !outline-none focus:border-transparent focus:!outline-none focus:!ring-0 focus-visible:!outline-none focus-visible:!ring-0 !shadow-none text-gray-900 dark:text-white font-bold text-base sm:text-lg placeholder:text-gray-400 placeholder:font-medium placeholder:text-sm py-2 px-1"
                   style={{ boxShadow: "none", border: "none", outline: "none" }}
                   placeholder="10-digit mobile number"
                 />

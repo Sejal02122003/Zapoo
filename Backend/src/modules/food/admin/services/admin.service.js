@@ -4,6 +4,7 @@ import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { buildRawDownloadUrlFromFileUrl } from '../../../../services/cloudinary.service.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
 import { DeliverySupportTicket } from '../../delivery/models/supportTicket.model.js';
+import { sendRestaurantApprovalEmail, sendDeliveryPartnerApprovalEmail } from '../../../../utils/email.js';
 import { FoodZone } from '../models/zone.model.js';
 import { FoodCategory } from '../models/category.model.js';
 import { FoodItem } from '../models/food.model.js';
@@ -4854,6 +4855,9 @@ export async function approveDeliveryPartner(id) {
                 }
             }
         );
+        if (partner.email) {
+            await sendDeliveryPartnerApprovalEmail(partner.email, partner.name).catch(() => {});
+        }
     } catch (e) {
         console.error('Failed to send delivery partner approval notification:', e);
     }

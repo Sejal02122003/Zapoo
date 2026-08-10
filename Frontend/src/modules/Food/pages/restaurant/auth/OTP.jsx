@@ -20,7 +20,7 @@ export default function RestaurantOTP() {
   const inputRefs = useRef([])
   const hasSubmittedRef = useRef(false)
 
-  const primaryColor = "#7e3866"
+  const primaryColor = "#2563eb"
 
   useEffect(() => {
     const stored = sessionStorage.getItem("restaurantAuthData")
