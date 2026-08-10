@@ -1185,8 +1185,8 @@ export default function Cart() {
   const gstOnPackagingFee = pricing?.taxBreakdown?.packagingTax ?? ((feeSettings.packagingFee ?? 0) * ((feeSettings.gstOnPackagingFee ?? 0) / 100));
   const gstCharges = pricing != null ? (pricing.tax ?? 0) : Math.round(gstOnItemTotal + gstOnDeliveryFee + gstOnPlatformFee + gstOnPackagingFee);
   const itemDiscount = pricing?.itemDiscount || 0;
-  const couponDiscount = pricing?.couponDiscount || (appliedCoupon ? Math.min(appliedCoupon.discount, subtotal * 0.5) : 0);
-  const discount = pricing?.discount || couponDiscount;
+  const couponDiscount = pricing?.couponDiscount || 0;
+  const discount = pricing?.discount || 0;
   const totalBeforeDiscount = subtotal + deliveryFee + platformFee + packagingFee + gstCharges;
   const total = pricing?.total || Math.max(0, totalBeforeDiscount - discount);
   const savings = pricing?.savings ?? Math.max(0, totalBeforeDiscount - total)
@@ -3062,13 +3062,18 @@ export default function Cart() {
                         <span>-{RUPEE_SYMBOL}{pricing.restaurantCouponDiscount.toFixed(2)}</span>
                       </div>
                     )}
-                    {couponDiscount > 0 && !pricing?.couponDiscount && !pricing?.restaurantCouponDiscount && (
-                      <div className="flex justify-between text-sm text-primary font-medium">
-                        <span>Coupon Discount</span>
-                        <span>-{RUPEE_SYMBOL}{couponDiscount.toFixed(2)}</span>
+                    {pricing?.appliedCoupon?.rewardType === 'CASHBACK' && pricing?.appliedCoupon?.amount > 0 && (
+                      <div className="flex justify-between text-sm text-green-600 font-medium">
+                        <span>Wallet Cashback ({pricing.appliedCoupon.code})</span>
+                        <span>+{RUPEE_SYMBOL}{pricing.appliedCoupon.amount.toFixed(2)}</span>
                       </div>
                     )}
-
+                    {pricing?.appliedCoupon?.rewardType === 'BOTH' && pricing?.appliedCoupon?.amount > 0 && (
+                      <div className="flex justify-between text-sm text-green-600 font-medium">
+                        <span>Wallet Cashback ({pricing.appliedCoupon.code})</span>
+                        <span>+{RUPEE_SYMBOL}{pricing.appliedCoupon.amount.toFixed(2)}</span>
+                      </div>
+                    )}
                     {/* Platform Pricing Comparison - Bottom */}
                     {platformPricingSavings.hasPlatformPricing && (
                       <div className="rounded-lg bg-gradient-to-r from-primary/5 via-primary/12 to-primary/5 dark:from-primary/10 dark:via-primary/15 dark:to-primary/10 border border-primary/20 p-3 space-y-2 mt-2 shadow-sm animate-pulse">
