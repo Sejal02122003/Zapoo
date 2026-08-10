@@ -11,6 +11,7 @@ import { FoodDiningRestaurant } from '../../dining/models/diningRestaurant.model
 import Promocode from '../../../../models/Promocode.js';
 import { LocationCoupon } from '../../admin/models/locationCoupon.model.js';
 import { upsertOutletTimingsForRestaurant } from './outletTimings.service.js';
+import { FoodRestaurantOutletTimings } from '../models/outletTimings.model.js';
 import { getDrivingDistances } from '../../../../services/googleMaps.service.js';
 import { parseQueryLimit, parseQueryPage } from '../../../../utils/helpers.js';
 
@@ -1864,9 +1865,12 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, query = {}) => {
     }
 
     const offers = await fetchOffers(doc._id);
+    const outletTimingsDoc = await FoodRestaurantOutletTimings.findOne({ restaurantId: doc._id }).lean();
+    const outletTimings = outletTimingsDoc?.timings || [];
 
     return {
         ...doc,
+        outletTimings,
         offers,
         restaurantOffers: {
             ...(doc.restaurantOffers || {}),

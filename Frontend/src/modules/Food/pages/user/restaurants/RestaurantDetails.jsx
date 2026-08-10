@@ -612,8 +612,8 @@ function RestaurantDetailsContent() {
           if (outletRestaurantId) {
             restaurantAPI.getOutletTimingsByRestaurantId(outletRestaurantId)
               .then(outletResponse => {
-                const outletTimingsData = outletResponse?.data?.data?.outletTimings || outletResponse?.data?.outletTimings;
-                if (outletTimingsData) {
+                const outletTimingsData = outletResponse?.data?.data || outletResponse?.data;
+                if (outletTimingsData && typeof outletTimingsData === 'object') {
                   setRestaurant((prev) => ({ ...prev, outletTimings: outletTimingsData }));
                 }
               })

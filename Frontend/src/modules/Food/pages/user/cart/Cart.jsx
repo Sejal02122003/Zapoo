@@ -1004,12 +1004,14 @@ export default function Cart() {
 
         const resolvedRestaurantId = restaurantData?.restaurantId || restaurantData?._id || restaurantId || undefined
         const resolvedCouponCode = appliedCoupon?.code || couponCode || undefined
+        const resolvedRestaurantCouponCode = appliedRestaurantCoupon?.code || undefined
 
         const response = await orderAPI.calculateOrder({
           items,
           restaurantId: resolvedRestaurantId,
           deliveryAddress: defaultAddress,
           couponCode: resolvedCouponCode,
+          restaurantCouponCode: resolvedRestaurantCouponCode,
           orderType: orderType
         })
 
@@ -1046,7 +1048,7 @@ export default function Cart() {
     }
 
     calculatePricing()
-  }, [cart, defaultAddress, appliedCoupon, couponCode, restaurantId, orderType])
+  }, [cart, defaultAddress, appliedCoupon, couponCode, appliedRestaurantCoupon, restaurantId, orderType])
 
   // Fetch wallet balance
   useEffect(() => {
@@ -1486,11 +1488,21 @@ export default function Cart() {
           isVeg: item.isVeg !== false
         }))
 
+        let resolvedGlobalCode = appliedCoupon?.code || undefined;
+        let resolvedRestaurantCode = appliedRestaurantCoupon?.code || undefined;
+
+        if (coupon?.isGlobalCoupon !== false) {
+            resolvedGlobalCode = coupon.code;
+        } else {
+            resolvedRestaurantCode = coupon.code;
+        }
+
         const response = await orderAPI.calculateOrder({
           items,
           restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
           deliveryAddress: defaultAddress,
-          couponCode: coupon.code,
+          couponCode: resolvedGlobalCode,
+          restaurantCouponCode: resolvedRestaurantCode,
           orderType: orderType
         })
 
@@ -1500,15 +1512,19 @@ export default function Cart() {
           return
         }
 
-        if (!pricingData || !pricingData.appliedCoupon) {
+        if (!pricingData || (!pricingData.appliedCoupon && !pricingData.appliedRestaurantCoupon)) {
           toast.error("Coupon not applicable")
           return
         }
 
         setPricing(pricingData)
-        setAppliedCoupon(coupon)
-        setCouponCode(coupon.code)
-        setManualCouponCode(coupon.code)
+        if (coupon?.isGlobalCoupon !== false) {
+            setAppliedCoupon(coupon)
+            setCouponCode(coupon.code)
+            setManualCouponCode(coupon.code)
+        } else {
+            setAppliedRestaurantCoupon(coupon)
+        }
         setShowCoupons(false)
       } catch (error) {
         debugError("Error recalculating pricing:", error)
