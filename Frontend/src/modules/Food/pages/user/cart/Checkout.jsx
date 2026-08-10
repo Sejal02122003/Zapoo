@@ -51,8 +51,8 @@ export default function Checkout() {
     }
   }, [addresses, selectedAddressId, getDefaultAddress])
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity * 83, 0)
-  const deliveryFee = orderType === 'takeaway' ? 0 : 2.99 * 83
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const deliveryFee = orderType === 'takeaway' ? 0 : 49
   const tax = subtotal * 0.08
   const total = subtotal + deliveryFee + tax
 
@@ -354,11 +354,11 @@ export default function Checkout() {
                             <p className="text-xs md:text-sm text-muted-foreground">{item.variantName}</p>
                           ) : null}
                           <p className="text-xs md:text-sm text-muted-foreground">
-                            ₹{(item.price * 83).toFixed(0)} × {item.quantity}
+                            ₹{item.price.toFixed(0)} × {item.quantity}
                           </p>
                         </div>
                         <p className="font-semibold text-sm md:text-base dark:text-gray-200">
-                          ₹{(item.price * 83 * item.quantity).toFixed(0)}
+                          ₹{(item.price * item.quantity).toFixed(0)}
                         </p>
                       </div>
                     ))}
