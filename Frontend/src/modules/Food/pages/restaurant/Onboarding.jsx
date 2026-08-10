@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Input } from "@food/components/ui/input"
 import { Button } from "@food/components/ui/button"
@@ -24,6 +24,49 @@ import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { clearModuleAuth, clearAuthData } from "@food/utils/auth"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation"
+
+class OnboardingErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Onboarding crash:", error, errorInfo);
+    this.setState({ errorInfo });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-red-50 p-6 flex flex-col items-center justify-center">
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200 max-w-2xl w-full">
+            <h2 className="text-xl font-bold text-red-600 mb-4">Form crashed! Please take a screenshot of this error:</h2>
+            <div className="bg-slate-900 p-4 rounded-lg overflow-auto mb-4">
+              <pre className="text-red-400 text-sm whitespace-pre-wrap word-break">
+                {this.state.error?.toString()}
+              </pre>
+            </div>
+            <div className="bg-slate-900 p-4 rounded-lg overflow-auto">
+              <pre className="text-slate-300 text-xs whitespace-pre-wrap word-break">
+                {this.state.errorInfo?.componentStack}
+              </pre>
+            </div>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-6 w-full py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const debugLog = (...args) => { }
 const debugWarn = (...args) => { }
 const debugError = (...args) => { }
@@ -546,7 +589,7 @@ function TimeSelector({ label, value, onChange }) {
   )
 }
 
-export default function RestaurantOnboarding() {
+function RestaurantOnboardingContent() {
   const companyName = useCompanyName()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -2886,4 +2929,13 @@ export default function RestaurantOnboarding() {
 }
 
 
+
+
+export default function RestaurantOnboarding() {
+  return (
+    <OnboardingErrorBoundary>
+      <RestaurantOnboardingContent />
+    </OnboardingErrorBoundary>
+  )
+}
 

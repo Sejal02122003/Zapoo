@@ -2985,10 +2985,19 @@ export default function Cart() {
 
                 {showBillDetails && (
                   <div className="mt-4 pt-4 border-t border-dashed border-gray-200 dark:border-gray-800 space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">Item Total</span>
-                      <span className="text-gray-800 dark:text-gray-200 font-medium">{RUPEE_SYMBOL}{(subtotal + (pricing?.itemDiscount || 0)).toFixed(2)}</span>
-                    </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Item Total</span>
+                        <div className="flex items-center gap-2">
+                          {(pricing?.itemDiscount > 0) && (
+                            <span className="text-gray-400 line-through text-xs">
+                              {RUPEE_SYMBOL}{(subtotal + pricing.itemDiscount).toFixed(2)}
+                            </span>
+                          )}
+                          <span className="text-gray-800 dark:text-gray-200 font-medium">
+                            {RUPEE_SYMBOL}{(subtotal).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
 
                     {orderType !== 'takeaway' && (
                       <>

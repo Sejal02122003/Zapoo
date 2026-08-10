@@ -902,4 +902,3 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
     </>
   )
 }
-
