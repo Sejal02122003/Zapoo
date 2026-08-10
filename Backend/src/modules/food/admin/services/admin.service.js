@@ -3626,6 +3626,17 @@ export async function approveRestaurant(id) {
                     }
                 }
             );
+            if (updated.email) {
+                await sendRestaurantApprovalEmail(updated.email, updated.restaurantName).catch(() => {});
+            }
+            try {
+                const { getIO } = await import('../../../../core/socket/socket.service.js');
+                const io = getIO();
+                io.to(`restaurant_${updated._id}`).emit('restaurant_approved', {
+                    restaurantId: updated._id,
+                    status: 'approved'
+                });
+            } catch(e) {}
         } catch (e) {
             console.error('Failed to send restaurant approval notification:', e);
         }

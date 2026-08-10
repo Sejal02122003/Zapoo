@@ -94,6 +94,30 @@ export default function RestaurantOTP() {
     }
   }
 
+  const handlePaste = (e) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData.getData("text/plain").replace(/\D/g, "").slice(0, 6)
+    if (!pastedData) return
+    
+    const newOtp = [...otp]
+    for (let i = 0; i < pastedData.length; i++) {
+      newOtp[i] = pastedData[i]
+    }
+    setOtp(newOtp)
+    
+    const nextEmptyIndex = newOtp.findIndex(val => val === "")
+    const focusIndex = nextEmptyIndex === -1 ? 5 : nextEmptyIndex
+    inputRefs.current[focusIndex]?.focus()
+
+    if (newOtp.every((digit) => digit !== "")) {
+      if (!hasSubmittedRef.current) {
+        hasSubmittedRef.current = true
+        handleVerify(newOtp.join(""))
+      }
+    }
+  }
+
+
   const handleVerify = async (otpValue = null) => {
     const code = otpValue || otp.join("")
 
@@ -282,6 +306,7 @@ export default function RestaurantOTP() {
                     value={digit}
                     onChange={(e) => handleChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
+                    onPaste={handlePaste}
                     onFocus={() => setFocusedIndex(index)}
                     onBlur={() => setFocusedIndex(null)}
                     className={`w-full aspect-square bg-gray-100 dark:bg-gray-800/50 text-center text-3xl font-black text-[#22A2E3] border-2 border-gray-200 dark:border-gray-700 rounded-2xl outline-none transition-all focus:!border-[#22A2E3] focus:!ring-4 focus:!ring-[#22A2E3]/20 ${

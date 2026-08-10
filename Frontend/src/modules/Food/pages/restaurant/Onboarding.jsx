@@ -791,6 +791,10 @@ export default function RestaurantOnboarding() {
   }
 
   const openImageSourcePicker = ({ title, onSelectFile, fileNamePrefix, fallbackInputRef }) => {
+    if (fallbackInputRef && fallbackInputRef.current) {
+      fallbackInputRef.current.click();
+      return;
+    }
     setSourcePicker({
       isOpen: true,
       title: title || "Select image source",
@@ -1094,38 +1098,31 @@ export default function RestaurantOnboarding() {
         // 3. APPLY LOCAL OVERRIDES (The "Persistence" fix)
         // If localStorage has unsaved changes for this user, apply them over the API/Initial state.
         if (localData) {
-          const savedLoginPhone = normalizePhoneDigits(localData.loginPhone || "")
-          const savedOwnerPhone = normalizePhoneDigits(localData.step1?.ownerPhone || "")
-          const checkPhone = savedLoginPhone || savedOwnerPhone
-          const normalizedCurrent = normalizePhoneDigits(currentPhone)
+          debugLog("? Matching local session found. Resuming with unsaved changes.")
 
-          // Only use local data if it belongs to the same user or if the phone was not saved yet
-          if (!checkPhone || !normalizedCurrent || checkPhone === normalizedCurrent) {
-            debugLog("? Matching local session found. Resuming with unsaved changes.")
+          if (localData.step1) {
+            setStep1(prev => ({ ...prev, ...localData.step1, location: { ...prev.location, ...localData.step1.location } }));
+          }
+          if (localData.step2) {
+            // Note: Files/Images must be re-hydrated from IndexedDB (handled below)
+            setStep2(prev => ({
+              ...prev,
+              ...localData.step2,
+              openingTime: normalizeTimeValue(localData.step2.openingTime),
+              closingTime: normalizeTimeValue(localData.step2.closingTime) }));
+          }
+          if (localData.step3) {
+            setStep3(prev => ({ ...prev, ...localData.step3 }));
+          }
 
-            if (localData.step1) {
-              setStep1(prev => ({ ...prev, ...localData.step1, location: { ...prev.location, ...localData.step1.location } }));
-            }
-            if (localData.step2) {
-              // Note: Files/Images must be re-hydrated from IndexedDB (handled below)
-              setStep2(prev => ({
-                ...prev,
-                ...localData.step2,
-                openingTime: normalizeTimeValue(localData.step2.openingTime),
-                closingTime: normalizeTimeValue(localData.step2.closingTime) }));
-            }
-            if (localData.step3) {
-              setStep3(prev => ({ ...prev, ...localData.step3 }));
-            }
-
-            // Restore Step
-            if (localData.currentStep && !stepParam) {
-              setStep(Math.min(3, Math.max(1, Number(localData.currentStep))))
-            }
-          } else {
-            debugLog("? Phone mismatch, data belongs to different user. Clearing local cache.")
-            clearOnboardingFromLocalStorage()
-            await clearAllFilesFromDB()
+          // Restore Step
+          if (localData.currentStep && !stepParam) {
+            setStep(Math.min(3, Math.max(1, Number(localData.currentStep))))
+          }
+          
+          // Restore location search input value
+          if (localData.step1?.location?.formattedAddress) {
+            setLocationSearchValue(localData.step1.location.formattedAddress)
           }
         }
 
@@ -1861,7 +1858,8 @@ export default function RestaurantOnboarding() {
                   <button
                     key={s.id}
                     type="button"
-                    onClick={async () => {
+                    onMouseDown={async (e) => {
+                      e.preventDefault()
                       // Prevent re-search after selecting
                       justSelectedRef.current = true
                       setLocationSuggestions([])
@@ -1873,19 +1871,33 @@ export default function RestaurantOnboarding() {
                           const service = new window.google.maps.places.PlacesService(dummyNode)
                           service.getDetails(
                             { placeId: s.id, fields: ["formatted_address", "address_components", "geometry"] },
-                            (place, status) => {
+                            async (place, status) => {
                               if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
                                 const comps = Array.isArray(place.address_components) ? place.address_components : []
                                 const get = (types) => comps.find(c => types.some(t => c.types?.includes(t)))?.long_name || ""
+
+                                const lat = place.geometry?.location?.lat?.() || ""
+                                const lng = place.geometry?.location?.lng?.() || ""
+                                let pincode = get(["postal_code"])
+
+                                if (!pincode && lat && lng) {
+                                  try {
+                                    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+                                    const res = await fetch(url).then(r => r.json())
+                                    pincode = res.address?.postcode || ""
+                                  } catch (e) {
+                                    // Silently fail and leave pincode empty
+                                  }
+                                }
 
                                 handleLocationSelect({
                                   formattedAddress: place.formatted_address || s.display,
                                   area: get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"]),
                                   city: get(["locality"]) || get(["administrative_area_level_2"]),
                                   state: get(["administrative_area_level_1"]) || get(["administrative_area_level_2"]),
-                                  pincode: get(["postal_code"]),
-                                  latitude: place.geometry?.location?.lat?.() || "",
-                                  longitude: place.geometry?.location?.lng?.() || ""
+                                  pincode: pincode,
+                                  latitude: lat,
+                                  longitude: lng
                                 })
                               } else {
                                 handleLocationSelect({ formattedAddress: s.display })
@@ -2784,13 +2796,6 @@ export default function RestaurantOnboarding() {
       <div className="min-h-screen bg-gray-100 flex flex-col">
         <header className="px-4 py-4 sm:px-6 sm:py-5 bg-white flex items-center justify-between border-b">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate("/food/restaurant/explore")}
-              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="Close onboarding"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
             <div className="text-sm font-semibold text-black">Restaurant onboarding</div>
           </div>
           <div className="flex items-center gap-3">
@@ -2838,7 +2843,10 @@ export default function RestaurantOnboarding() {
           }}
         >
           {loading ? (
-            <p className="text-sm text-gray-600">Loading...</p>
+            <div className="flex flex-col items-center justify-center py-20 w-full">
+              <Loader2 className="w-8 h-8 animate-spin text-orange-500 mb-4" />
+              <p className="text-sm text-gray-500 font-medium">Loading your profile...</p>
+            </div>
           ) : (
             <div className={!isEditing ? "pointer-events-none select-none" : ""}>
               {renderStep()}
@@ -2862,15 +2870,7 @@ export default function RestaurantOnboarding() {
         )}
 
         <footer className={`px-4 sm:px-6 py-3 bg-white ${keyboardInset ? "hidden" : ""}`}>
-          <div className="flex justify-between items-center">
-            <Button
-              variant="ghost"
-              disabled={step === 1 || saving}
-              onClick={() => { setStep((s) => Math.max(1, s - 1)); window.scrollTo({ top: 0, behavior: "instant" }) }}
-              className="text-sm text-gray-700 bg-transparent"
-            >
-              Back
-            </Button>
+          <div className="flex justify-end items-center">
             <Button
               onClick={handleNext}
               disabled={saving || (step === 3 && !isEditing)}

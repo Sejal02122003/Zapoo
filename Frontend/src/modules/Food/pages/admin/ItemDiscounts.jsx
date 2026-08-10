@@ -6,6 +6,8 @@ export default function ItemDiscounts() {
   const [rules, setRules] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [restaurantMenu, setRestaurantMenu] = useState({ sections: [] });
+  const [foods, setFoods] = useState([]);
+  const [itemSearch, setItemSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -61,6 +63,18 @@ export default function ItemDiscounts() {
     }
   };
 
+  const fetchFoods = async (restaurantId) => {
+    if (!restaurantId) return;
+    try {
+      const res = await adminClient.get("/food/admin/foods", { params: { restaurantId } });
+      const items = res.data?.data?.foods || res.data?.data || [];
+      setFoods(Array.isArray(items) ? items : []);
+    } catch (err) {
+      console.error("Failed to fetch foods:", err);
+      setFoods([]);
+    }
+  };
+
   useEffect(() => {
     fetchRestaurants();
   }, []);
@@ -68,6 +82,7 @@ export default function ItemDiscounts() {
   useEffect(() => {
     fetchRules();
     fetchRestaurantMenu(formData.restaurantId);
+    fetchFoods(formData.restaurantId);
   }, [formData.restaurantId]);
 
   // When scope changes, reset targetName to first available option
@@ -76,13 +91,12 @@ export default function ItemDiscounts() {
       const firstCategory = restaurantMenu.sections?.[0]?.name || "";
       setFormData(prev => ({ ...prev, targetName: firstCategory }));
     } else if (formData.scope === "MENU_ITEM") {
-      const allItems = restaurantMenu.sections?.flatMap(s => s.items) || [];
-      const firstItem = allItems[0]?.name || "";
+      const firstItem = foods[0]?.name || "";
       setFormData(prev => ({ ...prev, targetName: firstItem }));
     } else {
       setFormData(prev => ({ ...prev, targetName: "" }));
     }
-  }, [formData.scope, restaurantMenu]);
+  }, [formData.scope, restaurantMenu, foods]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -211,22 +225,32 @@ export default function ItemDiscounts() {
                       ))}
                     </select>
                   ) : (
-                    <select
-                      value={formData.targetId || ""}
-                      onChange={(e) => {
-                        const selectedId = e.target.value;
-                        const allItems = restaurantMenu.sections?.flatMap(s => s.items) || [];
-                        const selectedItem = allItems.find(i => i.id === selectedId || String(i._id) === selectedId);
-                        setFormData({ ...formData, targetId: selectedId, targetName: selectedItem?.name || "" });
-                      }}
-                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white"
-                      required
-                    >
-                      <option value="">-- Select Item --</option>
-                      {restaurantMenu.sections?.flatMap(s => s.items).map((item, idx) => (
-                        <option key={idx} value={item.id || String(item._id)}>{item.name}</option>
-                      ))}
-                    </select>
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Search for an item..."
+                        value={itemSearch}
+                        onChange={(e) => setItemSearch(e.target.value)}
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:bg-white transition-colors"
+                      />
+                      <select
+                        value={formData.targetId || ""}
+                        onChange={(e) => {
+                          const selectedId = e.target.value;
+                          const selectedItem = foods.find(i => i.id === selectedId || String(i._id) === selectedId);
+                          setFormData({ ...formData, targetId: selectedId, targetName: selectedItem?.name || "" });
+                        }}
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                        required
+                      >
+                        <option value="">-- Select Item --</option>
+                        {foods
+                          .filter(item => !itemSearch || item.name?.toLowerCase().includes(itemSearch.toLowerCase()))
+                          .map((item, idx) => (
+                          <option key={idx} value={item.id || String(item._id)}>{item.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                 </div>
               )}

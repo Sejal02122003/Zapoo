@@ -78,10 +78,18 @@ export default function VerificationPending() {
     window.addEventListener("focus", handleVisibilityOrFocus)
     document.addEventListener("visibilitychange", handleVisibilityOrFocus)
 
+    // Poll every 10 seconds to auto-refresh when admin verifies
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        checkApprovalStatus()
+      }
+    }, 10000)
+
     return () => {
       cancelled = true
       window.removeEventListener("focus", handleVisibilityOrFocus)
       document.removeEventListener("visibilitychange", handleVisibilityOrFocus)
+      clearInterval(pollInterval)
     }
   }, [navigate, isRejected])
 

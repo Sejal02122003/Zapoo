@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import ProtectedRoute from "@food/components/ProtectedRoute"
 import Loader from "@food/components/Loader"
+import { Loader2 } from "lucide-react"
 import GlobalPickupOtpModal from "./GlobalPickupOtpModal"
 import RestaurantBlockGuard from "./RestaurantBlockGuard"
 import "./restaurantTheme.css"
@@ -75,7 +76,11 @@ export default function RestaurantRouter() {
 
   return (
     <div className="restaurant-theme">
-      <Suspense fallback={<Loader />}>
+      <Suspense fallback={
+        <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-[#0a0a0a]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#7e3866]" />
+        </div>
+      }>
         <Routes>
           {/* Auth Routes */}
           <Route path="welcome" element={<Welcome />} />

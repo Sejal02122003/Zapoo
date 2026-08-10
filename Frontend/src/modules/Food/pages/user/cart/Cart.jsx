@@ -2368,39 +2368,9 @@ export default function Cart() {
                 <div className="space-y-3 md:space-y-4">
                   <div className="space-y-6">
                     {cart.map((item, index) => {
-                      let displayPrice = item.originalPrice || item.price || 0;
-                      let originalDisplayPrice = displayPrice;
-                      let bestDiscountAmount = 0;
-
-                      // 1. Check item specific discount
-                      if (restaurantData?.itemDiscounts && restaurantData.itemDiscounts.length > 0) {
-                        const itemDiscountRule = restaurantData.itemDiscounts.find(
-                          (rule) => String(rule.itemId) === String(item.itemId || item.id)
-                        );
-                        if (itemDiscountRule) {
-                          const discountVal = Number(itemDiscountRule.discountValue) || 0;
-                          if (discountVal > 0) {
-                            if (itemDiscountRule.discountType === 'FLAT') {
-                              bestDiscountAmount = Math.min(originalDisplayPrice, discountVal);
-                            } else {
-                              bestDiscountAmount = originalDisplayPrice * (discountVal / 100);
-                            }
-                          }
-                        }
-                      }
-
-                      // 2. Check global discount
-                      if (restaurantData?.discount > 0) {
-                        const globalDiscountVal = Number(restaurantData.discount);
-                        const globalDiscountAmount = originalDisplayPrice * (globalDiscountVal / 100);
-                        if (globalDiscountAmount > bestDiscountAmount) {
-                          bestDiscountAmount = globalDiscountAmount;
-                        }
-                      }
-
-                      if (bestDiscountAmount > 0) {
-                        displayPrice = Math.max(0, originalDisplayPrice - bestDiscountAmount);
-                      }
+                      // Use prices already calculated and stored in the cart item
+                      const displayPrice = item.price || 0;
+                      const originalDisplayPrice = item.originalPrice || displayPrice;
 
                       return (
                         <div key={item.id}>
@@ -3017,7 +2987,7 @@ export default function Cart() {
                   <div className="mt-4 pt-4 border-t border-dashed border-gray-200 dark:border-gray-800 space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Item Total</span>
-                      <span className="text-gray-800 dark:text-gray-200 font-medium">{RUPEE_SYMBOL}{subtotal.toFixed(2)}</span>
+                      <span className="text-gray-800 dark:text-gray-200 font-medium">{RUPEE_SYMBOL}{(subtotal + (pricing?.itemDiscount || 0)).toFixed(2)}</span>
                     </div>
 
                     {orderType !== 'takeaway' && (
