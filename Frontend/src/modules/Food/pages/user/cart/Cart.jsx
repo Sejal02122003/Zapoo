@@ -1199,10 +1199,13 @@ export default function Cart() {
     if (isCodHidden && selectedPaymentMethod === "cash") {
       setSelectedPaymentMethod("razorpay")
     }
-    if (userProfile?.isCodBlocked && selectedPaymentMethod === "wallet") {
+    if ((userProfile?.isCodBlocked || orderType === 'takeaway') && selectedPaymentMethod === "wallet") {
       setSelectedPaymentMethod("razorpay")
     }
-  }, [isCodHidden, selectedPaymentMethod, total, userProfile?.isCodBlocked])
+    if (orderType === 'takeaway' && useWalletBalance) {
+      setUseWalletBalance(false)
+    }
+  }, [isCodHidden, selectedPaymentMethod, total, userProfile?.isCodBlocked, orderType, useWalletBalance])
 
   // Calculate platform pricing comparison savings
   const platformPricingSavings = useMemo(() => {
@@ -3540,7 +3543,7 @@ export default function Cart() {
                       </button>
                     </div>
 
-                    {walletBalance > 0 && walletBalance < total && (
+                    {walletBalance > 0 && walletBalance < total && orderType !== 'takeaway' && (
                       <label className="flex items-center justify-between p-4 mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl cursor-pointer">
                         <div className="flex items-center gap-3">
                           <Wallet className="w-5 h-5 text-blue-600" />
@@ -3579,7 +3582,7 @@ export default function Cart() {
                           subInfo: `Bal: ${RUPEE_SYMBOL}${walletBalance.toFixed(0)}`,
                           disabled: walletBalance < total,
                           disabledText: 'Low Balance',
-                          hidden: userProfile?.isCodBlocked
+                          hidden: userProfile?.isCodBlocked || orderType === 'takeaway'
                         },
                         {
                           id: 'cash',
