@@ -36,120 +36,7 @@ export async function sendAdminResetOtpEmail(to, otp) {
         return false;
     }
     const from = config.emailFrom || config.emailUser;
-    const subject = 'Your password reset code – Zapoo Admin';
-    const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 480px; margin: 0 auto; padding: 20px;">
-  <h2 style="color: #111;">Password reset code</h2>
-  <p>Use the code below to reset your admin password. It is valid for 10 minutes.</p>
-  <p style="font-size: 24px; font-weight: bold; letter-spacing: 4px; background: #f5f5f5; padding: 12px 16px; border-radius: 8px;">${otp}</p>
-  <p style="color: #666; font-size: 14px;">If you did not request this, you can ignore this email.</p>
-  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-  <p style="color: #999; font-size: 12px;">Zapoo Admin</p>
-</body>
-</html>`;
-    const text = `Your password reset code is: ${otp}. It is valid for 10 minutes. If you did not request this, ignore this email.`;
-
-    try {
-        await trans.sendMail({
-            from: typeof from === 'string' && from.includes('<') ? from : `Zapoo <${from}>`,
-            to,
-            subject,
-            text,
-            html
-        });
-        logger.info(`Admin reset OTP email sent to ${to}`);
-        return true;
-    } catch (err) {
-        logger.error(`Failed to send admin OTP email to ${to}:`, err.message);
-        return false;
-    }
-}
-
-/**
- * Send welcome email with T&C PDF to new restaurant owner.
- * @param {string} to - Recipient email
- * @param {string} restaurantName - Name of the restaurant
- * @param {string} pdfUrl - URL to the T&C PDF
- * @returns {Promise<boolean>} true if sent, false if skipped/failed
- */
-export async function sendRestaurantOnboardingEmail(to, restaurantName, pdfUrl) {
-    const trans = getTransporter();
-    if (!trans) {
-        logger.warn('Restaurant onboarding email skipped: SMTP not configured');
-        return false;
-    }
-    const from = config.emailFrom || config.emailUser;
-    const subject = `Welcome to Zapoo, ${restaurantName}!`;
-    
-    const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <h2 style="color: #111;">Welcome aboard, ${restaurantName}!</h2>
-  <p>Your restaurant has been successfully onboarded to Zapoo.</p>
-  <p>Please find attached the official Terms and Conditions regarding our partnership.</p>
-  <p>We look forward to growing together!</p>
-  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-  <p style="color: #999; font-size: 12px;">Zapoo Team</p>
-</body>
-</html>`;
-    
-    const text = `Welcome aboard, ${restaurantName}!\n\nYour restaurant has been successfully onboarded to Zapoo.\nPlease find attached the official Terms and Conditions regarding our partnership.\n\nWe look forward to growing together!\n\nZapoo Team`;
-
-    const mailOptions = {
-        from: typeof from === 'string' && from.includes('<') ? from : `Zapoo <${from}>`,
-        to,
-        subject,
-        text,
-        html,
-    };
-
-    if (pdfUrl) {
-        mailOptions.attachments = [
-            {
-import nodemailer from 'nodemailer';
-import { config } from '../config/env.js';
-import { logger } from './logger.js';
-
-let transporter = null;
-
-function getTransporter() {
-    if (transporter) return transporter;
-    const { emailHost, emailPort, emailUser, emailPass } = config;
-    if (!emailHost || !emailUser || !emailPass) {
-        logger.warn('Email not configured: EMAIL_HOST, EMAIL_USER, EMAIL_PASS required');
-        return null;
-    }
-    transporter = nodemailer.createTransport({
-        host: emailHost,
-        port: emailPort || 587,
-        secure: emailPort === 465,
-        auth: {
-            user: emailUser,
-            pass: emailPass
-        }
-    });
-    return transporter;
-}
-
-/**
- * Send OTP email for admin forgot password.
- * @param {string} to - Recipient email
- * @param {string} otp - 6-digit OTP
- * @returns {Promise<boolean>} true if sent, false if skipped/failed
- */
-export async function sendAdminResetOtpEmail(to, otp) {
-    const trans = getTransporter();
-    if (!trans) {
-        logger.warn('Admin OTP email skipped: SMTP not configured');
-        return false;
-    }
-    const from = config.emailFrom || config.emailUser;
-    const subject = 'Your password reset code – Zapoo Admin';
+    const subject = 'Your password reset code � Zapoo Admin';
     const html = `
 <!DOCTYPE html>
 <html>
@@ -248,21 +135,20 @@ export async function sendRestaurantApprovalEmail(to, restaurantName) {
     if (!trans) { return false; }
     const from = config.emailFrom || config.emailUser;
     const subject = `Your restaurant has been approved - Zapoo`;
-    const html = \<p>Hello <b></b>,</p><p>Your restaurant has been approved by the admin. You can now start receiving orders!</p><p>Best,<br>Zapoo Team</p>\;
-    const text = `Hello ,\n\nYour restaurant has been approved by the admin. You can now start receiving orders!\n\nBest,\nZapoo Team`;
+    const html = `<p>Hello <b>${restaurantName}</b>,</p><p>Your restaurant has been approved by the admin. You can now start receiving orders!</p><p>Best,<br>Zapoo Team</p>`;
+    const text = `Hello ${restaurantName},\n\nYour restaurant has been approved by the admin. You can now start receiving orders!\n\nBest,\nZapoo Team`;
     try {
         await trans.sendMail({
-            from: typeof from === 'string' && from.includes('<') ? from : `Zapoo <>`,
+            from: typeof from === 'string' && from.includes('<') ? from : `Zapoo <${from}>`,
             to,
             subject,
             text,
             html
         });
-        logger.info(`Restaurant approval email sent to `);
+        logger.info(`Restaurant approval email sent to ${to}`);
         return true;
     } catch (err) {
-        logger.error(`Failed to send approval email to :`, err.message);
+        logger.error(`Failed to send approval email to ${to}:`, err.message);
         return false;
     }
 }
-
