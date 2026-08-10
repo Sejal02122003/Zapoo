@@ -1578,6 +1578,8 @@ function RestaurantOnboardingContent() {
             panImagePayload,
             gstImagePayload,
             fssaiImagePayload,
+            menuPdfPayload,
+            menuImagesPayload,
           ] = await Promise.all([
             resolveImageForProfileUpdate(step2.profileImage, "food/restaurants/profile"),
             resolveImageForProfileUpdate(step3.panImage, "food/restaurants/pan"),
@@ -1585,6 +1587,8 @@ function RestaurantOnboardingContent() {
               ? resolveImageForProfileUpdate(step3.gstImage, "food/restaurants/gst")
               : Promise.resolve(null),
             resolveImageForProfileUpdate(step3.fssaiImage, "food/restaurants/fssai"),
+            resolveMenuPdfForProfileUpdate(step2.menuPdf),
+            resolveMenuImagesForProfileUpdate(step2.menuImages),
           ])
 
           const updatePayload = {
@@ -1612,6 +1616,8 @@ function RestaurantOnboardingContent() {
             closingTime: normalizeTimeValue(step2.closingTime) || "",
             openDays: Array.isArray(step2.openDays) ? step2.openDays : [],
             profileImage: profileImagePayload || "",
+            menuImages: menuImagesPayload || [],
+            menuPdf: menuPdfPayload || "",
             panNumber: step3.panNumber || "",
             nameOnPan: step3.nameOnPan || "",
             panImage: panImagePayload || "",
@@ -1676,6 +1682,17 @@ function RestaurantOnboardingContent() {
           throw new Error("Restaurant profile image is required")
         }
         formData.append("profileImage", step2.profileImage)
+
+        if (Array.isArray(step2.menuImages)) {
+          step2.menuImages.forEach(img => {
+            if (isUploadableFile(img)) {
+              formData.append("menuImages", img)
+            }
+          })
+        }
+        if (isUploadableFile(step2.menuPdf)) {
+          formData.append("menuPdf", step2.menuPdf)
+        }
 
         // Step 3
         formData.append("panNumber", step3.panNumber || "")
