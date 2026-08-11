@@ -13,6 +13,9 @@ export default function ZoneSetup() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
 
+  // Force HMR reload
+  console.log("ZoneSetup rendered");
+
   useEffect(() => {
     fetchZones()
   }, [])
