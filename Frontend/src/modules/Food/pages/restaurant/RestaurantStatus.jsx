@@ -135,11 +135,33 @@ export default function RestaurantStatus() {
         return
       }
 
-      const [openHour, openMinute] = dayData.openingTime.split(':').map(Number)
-      const [closeHour, closeMinute] = dayData.closingTime.split(':').map(Number)
-      
-      const openingTimeInMinutes = openHour * 60 + openMinute
-      const closingTimeInMinutes = closeHour * 60 + closeMinute
+      const parseTime = (timeStr) => {
+        if (!timeStr) return null;
+        const normalized = timeStr.trim().toLowerCase();
+        const meridiemMatch = normalized.match(/^(\d{1,2}):(\d{2})\s*([ap]m)$/);
+        if (meridiemMatch) {
+          let h = Number(meridiemMatch[1]);
+          const m = Number(meridiemMatch[2]);
+          const period = meridiemMatch[3];
+          if (period === 'pm' && h < 12) h += 12;
+          if (period === 'am' && h === 12) h = 0;
+          return h * 60 + m;
+        }
+        const match24 = normalized.match(/^(\d{1,2}):(\d{2})$/);
+        if (match24) {
+          return Number(match24[1]) * 60 + Number(match24[2]);
+        }
+        return null;
+      };
+
+      const openingTimeInMinutes = parseTime(dayData.openingTime);
+      const closingTimeInMinutes = parseTime(dayData.closingTime);
+
+      if (openingTimeInMinutes === null || closingTimeInMinutes === null) {
+        setIsDayClosed(false)
+        setIsWithinTimings(true)
+        return
+      }
 
       let isWithin = false
       if (closingTimeInMinutes > openingTimeInMinutes) {
