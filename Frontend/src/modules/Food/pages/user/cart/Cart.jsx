@@ -335,7 +335,7 @@ export default function Cart() {
 
     try {
       const targetDate = new Date(scheduledDate)
-      const status = getRestaurantAvailabilityStatus(restaurantData, targetDate)
+      const status = getRestaurantAvailabilityStatus(restaurantData, targetDate, { ignoreOperationalStatus: true })
 
       let openingHour = 9
       let closingHour = 22
@@ -405,15 +405,13 @@ export default function Cart() {
     if (
       restaurantData.isClosed === true || 
       restaurantData.status === 'inactive' || 
-      restaurantData.isOpen === false || 
-      restaurantData.isActive === false || 
-      restaurantData.isAcceptingOrders === false
+      restaurantData.isOpen === false
     ) {
       return true;
     }
     
     const targetDate = isScheduled && scheduledDate ? new Date(scheduledDate) : new Date()
-    return !getRestaurantAvailabilityStatus(restaurantData, targetDate).isOpen
+    return !getRestaurantAvailabilityStatus(restaurantData, targetDate, { ignoreOperationalStatus: true }).isOpen
   }, [restaurantData, isScheduled, scheduledDate])
 
   const normalizeAddressLabel = (label) => {
