@@ -1584,7 +1584,12 @@ export async function updateZone(req, res, next) {
 export async function toggleZoneStatus(req, res, next) {
     try {
         const result = await adminService.toggleZoneStatus(req.params.id, req.body.isActive);
-        if (!result) return next(new NotFoundError('Zone not found'));
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: 'Zone not found'
+            });
+        }
         res.status(200).json({ success: true, message: 'Zone status toggled successfully. All related restaurants and drivers have been notified.', data: result });
     } catch (error) {
         next(error);
