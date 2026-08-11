@@ -5150,7 +5150,6 @@ export async function toggleZoneStatus(id, isActive) {
             }
         }
     }
-
     return { zone: zone.toObject() };
 }
 
