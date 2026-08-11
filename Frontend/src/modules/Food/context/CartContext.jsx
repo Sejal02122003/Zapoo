@@ -108,6 +108,7 @@ const normalizeCartData = (rawCart) => {
             ? Math.floor(parsedQuantity)
             : 1,
         price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+        originalPrice: Number.isFinite(Number(item.originalPrice)) ? Number(item.originalPrice) : undefined,
         restaurant: normalizedRestaurantName,
         restaurantId: normalizedRestaurantId,
         image: normalizedImage,

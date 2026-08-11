@@ -1202,7 +1202,14 @@ export default function Cart() {
   const gstOnPlatformFee = pricing?.taxBreakdown?.platformTax ?? ((feeSettings.platformFee ?? 0) * ((feeSettings.gstOnPlatformFee ?? 0) / 100));
   const gstOnPackagingFee = pricing?.taxBreakdown?.packagingTax ?? ((feeSettings.packagingFee ?? 0) * ((feeSettings.gstOnPackagingFee ?? 0) / 100));
   const gstCharges = pricing != null ? (pricing.tax ?? 0) : Math.round(gstOnItemTotal + gstOnDeliveryFee + gstOnPlatformFee + gstOnPackagingFee);
-  const itemDiscount = pricing?.itemDiscount || 0;
+  
+  const localItemDiscount = cart.reduce((sum, item) => {
+    const orig = Number(item.originalPrice) || Number(item.price) || 0;
+    const curr = Number(item.price) || 0;
+    return sum + (Math.max(0, orig - curr) * (item.quantity || 1));
+  }, 0);
+  const itemDiscount = pricing?.itemDiscount !== undefined ? pricing.itemDiscount : localItemDiscount;
+  
   const couponDiscount = pricing?.couponDiscount || 0;
   const discount = pricing?.discount || 0;
   const totalBeforeDiscount = subtotal + deliveryFee + platformFee + packagingFee + gstCharges;
@@ -3005,7 +3012,7 @@ export default function Cart() {
                         <span className="text-gray-600 dark:text-gray-400">Item Total</span>
                         <div className="flex items-center gap-2">
                           <span className="text-gray-800 dark:text-gray-200 font-medium">
-                            {RUPEE_SYMBOL}{(subtotal + (pricing?.itemDiscount || 0)).toFixed(2)}
+                            {RUPEE_SYMBOL}{(subtotal + itemDiscount).toFixed(2)}
                           </span>
                         </div>
                       </div>

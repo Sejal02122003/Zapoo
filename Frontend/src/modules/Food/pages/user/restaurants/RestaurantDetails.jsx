@@ -1253,7 +1253,7 @@ function RestaurantDetailsContent() {
       itemId: item.id,
       name: item.name,
       price: finalPrice, // Use discounted price
-      originalPrice: priceNum, // Store original base price
+      originalPrice: item.originalPrice ? Number(item.originalPrice) : priceNum, // Store original base price properly
       variantId: resolvedVariant?.id || "",
       variantName: resolvedVariant?.name || "",
       variantPrice: finalPrice, // Use discounted price for variant
