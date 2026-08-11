@@ -18,7 +18,8 @@ const TRANSACTION_TYPES = {
   ALL: "all",
   ADDITIONS: "additions",
   DEDUCTIONS: "deductions",
-  REFUNDS: "refunds" }
+  REFUNDS: "refunds",
+  CASHBACKS: "cashbacks" }
 
 export default function Wallet() {
   const companyName = useCompanyName()
@@ -97,10 +98,13 @@ export default function Wallet() {
         return transaction.type === "addition"
       }
       if (selectedFilter === TRANSACTION_TYPES.DEDUCTIONS) {
-        return transaction.type === "deduction"
+        return transaction.type === "deduction" || transaction.type === "ORDER_PAYMENT"
       }
       if (selectedFilter === TRANSACTION_TYPES.REFUNDS) {
-        return transaction.type === "refund"
+        return transaction.type === "refund" || transaction.type === "REFUND"
+      }
+      if (selectedFilter === TRANSACTION_TYPES.CASHBACKS) {
+        return transaction.type === "cashback" || transaction.type === "CASHBACK" || transaction?.metadata?.source === "cashback_reward"
       }
       return true
     })
@@ -126,6 +130,13 @@ export default function Wallet() {
       hour12: true })
 
     return `${formattedDate} | ${formattedTime}`
+  }
+
+  const getRemainingDays = (expiryDate) => {
+    if (!expiryDate) return null
+    const diffTime = new Date(expiryDate).getTime() - new Date().getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays > 0 ? diffDays : 0
   }
 
   const getTransactionIcon = (type) => {
@@ -215,8 +226,23 @@ export default function Wallet() {
                       <span className="font-bold text-gray-900 dark:text-white">{formatAmount(wallet?.cashBalance || 0)}</span>
                     </div>
                     <div className="bg-orange-50 dark:bg-orange-950/40 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-800">
-                      <span className="text-orange-600 dark:text-orange-400 text-xs">Cashback (Promotional): </span>
-                      <span className="font-bold text-orange-600 dark:text-orange-400">{formatAmount(wallet?.cashbackBalance || 0)}</span>
+                      <div className="flex flex-col">
+                        <div>
+                          <span className="text-orange-600 dark:text-orange-400 text-xs">Cashback (Promotional): </span>
+                          <span className="font-bold text-orange-600 dark:text-orange-400">{formatAmount(wallet?.cashbackBalance || 0)}</span>
+                        </div>
+                        {wallet?.activeCashbacks?.length > 0 && wallet.activeCashbacks.some(c => c.expiryDate) && (
+                          <span className="text-orange-500/80 dark:text-orange-500/80 text-[10px] mt-0.5">
+                            {(() => {
+                              const activeWithDates = wallet.activeCashbacks.filter(c => c.expiryDate).map(c => new Date(c.expiryDate));
+                              if (!activeWithDates.length) return null;
+                              const earliest = new Date(Math.min(...activeWithDates));
+                              const days = getRemainingDays(earliest);
+                              return days > 0 ? `Next expiry in ${days} day${days !== 1 ? 's' : ''}` : 'Expiring today';
+                            })()}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -253,6 +279,7 @@ export default function Wallet() {
                 <div className="flex gap-2 md:gap-3 overflow-x-auto md:overflow-x-visible scrollbar-hide pb-2 md:pb-0">
                   {[
                     { id: TRANSACTION_TYPES.ALL, label: "All Transactions" },
+                    { id: TRANSACTION_TYPES.CASHBACKS, label: "Cashbacks" },
                     { id: TRANSACTION_TYPES.ADDITIONS, label: "Additions" },
                     { id: TRANSACTION_TYPES.DEDUCTIONS, label: "Deductions" },
                     { id: TRANSACTION_TYPES.REFUNDS, label: "Refunds" },
@@ -299,6 +326,13 @@ export default function Wallet() {
                                 String(transaction.description || "").toLowerCase().startsWith("referral reward")) && (
                                 <p className="text-[11px] md:text-xs text-green-600 dark:text-green-400 font-medium mb-1">
                                   Referral reward
+                                </p>
+                              )}
+                              {(transaction.type === "cashback" || transaction.type === "CASHBACK" || transaction?.metadata?.source === "cashback_reward") && (transaction?.expiryDate || transaction?.metadata?.expiryDate) && (
+                                <p className="text-[11px] md:text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">
+                                  {getRemainingDays(transaction.expiryDate || transaction.metadata.expiryDate) > 0 
+                                    ? `Expires in ${getRemainingDays(transaction.expiryDate || transaction.metadata.expiryDate)} days` 
+                                    : 'Expired'}
                                 </p>
                               )}
                               <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm lg:text-base">
