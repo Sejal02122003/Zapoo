@@ -1210,8 +1210,8 @@ export default function Cart() {
   }, 0);
   const itemDiscount = pricing?.itemDiscount !== undefined ? pricing.itemDiscount : localItemDiscount;
   
-  const couponDiscount = pricing?.couponDiscount || 0;
-  const discount = pricing?.discount || 0;
+  const couponDiscount = pricing?.couponDiscount !== undefined ? pricing.couponDiscount : (appliedCoupon?.discount || 0);
+  const discount = pricing?.discount !== undefined ? pricing.discount : ((appliedCoupon?.discount || 0) + (appliedRestaurantCoupon?.discount || 0));
   const totalBeforeDiscount = subtotal + deliveryFee + platformFee + packagingFee + gstCharges;
   const total = pricing?.total || Math.max(0, totalBeforeDiscount - discount);
   const savings = pricing?.savings ?? Math.max(0, totalBeforeDiscount - total)
@@ -3066,16 +3066,16 @@ export default function Cart() {
                         <span>-{RUPEE_SYMBOL}{itemDiscount.toFixed(2)}</span>
                       </div>
                     )}
-                    {pricing?.couponDiscount > 0 && (
+                    {couponDiscount > 0 && (
                       <div className="flex justify-between text-sm text-primary font-medium">
-                        <span>Platform Coupon ({pricing.appliedCoupon?.code || 'Applied'})</span>
-                        <span>-{RUPEE_SYMBOL}{pricing.couponDiscount.toFixed(2)}</span>
+                        <span>Platform Coupon ({pricing?.appliedCoupon?.code || appliedCoupon?.code || 'Applied'})</span>
+                        <span>-{RUPEE_SYMBOL}{couponDiscount.toFixed(2)}</span>
                       </div>
                     )}
-                    {pricing?.restaurantCouponDiscount > 0 && (
+                    {((pricing?.restaurantCouponDiscount !== undefined ? pricing.restaurantCouponDiscount : (appliedRestaurantCoupon?.discount || 0)) > 0) && (
                       <div className="flex justify-between text-sm text-amber-600 dark:text-amber-500 font-medium">
-                        <span>Restaurant Offer ({pricing.appliedRestaurantCoupon?.code || 'Applied'})</span>
-                        <span>-{RUPEE_SYMBOL}{pricing.restaurantCouponDiscount.toFixed(2)}</span>
+                        <span>Restaurant Offer ({pricing?.appliedRestaurantCoupon?.code || appliedRestaurantCoupon?.code || 'Applied'})</span>
+                        <span>-{RUPEE_SYMBOL}{(pricing?.restaurantCouponDiscount !== undefined ? pricing.restaurantCouponDiscount : (appliedRestaurantCoupon?.discount || 0)).toFixed(2)}</span>
                       </div>
                     )}
                     {pricing?.appliedCoupon?.rewardType === 'CASHBACK' && pricing?.appliedCoupon?.amount > 0 && (
