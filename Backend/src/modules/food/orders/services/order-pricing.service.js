@@ -27,12 +27,15 @@ export async function calculateOrderPricing(userId, dto) {
   let eligibleSubtotalForCoupon = 0;
   const orderType = String(dto.orderType || 'delivery').toLowerCase();
 
-  const itemIds = items.map((it) => it.id || it._id || it.foodId).filter(Boolean);
+  const itemIds = items.map((it) => it.id || it._id || it.foodId || it.itemId)
+    .filter(Boolean)
+    .map(id => String(id))
+    .filter(id => mongoose.Types.ObjectId.isValid(id));
   const foodDocs = itemIds.length ? await FoodItem.find({ _id: { $in: itemIds } }).lean() : [];
   const foodMap = new Map(foodDocs.map((f) => [String(f._id), f]));
 
   for (const it of items) {
-    const itemIdStr = String(it.id || it._id || it.foodId || '');
+    const itemIdStr = String(it.id || it._id || it.foodId || it.itemId || '');
     const foodDoc = foodMap.get(itemIdStr);
     
     const basePrice = foodDoc ? Number(foodDoc.price) || 0 : Number(it.originalPrice || it.price) || 0;

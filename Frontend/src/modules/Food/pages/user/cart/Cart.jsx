@@ -992,24 +992,42 @@ export default function Cart() {
         const items = cart.map(item => ({
           itemId: item.itemId || item.id,
           name: item.name,
-          price: item.price, // Price should already be in INR
+          price: Number(item.price) || 0,
           variantId: item.variantId || undefined,
           variantName: item.variantName || undefined,
-          variantPrice: item.variantPrice || item.price,
-          quantity: item.quantity || 1,
+          variantPrice: Number(item.variantPrice || item.price) || 0,
+          quantity: Number(item.quantity) || 1,
           image: item.image,
           description: item.description,
           isVeg: item.isVeg !== false
         }))
 
         const resolvedRestaurantId = restaurantData?.restaurantId || restaurantData?._id || restaurantId || undefined
+        
+        if (!resolvedRestaurantId) {
+          setPricing(null)
+          setLoadingPricing(false)
+          return
+        }
+
         const resolvedCouponCode = appliedCoupon?.code || couponCode || undefined
         const resolvedRestaurantCouponCode = appliedRestaurantCoupon?.code || undefined
+
+        let safeAddress = defaultAddress;
+        if (safeAddress?.location?.coordinates) {
+          safeAddress = {
+            ...safeAddress,
+            location: {
+              ...safeAddress.location,
+              coordinates: safeAddress.location.coordinates.map(c => Number(c))
+            }
+          }
+        }
 
         const response = await orderAPI.calculateOrder({
           items,
           restaurantId: resolvedRestaurantId,
-          deliveryAddress: defaultAddress,
+          deliveryAddress: safeAddress,
           couponCode: resolvedCouponCode,
           restaurantCouponCode: resolvedRestaurantCouponCode,
           orderType: orderType
@@ -2400,11 +2418,26 @@ export default function Cart() {
                                   {item.variantName}
                                 </p>
                               ) : null}
+                              <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mt-2">
+                                <p className="text-sm md:text-base font-black text-gray-900 dark:text-gray-100">
+                                  {RUPEE_SYMBOL}{(displayPrice * (item.quantity || 1)).toFixed(0)}
+                                </p>
+                                {originalDisplayPrice > displayPrice && (
+                                  <>
+                                    <p className="text-xs md:text-sm text-gray-400 line-through font-medium">
+                                      {RUPEE_SYMBOL}{(originalDisplayPrice * (item.quantity || 1)).toFixed(0)}
+                                    </p>
+                                    <span className="text-[10px] font-bold text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-md uppercase">
+                                      {Math.round(((originalDisplayPrice - displayPrice) / originalDisplayPrice) * 100)}% OFF
+                                    </span>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
 
                           <div className="flex flex-col items-end gap-2.5 flex-shrink-0">
-                            <div className="flex items-center border border-primary/30 dark:border-primary/40 rounded-lg overflow-hidden bg-white dark:bg-gray-900 shadow-sm">
+                            <div className="flex items-center border border-primary/30 dark:border-primary/40 rounded-lg overflow-hidden bg-white dark:bg-gray-900 shadow-sm mt-1">
                               <button
                                 onClick={() => updateQuantity(item.id, item.quantity - 1)}
                                 className="px-2.5 py-1.5 hover:bg-primary/5 text-primary transition-colors"
@@ -2420,21 +2453,6 @@ export default function Cart() {
                               >
                                 <Plus className="w-3.5 h-3.5" />
                               </button>
-                            </div>
-                            <div className="flex flex-col items-end text-right">
-                              <p className="text-sm md:text-base font-black text-gray-900 dark:text-gray-100">
-                                {RUPEE_SYMBOL}{(displayPrice * (item.quantity || 1)).toFixed(0)}
-                              </p>
-                              {originalDisplayPrice > displayPrice && (
-                                <div className="flex flex-col items-end gap-1 mt-0.5">
-                                  <p className="text-xs md:text-sm text-gray-400 line-through">
-                                    {RUPEE_SYMBOL}{(originalDisplayPrice * (item.quantity || 1)).toFixed(0)}
-                                  </p>
-                                  <span className="text-[10px] font-bold text-green-600 bg-green-50 border border-green-200 px-1 py-0.5 rounded uppercase">
-                                    {Math.round(((originalDisplayPrice - displayPrice) / originalDisplayPrice) * 100)}% OFF
-                                  </span>
-                                </div>
-                              )}
                             </div>
                           </div>
                         </div>
