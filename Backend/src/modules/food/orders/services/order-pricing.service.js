@@ -108,7 +108,7 @@ export async function calculateOrderPricing(userId, dto) {
     gstOnPlatformFee = feeSettings.gstOnPlatformFee != null ? Number(feeSettings.gstOnPlatformFee) : 0;
   }
   
-  const packagingFee = feeSettings.packagingFee != null ? Number(feeSettings.packagingFee) : 0;
+  const packagingFee = restaurant?.packagingFee != null ? Number(restaurant.packagingFee) : (feeSettings.packagingFee != null ? Number(feeSettings.packagingFee) : 0);
 
   const freeUpTo = Number(feeSettings.freeDeliveryUpTo || 0);
   let distanceKm = null;

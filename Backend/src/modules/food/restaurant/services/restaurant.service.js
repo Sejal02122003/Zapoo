@@ -942,6 +942,18 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         update.estimatedDeliveryTime = estimatedDeliveryTimeText;
         update.estimatedDeliveryTimeMinutes = parseEstimatedDeliveryMinutes(estimatedDeliveryTimeText) ?? undefined;
     }
+    if (body.packagingFee !== undefined) {
+        if (body.packagingFee === null || body.packagingFee === '') {
+            update.packagingFee = null;
+        } else {
+            const fee = Number(body.packagingFee);
+            if (!Number.isNaN(fee) && fee >= 0) {
+                update.packagingFee = fee;
+            } else {
+                throw new ValidationError('Packaging fee must be a positive number');
+            }
+        }
+    }
 
     const openingMinutes = body.openingTime !== undefined ? timeToMinutes(update.openingTime) : null;
     const closingMinutes = body.closingTime !== undefined ? timeToMinutes(update.closingTime) : null;

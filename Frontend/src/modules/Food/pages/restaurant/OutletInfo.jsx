@@ -45,6 +45,8 @@ export default function OutletInfo() {
   const [savingEdit, setSavingEdit] = useState(false)
   const [takeawayStatus, setTakeawayStatus] = useState(false)
   const [savingTakeaway, setSavingTakeaway] = useState(false)
+  const [packagingFee, setPackagingFee] = useState("")
+  const [savingPackagingFee, setSavingPackagingFee] = useState(false)
 
   // Fetch restaurant data on mount
   useEffect(() => {
@@ -60,6 +62,7 @@ export default function OutletInfo() {
           const mongoId = String(data.id || data._id || "")
           setRestaurantMongoId(mongoId)
           setTakeawayStatus(data.isTakeawayEnabled === true)
+          setPackagingFee(data.packagingFee != null ? String(data.packagingFee) : "")
           
           if (data.profileImage?.url) {
             setThumbnailImage(data.profileImage.url)
@@ -233,6 +236,19 @@ export default function OutletInfo() {
       toast.error("Error updating takeaway status")
     } finally {
       setSavingTakeaway(false)
+    }
+  }
+
+  const handlePackagingFeeSave = async () => {
+    try {
+      setSavingPackagingFee(true)
+      const feeValue = packagingFee.trim() === "" ? null : Number(packagingFee)
+      await restaurantAPI.updateProfile({ packagingFee: feeValue })
+      toast.success("Packaging fee updated successfully")
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Error updating packaging fee")
+    } finally {
+      setSavingPackagingFee(false)
     }
   }
 
@@ -436,6 +452,43 @@ export default function OutletInfo() {
                 disabled={savingTakeaway}
                 className="data-[state=checked]:bg-green-500"
               />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-gray-100/50">
+            <div className="flex flex-col mb-4.5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-50 rounded-lg">
+                  <ShoppingBag className="w-5 h-5 text-purple-500" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-gray-900">Packaging Fee</p>
+                  <p className="text-xs text-gray-500">Custom charge for packing your orders</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col">
+                <label className="text-[13px] font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Packaging Fee (₹)</label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={packagingFee}
+                    onChange={(e) => setPackagingFee(e.target.value)}
+                    placeholder="E.g., 20"
+                    className="h-11 rounded-xl bg-gray-50 border-gray-200 focus:bg-white flex-1"
+                  />
+                  <Button 
+                    onClick={handlePackagingFeeSave} 
+                    disabled={savingPackagingFee}
+                    className="h-11 px-6 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-medium"
+                  >
+                    {savingPackagingFee ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 font-medium">Leave blank to use the platform default packaging fee.</p>
+              </div>
             </div>
           </div>
         </div>

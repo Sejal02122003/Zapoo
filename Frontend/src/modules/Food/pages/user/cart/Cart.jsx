@@ -1196,7 +1196,7 @@ export default function Cart() {
     ? `Distance ${Number(deliveryFeeBreakdown.distanceKm).toFixed(1)} km`
     : null
   const platformFee = pricing != null ? (pricing.platformFee ?? 0) : (feeSettings.platformFee ?? 0)
-  const packagingFee = pricing != null ? (pricing.packagingFee ?? 0) : (feeSettings.packagingFee ?? 0)
+  const packagingFee = pricing != null ? (pricing.packagingFee ?? 0) : (restaurantData?.packagingFee != null ? restaurantData.packagingFee : (feeSettings.packagingFee ?? 0))
   const gstOnItemTotal = pricing?.taxBreakdown?.itemTax ?? (subtotal * ((feeSettings.gstRate ?? 0) / 100));
   const gstOnDeliveryFee = pricing?.taxBreakdown?.deliveryTax ?? (fallbackDeliveryFee * ((feeSettings.gstOnDeliveryFee ?? 0) / 100));
   const gstOnPlatformFee = pricing?.taxBreakdown?.platformTax ?? ((feeSettings.platformFee ?? 0) * ((feeSettings.gstOnPlatformFee ?? 0) / 100));

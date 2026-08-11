@@ -131,6 +131,10 @@ const restaurantSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    packagingFee: {
+      type: Number,
+      default: null, // null means use global default
+    },
     panNumber: {
       type: String,
     },
