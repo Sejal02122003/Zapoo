@@ -47,6 +47,27 @@ export default function ZoneSetup() {
     }
   }
 
+  const handleToggleStatus = async (zoneId, currentStatus, e) => {
+    e.stopPropagation()
+    const newStatus = !currentStatus;
+    const actionText = newStatus ? "activate" : "deactivate";
+    
+    if (!window.confirm(`Are you sure you want to ${actionText} this zone? Deactivating a zone will force all restaurants and drivers in it offline.`)) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await adminAPI.toggleZoneStatus(zoneId, newStatus);
+      alert(`Zone ${actionText}d successfully!`);
+      fetchZones();
+    } catch (error) {
+      debugError("Error toggling zone status:", error);
+      alert(error.response?.data?.message || `Failed to ${actionText} zone`);
+      setLoading(false);
+    }
+  }
+
   const filteredZones = zones.filter(zone =>
     zone.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     zone.serviceLocation?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -181,11 +202,17 @@ export default function ZoneSetup() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-600">Status:</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      zone.isActive ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-800"
-                    }`}>
-                      {zone.isActive ? "Active" : "Inactive"}
-                    </span>
+                    <button 
+                      onClick={(e) => handleToggleStatus(zone._id || zone.id, zone.isActive, e)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer border ${
+                        zone.isActive 
+                          ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-200" 
+                          : "bg-red-100 text-red-800 border-red-200 hover:bg-red-200"
+                      }`}
+                      title={zone.isActive ? "Click to deactivate (will force restaurants/drivers offline)" : "Click to activate"}
+                    >
+                      {zone.isActive ? "Active (ON)" : "Inactive (OFF)"}
+                    </button>
                   </div>
                   {zone.coordinates && zone.coordinates.length > 0 && (
                     <div className="flex items-center justify-between">

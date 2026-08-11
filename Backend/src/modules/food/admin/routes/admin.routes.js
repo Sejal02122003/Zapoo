@@ -273,6 +273,7 @@ router.get('/zones', adminController.getZones);
 router.get('/zones/:id', adminController.getZoneById);
 router.post('/zones', adminController.createZone);
 router.patch('/zones/:id', adminController.updateZone);
+router.patch('/zones/:id/status', adminController.toggleZoneStatus);
 router.delete('/zones/:id', adminController.deleteZone);
 
 // ----- Dining -----

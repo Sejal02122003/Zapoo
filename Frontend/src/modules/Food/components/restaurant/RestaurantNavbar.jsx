@@ -291,14 +291,25 @@ export default function RestaurantNavbar({
     const updateStatus = () => {
       try {
         const savedStatus = localStorage.getItem('restaurant_online_status')
+        let isOnline = false;
         if (savedStatus !== null) {
-          const isOnline = JSON.parse(savedStatus)
-          setStatus(isOnline ? "Online" : "Offline")
+          isOnline = JSON.parse(savedStatus)
         } else {
-          // If not stored yet, fallback to backend value (when available).
-          const isOnline = Boolean(restaurantData?.isAcceptingOrders)
-          setStatus(isOnline ? "Online" : "Offline")
+          isOnline = Boolean(restaurantData?.isAcceptingOrders)
         }
+
+        // Force offline if closed today according to registration
+        if (restaurantData?.openDays && Array.isArray(restaurantData.openDays)) {
+          const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+          const today = days[new Date().getDay()];
+          
+          if (restaurantData.openDays.length > 0 && !restaurantData.openDays.includes(today)) {
+            isOnline = false;
+            localStorage.setItem('restaurant_online_status', JSON.stringify(false));
+          }
+        }
+
+        setStatus(isOnline ? "Online" : "Offline")
       } catch (error) {
         debugError("Error loading restaurant status:", error)
         const isOnline = Boolean(restaurantData?.isAcceptingOrders)

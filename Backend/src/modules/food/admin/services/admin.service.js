@@ -5072,6 +5072,88 @@ export async function updateZone(id, body) {
     return { zone: zone.toObject() };
 }
 
+export async function toggleZoneStatus(id, isActive) {
+    const zone = await FoodZone.findById(id);
+    if (!zone) return null;
+
+    zone.isActive = Boolean(isActive);
+    await zone.save();
+
+    // If turned off, force restaurants and drivers offline and notify them
+    if (!zone.isActive) {
+        const { notifyOwnerSafely } = await import('../../../../core/notifications/firebase.service.js');
+        const { FoodRestaurant } = await import('../../restaurant/models/restaurant.model.js');
+        const { FoodDeliveryPartner } = await import('../../delivery/models/deliveryPartner.model.js');
+
+        const restaurants = await FoodRestaurant.find({ zoneId: id }).select('_id');
+        if (restaurants.length > 0) {
+            await FoodRestaurant.updateMany({ zoneId: id }, { $set: { isAcceptingOrders: false } });
+            // Notify restaurants
+            const payload = {
+                notification: {
+                    title: 'Zone Offline',
+                    body: `Your operating zone (${zone.name}) has been turned OFF by the admin. You are now offline.`
+                },
+                data: { type: 'ZONE_OFFLINE', zoneId: String(id) }
+            };
+            for (const r of restaurants) {
+                await notifyOwnerSafely({ ownerType: 'RESTAURANT', ownerId: r._id }, payload);
+            }
+        }
+
+        const drivers = await FoodDeliveryPartner.find({ zoneId: id }).select('_id');
+        if (drivers.length > 0) {
+            await FoodDeliveryPartner.updateMany({ zoneId: id }, { $set: { availabilityStatus: 'offline' } });
+            // Notify drivers
+            const payload = {
+                notification: {
+                    title: 'Zone Offline',
+                    body: `Your operating zone (${zone.name}) has been turned OFF by the admin. You are now offline.`
+                },
+                data: { type: 'ZONE_OFFLINE', zoneId: String(id) }
+            };
+            for (const d of drivers) {
+                await notifyOwnerSafely({ ownerType: 'DELIVERY_PARTNER', ownerId: d._id }, payload);
+            }
+        }
+    } else {
+        // Optional: Notify them when turned back on
+        const { notifyOwnerSafely } = await import('../../../../core/notifications/firebase.service.js');
+        const { FoodRestaurant } = await import('../../restaurant/models/restaurant.model.js');
+        const { FoodDeliveryPartner } = await import('../../delivery/models/deliveryPartner.model.js');
+
+        const restaurants = await FoodRestaurant.find({ zoneId: id }).select('_id');
+        if (restaurants.length > 0) {
+            const payload = {
+                notification: {
+                    title: 'Zone Online',
+                    body: `Your operating zone (${zone.name}) has been turned ON by the admin. You can now go online.`
+                },
+                data: { type: 'ZONE_ONLINE', zoneId: String(id) }
+            };
+            for (const r of restaurants) {
+                await notifyOwnerSafely({ ownerType: 'RESTAURANT', ownerId: r._id }, payload);
+            }
+        }
+
+        const drivers = await FoodDeliveryPartner.find({ zoneId: id }).select('_id');
+        if (drivers.length > 0) {
+            const payload = {
+                notification: {
+                    title: 'Zone Online',
+                    body: `Your operating zone (${zone.name}) has been turned ON by the admin. You can now go online.`
+                },
+                data: { type: 'ZONE_ONLINE', zoneId: String(id) }
+            };
+            for (const d of drivers) {
+                await notifyOwnerSafely({ ownerType: 'DELIVERY_PARTNER', ownerId: d._id }, payload);
+            }
+        }
+    }
+
+    return { zone: zone.toObject() };
+}
+
 export async function deleteZone(id) {
     const zone = await FoodZone.findByIdAndDelete(id);
     return zone ? { id } : null;
