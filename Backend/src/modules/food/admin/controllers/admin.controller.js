@@ -1592,7 +1592,8 @@ export async function toggleZoneStatus(req, res, next) {
         }
         res.status(200).json({ success: true, message: 'Zone status toggled successfully. All related restaurants and drivers have been notified.', data: result });
     } catch (error) {
-        next(error);
+        console.error("TOGGLE ZONE ERROR:", error);
+        res.status(500).json({ success: false, message: error.message || 'Internal Server Error' });
     }
 }
 

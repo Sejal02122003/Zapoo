@@ -544,6 +544,8 @@ export const adminAPI = {
   /** Update zone. Body: name?, zoneName?, country?, unit?, coordinates?, isActive? */
   updateZone: (id, body) =>
     adminClient.patch(`/food/admin/zones/${id}`, body ?? {}),
+  toggleZoneStatus: (id, isActive) =>
+    adminClient.patch(`/food/admin/zones/${id}/status`, { isActive }),
   /** Delete zone */
   deleteZone: (id) =>
     adminClient.delete(`/food/admin/zones/${id}`),

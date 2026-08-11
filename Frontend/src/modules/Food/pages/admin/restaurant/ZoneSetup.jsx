@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { MapPin, Plus, Search, Edit, Trash2, Eye, Map, Bike } from "lucide-react"
 import { adminAPI } from "@food/api"
+import { toast } from "sonner"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -12,6 +13,7 @@ export default function ZoneSetup() {
   const [zones, setZones] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, zoneId: null, newStatus: null })
 
   // Force HMR reload
   console.log("ZoneSetup rendered");
@@ -42,31 +44,34 @@ export default function ZoneSetup() {
     }
     try {
       await adminAPI.deleteZone(zoneId)
-      alert("Zone deleted successfully!")
+      toast.success("Zone deleted successfully!")
       fetchZones()
     } catch (error) {
       debugError("Error deleting zone:", error)
-      alert(error.response?.data?.message || "Failed to delete zone")
+      toast.error(error.response?.data?.message || "Failed to delete zone")
     }
   }
 
-  const handleToggleStatus = async (zoneId, currentStatus, e) => {
+  const handleToggleStatus = (zoneId, currentStatus, e) => {
     e.stopPropagation()
-    const newStatus = !currentStatus;
+    setConfirmModal({ isOpen: true, zoneId, newStatus: !currentStatus })
+  }
+
+  const confirmToggleStatus = async () => {
+    const { zoneId, newStatus } = confirmModal;
     const actionText = newStatus ? "activate" : "deactivate";
     
-    if (!window.confirm(`Are you sure you want to ${actionText} this zone? Deactivating a zone will force all restaurants and drivers in it offline.`)) {
-      return;
-    }
+    setConfirmModal({ isOpen: false, zoneId: null, newStatus: null });
     
     try {
       setLoading(true);
       await adminAPI.toggleZoneStatus(zoneId, newStatus);
-      alert(`Zone ${actionText}d successfully!`);
+      toast.success(`Zone ${actionText}d successfully!`);
       fetchZones();
     } catch (error) {
       debugError("Error toggling zone status:", error);
-      alert(error.response?.data?.message || `Failed to ${actionText} zone`);
+      toast.error(error.response?.data?.message || `Failed to ${actionText} zone`);
+    } finally {
       setLoading(false);
     }
   }
@@ -229,7 +234,44 @@ export default function ZoneSetup() {
           </div>
         )}
       </div>
+
+      {/* Modern Confirm Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
+                confirmModal.newStatus ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+              }`}>
+                {confirmModal.newStatus ? <Plus className="w-6 h-6" /> : <Trash2 className="w-6 h-6" />}
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                {confirmModal.newStatus ? "Activate Zone?" : "Deactivate Zone?"}
+              </h3>
+              <p className="text-slate-600 mb-6 text-sm leading-relaxed">
+                Are you sure you want to {confirmModal.newStatus ? "activate" : "deactivate"} this zone?
+                {!confirmModal.newStatus && " Deactivating a zone will instantly force all restaurants and drivers in it offline."}
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setConfirmModal({ isOpen: false, zoneId: null, newStatus: null })}
+                  className="px-4 py-2 text-slate-700 hover:bg-slate-100 font-medium rounded-lg transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmToggleStatus}
+                  className={`px-4 py-2 text-white font-medium rounded-lg transition-all shadow-sm text-sm ${
+                    confirmModal.newStatus ? "bg-green-600 hover:bg-green-700 hover:shadow-md" : "bg-red-600 hover:bg-red-700 hover:shadow-md"
+                  }`}
+                >
+                  Yes, {confirmModal.newStatus ? "Activate" : "Deactivate"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-
