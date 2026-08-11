@@ -99,7 +99,7 @@ const MenuBulkUpload = () => {
     try {
       setIsLoadingItems(true);
       const res = await adminAPI.getFoods({ restaurantId, limit: 1000 });
-      const items = Array.isArray(res?.data?.data) ? res.data.data : Array.isArray(res?.data) ? res.data : (res?.data?.foods || []);
+      const items = Array.isArray(res?.data?.data) ? res.data.data : (res?.data?.data?.foods || res?.data?.foods || (Array.isArray(res?.data) ? res.data : []));
       setExistingItems(items);
     } catch (err) {
       console.error('Failed to fetch menu items:', err);
