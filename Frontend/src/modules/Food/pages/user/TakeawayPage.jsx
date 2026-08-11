@@ -19,9 +19,9 @@ import { isModuleAuthenticated } from "@food/utils/auth"
 import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
 import { calculateDistance, formatDistance } from "@food/utils/common"
 import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
-const debugLog = (...args) => {}
-const debugWarn = (...args) => {}
-const debugError = (...args) => {}
+const debugLog = (...args) => { }
+const debugWarn = (...args) => { }
+const debugError = (...args) => { }
 const RUPEE_SYMBOL = "\u20B9"
 const UNDER_99_FILTERS_STORAGE_KEY = "food-under-99-filters"
 
@@ -30,7 +30,8 @@ const readUnder99Filters = () => {
     return {
       selectedSort: null,
       activeCategory: null,
-      under30MinsFilter: false }
+      under30MinsFilter: false
+    }
   }
 
   try {
@@ -39,19 +40,22 @@ const readUnder99Filters = () => {
       return {
         selectedSort: null,
         activeCategory: null,
-        under30MinsFilter: false }
+        under30MinsFilter: false
+      }
     }
 
     const parsed = JSON.parse(raw)
     return {
       selectedSort: typeof parsed?.selectedSort === "string" ? parsed.selectedSort : null,
       activeCategory: typeof parsed?.activeCategory === "string" ? parsed.activeCategory : null,
-      under30MinsFilter: parsed?.under30MinsFilter === true }
+      under30MinsFilter: parsed?.under30MinsFilter === true
+    }
   } catch {
     return {
       selectedSort: null,
       activeCategory: null,
-      under30MinsFilter: false }
+      under30MinsFilter: false
+    }
   }
 }
 
@@ -201,7 +205,8 @@ const HorizontalMenuScroller = ({ restaurant, quantities, isClosed, handleItemCl
         scrollbarWidth: "none",
         msOverflowStyle: "none",
         touchAction: "pan-x pan-y pinch-zoom",
-        overflowY: "hidden" }}
+        overflowY: "hidden"
+      }}
     >
       {visibleItems.map((item, itemIndex) => {
         const quantity = quantities[item.id] || 0
@@ -349,7 +354,7 @@ const HorizontalMenuScroller = ({ restaurant, quantities, isClosed, handleItemCl
       {/* Infinite Scroll Trigger for Horizontal List */}
       {visibleCount < restaurant.menuItems.length && (
         <div ref={observerTarget} className="flex-shrink-0 w-16 md:w-full h-32 sm:h-36 md:h-40 lg:h-48 xl:h-52 flex items-center justify-center">
-           <div className="w-6 h-6 rounded-full border-[3px] border-gray-200 border-t-primary animate-spin" />
+          <div className="w-6 h-6 rounded-full border-[3px] border-gray-200 border-t-primary animate-spin" />
         </div>
       )}
     </div>
@@ -364,7 +369,8 @@ const pageCache = {
   allRawRestaurants: null,
   visibleRestaurantCount: 0,
   hasMore: true,
-  fetchedIds: null };
+  fetchedIds: null
+};
 
 export default function TakeawayPage() {
   const initialFiltersRef = useRef(readUnder99Filters())
@@ -393,7 +399,8 @@ export default function TakeawayPage() {
   const itemDetailContentRef = useRef(null)
   const itemDetailGestureRef = useRef({
     startY: 0,
-    dragging: false })
+    dragging: false
+  })
   const [categories, setCategories] = useState(() => isCacheValid ? (pageCache.categories || []) : [])
   const [loadingCategories, setLoadingCategories] = useState(() => !(isCacheValid && pageCache.categories))
   const [bannerImages, setBannerImages] = useState(() => isCacheValid ? (pageCache.bannerImages || []) : [])
@@ -522,7 +529,7 @@ export default function TakeawayPage() {
       const query = searchQuery.toLowerCase().trim()
       filtered = filtered.map(restaurant => {
         const matchRestaurant = restaurant.name.toLowerCase().includes(query)
-        const matchingDishes = restaurant.menuItems.filter(item => 
+        const matchingDishes = restaurant.menuItems.filter(item =>
           item.name.toLowerCase().includes(query) ||
           (item.description && item.description.toLowerCase().includes(query)) ||
           (item.category && item.category.toLowerCase().includes(query))
@@ -543,7 +550,7 @@ export default function TakeawayPage() {
       if (selectedCat) {
         const catNameLower = selectedCat.name.toLowerCase()
         filtered = filtered.map(restaurant => {
-          const matches = restaurant.menuItems.filter(item => 
+          const matches = restaurant.menuItems.filter(item =>
             (item.category || "").toLowerCase() === catNameLower ||
             (item.sectionName || "").toLowerCase() === catNameLower ||
             (item.subsectionName || "").toLowerCase() === catNameLower
@@ -755,14 +762,14 @@ export default function TakeawayPage() {
         const restaurantsRaw = Array.isArray(response?.data?.data?.restaurants)
           ? response.data.data.restaurants
           : []
-        
+
         if (!cancelled) {
           setAllRawRestaurants(restaurantsRaw)
           setVisibleRestaurantCount(5) // Load first 5 immediately
           setUnder99Restaurants([]) // Reset
           fetchedIdsRef.current.clear()
           setHasMore(restaurantsRaw.length > 0)
-          
+
           pageCache.allRawRestaurants = restaurantsRaw;
           pageCache.visibleRestaurantCount = 5;
           pageCache.under99Restaurants = [];
@@ -777,7 +784,7 @@ export default function TakeawayPage() {
         if (!cancelled) setLoadingRestaurants(false)
       }
     }
-    
+
     fetchRestaurantsList()
     return () => { cancelled = true }
   }, [zoneId, isOutOfService])
@@ -785,13 +792,13 @@ export default function TakeawayPage() {
   // 2. Fetch menus for the current chunk when visible count increases
   useEffect(() => {
     if (allRawRestaurants.length === 0 || visibleRestaurantCount === 0) return;
-    
+
     let cancelled = false;
-    
+
     const fetchMenusForChunk = async () => {
       try {
         const targetSlice = allRawRestaurants.slice(0, visibleRestaurantCount)
-        
+
         const newRestaurantsToFetch = targetSlice.filter(r => {
           const rId = String(r?.restaurantId || r?._id)
           return rId && !fetchedIdsRef.current.has(rId)
@@ -811,7 +818,7 @@ export default function TakeawayPage() {
 
         const userLat = Number(location?.latitude)
         const userLng = Number(location?.longitude)
-        
+
         const newRestaurantsWithUnder99Dishes = await Promise.all(
           newRestaurantsToFetch.map(async (restaurant) => {
             const restaurantId = restaurant?.restaurantId || restaurant?._id
@@ -837,7 +844,8 @@ export default function TakeawayPage() {
                       restaurant?.menuImages?.[0]?.url ||
                       restaurant?.menuImages?.[0] ||
                       restaurant?.profileImage?.url ||
-                      "" }
+                      ""
+                  }
                 })
 
               if (menuItems.length === 0) return null
@@ -897,7 +905,8 @@ export default function TakeawayPage() {
                 openingTime: restaurant?.openingTime || restaurant?.deliveryTimings?.openingTime || null,
                 closingTime: restaurant?.closingTime || restaurant?.deliveryTimings?.closingTime || null,
                 originalIndex: allRawRestaurants.findIndex(r => String(r?.restaurantId || r?._id) === String(restaurantId)),
-                menuItems }
+                menuItems
+              }
             } catch {
               return null
             }
@@ -906,17 +915,17 @@ export default function TakeawayPage() {
 
         if (!cancelled) {
           const validNewRestaurants = newRestaurantsWithUnder99Dishes.filter(Boolean)
-          
+
           // Mark IDs as fetched ONLY after successful completion (not before async call)
           // This prevents React StrictMode double-mount from skipping restaurants
           newRestaurantsToFetch.forEach(r => {
-             fetchedIdsRef.current.add(String(r?.restaurantId || r?._id))
+            fetchedIdsRef.current.add(String(r?.restaurantId || r?._id))
           })
-          
+
           setUnder99Restaurants(prev => {
-             const updated = [...prev, ...validNewRestaurants];
-             pageCache.under99Restaurants = updated;
-             return updated;
+            const updated = [...prev, ...validNewRestaurants];
+            pageCache.under99Restaurants = updated;
+            return updated;
           })
           setHasMore(visibleRestaurantCount < allRawRestaurants.length)
           pageCache.visibleRestaurantCount = visibleRestaurantCount;
@@ -932,7 +941,7 @@ export default function TakeawayPage() {
     }
 
     fetchMenusForChunk()
-    
+
     return () => { cancelled = true }
   }, [allRawRestaurants, visibleRestaurantCount, location?.latitude, location?.longitude, under99PriceLimit])
 
@@ -941,7 +950,7 @@ export default function TakeawayPage() {
     if (!hasMore || loadingMore || loadingRestaurants || isSwitchingCategory) return;
 
     const currentObserverTarget = observerTarget.current;
-    
+
     const observer = new IntersectionObserver(
       entries => {
         if (entries[0].isIntersecting) {
@@ -957,7 +966,7 @@ export default function TakeawayPage() {
 
     return () => {
       if (currentObserverTarget) {
-         observer.unobserve(currentObserverTarget)
+        observer.unobserve(currentObserverTarget)
       }
       observer.disconnect()
     }
@@ -993,7 +1002,8 @@ export default function TakeawayPage() {
                 cat?.imageUrl ||
                 cat?.image ||
                 cat?.icon ||
-                "" }
+                ""
+            }
           })
           .filter(Boolean)
 
@@ -1079,7 +1089,8 @@ export default function TakeawayPage() {
       JSON.stringify({
         selectedSort,
         activeCategory,
-        under30MinsFilter })
+        under30MinsFilter
+      })
     )
   }, [selectedSort, activeCategory, under30MinsFilter])
 
@@ -1101,16 +1112,17 @@ export default function TakeawayPage() {
     // Update local state
     setQuantities((prev) => ({
       ...prev,
-      [item.id]: newQuantity }))
+      [item.id]: newQuantity
+    }))
 
     // Find restaurant name from the item or use provided parameter
     const restaurant = restaurantName || item.restaurant || "Under 99"
 
     // Find restaurant to get its discount
-    const restaurantObj = under99Restaurants.find(r => 
+    const restaurantObj = under99Restaurants.find(r =>
       r.menuItems?.some(m => m.id === item.id)
     );
-    
+
     // Evaluate Item-Specific and Smart Rules Discounts
     let discountPercentage = restaurantObj?.discount || 0;
     const specificItemDiscount = (restaurantObj?.itemDiscounts || []).find(d => String(d.itemId) === String(item.id || item._id));
@@ -1125,7 +1137,7 @@ export default function TakeawayPage() {
       });
       if (matchingRule) discountPercentage = matchingRule.discountValue || 0;
     }
-    
+
     const finalPrice = discountPercentage > 0 ? Math.round(item.price * (1 - discountPercentage / 100)) : item.price;
 
     // Prepare cart item with all required properties
@@ -1140,7 +1152,8 @@ export default function TakeawayPage() {
       priceOnOtherPlatforms: item.priceOnOtherPlatforms || null, // Include platform pricing for savings display
       otherPlatformGst: item.otherPlatformGst ?? null,
       isVeg: item.isVeg,
-      foodType: item.foodType }
+      foodType: item.foodType
+    }
 
     // Get source position for animation from event target
     let sourcePosition = null
@@ -1160,7 +1173,8 @@ export default function TakeawayPage() {
           viewportY: rect.top + rect.height / 2,
           scrollX: scrollX,
           scrollY: scrollY,
-          itemId: item.id }
+          itemId: item.id
+        }
       }
     }
 
@@ -1169,7 +1183,8 @@ export default function TakeawayPage() {
       const productInfo = {
         id: item.id,
         name: item.name,
-        imageUrl: item.image }
+        imageUrl: item.image
+      }
       removeFromCart(item.id, sourcePosition, productInfo)
     } else {
       const existingCartItem = getCartItem(item.id)
@@ -1177,7 +1192,8 @@ export default function TakeawayPage() {
         const productInfo = {
           id: item.id,
           name: item.name,
-          imageUrl: item.image }
+          imageUrl: item.image
+        }
 
         if (newQuantity > existingCartItem.quantity && sourcePosition) {
           const result = addToCart(cartItem, sourcePosition)
@@ -1219,7 +1235,8 @@ export default function TakeawayPage() {
       restaurantSlug: restaurant.slug || restaurant.restaurantId || "",
       description: item.description || `${item.name} from ${restaurant.name}`,
       customisable: item.customisable || false,
-      notEligibleForCoupons: item.notEligibleForCoupons || false }
+      notEligibleForCoupons: item.notEligibleForCoupons || false
+    }
     const existingQuantity = quantities[item.id] || 0
     setItemDetailQuantity(existingQuantity > 0 ? existingQuantity : 1)
     setSelectedItem(itemWithRestaurant)
@@ -1253,7 +1270,8 @@ export default function TakeawayPage() {
         await navigator.share({
           title: item.name || "Dish",
           text: `Check out ${item.name || "this dish"} from ${item.restaurant || "Under 99"}`,
-          url: shareUrl })
+          url: shareUrl
+        })
         return
       }
     } catch (error) {
@@ -1298,7 +1316,8 @@ export default function TakeawayPage() {
     if (!showItemDetail) return
     itemDetailGestureRef.current = {
       startY: e.touches?.[0]?.clientY || 0,
-      dragging: true }
+      dragging: true
+    }
   }
 
   const handleItemDetailTouchEnd = (e) => {
@@ -1335,17 +1354,17 @@ export default function TakeawayPage() {
           onComplete={() => setShowScanAnimation(false)}
         />
       )}
-      
+
       {/* Custom Header (Orange Theme) */}
       <div className="sticky top-0 z-[100] bg-primary w-full px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => navigate(-1)}
             className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center text-white active:scale-95 transition-transform"
           >
             <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
           </button>
-          
+
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5 cursor-pointer">
               <span className="text-xs md:text-sm font-black text-white tracking-wider drop-shadow-sm">TAKEAWAY</span>
@@ -1356,14 +1375,14 @@ export default function TakeawayPage() {
             </span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           {/* Veg Toggle (Simplified for UI matching) */}
           <div className="hidden sm:flex items-center bg-white/20 rounded-full px-3 py-1.5 cursor-pointer">
-             <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center mr-2 bg-white/10">
-               <div className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-sm"></div>
-             </div>
-             <span className="text-xs font-semibold text-white">VEG</span>
+            <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center mr-2 bg-white/10">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-sm"></div>
+            </div>
+            <span className="text-xs font-semibold text-white">VEG</span>
           </div>
 
           <button className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center text-primary active:scale-95 transition-transform shadow-sm">
@@ -1383,7 +1402,7 @@ export default function TakeawayPage() {
             className="fixed top-0 left-0 right-0 z-[110] bg-white dark:bg-[#1a1a1a] p-3 sm:p-4 shadow-md border-b border-gray-100 dark:border-gray-800"
           >
             <div className="flex items-center gap-2 max-w-7xl mx-auto">
-              <button 
+              <button
                 onClick={() => {
                   setShowSearch(false)
                   setSearchQuery("")
@@ -1403,7 +1422,7 @@ export default function TakeawayPage() {
                   className="w-full pl-9 pr-10 py-2.5 bg-gray-100 dark:bg-gray-900 border border-transparent focus:border-primary/30 rounded-xl outline-none text-sm md:text-base text-gray-900 dark:text-white placeholder:text-gray-400 transition-colors"
                 />
                 {searchQuery && (
-                  <button 
+                  <button
                     onClick={() => setSearchQuery("")}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 bg-white dark:bg-gray-800 rounded-full shadow-sm"
                   >
@@ -1418,7 +1437,7 @@ export default function TakeawayPage() {
 
       {/* Seamless Hero Background Section */}
       <div className="relative w-full overflow-hidden bg-gradient-to-b from-primary via-orange-400 to-white dark:to-[#0a0a0a] pt-4 sm:pt-8 pb-10 sm:pb-12">
-        
+
         {bannerImages.length > 0 && (
           <div className="px-4 md:px-8">
             <div
@@ -1467,7 +1486,7 @@ export default function TakeawayPage() {
               animate={{ scale: [1, 1.3, 1], y: [0, -30, 0] }}
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
             />
-            
+
             {/* Main Banner Content */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
@@ -1480,47 +1499,47 @@ export default function TakeawayPage() {
                 <span className="w-2 h-2 rounded-full bg-yellow-300 animate-pulse" />
                 FRESH & FAST
               </div>
-              
+
               {/* Typography */}
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black italic tracking-tighter drop-shadow-lg mb-2 sm:mb-3 flex items-center justify-center flex-wrap gap-2 sm:gap-4 w-full">
-                <span className="text-yellow-300">QUICK</span> 
+                <span className="text-yellow-300">QUICK</span>
                 <span className="relative inline-block mt-2 sm:mt-0">
                   <span className="relative z-10">TAKEAWAY?</span>
-                  <motion.div 
+                  <motion.div
                     className="absolute -inset-2 sm:-inset-3 border-2 sm:border-[3px] border-white/40 rounded-xl sm:rounded-2xl -z-0"
                     animate={{ rotate: [-1.5, 1.5, -1.5], scale: [0.98, 1.02, 0.98] }}
                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                   />
                 </span>
               </h1>
-              
+
               <p className="text-xs sm:text-sm md:text-base lg:text-lg font-medium text-white/95 max-w-xs sm:max-w-sm md:max-w-md drop-shadow-md mt-4 sm:mt-6 leading-relaxed">
                 Order ahead and pick up your favorite meals piping hot and ready to go!
               </p>
-              
+
               {/* Floating Food Emojis */}
-              <motion.div 
+              <motion.div
                 className="absolute top-[10%] -left-2 sm:-left-8 md:left-[5%] text-4xl sm:text-5xl lg:text-6xl drop-shadow-xl"
                 animate={{ y: [0, -20, 0], rotate: [-10, 10, -10] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
                 🥡
               </motion.div>
-              <motion.div 
+              <motion.div
                 className="absolute -bottom-2 sm:bottom-0 -right-2 sm:-right-8 md:right-[5%] text-4xl sm:text-5xl lg:text-6xl drop-shadow-xl"
                 animate={{ y: [0, -15, 0], rotate: [10, -15, 10] }}
                 transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
               >
                 🛍️
               </motion.div>
-              <motion.div 
+              <motion.div
                 className="absolute top-0 right-0 sm:top-[5%] sm:right-[15%] text-2xl sm:text-3xl lg:text-4xl drop-shadow-xl opacity-60"
                 animate={{ y: [0, 15, 0], rotate: [0, 45, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
               >
                 🍕
               </motion.div>
-              <motion.div 
+              <motion.div
                 className="absolute bottom-4 left-4 sm:bottom-[10%] sm:left-[15%] text-2xl sm:text-3xl lg:text-4xl drop-shadow-xl opacity-60"
                 animate={{ y: [0, 20, 0], rotate: [0, -45, 0] }}
                 transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
@@ -1538,183 +1557,183 @@ export default function TakeawayPage() {
         {/* Filters Section (Not Sticky) */}
         <div className="px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 pt-1 md:pt-2">
           <section className="py-2 sm:py-3 md:py-4">
-          <div className="flex items-center gap-2 md:gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowSortPopup(true)}
-              className="h-8 sm:h-9 md:h-10 px-3 sm:px-4 md:px-5 rounded-md flex items-center gap-2 whitespace-nowrap flex-shrink-0 font-medium transition-all bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm md:text-base"
-            >
-              <ArrowDownUp className="h-4 w-4 md:h-5 md:w-5 rotate-90" />
-              <span className="text-sm md:text-base font-medium">
-                {selectedSort ? sortOptions.find(opt => opt.id === selectedSort)?.label : 'Sort'}
-              </span>
-              <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setUnder30MinsFilter(!under30MinsFilter)}
-              className={`h-8 sm:h-9 md:h-10 px-3 sm:px-4 md:px-5 rounded-md flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 font-medium transition-all text-sm md:text-base ${under30MinsFilter
-                ? 'bg-primary text-white border border-primary hover:bg-secondary'
-                : 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
-                }`}
-            >
-              <Timer className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
-              <span className="text-xs sm:text-sm md:text-base font-medium">Under 30 mins</span>
-            </Button>
-          </div>
+            <div className="flex items-center gap-2 md:gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowSortPopup(true)}
+                className="h-8 sm:h-9 md:h-10 px-3 sm:px-4 md:px-5 rounded-md flex items-center gap-2 whitespace-nowrap flex-shrink-0 font-medium transition-all bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm md:text-base"
+              >
+                <ArrowDownUp className="h-4 w-4 md:h-5 md:w-5 rotate-90" />
+                <span className="text-sm md:text-base font-medium">
+                  {selectedSort ? sortOptions.find(opt => opt.id === selectedSort)?.label : 'Sort'}
+                </span>
+                <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setUnder30MinsFilter(!under30MinsFilter)}
+                className={`h-8 sm:h-9 md:h-10 px-3 sm:px-4 md:px-5 rounded-md flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 font-medium transition-all text-sm md:text-base ${under30MinsFilter
+                  ? 'bg-primary text-white border border-primary hover:bg-secondary'
+                  : 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
+                  }`}
+              >
+                <Timer className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+                <span className="text-xs sm:text-sm md:text-base font-medium">Under 30 mins</span>
+              </Button>
+            </div>
           </section>
         </div>
 
         {/* Restaurant Menu Sections */}
         <div className="px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 pt-4">
-        {loadingRestaurants || isSwitchingCategory ? (
-          <div className="space-y-8 sm:space-y-10 md:space-y-12">
-            {Array.from({ length: 3 }).map((_, rIndex) => (
-              <section key={`skel-rest-${rIndex}`} className="pt-4 sm:pt-6 md:pt-8 lg:pt-10">
-                {/* Skeleton Restaurant Header */}
-                <div className="flex items-start justify-between mb-3 md:mb-4 lg:mb-6">
-                  <div className="flex-1 space-y-3">
-                    <div className="h-6 sm:h-8 w-48 sm:w-64 bg-orange-100 dark:bg-orange-900/30 rounded-md animate-pulse shadow-[0_0_15px_rgba(249,115,22,0.15)]"></div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-4 w-20 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.1)]"></div>
-                      <div className="h-4 w-24 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.1)]"></div>
-                      <div className="h-4 w-16 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.1)]"></div>
-                    </div>
-                  </div>
-                </div>
-                {/* Skeleton Menu Items Horizontal Scroll */}
-                <div className="flex md:grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 overflow-hidden md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {Array.from({ length: 4 }).map((_, iIndex) => (
-                    <div key={`skel-item-${rIndex}-${iIndex}`} className="flex-shrink-0 w-[200px] sm:w-[220px] md:w-full bg-white dark:bg-[#1a1a1a] rounded-lg md:rounded-xl border border-orange-100 dark:border-orange-900/20 overflow-hidden relative shadow-[0_4px_20px_rgba(249,115,22,0.08)]">
-                      <div className="w-full h-32 sm:h-36 md:h-40 lg:h-48 xl:h-52 bg-orange-50 dark:bg-orange-900/20 animate-pulse"></div>
-                      <div className="p-3 md:p-4 space-y-3">
-                        <div className="h-5 w-3/4 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse"></div>
-                        <div className="h-5 w-1/4 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse mt-2"></div>
-                        <div className="flex justify-between items-center mt-4">
-                          <div className="h-6 w-1/3 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse"></div>
-                          <div className="h-8 w-20 bg-orange-200 dark:bg-orange-800/40 rounded-full animate-pulse"></div>
-                        </div>
+          {loadingRestaurants || isSwitchingCategory ? (
+            <div className="space-y-8 sm:space-y-10 md:space-y-12">
+              {Array.from({ length: 3 }).map((_, rIndex) => (
+                <section key={`skel-rest-${rIndex}`} className="pt-4 sm:pt-6 md:pt-8 lg:pt-10">
+                  {/* Skeleton Restaurant Header */}
+                  <div className="flex items-start justify-between mb-3 md:mb-4 lg:mb-6">
+                    <div className="flex-1 space-y-3">
+                      <div className="h-6 sm:h-8 w-48 sm:w-64 bg-orange-100 dark:bg-orange-900/30 rounded-md animate-pulse shadow-[0_0_15px_rgba(249,115,22,0.15)]"></div>
+                      <div className="flex items-center gap-3">
+                        <div className="h-4 w-20 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.1)]"></div>
+                        <div className="h-4 w-24 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.1)]"></div>
+                        <div className="h-4 w-16 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.1)]"></div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        ) : sortedAndFilteredRestaurants.length === 0 ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="text-gray-500 dark:text-gray-400">
-              {!loadingRestaurants
-                ? `No takeaway restaurants found.`
-                : "No restaurants match the selected filters."}
+                  </div>
+                  {/* Skeleton Menu Items Horizontal Scroll */}
+                  <div className="flex md:grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 overflow-hidden md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, iIndex) => (
+                      <div key={`skel-item-${rIndex}-${iIndex}`} className="flex-shrink-0 w-[200px] sm:w-[220px] md:w-full bg-white dark:bg-[#1a1a1a] rounded-lg md:rounded-xl border border-orange-100 dark:border-orange-900/20 overflow-hidden relative shadow-[0_4px_20px_rgba(249,115,22,0.08)]">
+                        <div className="w-full h-32 sm:h-36 md:h-40 lg:h-48 xl:h-52 bg-orange-50 dark:bg-orange-900/20 animate-pulse"></div>
+                        <div className="p-3 md:p-4 space-y-3">
+                          <div className="h-5 w-3/4 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse"></div>
+                          <div className="h-5 w-1/4 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse mt-2"></div>
+                          <div className="flex justify-between items-center mt-4">
+                            <div className="h-6 w-1/3 bg-orange-100 dark:bg-orange-900/30 rounded animate-pulse"></div>
+                            <div className="h-8 w-20 bg-orange-200 dark:bg-orange-800/40 rounded-full animate-pulse"></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
             </div>
-          </div>
-        ) : (
-          (() => {
-            const allMomoItems = sortedAndFilteredRestaurants.flatMap(restaurant => 
-              (restaurant.menuItems || []).map(item => ({
-                ...item,
-                restaurantId: restaurant.id || restaurant._id,
-                restaurantName: restaurant.name,
-                restaurantSlug: restaurant.slug || restaurant.name.toLowerCase().replace(/\s+/g, "-"),
-                isClosed: !getRestaurantAvailabilityStatus(restaurant).isOpen,
-                restaurantRaw: restaurant
-              }))
-            );
-
-            if (allMomoItems.length === 0) {
-              return (
-                <div className="flex justify-center items-center py-12">
-                  <div className="text-gray-500 dark:text-gray-400">
-                    No takeaway dishes match the selected filters.
-                  </div>
-                </div>
+          ) : sortedAndFilteredRestaurants.length === 0 ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="text-gray-500 dark:text-gray-400">
+                {!loadingRestaurants
+                  ? `No takeaway restaurants found.`
+                  : "No restaurants match the selected filters."}
+              </div>
+            </div>
+          ) : (
+            (() => {
+              const allMomoItems = sortedAndFilteredRestaurants.flatMap(restaurant =>
+                (restaurant.menuItems || []).map(item => ({
+                  ...item,
+                  restaurantId: restaurant.id || restaurant._id,
+                  restaurantName: restaurant.name,
+                  restaurantSlug: restaurant.slug || restaurant.name.toLowerCase().replace(/\s+/g, "-"),
+                  isClosed: !getRestaurantAvailabilityStatus(restaurant).isOpen,
+                  restaurantRaw: restaurant
+                }))
               );
-            }
 
-            return (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-6 pb-12">
-                {allMomoItems.map((item) => {
-                  const quantity = quantities[`${item.restaurantId}-${item.id || item._id}`] || 0;
-                  return (
-                    <div key={`${item.restaurantId}-${item.id || item._id}`} className={`flex flex-col rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 shadow-sm bg-white dark:bg-[#1a1a1a] transition-transform hover:-translate-y-1 hover:shadow-md ${item.isClosed ? 'opacity-70 grayscale' : ''}`}>
-                      {/* Item Image */}
-                      <div className="relative w-full h-[140px] sm:h-[160px] flex-shrink-0 cursor-pointer" onClick={() => navigate(`/user/restaurants/${item.restaurantSlug}`)}>
-                        <OptimizedImage
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                          sizes="(max-width: 768px) 50vw, 25vw"
-                        />
-                        {item.isVeg ? (
-                          <div className="absolute top-2 left-2 bg-white rounded flex-shrink-0 h-4 w-4 border border-green-600 flex items-center justify-center z-10 shadow-sm">
-                            <div className="h-2 w-2 rounded-full bg-green-600" />
+              if (allMomoItems.length === 0) {
+                return (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="text-gray-500 dark:text-gray-400">
+                      No takeaway dishes match the selected filters.
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-6 pb-12">
+                  {allMomoItems.map((item) => {
+                    const quantity = quantities[`${item.restaurantId}-${item.id || item._id}`] || 0;
+                    return (
+                      <div key={`${item.restaurantId}-${item.id || item._id}`} className={`flex flex-col rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 shadow-sm bg-white dark:bg-[#1a1a1a] transition-transform hover:-translate-y-1 hover:shadow-md ${item.isClosed ? 'opacity-70 grayscale' : ''}`}>
+                        {/* Item Image */}
+                        <div className="relative w-full h-[140px] sm:h-[160px] flex-shrink-0 cursor-pointer" onClick={() => navigate(`/user/restaurants/${item.restaurantSlug}`)}>
+                          <OptimizedImage
+                            src={item.image}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                            sizes="(max-width: 768px) 50vw, 25vw"
+                          />
+                          {item.isVeg ? (
+                            <div className="absolute top-2 left-2 bg-white rounded flex-shrink-0 h-4 w-4 border border-green-600 flex items-center justify-center z-10 shadow-sm">
+                              <div className="h-2 w-2 rounded-full bg-green-600" />
+                            </div>
+                          ) : (
+                            <div className="absolute top-2 left-2 bg-white rounded flex-shrink-0 h-4 w-4 border border-red-600 flex items-center justify-center z-10 shadow-sm">
+                              <div className="h-2 w-2 rounded-full bg-red-600" />
+                            </div>
+                          )}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6">
+                            <p className="text-[10px] sm:text-xs font-semibold text-white truncate max-w-full">
+                              From {item.restaurantName}
+                            </p>
                           </div>
-                        ) : (
-                          <div className="absolute top-2 left-2 bg-white rounded flex-shrink-0 h-4 w-4 border border-red-600 flex items-center justify-center z-10 shadow-sm">
-                            <div className="h-2 w-2 rounded-full bg-red-600" />
-                          </div>
-                        )}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6">
-                          <p className="text-[10px] sm:text-xs font-semibold text-white truncate max-w-full">
-                            From {item.restaurantName}
-                          </p>
                         </div>
-                      </div>
 
-                      {/* Item Info */}
-                      <div className="p-3 sm:p-4 flex flex-col flex-1">
-                        <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 min-h-[40px] sm:min-h-[48px]">
-                          {item.name}
-                        </h4>
-                        
-                        <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50 dark:border-gray-800/50">
-                          <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                            {RUPEE_SYMBOL}{Math.round(item.price)}
-                          </span>
-                          
-                          {item.isClosed ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled
-                              className="h-8 px-4 sm:px-5 rounded-xl text-[11px] sm:text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-500"
-                            >
-                              CLOSED
-                            </Button>
-                          ) : quantity > 0 ? (
-                            <Link to="/user/cart">
+                        {/* Item Info */}
+                        <div className="p-3 sm:p-4 flex flex-col flex-1">
+                          <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 min-h-[40px] sm:min-h-[48px]">
+                            {item.name}
+                          </h4>
+
+                          <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50 dark:border-gray-800/50">
+                            <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                              {RUPEE_SYMBOL}{Math.round(item.price)}
+                            </span>
+
+                            {item.isClosed ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled
+                                className="h-8 px-4 sm:px-5 rounded-xl text-[11px] sm:text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-500"
+                              >
+                                CLOSED
+                              </Button>
+                            ) : quantity > 0 ? (
+                              <Link to="/user/cart">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 px-3 sm:px-4 rounded-xl text-[11px] sm:text-xs font-bold border-primary text-primary"
+                                >
+                                  ADDED
+                                </Button>
+                              </Link>
+                            ) : (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 px-3 sm:px-4 rounded-xl text-[11px] sm:text-xs font-bold border-primary text-primary"
+                                className="h-8 px-4 sm:px-6 rounded-xl text-[11px] sm:text-xs font-bold border-primary text-primary bg-primary/5 hover:bg-primary/10 hover:border-primary/80 transition-colors"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleItemClick(item, item.restaurantRaw);
+                                }}
                               >
-                                ADDED
+                                Add
                               </Button>
-                            </Link>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 px-4 sm:px-6 rounded-xl text-[11px] sm:text-xs font-bold border-primary text-primary bg-primary/5 hover:bg-primary/10 hover:border-primary/80 transition-colors"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleItemClick(item, item.restaurantRaw);
-                              }}
-                            >
-                              Add
-                            </Button>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()
-        )}
+                    );
+                  })}
+                </div>
+              );
+            })()
+          )}
         </div>
       </div>
 
@@ -2023,7 +2042,7 @@ export default function TakeawayPage() {
                     <div className="flex items-center gap-1 md:gap-2">
                       {/* Check if we have a restaurant discount for the selected item */}
                       {(() => {
-                        const restaurant = under99Restaurants.find(r => 
+                        const restaurant = under99Restaurants.find(r =>
                           r.menuItems?.some(m => m.id === selectedItem.id)
                         );
                         if (restaurant?.discount > 0) {

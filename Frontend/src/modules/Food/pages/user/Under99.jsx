@@ -31,7 +31,8 @@ const readUnder99Filters = () => {
     return {
       selectedSort: null,
       activeCategory: null,
-      under30MinsFilter: false }
+      under30MinsFilter: false
+    }
   }
 
   try {
@@ -40,19 +41,22 @@ const readUnder99Filters = () => {
       return {
         selectedSort: null,
         activeCategory: null,
-        under30MinsFilter: false }
+        under30MinsFilter: false
+      }
     }
 
     const parsed = JSON.parse(raw)
     return {
       selectedSort: typeof parsed?.selectedSort === "string" ? parsed.selectedSort : null,
       activeCategory: typeof parsed?.activeCategory === "string" ? parsed.activeCategory : null,
-      under30MinsFilter: parsed?.under30MinsFilter === true }
+      under30MinsFilter: parsed?.under30MinsFilter === true
+    }
   } catch {
     return {
       selectedSort: null,
       activeCategory: null,
-      under30MinsFilter: false }
+      under30MinsFilter: false
+    }
   }
 }
 
@@ -211,7 +215,8 @@ const HorizontalMenuScroller = ({ restaurant, quantities, isClosed, handleItemCl
         scrollbarWidth: "none",
         msOverflowStyle: "none",
         touchAction: "pan-x pan-y pinch-zoom",
-        overflowY: "hidden" }}
+        overflowY: "hidden"
+      }}
     >
       {visibleItems.map((item, itemIndex) => {
         const quantity = quantities[item.id] || 0
@@ -374,7 +379,8 @@ const pageCache = {
   allRawRestaurants: null,
   visibleRestaurantCount: 0,
   hasMore: true,
-  fetchedIds: null };
+  fetchedIds: null
+};
 
 export default function Under99() {
   const initialFiltersRef = useRef(readUnder99Filters())
@@ -403,7 +409,8 @@ export default function Under99() {
   const itemDetailContentRef = useRef(null)
   const itemDetailGestureRef = useRef({
     startY: 0,
-    dragging: false })
+    dragging: false
+  })
   const [categories, setCategories] = useState(() => isCacheValid ? (pageCache.categories || []) : [])
   const [loadingCategories, setLoadingCategories] = useState(() => !(isCacheValid && pageCache.categories))
   const [bannerImages, setBannerImages] = useState(() => isCacheValid ? (pageCache.bannerImages || []) : [])
@@ -845,7 +852,8 @@ export default function Under99() {
                       restaurant?.menuImages?.[0]?.url ||
                       restaurant?.menuImages?.[0] ||
                       restaurant?.profileImage?.url ||
-                      "" }
+                      ""
+                  }
                 })
 
               if (menuItems.length === 0) return null
@@ -905,7 +913,8 @@ export default function Under99() {
                 openingTime: restaurant?.openingTime || restaurant?.deliveryTimings?.openingTime || null,
                 closingTime: restaurant?.closingTime || restaurant?.deliveryTimings?.closingTime || null,
                 originalIndex: allRawRestaurants.findIndex(r => String(r?.restaurantId || r?._id) === String(restaurantId)),
-                menuItems }
+                menuItems
+              }
             } catch {
               return null
             }
@@ -1001,7 +1010,8 @@ export default function Under99() {
                 cat?.imageUrl ||
                 cat?.image ||
                 cat?.icon ||
-                "" }
+                ""
+            }
           })
           .filter(Boolean)
 
@@ -1087,7 +1097,8 @@ export default function Under99() {
       JSON.stringify({
         selectedSort,
         activeCategory,
-        under30MinsFilter })
+        under30MinsFilter
+      })
     )
   }, [selectedSort, activeCategory, under30MinsFilter])
 
@@ -1109,7 +1120,8 @@ export default function Under99() {
     // Update local state
     setQuantities((prev) => ({
       ...prev,
-      [item.id]: newQuantity }))
+      [item.id]: newQuantity
+    }))
 
     // Find restaurant name from the item or use provided parameter
     const restaurant = restaurantName || item.restaurant || "Under 99"
@@ -1148,7 +1160,8 @@ export default function Under99() {
       priceOnOtherPlatforms: item.priceOnOtherPlatforms || null, // Include platform pricing for savings display
       otherPlatformGst: item.otherPlatformGst ?? null,
       isVeg: item.isVeg,
-      foodType: item.foodType }
+      foodType: item.foodType
+    }
 
     // Get source position for animation from event target
     let sourcePosition = null
@@ -1168,7 +1181,8 @@ export default function Under99() {
           viewportY: rect.top + rect.height / 2,
           scrollX: scrollX,
           scrollY: scrollY,
-          itemId: item.id }
+          itemId: item.id
+        }
       }
     }
 
@@ -1177,7 +1191,8 @@ export default function Under99() {
       const productInfo = {
         id: item.id,
         name: item.name,
-        imageUrl: item.image }
+        imageUrl: item.image
+      }
       removeFromCart(item.id, sourcePosition, productInfo)
     } else {
       const existingCartItem = getCartItem(item.id)
@@ -1185,7 +1200,8 @@ export default function Under99() {
         const productInfo = {
           id: item.id,
           name: item.name,
-          imageUrl: item.image }
+          imageUrl: item.image
+        }
 
         if (newQuantity > existingCartItem.quantity && sourcePosition) {
           const result = addToCart(cartItem, sourcePosition)
@@ -1227,7 +1243,8 @@ export default function Under99() {
       restaurantSlug: restaurant.slug || restaurant.restaurantId || "",
       description: item.description || `${item.name} from ${restaurant.name}`,
       customisable: item.customisable || false,
-      notEligibleForCoupons: item.notEligibleForCoupons || false }
+      notEligibleForCoupons: item.notEligibleForCoupons || false
+    }
     const existingQuantity = quantities[item.id] || 0
     setItemDetailQuantity(existingQuantity > 0 ? existingQuantity : 1)
     setSelectedItem(itemWithRestaurant)
@@ -1261,7 +1278,8 @@ export default function Under99() {
         await navigator.share({
           title: item.name || "Dish",
           text: `Check out ${item.name || "this dish"} from ${item.restaurant || "Under 99"}`,
-          url: shareUrl })
+          url: shareUrl
+        })
         return
       }
     } catch (error) {
@@ -1306,7 +1324,8 @@ export default function Under99() {
     if (!showItemDetail) return
     itemDetailGestureRef.current = {
       startY: e.touches?.[0]?.clientY || 0,
-      dragging: true }
+      dragging: true
+    }
   }
 
   const handleItemDetailTouchEnd = (e) => {
@@ -1477,9 +1496,8 @@ export default function Under99() {
                     {bannerImages.map((_, idx) => (
                       <button
                         key={idx}
-                        className={`w-2 h-2 rounded-full transition-all ${
-                          idx === currentBannerIndex ? "bg-white w-6" : "bg-white/50"
-                        }`}
+                        className={`w-2 h-2 rounded-full transition-all ${idx === currentBannerIndex ? "bg-white w-6" : "bg-white/50"
+                          }`}
                         onClick={() => setCurrentBannerIndex(idx)}
                       />
                     ))}
