@@ -1562,23 +1562,14 @@ export function useLocationEngine() {
           const mode = localStorage.getItem("deliveryAddressMode");
           if (mode === "saved") {
             intentionallySaved = true;
-          } else if (mode === null) {
-            // If mode is not set, fallback to checking if there's a valid non-current location in localStorage
-            const stored = localStorage.getItem("userLocation");
-            if (stored) {
-              const loc = JSON.parse(stored);
-              if (loc && loc.formattedAddress && loc.formattedAddress !== "Select location" && loc.city !== "Current Location") {
-                intentionallySaved = true;
-              }
-            }
           }
         } catch (e) {}
 
         let shouldAutoFetch = false;
-        const hasFetchedThisSession = sessionStorage.getItem("appSession_locationFetched");
         
-        if (!intentionallySaved && !hasFetchedThisSession) {
-          shouldAutoFetch = true; // No saved location and first time this session -> Auto fetch
+        // If they haven't explicitly set mode to "saved", auto-fetch to keep location fresh
+        if (!intentionallySaved) {
+          shouldAutoFetch = true; 
         }
 
         // If permission NOT granted, and we shouldn't auto-fetch,
