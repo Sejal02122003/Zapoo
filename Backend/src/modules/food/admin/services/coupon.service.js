@@ -131,9 +131,11 @@ export async function validateCoupon({
         throw new ValidationError('This coupon cannot be combined with other coupons');
     }
 
+    const rType = coupon.rewardType || 'INSTANT_DISCOUNT';
+
     // Calculate discount amount
     let computedAmount = 0;
-    if (coupon.rewardType === 'INSTANT_DISCOUNT' || coupon.rewardType === 'BOTH') {
+    if (rType === 'INSTANT_DISCOUNT' || rType === 'BOTH') {
         if (coupon.discountType === 'PERCENTAGE') {
             const raw = (orderSubtotal * coupon.discountValue) / 100;
             computedAmount = coupon.maxDiscountCap ? Math.min(raw, coupon.maxDiscountCap) : raw;
@@ -144,11 +146,11 @@ export async function validateCoupon({
     }
 
     let computedCashbackAmount = 0;
-    if (coupon.rewardType === 'CASHBACK' || coupon.rewardType === 'BOTH') {
+    if (rType === 'CASHBACK' || rType === 'BOTH') {
         // Fallback for old CASHBACK coupons that used discountValue instead of cashbackValue
-        let cType = (coupon.rewardType === 'CASHBACK' && !coupon.cashbackValue) ? coupon.discountType : coupon.cashbackType;
-        let cValue = (coupon.rewardType === 'CASHBACK' && !coupon.cashbackValue) ? coupon.discountValue : coupon.cashbackValue;
-        let cCap = (coupon.rewardType === 'CASHBACK' && !coupon.cashbackValue) ? coupon.maxDiscountCap : coupon.maxCashbackCap;
+        let cType = (rType === 'CASHBACK' && !coupon.cashbackValue) ? coupon.discountType : coupon.cashbackType;
+        let cValue = (rType === 'CASHBACK' && !coupon.cashbackValue) ? coupon.discountValue : coupon.cashbackValue;
+        let cCap = (rType === 'CASHBACK' && !coupon.cashbackValue) ? coupon.maxDiscountCap : coupon.maxCashbackCap;
 
         if (cType === 'PERCENTAGE') {
             const rawCb = (orderSubtotal * cValue) / 100;
