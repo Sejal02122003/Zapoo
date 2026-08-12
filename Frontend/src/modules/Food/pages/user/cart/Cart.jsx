@@ -301,7 +301,7 @@ export default function Cart() {
         const totalBenefit = savings + cshb;
         if (totalBenefit > maxSavings) {
           maxSavings = totalBenefit;
-          bestCoupon = { ...coupon, savingsAmount: savings, cashbackAmount: cshb };
+          bestCoupon = { ...coupon, savingsAmount: savings, cashbackAmount: cshb, discount: savings };
         }
       });
 
@@ -312,7 +312,7 @@ export default function Cart() {
           isCombo: bestCoupon.savingsAmount > 0 && bestCoupon.cashbackAmount > 0,
           isCashback: bestCoupon.cashbackAmount > 0 && bestCoupon.savingsAmount === 0,
           codes: bestCoupon.code,
-          couponsToApply: [{ isGlobalCoupon: true, code: bestCoupon.code }]
+          couponsToApply: [bestCoupon]
         });
         setShowAutoApplyPopup(true);
         setHasShownAutoApply(true);
