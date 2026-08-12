@@ -1798,7 +1798,7 @@ export default function Cart() {
       debugLog("?? Delivery address:", defaultAddress?.label || defaultAddress?.city)
 
       // Ensure couponCode is included in pricing
-      const orderPricing = pricing || {
+      const orderPricing = pricing ? { ...pricing } : {
         subtotal,
         deliveryFee,
         tax: gstCharges,
@@ -1814,7 +1814,6 @@ export default function Cart() {
         if (!orderPricing.restaurantCouponCode && appliedRestaurantCoupon?.code) {
           orderPricing.restaurantCouponCode = appliedRestaurantCoupon.code;
         }
-
 
       // Add couponCode if not present but coupon is applied
       if (!orderPricing.couponCode && appliedCoupon?.code) {
