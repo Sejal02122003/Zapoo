@@ -201,39 +201,34 @@ export default function RestaurantStatus() {
       try {
         const response = await restaurantAPI.getCurrentRestaurant()
         const restaurant = response?.data?.data?.restaurant || response?.data?.restaurant
-        if (restaurant?.isAcceptingOrders !== undefined) {
-          setDeliveryStatus(restaurant.isAcceptingOrders)
+        if (restaurant && restaurant.isAcceptingOrders !== undefined) {
+          const isOnline = Boolean(restaurant.isAcceptingOrders)
+          setDeliveryStatus(isOnline)
           try {
-            localStorage.setItem('restaurant_online_status', JSON.stringify(Boolean(restaurant.isAcceptingOrders)))
+            localStorage.setItem('restaurant_online_status', JSON.stringify(isOnline))
           } catch {}
-          persistRestaurantOnlineStatus(restaurant.isAcceptingOrders)
-          // Dispatch event to update navbar
+          persistRestaurantOnlineStatus(isOnline)
           window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
-            detail: { isOnline: restaurant.isAcceptingOrders } 
+            detail: { isOnline } 
           }))
         } else {
-          setDeliveryStatus(false)
-          try {
-            localStorage.setItem('restaurant_online_status', JSON.stringify(false))
-          } catch {}
-          persistRestaurantOnlineStatus(false)
-          window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
-            detail: { isOnline: false } 
-          }))
+          // Keep current status or read from local storage fallback
+          const savedStatus = localStorage.getItem('restaurant_online_status')
+          if (savedStatus !== null) {
+            setDeliveryStatus(JSON.parse(savedStatus))
+          }
         }
       } catch (error) {
-        // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
           debugError("Error loading delivery status:", error)
         }
-        setDeliveryStatus(false)
+        // Fallback to local storage status instead of forcing false
         try {
-          localStorage.setItem('restaurant_online_status', JSON.stringify(false))
+          const savedStatus = localStorage.getItem('restaurant_online_status')
+          if (savedStatus !== null) {
+            setDeliveryStatus(JSON.parse(savedStatus))
+          }
         } catch {}
-        persistRestaurantOnlineStatus(false)
-        window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
-          detail: { isOnline: false } 
-        }))
       }
     }
 
@@ -242,18 +237,6 @@ export default function RestaurantStatus() {
 
   // Handle delivery status change
   const handleDeliveryStatusChange = async (checked) => {
-    // If day is closed in outlet timings, don't allow turning on
-    if (checked && isDayClosed) {
-      setShowOutletClosedDialog(true)
-      return
-    }
-    
-    // If outside scheduled delivery timings, show popup
-    if (checked && isWithinTimings === false && !isDayClosed) {
-      setShowOutsideTimingsDialog(true)
-      return
-    }
-    
     setDeliveryStatus(checked)
     try {
       // Update backend

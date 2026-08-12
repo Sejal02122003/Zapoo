@@ -1532,103 +1532,62 @@ export function useLocationEngine() {
     // Only set fallback if we have no location after all attempts
 
     // Request fresh location in BACKGROUND (non-blocking)
-    // CRITICAL FIX: Only auto-request if permission is ALREADY granted
-    // This prevents "Requests geolocation permission on page load" warning
     const checkPermissionAndStart = async () => {
       try {
         let permissionGranted = false;
+
+        const userAgent = String(window.navigator?.userAgent || '').toLowerCase();
+        const isNativeShell =
+          Boolean(window.flutter_inappwebview) ||
+          Boolean(window.ReactNativeWebView) ||
+          userAgent.includes('wv') ||
+          userAgent.includes('; wv');
 
         if (navigator.permissions && navigator.permissions.query) {
           try {
             const result = await navigator.permissions.query({ name: 'geolocation' });
             if (result.state === 'granted') {
               permissionGranted = true;
-            } else {
-              debugLog(`?? Geolocation permission is '${result.state}' - Waiting for user action (avoiding prompt on load)`);
             }
           } catch (permErr) {
-            debugWarn("?? Permission query failed:", permErr);
+            debugWarn("Permission query failed:", permErr);
           }
-        } else {
-          // Fallback for browsers without permissions API - assume not granted to be safe
-          debugLog("?? Permissions API not available - Skipping auto-start");
         }
-
-        const isLoggedIn = !!(localStorage.getItem('user_accessToken') || localStorage.getItem('accessToken'));
 
         let intentionallySaved = false;
         try {
-          // Check if user explicitly selected a saved location
           const mode = localStorage.getItem("deliveryAddressMode");
           if (mode === "saved") {
             intentionallySaved = true;
           }
         } catch (e) {}
 
-        let shouldAutoFetch = false;
-        
-        // If they haven't explicitly set mode to "saved", auto-fetch to keep location fresh
-        if (!intentionallySaved) {
-          shouldAutoFetch = true; 
-        }
+        const shouldAutoFetch = !intentionallySaved || isNativeShell || permissionGranted;
 
-        // If permission NOT granted, and we shouldn't auto-fetch,
-        // we should SKIP automatic fetching/watching to allow the user to choose when to enable it.
-        if (!permissionGranted && !shouldAutoFetch && hasInitialLocation) {
-          // If we have an initial location, we are fine (it's displayed).
-          // If we don't, we show "Select Location".
-          // In either case, we avoid the PROMPT.
-          // Ensure loading is false so UI doesn't hang
-          setLoading(false);
-          return;
-        }
+        debugLog("Fetching/Watching location on launch...", { shouldAutoFetch, isNativeShell });
 
-        debugLog("?? Permission granted or auto-fetch required! Fetching/Watching location...", shouldForceRefresh ? "(FORCE REFRESH)" : "");
-
-        // Only fetch once on initial app open if we have no stored coordinates yet, or if auto fetch is required.
-        const shouldFetch = shouldForceRefresh || !hasInitialLocation || shouldAutoFetch;
-
-        if (shouldFetch) {
-          const isForceFresh = shouldForceRefresh || shouldAutoFetch;
-          debugLog("?? Fetching location - shouldForceRefresh:", shouldForceRefresh, "hasInitialLocation:", hasInitialLocation, "shouldAutoFetch:", shouldAutoFetch)
-          
+        if (shouldAutoFetch || !hasInitialLocation) {
           sessionStorage.setItem("appSession_locationFetched", "true");
           
-          getLocation(true, isForceFresh) // forceFresh = true if cached location is incomplete or if auto-fetch is required
+          getLocation(true, true)
             .then((location) => {
-              if (location &&
-                location.formattedAddress !== "Select location" &&
-                location.city !== "Current Location") {
-                debugLog("? Fresh location fetched:", location)
-                debugLog("? Location details:", {
-                  formattedAddress: location?.formattedAddress,
-                  address: location?.address,
-                  city: location?.city,
-                  state: location?.state,
-                  area: location?.area
-                })
-                // CRITICAL: Update state with fresh location so PageNavbar displays it
-                setLocation(location)
-                setPermissionGranted(true)
+              if (location && (location.latitude || location.longitude)) {
+                debugLog("Fresh location fetched on launch:", location);
+                setLocation(location);
+                setPermissionGranted(true);
                 try {
-                  localStorage.setItem("deliveryAddressMode", "current")
-                  window.dispatchEvent(new CustomEvent("deliveryAddressModeUpdated"))
+                  localStorage.setItem("deliveryAddressMode", "current");
+                  window.dispatchEvent(new CustomEvent("deliveryAddressModeUpdated"));
                 } catch {}
-                if (AUTO_START_LIVE_WATCH) startWatchingLocation()
-              } else {
-                // Placeholder result means reverse-geocode failed or was unavailable.
-                // Requirement: no more automatic retries; user can trigger manual refresh.
-                debugWarn("?? Location fetch returned placeholder; not retrying automatically")
+                if (AUTO_START_LIVE_WATCH) startWatchingLocation();
               }
             })
             .catch((err) => {
-              debugWarn("?? Background location fetch failed (using cached):", err.message)
-              // Don't auto-start live watching; keep cached/localStorage behavior.
-              if (AUTO_START_LIVE_WATCH) startWatchingLocation()
-            })
+              debugWarn("Background location fetch failed:", err.message);
+              if (AUTO_START_LIVE_WATCH) startWatchingLocation();
+            });
         } else {
-          // We have a valid location; no need to start live watching.
-          if (AUTO_START_LIVE_WATCH) startWatchingLocation()
+          if (AUTO_START_LIVE_WATCH) startWatchingLocation();
         }
       } catch (err) {
         debugError("Error in checkPermissionAndStart:", err);
@@ -1636,14 +1595,42 @@ export function useLocationEngine() {
       }
     };
 
-    // Always check permission state on startup.
-    // This does NOT trigger browser prompt by itself; it only auto-fetches when permission is already granted.
+    // Always check permission state & trigger auto fetch on startup.
     checkPermissionAndStart();
     
-    // Listen for manual location updates from other components (like AddressSelectorPage)
+    // Global JavaScript Bridge helper for Flutter / InAppWebView
+    if (typeof window !== "undefined") {
+      window.updateUserLocation = (lat, lng, addressString = "") => {
+        if (lat && lng) {
+          const locObj = {
+            latitude: Number(lat),
+            longitude: Number(lng),
+            address: addressString || `${lat}, ${lng}`,
+            formattedAddress: addressString || `${lat}, ${lng}`,
+            city: "Current Location",
+            state: "",
+            area: ""
+          };
+          try {
+            localStorage.setItem("userLocation", JSON.stringify(locObj));
+            localStorage.setItem("userLat", String(lat));
+            localStorage.setItem("userLng", String(lng));
+            localStorage.setItem("deliveryAddressMode", "current");
+          } catch (_) {}
+          setLocation(locObj);
+          setPermissionGranted(true);
+          setLoading(false);
+          window.dispatchEvent(new CustomEvent("userLocationUpdated", { detail: { location: locObj } }));
+          window.dispatchEvent(new CustomEvent("deliveryAddressModeUpdated", { detail: { mode: "current" } }));
+        }
+      };
+      window.onFlutterLocation = window.updateUserLocation;
+    }
+
+    // Listen for manual location updates from other components
     const handleLocationUpdateEvent = (e) => {
       if (e.detail?.location) {
-        debugLog("?? Received userLocationUpdated event, updating useLocation state:", e.detail.location);
+        debugLog("Received userLocationUpdated event:", e.detail.location);
         setLocation(e.detail.location);
         setPermissionGranted(true);
         setLoading(false);
@@ -1651,10 +1638,9 @@ export function useLocationEngine() {
     };
     window.addEventListener("userLocationUpdated", handleLocationUpdateEvent);
 
-    // Cleanup timeout and watcher
     return () => {
       clearTimeout(loadingTimeout)
-      debugLog("?? Cleaning up location watcher")
+      debugLog("Cleaning up location watcher")
       stopWatchingLocation()
       window.removeEventListener("userLocationUpdated", handleLocationUpdateEvent)
     }

@@ -34,9 +34,9 @@ export function clearStoredUserLocation() {
 
 export function readDeliveryAddressMode() {
   try {
-    return localStorage.getItem('deliveryAddressMode') || 'saved';
+    return localStorage.getItem('deliveryAddressMode') || 'current';
   } catch (_) {
-    return 'saved';
+    return 'current';
   }
 }
 
