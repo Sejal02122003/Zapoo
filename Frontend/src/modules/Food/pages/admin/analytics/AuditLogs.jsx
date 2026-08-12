@@ -17,14 +17,27 @@ export default function AuditLogs() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      // We will need to add getAuditLogs to adminAPI in index.js
-      const res = await adminAPI.getAuditLogs({ page: pagination.page, limit: pagination.limit, ...filters });
+      const activeFilters = {};
+      if (filters.action) activeFilters.action = filters.action;
+      if (filters.from) activeFilters.from = filters.from;
+      if (filters.to) activeFilters.to = filters.to;
+
+      const res = await adminAPI.getAuditLogs({
+        page: pagination.page,
+        limit: pagination.limit,
+        ...activeFilters
+      });
+
       if (res?.data?.success) {
-        setLogs(res.data.data.logs);
-        setPagination(res.data.data.pagination);
+        const dataPayload = res.data.data || {};
+        const logsList = Array.isArray(dataPayload.logs) ? dataPayload.logs : Array.isArray(dataPayload) ? dataPayload : [];
+        const pagInfo = dataPayload.pagination || { page: pagination.page, limit: pagination.limit, total: logsList.length };
+
+        setLogs(logsList);
+        setPagination(pagInfo);
       }
     } catch (error) {
-      toast.error('Failed to load audit logs');
+      toast.error(error.response?.data?.message || 'Failed to load audit logs');
     } finally {
       setLoading(false);
     }

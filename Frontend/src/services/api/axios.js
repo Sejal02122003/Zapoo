@@ -22,6 +22,28 @@ function getAccessToken(module) {
     const moduleToken = localStorage.getItem(key);
     if (moduleToken) return moduleToken;
 
+    if (module === "admin") {
+      return (
+        localStorage.getItem("admin_accessToken") ||
+        localStorage.getItem("adminToken") ||
+        localStorage.getItem("admin_token") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        null
+      );
+    }
+
+    if (module === "restaurant") {
+      return (
+        localStorage.getItem("restaurant_accessToken") ||
+        localStorage.getItem("restaurantToken") ||
+        localStorage.getItem("restaurant_token") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        null
+      );
+    }
+
     if (module === "delivery") {
       return (
         localStorage.getItem("delivery_accessToken") ||
@@ -33,7 +55,12 @@ function getAccessToken(module) {
     }
 
     if (module === "user") {
-      return localStorage.getItem("accessToken") || null;
+      return (
+        localStorage.getItem("user_accessToken") ||
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("token") ||
+        null
+      );
     }
     return null;
   } catch {
