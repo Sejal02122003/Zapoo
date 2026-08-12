@@ -228,20 +228,6 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
       : true)
     : true
 
-  console.log("DEBUG: Availability Check", {
-    name: restaurant?.name,
-    todayTiming,
-    openingTime,
-    closingTime,
-    openingMinutes,
-    closingMinutes,
-    nowMinutes,
-    hasExplicitWindow,
-    isWithinTimings,
-    isActive,
-    isAcceptingOrders
-  });
-
   const minutesUntilClose = isWithinTimings
     ? getMinutesUntilClosing(nowMinutes, openingMinutes, closingMinutes)
     : null
