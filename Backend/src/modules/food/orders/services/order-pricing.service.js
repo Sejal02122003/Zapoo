@@ -535,17 +535,7 @@ export async function calculateOrderPricing(userId, dto) {
   const totalBeforeDiscount = subtotal + deliveryFee + tax + platformFee + packagingFee + weatherFee;
   const total = Math.max(0, totalBeforeDiscount - totalDiscount);
 
-  
-    require('fs').writeFileSync('pricing_debug.json', JSON.stringify({
-      discount,
-      totalDiscount,
-      total,
-      couponDiscount,
-      appliedCoupon,
-      couponError,
-      restaurantCouponDiscount
-    }, null, 2));
-    return {
+  return {
 
     pricing: {
       subtotal,

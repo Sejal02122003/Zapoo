@@ -1,4 +1,5 @@
 import http from 'http';
+import { execSync } from 'child_process';
 import app from './src/app.js';
 import { config } from './src/config/env.js';
 import { validateConfig } from './src/config/validateEnv.js';
@@ -97,7 +98,21 @@ const startServer = async () => {
         // Handle server errors (like EADDRINUSE)
         server.on('error', (err) => {
             if (err.code === 'EADDRINUSE') {
-                logger.error(`Port ${config.port} is already in use. Please kill the process or use a different port.`);
+                logger.warn(`Port ${config.port} is already in use. Auto-killing existing process...`);
+                try {
+                    if (process.platform === 'win32') {
+                        execSync(`powershell -Command "Get-NetTCPConnection -LocalPort ${config.port} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"`);
+                    } else {
+                        execSync(`fuser -k ${config.port}/tcp || true`);
+                    }
+                    logger.info(`Port ${config.port} freed. Retrying listen...`);
+                    setTimeout(() => {
+                        server.listen(config.port, config.host);
+                    }, 1000);
+                    return;
+                } catch (killErr) {
+                    logger.error(`Port ${config.port} is already in use and could not be freed automatically.`);
+                }
             } else {
                 logger.error(`Server Error: ${err.message}`);
             }

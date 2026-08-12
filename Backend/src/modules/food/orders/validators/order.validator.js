@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import fs from 'fs';
 import { ValidationError } from '../../../../core/auth/errors.js';
 
 const orderItemSchema = z.object({
@@ -64,8 +65,9 @@ export function validateCalculateOrderDto(body) {
         deliveryFleet: z.string().optional(),
         orderType: z.enum(['delivery', 'takeaway']).optional().default('delivery')
     });
-    const result = schema.safeParse(body); require('fs').appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\\n');
+    const result = schema.safeParse(body);
     if (!result.success) {
+        try { fs.appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\n'); } catch (_) {}
         const first = result.error.issues?.[0];
         const path = first?.path?.length ? first.path.join('.') : '';
         const msg = path ? `${path}: ${first?.message || 'Validation failed'}` : first?.message || 'Validation failed';
@@ -100,8 +102,9 @@ export function validateCreateOrderDto(body) {
         message: "Address is required for delivery orders",
         path: ["address"]
     });
-    const result = schema.safeParse(body); require('fs').appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\\n');
+    const result = schema.safeParse(body);
     if (!result.success) {
+        try { fs.appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\n'); } catch (_) {}
         const msg = result.error.errors?.[0]?.message || 'Validation failed';
         throw new ValidationError(msg);
     }
@@ -115,8 +118,9 @@ export function validateVerifyPaymentDto(body) {
         razorpayPaymentId: z.string().min(1, 'Razorpay payment id required'),
         razorpaySignature: z.string().min(1, 'Razorpay signature required')
     });
-    const result = schema.safeParse(body); require('fs').appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\\n');
+    const result = schema.safeParse(body);
     if (!result.success) {
+        try { fs.appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\n'); } catch (_) {}
         const msg = result.error.errors?.[0]?.message || 'Validation failed';
         throw new ValidationError(msg);
     }
@@ -148,8 +152,9 @@ export function validateOrderStatusDto(body) {
         ]),
         note: z.string().optional()
     });
-    const result = schema.safeParse(body); require('fs').appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\\n');
+    const result = schema.safeParse(body);
     if (!result.success) {
+        try { fs.appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\n'); } catch (_) {}
         throw new ValidationError(result.error.errors?.[0]?.message || 'Validation failed');
     }
     return result.data;
@@ -161,8 +166,9 @@ export function validateAssignDeliveryDto(body) {
         incentive: z.number().min(0).max(500).optional(),
         incentiveReason: z.string().optional()
     });
-    const result = schema.safeParse(body); require('fs').appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\\n');
+    const result = schema.safeParse(body);
     if (!result.success) {
+        try { fs.appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\n'); } catch (_) {}
         throw new ValidationError(result.error.errors?.[0]?.message || 'Validation failed');
     }
     return result.data;
@@ -172,8 +178,9 @@ export function validateDispatchSettingsDto(body) {
     const schema = z.object({
         dispatchMode: z.enum(['auto', 'manual'])
     });
-    const result = schema.safeParse(body); require('fs').appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\\n');
+    const result = schema.safeParse(body);
     if (!result.success) {
+        try { fs.appendFileSync('validation_errors.log', JSON.stringify(result.error) + '\n'); } catch (_) {}
         throw new ValidationError(result.error.errors?.[0]?.message || 'Validation failed');
     }
     return result.data;
