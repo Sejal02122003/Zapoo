@@ -377,6 +377,7 @@ const pageCache = {
   bannerImages: null,
   under99Restaurants: null,
   allRawRestaurants: null,
+  timestamp: null,
   visibleRestaurantCount: 0,
   hasMore: true,
   fetchedIds: null
@@ -385,8 +386,8 @@ const pageCache = {
 export default function Under99() {
   const initialFiltersRef = useRef(readUnder99Filters())
   const { location, zoneId, zoneStatus, isInService, isOutOfService } = useAppLocation()
-  // Initialize state from cache if zoneId matches
-  const isCacheValid = pageCache.zoneId === zoneId;
+  // Initialize state from cache if zoneId matches and cache is less than 5 mins old
+  const isCacheValid = pageCache.zoneId === zoneId && pageCache.timestamp && (Date.now() - pageCache.timestamp < 5 * 60 * 1000);
   // Always show scan animation on page load, even if cached, because user likes the animation
   const [showScanAnimation, setShowScanAnimation] = useState(true)
   const navigate = useNavigate()
@@ -753,7 +754,7 @@ export default function Under99() {
 
   // 1. Fetch initial raw restaurant list
   useEffect(() => {
-    if (pageCache.zoneId === zoneId && pageCache.allRawRestaurants?.length > 0) {
+    if (isCacheValid && pageCache.allRawRestaurants?.length > 0) {
       setAllRawRestaurants(pageCache.allRawRestaurants);
       setVisibleRestaurantCount(pageCache.visibleRestaurantCount || 5);
       setUnder99Restaurants(pageCache.under99Restaurants || []);
@@ -779,6 +780,7 @@ export default function Under99() {
           setHasMore(restaurantsRaw.length > 0)
 
           pageCache.allRawRestaurants = restaurantsRaw;
+          pageCache.timestamp = Date.now();
           pageCache.visibleRestaurantCount = 5;
           pageCache.under99Restaurants = [];
           pageCache.fetchedIds = new Set();

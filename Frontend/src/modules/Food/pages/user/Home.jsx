@@ -151,7 +151,8 @@ const homePageCache = {
   heroBannersFetched: false,
   adsBannerImages: null,
   adsBannersData: null,
-  adsBannersFetched: false };
+  adsBannersFetched: false,
+  restaurantsTimestamp: null };
 
 const roundCoord = (value) =>
   Number.isFinite(Number(value))
@@ -1308,7 +1309,9 @@ export default function Home() {
         homePageCache.lat === roundCoord(effectiveLocation?.latitude) &&
         homePageCache.lng === roundCoord(effectiveLocation?.longitude);
 
-      if (isDefaultFetch && homePageCache.restaurantsData && homePageCache.effectiveZoneId === effectiveZoneId && isLocationSame) {
+      const isCacheFresh = homePageCache.restaurantsTimestamp && (Date.now() - homePageCache.restaurantsTimestamp < 5 * 60 * 1000);
+
+      if (isDefaultFetch && homePageCache.restaurantsData && homePageCache.effectiveZoneId === effectiveZoneId && isLocationSame && isCacheFresh) {
         setLoadingRestaurants(false);
         return;
       }
@@ -1661,6 +1664,7 @@ export default function Home() {
 
             if (isDefaultFetch) {
               homePageCache.restaurantsData = finalSorted;
+              homePageCache.restaurantsTimestamp = Date.now();
               homePageCache.effectiveZoneId = effectiveZoneId;
               homePageCache.lat = roundCoord(effectiveLocation?.latitude);
               homePageCache.lng = roundCoord(effectiveLocation?.longitude);
