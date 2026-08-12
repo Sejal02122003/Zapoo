@@ -979,9 +979,11 @@ export default function Cart() {
 
   // Calculate pricing from backend whenever cart, address, or coupon changes
   useEffect(() => {
+    let cancelled = false;
+    
     const calculatePricing = async () => {
       if (cart.length === 0 || !hasSavedAddress) {
-        setPricing(null)
+        if (!cancelled) setPricing(null)
         return
       }
 
@@ -1032,6 +1034,8 @@ export default function Cart() {
         })
 
         if (response?.data?.success && response?.data?.data?.pricing) {
+          if (cancelled) return;
+          
           const newPricing = response.data.data.pricing
           setPricing(newPricing)
 
@@ -1052,6 +1056,7 @@ export default function Cart() {
           }
         }
       } catch (error) {
+        if (cancelled) return;
         // Network errors or 404 errors - silently handle, fallback to frontend calculation
         if (error.code !== 'ERR_NETWORK' && error.response?.status !== 404) {
           debugError("Error calculating pricing:", error)
@@ -1059,11 +1064,14 @@ export default function Cart() {
         // Fallback to frontend calculation if backend fails
         setPricing(null)
       } finally {
-        setLoadingPricing(false)
+        if (!cancelled) setLoadingPricing(false)
       }
     }
 
     calculatePricing()
+    return () => {
+      cancelled = true;
+    }
   }, [cart, defaultAddress, appliedCoupon, couponCode, appliedRestaurantCoupon, restaurantId, orderType])
 
   // Fetch wallet balance
