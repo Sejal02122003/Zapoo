@@ -643,7 +643,6 @@ export default function Home() {
 
   const displayCategories = useMemo(() => {
     const staticCategories = [
-      { id: "static-all", name: "All", slug: "", image: allImg },
       { id: "static-momo", name: "Momo", slug: "momo", image: momoImg },
       { id: "static-dosa", name: "Dosa", slug: "dosa", image: dosaImg },
       { id: "static-pizza", name: "Pizza", slug: "pizza", image: pizzaImg },
@@ -811,11 +810,16 @@ export default function Home() {
   
   useEffect(() => {
     async function fetchCategoryFoods() {
+      if (!selectedCategory) {
+        setCategoryFoods([]);
+        setIsFoodsLoading(false);
+        return;
+      }
       setIsFoodsLoading(true);
       try {
         const params = { limit: 100 };
         if (effectiveZoneId) params.zoneId = effectiveZoneId;
-        if (selectedCategory) params.category = selectedCategory;
+        params.category = selectedCategory;
         const res = await getPublicFoods(params);
         if (Array.isArray(res)) {
           setCategoryFoods(res);
