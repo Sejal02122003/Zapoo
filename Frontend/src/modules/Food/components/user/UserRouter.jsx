@@ -96,215 +96,84 @@ const Wallet = lazy(() => import("@food/pages/user/Wallet"))
 // Complaints
 const SubmitComplaint = lazy(() => import("@food/pages/user/complaints/SubmitComplaint"))
 
+const ProtectedUser = ({ children }) => (
+  <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
+    {children}
+  </ProtectedRoute>
+)
+
 export default function UserRouter() {
   return (
     <Suspense fallback={<Loader />}>
       <Routes>
         <Route element={<UserLayout />}>
           {/* Home & Discovery */}
-          <Route path="" element={<Home />} />
-          <Route path="dining" element={<Dining />} />
-          <Route path="dining/:category" element={<DiningCategory />} />
-          <Route path="dining/explore/upto50" element={<DiningExplore50 />} />
-          <Route path="dining/explore/near-rated" element={<DiningExploreNear />} />
-          <Route path="dining/coffee" element={<Coffee />} />
-          <Route path="dining/:diningType/:slug" element={<DiningRestaurantDetails />} />
-          <Route path="dining/book/:slug" element={<TableBooking />} />
-          <Route path="dining/book-confirmation" element={<TableBookingConfirmation />} />
-          <Route path="dining/book-success" element={<TableBookingSuccess />} />
-          <Route path="dining/modification-policy" element={<TableModificationPolicy />} />
-          <Route path="dining/cancellation-policy" element={<TableCancellationPolicy />} />
-          <Route path="dining/edit-user" element={<TableEditUserPage />} />
-          <Route
-            path="bookings"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <MyBookings />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="under99" element={<Under99 />} />
-          <Route path="user/under99" element={<Under99 />} />
+          <Route path="" element={<ProtectedUser><Home /></ProtectedUser>} />
+          <Route path="dining" element={<ProtectedUser><Dining /></ProtectedUser>} />
+          <Route path="dining/:category" element={<ProtectedUser><DiningCategory /></ProtectedUser>} />
+          <Route path="dining/explore/upto50" element={<ProtectedUser><DiningExplore50 /></ProtectedUser>} />
+          <Route path="dining/explore/near-rated" element={<ProtectedUser><DiningExploreNear /></ProtectedUser>} />
+          <Route path="dining/coffee" element={<ProtectedUser><Coffee /></ProtectedUser>} />
+          <Route path="dining/:diningType/:slug" element={<ProtectedUser><DiningRestaurantDetails /></ProtectedUser>} />
+          <Route path="dining/book/:slug" element={<ProtectedUser><TableBooking /></ProtectedUser>} />
+          <Route path="dining/book-confirmation" element={<ProtectedUser><TableBookingConfirmation /></ProtectedUser>} />
+          <Route path="dining/book-success" element={<ProtectedUser><TableBookingSuccess /></ProtectedUser>} />
+          <Route path="dining/modification-policy" element={<ProtectedUser><TableModificationPolicy /></ProtectedUser>} />
+          <Route path="dining/cancellation-policy" element={<ProtectedUser><TableCancellationPolicy /></ProtectedUser>} />
+          <Route path="dining/edit-user" element={<ProtectedUser><TableEditUserPage /></ProtectedUser>} />
+          <Route path="bookings" element={<ProtectedUser><MyBookings /></ProtectedUser>} />
+          <Route path="under99" element={<ProtectedUser><Under99 /></ProtectedUser>} />
+          <Route path="user/under99" element={<ProtectedUser><Under99 /></ProtectedUser>} />
           <Route path="under-99" element={<Navigate to="/food/user/under99" replace />} />
           <Route path="user/under-99" element={<Navigate to="/food/user/under99" replace />} />
-          <Route path="collection/:category" element={<CollectionPage />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="category/momo" element={<MomoPage />} />
-          <Route path="category/:category" element={<CategoryPage />} />
-          <Route path="takeaway" element={<TakeawayPage />} />
-          <Route path="restaurants" element={<Restaurants />} />
-          <Route path="restaurants/:slug" element={<RestaurantDetails />} />
-          <Route path="restaurants/:slug/info" element={<RestaurantInfo />} />
-          <Route path="search" element={<SearchResults />} />
-          <Route path="product/:id" element={<ProductDetail />} />
+          <Route path="collection/:category" element={<ProtectedUser><CollectionPage /></ProtectedUser>} />
+          <Route path="categories" element={<ProtectedUser><Categories /></ProtectedUser>} />
+          <Route path="category/momo" element={<ProtectedUser><MomoPage /></ProtectedUser>} />
+          <Route path="category/:category" element={<ProtectedUser><CategoryPage /></ProtectedUser>} />
+          <Route path="takeaway" element={<ProtectedUser><TakeawayPage /></ProtectedUser>} />
+          <Route path="restaurants" element={<ProtectedUser><Restaurants /></ProtectedUser>} />
+          <Route path="restaurants/:slug" element={<ProtectedUser><RestaurantDetails /></ProtectedUser>} />
+          <Route path="restaurants/:slug/info" element={<ProtectedUser><RestaurantInfo /></ProtectedUser>} />
+          <Route path="search" element={<ProtectedUser><SearchResults /></ProtectedUser>} />
+          <Route path="product/:id" element={<ProtectedUser><ProductDetail /></ProtectedUser>} />
 
-          {/* Cart - Now Public */}
-          <Route path="cart" element={<Cart />} />
-          <Route path="cart/checkout" element={<Checkout />} />
-          <Route path="cart/select-address" element={<SelectAddress />} />
-          <Route path="address-selector" element={<AddressSelectorPage />} />
+          {/* Cart */}
+          <Route path="cart" element={<ProtectedUser><Cart /></ProtectedUser>} />
+          <Route path="cart/checkout" element={<ProtectedUser><Checkout /></ProtectedUser>} />
+          <Route path="cart/select-address" element={<ProtectedUser><SelectAddress /></ProtectedUser>} />
+          <Route path="address-selector" element={<ProtectedUser><AddressSelectorPage /></ProtectedUser>} />
 
-          {/* Orders - Protected (require user auth) */}
-          <Route
-            path="orders"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <Orders />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="orders/:orderId"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <OrderTracking />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="orders/:orderId/invoice"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <OrderInvoice />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="orders/:orderId/details"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <UserOrderDetails />
-              </ProtectedRoute>
-            }
-          />
+          {/* Orders */}
+          <Route path="orders" element={<ProtectedUser><Orders /></ProtectedUser>} />
+          <Route path="orders/:orderId" element={<ProtectedUser><OrderTracking /></ProtectedUser>} />
+          <Route path="orders/:orderId/invoice" element={<ProtectedUser><OrderInvoice /></ProtectedUser>} />
+          <Route path="orders/:orderId/details" element={<ProtectedUser><UserOrderDetails /></ProtectedUser>} />
 
           {/* Offers */}
-          <Route path="offers" element={<Offers />} />
+          <Route path="offers" element={<ProtectedUser><Offers /></ProtectedUser>} />
 
           {/* Gourmet */}
-          <Route path="gourmet" element={<Gourmet />} />
-
+          <Route path="gourmet" element={<ProtectedUser><Gourmet /></ProtectedUser>} />
 
           {/* Collections */}
-          <Route path="collections" element={<Collections />} />
-          <Route path="collections/:id" element={<CollectionDetail />} />
+          <Route path="collections" element={<ProtectedUser><Collections /></ProtectedUser>} />
+          <Route path="collections/:id" element={<ProtectedUser><CollectionDetail /></ProtectedUser>} />
 
-
-
-          {/* Profile - Protected (require user auth) */}
-          <Route
-            path="profile"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/edit"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <EditProfile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/payments"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <Payments />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/payments/new"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <AddPayment />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/payments/:id/edit"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <EditPayment />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/favorites"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <Favorites />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/support"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <Support />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/coupons"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <Coupons />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/about"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <About />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="profile/report-safety-emergency"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <ReportSafetyEmergency />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/accessibility"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <Accessibility />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/logout"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <Logout />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/refer-earn"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <ReferEarn />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="profile/dining-bookings"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <MyBookings />
-              </ProtectedRoute>
-            }
-          />
+          {/* Profile */}
+          <Route path="profile" element={<ProtectedUser><Profile /></ProtectedUser>} />
+          <Route path="profile/edit" element={<ProtectedUser><EditProfile /></ProtectedUser>} />
+          <Route path="profile/payments" element={<ProtectedUser><Payments /></ProtectedUser>} />
+          <Route path="profile/payments/new" element={<ProtectedUser><AddPayment /></ProtectedUser>} />
+          <Route path="profile/payments/:id/edit" element={<ProtectedUser><EditPayment /></ProtectedUser>} />
+          <Route path="profile/favorites" element={<ProtectedUser><Favorites /></ProtectedUser>} />
+          <Route path="profile/support" element={<ProtectedUser><Support /></ProtectedUser>} />
+          <Route path="profile/coupons" element={<ProtectedUser><Coupons /></ProtectedUser>} />
+          <Route path="profile/about" element={<ProtectedUser><About /></ProtectedUser>} />
+          <Route path="profile/report-safety-emergency" element={<ProtectedUser><ReportSafetyEmergency /></ProtectedUser>} />
+          <Route path="profile/accessibility" element={<ProtectedUser><Accessibility /></ProtectedUser>} />
+          <Route path="profile/logout" element={<ProtectedUser><Logout /></ProtectedUser>} />
+          <Route path="profile/refer-earn" element={<ProtectedUser><ReferEarn /></ProtectedUser>} />
+          <Route path="profile/dining-bookings" element={<ProtectedUser><MyBookings /></ProtectedUser>} />
 
           {/* Public Legal Policies (stay public) */}
           <Route path="profile/terms" element={<Terms />} />
@@ -320,38 +189,17 @@ export default function UserRouter() {
           <Route path="auth/callback" element={<AuthCallback />} />
 
           {/* Help */}
-          <Route path="help" element={<Help />} />
-          <Route path="help/orders/:orderId" element={<OrderHelp />} />
+          <Route path="help" element={<ProtectedUser><Help /></ProtectedUser>} />
+          <Route path="help/orders/:orderId" element={<ProtectedUser><OrderHelp /></ProtectedUser>} />
 
-          {/* Notifications - Protected (user auth) */}
-          <Route
-            path="notifications"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <Notifications />
-              </ProtectedRoute>
-            }
-          />
+          {/* Notifications */}
+          <Route path="notifications" element={<ProtectedUser><Notifications /></ProtectedUser>} />
 
-          {/* Wallet - Protected (user auth) */}
-          <Route
-            path="wallet"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <Wallet />
-              </ProtectedRoute>
-            }
-          />
+          {/* Wallet */}
+          <Route path="wallet" element={<ProtectedUser><Wallet /></ProtectedUser>} />
 
-          {/* Complaints - Protected (user auth) */}
-          <Route
-            path="complaints/submit/:orderId"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/login">
-                <SubmitComplaint />
-              </ProtectedRoute>
-            }
-          />
+          {/* Complaints */}
+          <Route path="complaints/submit/:orderId" element={<ProtectedUser><SubmitComplaint /></ProtectedUser>} />
         </Route>
       </Routes>
     </Suspense>

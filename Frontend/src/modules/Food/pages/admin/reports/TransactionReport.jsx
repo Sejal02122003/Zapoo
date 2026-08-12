@@ -507,7 +507,14 @@ export default function TransactionReport() {
                         <span className="text-[10px] text-slate-700">{formatFullCurrency(transaction.totalItemAmount)}</span>
                       </td>
                       <td className="px-1.5 py-1">
-                        <span className="text-[10px] text-slate-700">{formatFullCurrency(transaction.couponDiscount)}</span>
+                        <span className={`text-[10px] ${transaction.couponDiscount > 0 ? "font-bold text-emerald-600" : "text-slate-700"}`}>
+                          {formatFullCurrency(transaction.couponDiscount || 0)}
+                        </span>
+                        {transaction.couponCode && (
+                          <span className="block text-[8px] font-bold text-blue-600 truncate">
+                            ({transaction.couponCode})
+                          </span>
+                        )}
                       </td>
                       <td className="px-1.5 py-1">
                         <span className="text-[10px] text-slate-700">{formatFullCurrency(transaction.vatTax)}</span>

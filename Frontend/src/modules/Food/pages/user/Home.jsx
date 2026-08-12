@@ -1591,16 +1591,8 @@ export default function Home() {
             if (!userLat || !userLng) return restaurants;
             return [...restaurants].sort((a, b) => {
               // Available restaurants first, then unavailable
-              const aAvailable = getRestaurantAvailabilityStatus(
-                a,
-                new Date(),
-                { ignoreOperationalStatus: true },
-              ).isOpen;
-              const bAvailable = getRestaurantAvailabilityStatus(
-                b,
-                new Date(),
-                { ignoreOperationalStatus: true },
-              ).isOpen;
+              const aAvailable = getRestaurantAvailabilityStatus(a, new Date()).isOpen;
+              const bAvailable = getRestaurantAvailabilityStatus(b, new Date()).isOpen;
 
               if (aAvailable !== bAvailable) {
                 return aAvailable ? -1 : 1; // Available restaurants come first
@@ -1813,8 +1805,8 @@ export default function Home() {
 
       // Re-sort data based on updated distances
       return [...updatedRestaurants].sort((a, b) => {
-        const aAvailable = getRestaurantAvailabilityStatus(a, new Date(), { ignoreOperationalStatus: true }).isOpen;
-        const bAvailable = getRestaurantAvailabilityStatus(b, new Date(), { ignoreOperationalStatus: true }).isOpen;
+        const aAvailable = getRestaurantAvailabilityStatus(a, new Date()).isOpen;
+        const bAvailable = getRestaurantAvailabilityStatus(b, new Date()).isOpen;
         if (aAvailable !== bAvailable) return aAvailable ? -1 : 1;
 
         if (appliedFilters.sortBy === "price-low") return (a.featuredPrice || 0) - (b.featuredPrice || 0);
@@ -2442,13 +2434,15 @@ export default function Home() {
                   className="bg-transparent dark:bg-transparent"
                 >
 
-                  {/* Admin Hero Banners Section - Removed per user request */}
-                  {/* <HeroBanner
-                    images={heroBannerImages}
-                    bannersData={heroBannersData}
-                    loading={showBannerSkeleton}
-                    shellRef={heroShellRef}
-                  /> */}
+                  {/* Admin Hero Banners Section */}
+                  {heroBannerImages && heroBannerImages.length > 0 && (
+                    <HeroBanner
+                      images={heroBannerImages}
+                      bannersData={heroBannersData}
+                      loading={loadingBanners}
+                      shellRef={heroShellRef}
+                    />
+                  )}
 
                   {/* "What's on your mind today?" Section - Now with Sticky Logic */}
                   <div ref={categoryAnchorRef} className="h-0 w-full" />

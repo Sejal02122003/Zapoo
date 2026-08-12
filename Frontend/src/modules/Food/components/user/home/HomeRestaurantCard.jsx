@@ -52,7 +52,6 @@ function HomeRestaurantCard({
   const availability = getRestaurantAvailabilityStatus(
     restaurantForAvailability,
     new Date(),
-    { ignoreOperationalStatus: true },
   );
 
   const restaurantSlug = resolveRestaurantSlug(restaurant, index);

@@ -281,22 +281,8 @@ export default function Cart() {
         if (coupon.customerGroup === "new" && userOrderCount > 0) return;
         if (subtotal < (Number(coupon.minOrder) || 0)) return;
 
-        let savings = 0;
-        let cshb = 0;
-
-        if (coupon.discountType === 'percentage' || coupon.discountType === 'PERCENTAGE') {
-           const raw = subtotal * (Number(coupon.discountValue) / 100);
-           savings = coupon.maxDiscountCap ? Math.min(raw, Number(coupon.maxDiscountCap)) : (coupon.maxDiscount ? Math.min(raw, Number(coupon.maxDiscount)) : raw);
-        } else if (coupon.discountValue > 0) {
-           savings = Math.min(subtotal, Number(coupon.discountValue));
-        }
-
-        if (coupon.cashbackType === 'PERCENTAGE') {
-           const raw = subtotal * (Number(coupon.cashbackValue) / 100);
-           cshb = raw;
-        } else if (coupon.cashbackValue > 0) {
-           cshb = Number(coupon.cashbackValue);
-        }
+        let savings = Number(coupon.discount || 0);
+        let cshb = Number(coupon.cashbackValue || 0);
 
         const totalBenefit = savings + cshb;
         if (totalBenefit > maxSavings) {
@@ -458,13 +444,14 @@ export default function Cart() {
     if (
       restaurantData.isClosed === true || 
       restaurantData.status === 'inactive' || 
-      restaurantData.isOpen === false
+      restaurantData.isOpen === false ||
+      restaurantData.isAcceptingOrders === false
     ) {
       return true;
     }
     
     const targetDate = isScheduled && scheduledDate ? new Date(scheduledDate) : new Date()
-    return !getRestaurantAvailabilityStatus(restaurantData, targetDate, { ignoreOperationalStatus: true }).isOpen
+    return !getRestaurantAvailabilityStatus(restaurantData, targetDate).isOpen
   }, [restaurantData, isScheduled, scheduledDate])
 
   const normalizeAddressLabel = (label) => {
@@ -1035,7 +1022,7 @@ export default function Cart() {
     let cancelled = false;
     
     const calculatePricing = async () => {
-      if (cart.length === 0 || !hasSavedAddress) {
+      if (cart.length === 0) {
         if (!cancelled) setPricing(null)
         return
       }
@@ -1552,7 +1539,7 @@ export default function Cart() {
     }
 
     // Validate with backend first; only set applied if backend accepts
-    if (cart.length > 0 && hasSavedAddress) {
+    if (cart.length > 0) {
       try {
         const items = cart.map(item => ({
           itemId: item.itemId || item.id,
@@ -1619,8 +1606,8 @@ export default function Cart() {
       return
     }
 
-    if (cart.length === 0 || !hasSavedAddress) {
-      toast.error("Add items and delivery address first")
+    if (cart.length === 0) {
+      toast.error("Add items first")
       return
     }
 
@@ -1699,7 +1686,7 @@ export default function Cart() {
     setManualCouponCode("")
 
     // Recalculate pricing without coupon
-    if (cart.length > 0 && hasSavedAddress) {
+    if (cart.length > 0) {
       try {
         const items = cart.map(item => ({
           itemId: item.itemId || item.id,

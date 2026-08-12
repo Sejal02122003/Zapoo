@@ -2387,7 +2387,7 @@ function RestaurantDetailsContent() {
     )
   }
 
-  const availabilityStatus = restaurant ? getRestaurantAvailabilityStatus(restaurant, new Date(availabilityTick), { ignoreOperationalStatus: true }) : { isOpen: false }
+  const availabilityStatus = restaurant ? getRestaurantAvailabilityStatus(restaurant, new Date(availabilityTick)) : { isOpen: false }
   const isRestaurantOffline = !availabilityStatus.isOpen
   const shouldShowGrayscale = isOutOfService || isRestaurantOffline
   const ratingValue = Number(restaurant?.rating || 0)
