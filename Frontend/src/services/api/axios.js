@@ -138,6 +138,16 @@ function createModuleClient(moduleName) {
         }
       }
 
+      // Prevent native browser caching for GET requests
+      if (config.method?.toLowerCase() === 'get') {
+        config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+        config.headers['Pragma'] = 'no-cache';
+        config.headers['Expires'] = '0';
+        
+        // Also add a timestamp query parameter as a fallback cache-buster
+        config.params = { ...config.params, _ts: Date.now() };
+      }
+
       return config;
     },
     (err) => Promise.reject(err)

@@ -399,10 +399,10 @@ export default function MomoPage() {
   const [bannerImages, setBannerImages] = useState(() => isCacheValid ? (pageCache.bannerImages || []) : [])
   const [loadingBanner, setLoadingBanner] = useState(() => !(isCacheValid && pageCache.bannerImages))
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
-  const [under99Restaurants, setUnder99Restaurants] = useState(() => isCacheValid ? (pageCache.under99Restaurants || []) : [])
-  const [loadingRestaurants, setLoadingRestaurants] = useState(() => !(isCacheValid && pageCache.allRawRestaurants))
+  const [under99Restaurants, setUnder99Restaurants] = useState([])
+  const [loadingRestaurants, setLoadingRestaurants] = useState(true)
   const [under99PriceLimit, setUnder99PriceLimit] = useState(99)
-  const [allRawRestaurants, setAllRawRestaurants] = useState(() => isCacheValid ? (pageCache.allRawRestaurants || []) : [])
+  const [allRawRestaurants, setAllRawRestaurants] = useState([])
   const [visibleRestaurantCount, setVisibleRestaurantCount] = useState(() => isCacheValid ? (pageCache.visibleRestaurantCount || 0) : 0)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(() => isCacheValid ? (pageCache.hasMore !== undefined ? pageCache.hasMore : true) : true)
@@ -738,15 +738,7 @@ export default function MomoPage() {
 
   // 1. Fetch initial raw restaurant list
   useEffect(() => {
-    if (pageCache.zoneId === zoneId && pageCache.allRawRestaurants?.length > 0) {
-      setAllRawRestaurants(pageCache.allRawRestaurants);
-      setVisibleRestaurantCount(pageCache.visibleRestaurantCount || 5);
-      setUnder99Restaurants(pageCache.under99Restaurants || []);
-      fetchedIdsRef.current = new Set(pageCache.fetchedIds);
-      setHasMore(pageCache.hasMore !== undefined ? pageCache.hasMore : true);
-      setLoadingRestaurants(false);
-      return;
-    }
+    
     let cancelled = false;
     const fetchRestaurantsList = async () => {
       try {
@@ -2186,4 +2178,6 @@ export default function MomoPage() {
     </div>
   )
 }
+
+
 

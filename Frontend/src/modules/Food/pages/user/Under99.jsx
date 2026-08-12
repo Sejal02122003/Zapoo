@@ -412,20 +412,20 @@ export default function Under99() {
     startY: 0,
     dragging: false
   })
-  const [categories, setCategories] = useState(() => isCacheValid ? (pageCache.categories || []) : [])
-  const [loadingCategories, setLoadingCategories] = useState(() => !(isCacheValid && pageCache.categories))
-  const [bannerImages, setBannerImages] = useState(() => isCacheValid ? (pageCache.bannerImages || []) : [])
-  const [loadingBanner, setLoadingBanner] = useState(() => !(isCacheValid && pageCache.bannerImages))
+  const [categories, setCategories] = useState([])
+  const [loadingCategories, setLoadingCategories] = useState(true)
+  const [bannerImages, setBannerImages] = useState([])
+  const [loadingBanner, setLoadingBanner] = useState(true)
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
-  const [under99Restaurants, setUnder99Restaurants] = useState(() => isCacheValid ? (pageCache.under99Restaurants || []) : [])
-  const [loadingRestaurants, setLoadingRestaurants] = useState(() => !(isCacheValid && pageCache.allRawRestaurants))
+  const [under99Restaurants, setUnder99Restaurants] = useState([])
+  const [loadingRestaurants, setLoadingRestaurants] = useState(true)
   const [under99PriceLimit, setUnder99PriceLimit] = useState(99)
-  const [allRawRestaurants, setAllRawRestaurants] = useState(() => isCacheValid ? (pageCache.allRawRestaurants || []) : [])
-  const [visibleRestaurantCount, setVisibleRestaurantCount] = useState(() => isCacheValid ? (pageCache.visibleRestaurantCount || 0) : 0)
+  const [allRawRestaurants, setAllRawRestaurants] = useState([])
+  const [visibleRestaurantCount, setVisibleRestaurantCount] = useState(0)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(() => isCacheValid ? (pageCache.hasMore !== undefined ? pageCache.hasMore : true) : true)
+  const [hasMore, setHasMore] = useState(true)
   const observerTarget = useRef(null)
-  const fetchedIdsRef = useRef(isCacheValid && pageCache.fetchedIds ? new Set(pageCache.fetchedIds) : new Set())
+  const fetchedIdsRef = useRef(new Set())
   const bannerShellRef = useRef(null)
   const stickyHeaderRef = useRef(null)
   const autoSlideIntervalRef = useRef(null)
@@ -754,15 +754,6 @@ export default function Under99() {
 
   // 1. Fetch initial raw restaurant list
   useEffect(() => {
-    if (isCacheValid && pageCache.allRawRestaurants?.length > 0) {
-      setAllRawRestaurants(pageCache.allRawRestaurants);
-      setVisibleRestaurantCount(pageCache.visibleRestaurantCount || 5);
-      setUnder99Restaurants(pageCache.under99Restaurants || []);
-      fetchedIdsRef.current = new Set(pageCache.fetchedIds);
-      setHasMore(pageCache.hasMore !== undefined ? pageCache.hasMore : true);
-      setLoadingRestaurants(false);
-      return;
-    }
     let cancelled = false;
     const fetchRestaurantsList = async () => {
       try {

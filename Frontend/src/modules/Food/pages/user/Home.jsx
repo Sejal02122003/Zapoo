@@ -344,8 +344,8 @@ export default function Home() {
     setRecommendedRestaurantsFromSettings,
   ] = useState(() => homePageCache.recommendedRestaurantsFromSettings || []);
   const [loadingLandingConfig, setLoadingLandingConfig] = useState(() => !homePageCache.landingExploreFetched);
-  const [restaurantsData, setRestaurantsData] = useState(() => homePageCache.restaurantsData || []);
-  const [loadingRestaurants, setLoadingRestaurants] = useState(() => !homePageCache.restaurantsData);
+  const [restaurantsData, setRestaurantsData] = useState([]);
+  const [loadingRestaurants, setLoadingRestaurants] = useState(true);
   const [realCategories, setRealCategories] = useState([]);
   const [loadingRealCategories, setLoadingRealCategories] = useState(true);
   const [menuCategories, setMenuCategories] = useState([]);
@@ -1305,16 +1305,7 @@ export default function Home() {
         return;
       }
 
-      const isLocationSame =
-        homePageCache.lat === roundCoord(effectiveLocation?.latitude) &&
-        homePageCache.lng === roundCoord(effectiveLocation?.longitude);
-
-      const isCacheFresh = homePageCache.restaurantsTimestamp && (Date.now() - homePageCache.restaurantsTimestamp < 5 * 60 * 1000);
-
-      if (isDefaultFetch && homePageCache.restaurantsData && homePageCache.effectiveZoneId === effectiveZoneId && isLocationSame && isCacheFresh) {
-        setLoadingRestaurants(false);
-        return;
-      }
+      // Removing early return to always fetch fresh restaurants
 
       const requestSeq = ++restaurantsRequestSeqRef.current;
       try {
