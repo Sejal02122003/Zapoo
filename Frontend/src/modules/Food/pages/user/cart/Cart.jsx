@@ -2293,7 +2293,11 @@ export default function Cart() {
       // Handle other axios errors
       else if (error.response) {
         // Server responded with error status
-        errorMessage = error.response.data?.message || `Server error: ${error.response.status}`
+        if (error.response.status === 502 || error.response.status === 503 || error.response.status === 504) {
+          errorMessage = "Server is temporarily unreachable (502 Bad Gateway). Please check backend server status."
+        } else {
+          errorMessage = error.response.data?.message || `Server error: ${error.response.status}`
+        }
       }
       // Handle other errors
       else if (error.message) {
