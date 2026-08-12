@@ -206,62 +206,6 @@ export default function Cart() {
       return "saved"
     }
   })
-  
-  const [showAutoApplyPopup, setShowAutoApplyPopup] = useState(false)
-  const [autoApplyPopupData, setAutoApplyPopupData] = useState(null)
-  const [hasShownAutoApply, setHasShownAutoApply] = useState(false)
-
-  // Auto-apply best coupon logic
-  useEffect(() => {
-    if (!hasShownAutoApply && availableCoupons?.length > 0 && subtotal > 0 && !appliedCoupon) {
-      let bestCoupon = null;
-      let maxSavings = 0;
-
-      availableCoupons.forEach(coupon => {
-        // Basic eligibility
-        if (coupon.customerGroup === "new" && userOrderCount > 0) return;
-        if (subtotal < (Number(coupon.minOrder) || 0)) return;
-
-        let savings = 0;
-        let cshb = 0;
-
-        if (coupon.discountType === 'percentage' || coupon.discountType === 'PERCENTAGE') {
-           const raw = subtotal * (Number(coupon.discountValue) / 100);
-           savings = coupon.maxDiscountCap ? Math.min(raw, Number(coupon.maxDiscountCap)) : (coupon.maxDiscount ? Math.min(raw, Number(coupon.maxDiscount)) : raw);
-        } else if (coupon.discountValue > 0) {
-           savings = Math.min(subtotal, Number(coupon.discountValue));
-        }
-
-        if (coupon.cashbackType === 'PERCENTAGE') {
-           const raw = subtotal * (Number(coupon.cashbackValue) / 100);
-           cshb = raw;
-        } else if (coupon.cashbackValue > 0) {
-           cshb = Number(coupon.cashbackValue);
-        }
-
-        const totalBenefit = savings + cshb;
-        if (totalBenefit > maxSavings) {
-          maxSavings = totalBenefit;
-          bestCoupon = { ...coupon, savingsAmount: savings, cashbackAmount: cshb };
-        }
-      });
-
-      if (bestCoupon && maxSavings > 0) {
-        setAutoApplyPopupData({
-          savings: Math.floor(bestCoupon.savingsAmount || 0),
-          cashback: Math.floor(bestCoupon.cashbackAmount || 0),
-          isCombo: bestCoupon.savingsAmount > 0 && bestCoupon.cashbackAmount > 0,
-          isCashback: bestCoupon.cashbackAmount > 0 && bestCoupon.savingsAmount === 0,
-          codes: bestCoupon.code,
-          couponsToApply: [{ isGlobalCoupon: true, code: bestCoupon.code }]
-        });
-        setShowAutoApplyPopup(true);
-        setHasShownAutoApply(true);
-      } else if (availableCoupons.length > 0) {
-        setHasShownAutoApply(true);
-      }
-    }
-  }, [availableCoupons, subtotal, appliedCoupon, hasShownAutoApply, userOrderCount])
 
   useEffect(() => {
     const audio = new Audio(zoopSound)
@@ -321,6 +265,62 @@ export default function Cart() {
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [loadingCoupons, setLoadingCoupons] = useState(false)
   const [userOrderCount, setUserOrderCount] = useState(0)
+
+  const [showAutoApplyPopup, setShowAutoApplyPopup] = useState(false)
+  const [autoApplyPopupData, setAutoApplyPopupData] = useState(null)
+  const [hasShownAutoApply, setHasShownAutoApply] = useState(false)
+
+  // Auto-apply best coupon logic
+  useEffect(() => {
+    if (!hasShownAutoApply && availableCoupons?.length > 0 && subtotal > 0 && !appliedCoupon) {
+      let bestCoupon = null;
+      let maxSavings = 0;
+
+      availableCoupons.forEach(coupon => {
+        // Basic eligibility
+        if (coupon.customerGroup === "new" && userOrderCount > 0) return;
+        if (subtotal < (Number(coupon.minOrder) || 0)) return;
+
+        let savings = 0;
+        let cshb = 0;
+
+        if (coupon.discountType === 'percentage' || coupon.discountType === 'PERCENTAGE') {
+           const raw = subtotal * (Number(coupon.discountValue) / 100);
+           savings = coupon.maxDiscountCap ? Math.min(raw, Number(coupon.maxDiscountCap)) : (coupon.maxDiscount ? Math.min(raw, Number(coupon.maxDiscount)) : raw);
+        } else if (coupon.discountValue > 0) {
+           savings = Math.min(subtotal, Number(coupon.discountValue));
+        }
+
+        if (coupon.cashbackType === 'PERCENTAGE') {
+           const raw = subtotal * (Number(coupon.cashbackValue) / 100);
+           cshb = raw;
+        } else if (coupon.cashbackValue > 0) {
+           cshb = Number(coupon.cashbackValue);
+        }
+
+        const totalBenefit = savings + cshb;
+        if (totalBenefit > maxSavings) {
+          maxSavings = totalBenefit;
+          bestCoupon = { ...coupon, savingsAmount: savings, cashbackAmount: cshb };
+        }
+      });
+
+      if (bestCoupon && maxSavings > 0) {
+        setAutoApplyPopupData({
+          savings: Math.floor(bestCoupon.savingsAmount || 0),
+          cashback: Math.floor(bestCoupon.cashbackAmount || 0),
+          isCombo: bestCoupon.savingsAmount > 0 && bestCoupon.cashbackAmount > 0,
+          isCashback: bestCoupon.cashbackAmount > 0 && bestCoupon.savingsAmount === 0,
+          codes: bestCoupon.code,
+          couponsToApply: [{ isGlobalCoupon: true, code: bestCoupon.code }]
+        });
+        setShowAutoApplyPopup(true);
+        setHasShownAutoApply(true);
+      } else if (availableCoupons.length > 0) {
+        setHasShownAutoApply(true);
+      }
+    }
+  }, [availableCoupons, subtotal, appliedCoupon, hasShownAutoApply, userOrderCount])
 
   // Auto-apply logic — runs whenever coupons finish loading or subtotal changes.
   // Only fires when: coupons are ready, subtotal > 0, and no coupon is already applied.
