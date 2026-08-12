@@ -1,4 +1,7 @@
 import mongoose from 'mongoose';
+import '../../../../core/admin/admin.model.js';
+import '../../orders/models/order.model.js';
+import '../../delivery/models/deliveryPartner.model.js';
 
 const auditLogSchema = new mongoose.Schema(
     {
@@ -7,7 +10,7 @@ const auditLogSchema = new mongoose.Schema(
             enum: ["ASSIGN_RIDER", "INCENTIVE_ADDED", "INCENTIVE_CANCELLED", "REASSIGNMENT", "ASSIGNMENT_EXPIRED"],
             required: true
         },
-        performedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin", required: true },
+        performedBy: { type: mongoose.Schema.Types.ObjectId, ref: "FoodAdmin", required: true },
         orderId: { type: mongoose.Schema.Types.ObjectId, ref: "FoodOrder", required: true },
         riderId: { type: mongoose.Schema.Types.ObjectId, ref: "FoodDeliveryPartner" },
         incentiveAmount: { type: Number, default: 0 },
