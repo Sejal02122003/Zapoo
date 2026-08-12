@@ -1996,8 +1996,8 @@ export default function Inventory() {
 
   return (
     <div className="min-h-screen bg-[#f3f5f8] flex flex-col">
-      {/* Navbar */}
-      <div className="sticky top-0 z-50 bg-white">
+      {/* Navbar (Mobile Only) */}
+      <div className="sticky top-0 z-50 bg-white md:hidden">
         <RestaurantNavbar
           showSearch={false}
           showOfflineOnlineTag={false}
@@ -2006,7 +2006,7 @@ export default function Inventory() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-[#f3f5f8] px-4 pt-4 pb-4">
+      <div className="bg-[#f3f5f8] max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4 pb-4">
         <div ref={tabBarRef} className="grid grid-cols-2 gap-3">
           <motion.button
             onClick={() => setActiveTab("all-items")}

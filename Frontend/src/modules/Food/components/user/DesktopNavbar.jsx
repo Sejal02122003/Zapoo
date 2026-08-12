@@ -241,21 +241,17 @@ export default function DesktopNavbar({ showLogo = true }) {
                             {/* Logo */}
                             {showLogo && (
                                 <Link to="/" className="flex items-center justify-center flex-shrink-0">
-                                    {logoUrl || companyName ? (
-                                        <img
-                                            src={logoUrl || quickSpicyLogo}
-                                            alt={companyName || "Company Logo"}
-                                            className="h-10 w-auto md:h-14 lg:h-16 object-contain"
-                                            onError={(e) => {
-                                                if (!e.target.dataset.failed) {
-                                                    e.target.dataset.failed = "true"
-                                                    e.target.src = quickSpicyLogo
-                                                }
-                                            }}
-                                        />
-                                    ) : (
-                                        <img src={quickSpicyLogo} alt={companyName || "Logo"} className="h-10 w-auto md:h-14 lg:h-16 object-contain" />
-                                    )}
+                                    <img
+                                        src={(logoUrl && logoUrl !== 'null' && logoUrl !== 'undefined') ? logoUrl : quickSpicyLogo}
+                                        alt={companyName || "Zapoo"}
+                                        className="h-10 w-auto md:h-12 lg:h-14 object-contain"
+                                        onError={(e) => {
+                                            if (!e.target.dataset.failed) {
+                                                e.target.dataset.failed = "true"
+                                                e.target.src = quickSpicyLogo
+                                            }
+                                        }}
+                                    />
                                 </Link>
                             )}
 

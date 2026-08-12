@@ -545,7 +545,7 @@ export default function Profile() {
         </Card>
 
         {/* Account Options */}
-        <div className="space-y-2 mb-3 mt-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 mt-3">
           <Link to="/user/wallet" className="block">
             <motion.div
               whileHover={{ x: 4, scale: 1.01 }}

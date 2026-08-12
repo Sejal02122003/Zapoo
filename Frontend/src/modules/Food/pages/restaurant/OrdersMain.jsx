@@ -2712,8 +2712,8 @@ export default function OrdersMain() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Restaurant Navbar - Sticky at top */}
-      <div className="sticky top-0 z-50 bg-white">
+      {/* Restaurant Navbar - Sticky at top (Mobile Only) */}
+      <div className="sticky top-0 z-50 bg-white md:hidden">
         <RestaurantNavbar showNotifications={true} />
       </div>
 

@@ -140,7 +140,7 @@ export default function Categories() {
       </div>
 
       {/* Grid */}
-      <div className="px-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {loading ? (
           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-x-4 gap-y-10">
             {[...Array(12)].map((_, i) => (

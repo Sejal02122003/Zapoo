@@ -113,15 +113,13 @@ function UserLayoutShell() {
     normalizedPath === ""
   )
 
-  const isUnder99 = normalizedPath === "/user/under99"
+  const isUnder99 = normalizedPath === "/user/under99" || normalizedPath === "/under99"
+  const hideDesktopNavbar = isOutOfService || normalizedPath.startsWith("/address-selector") || normalizedPath.startsWith("/user/address-selector")
 
   return (
     <>
-      <div className="hidden md:block">
-        {showBottomNav && <DesktopNavbar showLogo={!isUnder99} />}
-      </div>
       <LocationGuard>
-        <main className={showBottomNav ? "md:pt-40" : ""}>
+        <main>
           <Outlet />
         </main>
       </LocationGuard>

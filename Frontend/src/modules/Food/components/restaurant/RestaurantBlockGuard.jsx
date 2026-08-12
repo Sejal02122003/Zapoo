@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from "react-router-dom"
 import { restaurantAPI } from "@food/api"
 import { Loader2, ShieldX } from "lucide-react"
 import { clearModuleAuth } from "@food/utils/auth"
+import DesktopRestaurantNav from "./DesktopRestaurantNav"
 
 export default function RestaurantBlockGuard() {
   const [status, setStatus] = useState("loading")
@@ -85,5 +86,12 @@ export default function RestaurantBlockGuard() {
     )
   }
 
-  return <Outlet />
+  return (
+    <>
+      <DesktopRestaurantNav />
+      <div className="md:pt-28 min-h-screen">
+        <Outlet />
+      </div>
+    </>
+  )
 }

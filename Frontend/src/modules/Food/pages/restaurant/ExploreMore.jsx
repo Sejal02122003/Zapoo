@@ -905,7 +905,7 @@ export default function ExploreMore() {
       }}
       className="min-h-screen bg-white overflow-x-hidden pb-24"
     >
-      {/* Header */}
+      {/* Header (Mobile Only) */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -913,7 +913,7 @@ export default function ExploreMore() {
           duration: 0.25,
           ease: [0.25, 0.1, 0.25, 1]
         }}
-        className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-50"
+        className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-50 md:hidden"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
@@ -946,7 +946,7 @@ export default function ExploreMore() {
       </motion.div>
 
       {/* Main Content */}
-      <div className="px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Restaurant Information Card */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}

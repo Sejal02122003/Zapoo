@@ -741,57 +741,36 @@ Order again from this restaurant in the ${companyName} app.`
         <h1 className="ml-4 text-xl font-semibold text-gray-800 dark:text-gray-100">Your Orders</h1>
       </div>
 
-      {/* Search Bar */}
-      <div className="p-4 bg-white dark:bg-[#121212] mt-1 border-b dark:border-gray-800">
-        <div className="flex items-center bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 shadow-sm">
-          <Search className="w-5 h-5 text-primary" />
-          <input
-            type="text"
-            placeholder="Search by restaurant or dish"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 ml-3 bg-transparent outline-none text-gray-600 dark:text-gray-300 placeholder-gray-400"
-          />
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white dark:bg-[#121212] px-4 pt-3 flex gap-6 border-b dark:border-gray-800 sticky top-[60px] z-10 shadow-sm">
-        <button 
-          onClick={() => setActiveTab('today')}
-          className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'today' ? 'text-primary' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
-        >
-          Today's Orders
-          {activeTab === 'today' && (
-            <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-primary rounded-t-md" />
-          )}
-        </button>
-        <button 
-          onClick={() => setActiveTab('past')}
-          className={`pb-3 text-[15px] font-semibold transition-colors relative ${activeTab === 'past' ? 'text-primary' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
-        >
-          Order History
-          {activeTab === 'past' && (
-            <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-primary rounded-t-md" />
-          )}
-        </button>
-      </div>
-
-      {/* Orders List */}
-      <div className="px-4 py-2 space-y-4">
-        {filteredOrders.length === 0 ? (
-          <div className="bg-white dark:bg-[#121212] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 text-center">
-            <p className="text-gray-600 dark:text-gray-400">No orders found matching your search</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
+        {/* Search Bar */}
+        <div className="p-4 bg-white dark:bg-[#121212] border dark:border-gray-800 rounded-2xl shadow-sm">
+          <div className="flex items-center bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 shadow-sm">
+            <Search className="w-5 h-5 text-primary" />
+            <input
+              type="text"
+              placeholder="Search by restaurant or dish"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 ml-3 bg-transparent outline-none text-gray-600 dark:text-gray-300 placeholder-gray-400"
+            />
           </div>
-        ) : (
-          filteredOrders.map((order) => {
-            // Check payment method - COD/wallet orders have 'pending' status which is normal
-            const isCodOrWallet = order.payment?.method === 'cash' ||
-              order.payment?.method === 'cod' ||
-              order.payment?.method === 'wallet' ||
-              order.paymentMethod === 'cash' ||
-              order.paymentMethod === 'cod' ||
-              order.paymentMethod === 'wallet'
+        </div>
+
+        {/* Orders List */}
+        <div>
+          {filteredOrders.length === 0 ? (
+            <div className="bg-white dark:bg-[#121212] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 text-center">
+              <p className="text-gray-600 dark:text-gray-400">No orders found matching your search</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredOrders.map((order) => {
+                const isCodOrWallet = order.payment?.method === 'cash' ||
+                  order.payment?.method === 'cod' ||
+                  order.payment?.method === 'wallet' ||
+                  order.paymentMethod === 'cash' ||
+                  order.paymentMethod === 'cod' ||
+                  order.paymentMethod === 'wallet'
 
             // Payment failed only for online payments (razorpay) that actually failed
             // Don't show payment failed for COD/wallet or cancelled orders
@@ -1137,8 +1116,10 @@ Order again from this restaurant in the ${companyName} app.`
                 </div>
               </div>
             )
-          })
-        )}
+          })}
+            </div>
+          )}
+        </div>
       </div>
 
        {/* Footer Branding */}

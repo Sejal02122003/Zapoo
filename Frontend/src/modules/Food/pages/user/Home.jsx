@@ -2299,9 +2299,9 @@ export default function Home() {
           `}</style>
         </div>
 
-        <div className="md:hidden relative overflow-x-clip bg-white dark:bg-[#0a0a0a]">
+        <div className="relative overflow-x-clip bg-white dark:bg-[#0a0a0a]">
           {/* Unified Top Section with Banner Background */}
-          <div className="relative z-40 w-full rounded-b-[3rem] shadow-2xl bg-gradient-to-b from-slate-800 to-slate-600 transition-all duration-300 overflow-hidden">
+          <div className="relative z-40 w-full max-w-7xl mx-auto rounded-b-[2.5rem] md:my-4 md:rounded-3xl shadow-2xl bg-gradient-to-b from-slate-800 to-slate-600 transition-all duration-300 overflow-hidden">
             {/* Background Effects Container */}
             <div className="absolute inset-0 pointer-events-none z-0">
               {homeHeroBannerText?.backgroundMedia?.url ? (
@@ -2448,7 +2448,7 @@ export default function Home() {
                   <div ref={categoryAnchorRef} className="h-0 w-full" />
                   <div
                     id="categories-section"
-                    className={`sticky top-[60px] z-[50] w-full transition-all duration-300 ${isCategoryStuck ? "bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.05)] pb-2 pt-2 border-b border-white/50 dark:border-white/10 px-4" : "bg-transparent px-4 py-2.5"} space-y-3`}
+                    className={`sticky top-[60px] z-[50] w-full max-w-7xl mx-auto transition-all duration-300 ${isCategoryStuck ? "bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.05)] pb-2 pt-2 border-b border-white/50 dark:border-white/10 px-4 sm:px-6 lg:px-8" : "bg-transparent px-4 sm:px-6 lg:px-8 py-2.5"} space-y-3`}
                   >
                     <div className={`flex items-center gap-2 min-w-0 mb-2 sm:mb-3 mt-5 relative z-30 ${isCategoryStuck ? 'hidden' : ''}`}>
                       <h2 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white min-w-0 flex-shrink leading-tight tracking-tight">What's on your mind today?</h2>
@@ -2459,7 +2459,7 @@ export default function Home() {
                     </div>
 
                     {/* Categories Horizontal Slider */}
-                    <div className="flex overflow-x-auto gap-1.5 pb-2 pt-2 mt-2 scrollbar-hide -mx-4 px-4 mask-edge-fade">
+                    <div className="flex overflow-x-auto gap-2 sm:gap-4 lg:gap-6 pb-2 pt-2 mt-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 mask-edge-fade">
                       {/* Meals Under 99 Explore Card */}
                       <Link
                         to="/food/user/under99"
@@ -2552,7 +2552,7 @@ export default function Home() {
                   </AnimatePresence>
 
                   {/* Filters Header (No longer sticky) */}
-                  <section className="bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md relative z-[30] -mx-4 w-[calc(100%+2rem)] border-b border-gray-100 dark:border-white/5 shadow-sm transition-colors duration-300 flex flex-col">
+                  <section className="bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md relative z-[30] max-w-7xl mx-auto w-full border-b border-gray-100 dark:border-white/5 shadow-sm transition-colors duration-300 flex flex-col px-4 sm:px-6 lg:px-8 my-2">
                     <div
                       className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-4 py-2.5"
                       style={{
@@ -2619,14 +2619,14 @@ export default function Home() {
 
                   {recommendedForYouRestaurants.length > 0 && (
                     <motion.section
-                      className="content-auto pt-1 sm:pt-2"
+                      className="content-auto max-w-7xl mx-auto w-full pt-1 sm:pt-2 px-4 sm:px-6 lg:px-8"
                       initial={false}
                       animate={{ opacity: 1, y: 0 }}>
-                      <h2 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-2 sm:mb-3 px-4">
+                      <h2 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-2 sm:mb-3">
                         Recommended For You
                       </h2>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                         {recommendedForYouRestaurants.map((restaurant, index) => {
                           const restaurantSlug =
                             restaurant.slug ||
@@ -2743,7 +2743,7 @@ export default function Home() {
 
                   {/* Restaurants - Enhanced with Animations */}
                   <section
-                    className="content-auto space-y-0 pt-3 sm:pt-4 lg:pt-6 pb-8 md:pb-10"
+                    className="content-auto space-y-0 max-w-7xl mx-auto w-full pt-3 sm:pt-4 lg:pt-6 pb-8 md:pb-10 px-4 sm:px-6 lg:px-8"
                   >
                     {!shouldShowOutOfZoneHome && (
                       <div className="px-4 mb-3 lg:mb-4">

@@ -755,7 +755,7 @@ export default function HubFinance() {
       </div>
 
       {/* Primary Navigation Tabs */}
-      <div className="px-4 py-3">
+      <div className="px-4 py-3 max-w-7xl mx-auto w-full">
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab("payouts")}
@@ -781,7 +781,7 @@ export default function HubFinance() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 pt-6 pb-28">
+      <div className="flex-1 overflow-y-auto px-4 pt-6 pb-28 max-w-7xl mx-auto w-full">
         {activeTab === "payouts" && (
           <div className="space-y-6">
             {/* Current cycle */}
