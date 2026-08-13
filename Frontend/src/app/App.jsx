@@ -8,6 +8,9 @@ function App() {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.toLowerCase()
       if (
+        path === '/' ||
+        path === '' ||
+        path === '/index.html' ||
         path.includes('/terms') ||
         path.includes('/privacy') ||
         path.includes('/support') ||
