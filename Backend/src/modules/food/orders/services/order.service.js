@@ -36,7 +36,7 @@ import * as dispatchService from './order-dispatch.service.js';
 import * as deliveryService from './order-delivery.service.js';
 import * as paymentService from './order-payment.service.js';
 import { redeemCouponAtomic } from '../../admin/services/coupon.service.js';
-import { evaluateCashbackRule, createPendingCashbackLedger } from '../../admin/services/cashback.service.js';
+import { evaluateCashbackRule, createPendingCashbackLedger, creditPendingCashbackForOrder } from '../../admin/services/cashback.service.js';
 import { Coupon } from '../../admin/models/coupon.model.js';
 import {
   enqueueOrderEvent,
@@ -1755,8 +1755,15 @@ export async function updateOrderStatusRestaurant(
         to: orderStatus
     });
 
-    if (orderStatus === 'completed' && order.orderType === 'takeaway') {
-        appEvents.emit(EVENTS.ORDER_COMPLETED, order);
+    if (orderStatus === 'completed' || orderStatus === 'delivered') {
+        if (order.orderType === 'takeaway') {
+            appEvents.emit(EVENTS.ORDER_COMPLETED, order);
+        }
+        try {
+            await creditPendingCashbackForOrder(order._id);
+        } catch (cbErr) {
+            logger.error(`[CASHBACK] Error crediting pending cashback in updateOrderStatusRestaurant: ${cbErr?.message}`);
+        }
     }
 
     // ✅ NEW: Automated Razorpay Refund on Restaurant Cancel
@@ -2294,6 +2301,11 @@ export async function updateOrderStatusAdmin(orderId, adminId, orderStatus, note
 
   if (orderStatus === 'completed' || orderStatus === 'delivered') {
       appEvents.emit(EVENTS.ORDER_COMPLETED, order);
+      try {
+          await creditPendingCashbackForOrder(order._id);
+      } catch (cbErr) {
+          logger.error(`[CASHBACK] Error crediting pending cashback in updateOrderStatusAdmin: ${cbErr?.message}`);
+      }
   }
 
   return normalizeOrderForClient(order);
