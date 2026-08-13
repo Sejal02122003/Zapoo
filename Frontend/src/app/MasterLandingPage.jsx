@@ -75,8 +75,12 @@ export default function MasterLandingPage() {
       });
   }, []);
 
+  const playStoreUrl = landingSettings?.appLinks?.playStore || PLAY_STORE_URL;
+  const restaurantPartnerUrl = landingSettings?.appLinks?.restaurantPartner || "https://share.google/LGq4J5ulU5bTmzVqD";
+  const deliveryPartnerUrl = landingSettings?.appLinks?.deliveryPartner || "https://play.google.com/store/apps/details?id=com.zapoo.delivery1&hl=en";
+
   const openAppStore = () => {
-    window.open(PLAY_STORE_URL, '_blank');
+    window.open(playStoreUrl, '_blank');
   };
 
   const scrollToDownloadApp = openAppStore;
@@ -139,12 +143,16 @@ export default function MasterLandingPage() {
             </div>
             
             <h1 className="text-5xl sm:text-6xl lg:text-[4.8rem] font-black leading-[0.95] tracking-tight mb-6">
-              GOOD FOOD,<br />
-              <span className="text-[#E23744]">JUST A TAP AWAY.</span>
+              {landingSettings?.heroHeading || (
+                <>
+                  GOOD FOOD,<br />
+                  <span className="text-[#E23744]">JUST A TAP AWAY.</span>
+                </>
+              )}
             </h1>
             
             <p className="text-gray-400 text-lg md:text-xl font-medium max-w-xl leading-relaxed mb-8">
-              Discover the best food around you, order your favourites for delivery, or order ahead for a quick and easy pickup.
+              {landingSettings?.heroSubheading || "Discover the best food around you, order your favourites for delivery, or order ahead for a quick and easy pickup."}
             </p>
 
             {/* Hero CTAs */}
@@ -837,9 +845,9 @@ export default function MasterLandingPage() {
             <div>
               <h4 className="text-xs font-extrabold text-gray-900 uppercase tracking-widest mb-4">PARTNERS</h4>
               <ul className="space-y-2.5 text-sm font-semibold text-gray-600">
-                <li><a href="https://share.google/LGq4J5ulU5bTmzVqD" target="_blank" rel="noopener noreferrer" className="hover:text-[#E23744] transition-colors cursor-pointer">Partner With Us</a></li>
-                <li><a href="https://share.google/LGq4J5ulU5bTmzVqD" target="_blank" rel="noopener noreferrer" className="hover:text-[#E23744] transition-colors cursor-pointer">Restaurant Login</a></li>
-                <li><a href="https://play.google.com/store/apps/details?id=com.zapoo.delivery1&hl=en" target="_blank" rel="noopener noreferrer" className="hover:text-[#E23744] transition-colors cursor-pointer">Delivery Partner</a></li>
+                <li><a href={restaurantPartnerUrl} target="_blank" rel="noopener noreferrer" className="hover:text-[#E23744] transition-colors cursor-pointer">Partner With Us</a></li>
+                <li><a href={restaurantPartnerUrl} target="_blank" rel="noopener noreferrer" className="hover:text-[#E23744] transition-colors cursor-pointer">Restaurant Login</a></li>
+                <li><a href={deliveryPartnerUrl} target="_blank" rel="noopener noreferrer" className="hover:text-[#E23744] transition-colors cursor-pointer">Delivery Partner</a></li>
                 <li><a href="/contact-us" className="hover:text-[#E23744] transition-colors cursor-pointer">Business Solutions</a></li>
               </ul>
             </div>

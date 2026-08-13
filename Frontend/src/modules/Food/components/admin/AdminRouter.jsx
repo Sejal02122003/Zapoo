@@ -342,6 +342,8 @@ export default function AdminRouter() {
             <Route path="clean-database" element={<CleanDatabase />} />
             <Route path="addon-activation" element={<AddonActivation />} />
             <Route path="hero-banner-management" element={<LandingPageManagement />} />
+            <Route path="landing-page" element={<LandingPageManagement />} />
+            <Route path="system/landing-page" element={<LandingPageManagement />} />
             <Route path="app-intro-ads" element={<AppIntroAds />} />
             <Route path="dining-management" element={<DiningManagement />} />
             <Route path="dining-list" element={<DiningList />} />

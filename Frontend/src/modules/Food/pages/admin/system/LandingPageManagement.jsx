@@ -2682,6 +2682,17 @@ export default function LandingPageManagement() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <Label>Hero Headline</Label>
+                  <Input value={settings.heroHeading || ''} onChange={(e) => setSettings({...settings, heroHeading: e.target.value})} placeholder="GOOD FOOD, JUST A TAP AWAY." />
+                </div>
+                <div>
+                  <Label>Hero Subheading</Label>
+                  <Input value={settings.heroSubheading || ''} onChange={(e) => setSettings({...settings, heroSubheading: e.target.value})} placeholder="Discover the best food around you..." />
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div>
                   <Label>Restaurants Stat</Label>
@@ -2699,12 +2710,16 @@ export default function LandingPageManagement() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <Label>Play Store Link</Label>
+                  <Label>Customer Play Store Link</Label>
                   <Input value={settings.appLinks?.playStore || ''} onChange={(e) => setSettings({...settings, appLinks: {...settings.appLinks, playStore: e.target.value}})} placeholder="https://play.google.com/..." />
                 </div>
                 <div>
-                  <Label>App Store Link</Label>
-                  <Input value={settings.appLinks?.appStore || ''} onChange={(e) => setSettings({...settings, appLinks: {...settings.appLinks, appStore: e.target.value}})} placeholder="https://apps.apple.com/..." />
+                  <Label>Restaurant Partner Link</Label>
+                  <Input value={settings.appLinks?.restaurantPartner || ''} onChange={(e) => setSettings({...settings, appLinks: {...settings.appLinks, restaurantPartner: e.target.value}})} placeholder="https://share.google/..." />
+                </div>
+                <div>
+                  <Label>Delivery Partner App Link</Label>
+                  <Input value={settings.appLinks?.deliveryPartner || ''} onChange={(e) => setSettings({...settings, appLinks: {...settings.appLinks, deliveryPartner: e.target.value}})} placeholder="https://play.google.com/store/apps/details?id=com.zapoo.delivery1..." />
                 </div>
               </div>
 
