@@ -1732,7 +1732,7 @@ export default function Cart() {
     }
 
     const ranges = Array.isArray(feeSettings?.deliveryFeeRanges) ? [...feeSettings.deliveryFeeRanges] : []
-    if (ranges.length > 0 && Number.isFinite(orderDistanceKm)) {
+    if (orderType === 'delivery' && ranges.length > 0 && Number.isFinite(orderDistanceKm)) {
       const sortedRanges = ranges.sort((a, b) => Number(a.min) - Number(b.min))
       let isWithinDeliveryRange = false
       for (let i = 0; i < sortedRanges.length; i += 1) {
@@ -1997,7 +1997,7 @@ export default function Cart() {
 
       const orderPayload = {
         items: orderItems,
-        address: {
+        address: orderType === 'takeaway' ? undefined : {
           ...defaultAddress,
           phone: recipientPhone || defaultAddress?.phone || "",
           name: recipientName,

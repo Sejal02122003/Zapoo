@@ -205,6 +205,7 @@ export async function tryAutoAssign(orderId, options = {}) {
   const order = await FoodOrder.findOneAndUpdate(
     {
       _id: new mongoose.Types.ObjectId(orderId),
+      orderType: 'delivery',
       orderStatus: { $in: Array.from(dispatchableStatuses) },
       $or: [
         { 'dispatch.status': 'unassigned' },
@@ -476,6 +477,7 @@ export async function resendDeliveryNotificationRestaurant(orderId, restaurantId
   });
 
   if (!order) throw new NotFoundError('Order not found');
+  if (order.orderType === 'takeaway') throw new ValidationError('Cannot dispatch delivery for takeaway orders');
 
   const activeStatuses = ['confirmed', 'preparing', 'ready_for_pickup', 'ready'];
   if (!activeStatuses.includes(order.orderStatus)) {

@@ -85,7 +85,7 @@ export default function Checkout() {
           quantity: item.quantity,
           image: item.image
         })),
-        address: orderType === 'takeaway' ? null : selectedAddress,
+        address: orderType === 'takeaway' ? undefined : selectedAddress,
         orderType,
         paymentMethod: defaultPayment,
         subtotal,

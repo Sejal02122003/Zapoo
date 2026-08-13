@@ -664,7 +664,7 @@ export async function verifyPayment(userId, dto) {
     "ready",
     "picked_up",
   ];
-  if (settings.dispatchMode === "auto" && dispatchableStatuses.includes(order.orderStatus)) {
+  if (order.orderType === 'delivery' && settings.dispatchMode === "auto" && dispatchableStatuses.includes(order.orderStatus)) {
     try {
       await tryAutoAssign(order._id);
     } catch {}
@@ -1693,6 +1693,7 @@ export async function updateOrderStatusRestaurant(
     if (io) {
       // On accept (confirmed or preparing) -> request delivery partners via central logic
       if (
+        order.orderType === 'delivery' &&
         (String(orderStatus) === "preparing" || String(orderStatus) === "confirmed") && 
         (String(from) !== "preparing" && String(from) !== "confirmed")
       ) {
