@@ -1,11 +1,17 @@
 import { FoodLandingSettings } from '../models/landingSettings.model.js';
 
 export const getLandingSettings = async () => {
-    let doc = await FoodLandingSettings.findOne().lean();
+    let doc = await FoodLandingSettings.findOne();
     if (!doc) {
-        doc = (await FoodLandingSettings.create({})).toObject();
+        doc = await FoodLandingSettings.create({});
     }
-    return doc;
+    const legacyUrl = 'com.indian.bite.user';
+    if (!doc.appLinks?.playStore || doc.appLinks.playStore.includes(legacyUrl)) {
+        doc.appLinks = doc.appLinks || {};
+        doc.appLinks.playStore = 'https://play.google.com/store/search?q=zapoo&c=apps&hl=en_IN';
+        await doc.save();
+    }
+    return doc.toObject();
 };
 
 export const updateLandingSettings = async (payload) => {

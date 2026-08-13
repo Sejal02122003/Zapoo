@@ -67,7 +67,7 @@ const foodLandingSettingsSchema = new mongoose.Schema(
             orders: { type: String, default: '3 billion+' }
         },
         appLinks: {
-            playStore: { type: String, default: 'https://play.google.com/store/search?q=zapoo&c=apps&hl=en' },
+            playStore: { type: String, default: 'https://play.google.com/store/search?q=zapoo&c=apps&hl=en_IN' },
             appStore: { type: String, default: '' },
             restaurantPartner: { type: String, default: 'https://share.google/LGq4J5ulU5bTmzVqD' },
             deliveryPartner: { type: String, default: 'https://play.google.com/store/apps/details?id=com.zapoo.delivery1&hl=en' }

@@ -47,12 +47,13 @@ const ABOUT_IMG_1 = "https://images.unsplash.com/photo-1514933651103-005eec06c04
 const ABOUT_IMG_2 = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=75&w=600&auto=format&fit=crop";
 const APP_MOCKUP = "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=75&w=500&auto=format&fit=crop";
 
-const PLAY_STORE_URL = "https://play.google.com/store/search?q=zapoo&c=apps&hl=en";
+const PLAY_STORE_URL = "https://play.google.com/store/search?q=zapoo&c=apps&hl=en_IN";
 
 export default function MasterLandingPage() {
   const navigate = useNavigate();
   const [landingSettings, setLandingSettings] = useState(null);
   const [currentFoodIndex, setCurrentFoodIndex] = useState(0);
+  const [showIosComingSoon, setShowIosComingSoon] = useState(false);
 
   // Auto-rotate Hero Food Images every 4 seconds
   useEffect(() => {
@@ -81,6 +82,15 @@ export default function MasterLandingPage() {
 
   const openAppStore = () => {
     window.open(playStoreUrl, '_blank');
+  };
+
+  const handleIosAppClick = () => {
+    const iosUrl = landingSettings?.appLinks?.appStore;
+    if (iosUrl && typeof iosUrl === 'string' && iosUrl.startsWith('http')) {
+      window.open(iosUrl, '_blank');
+    } else {
+      setShowIosComingSoon(true);
+    }
   };
 
   const scrollToDownloadApp = openAppStore;
@@ -532,8 +542,8 @@ export default function MasterLandingPage() {
 
             <div className="flex flex-wrap gap-4">
               <button 
-                onClick={() => window.open(landingSettings?.appLinks?.appStore || '#', '_blank')}
-                className="flex items-center gap-3 bg-[#1a1a1a] text-white px-6 py-3 rounded-xl hover:bg-black transition-colors shadow-lg"
+                onClick={handleIosAppClick}
+                className="flex items-center gap-3 bg-[#1a1a1a] text-white px-6 py-3 rounded-xl hover:bg-black transition-colors shadow-lg cursor-pointer"
               >
                 <Apple className="w-5 h-5 fill-current" />
                 <div className="text-left">
@@ -884,8 +894,8 @@ export default function MasterLandingPage() {
                 </div>
               </button>
               <button 
-                onClick={() => window.open(landingSettings?.appLinks?.appStore || '#', '_blank')}
-                className="flex items-center gap-2.5 bg-black text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors shadow-md"
+                onClick={handleIosAppClick}
+                className="flex items-center gap-2.5 bg-black text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors shadow-md cursor-pointer"
               >
                 <Apple className="w-4 h-4 fill-current text-white" />
                 <div className="text-left">
@@ -906,6 +916,53 @@ export default function MasterLandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* --- iOS APP COMING SOON MODAL --- */}
+      <AnimatePresence>
+        {showIosComingSoon && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+            onClick={() => setShowIosComingSoon(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#141414] border border-white/10 text-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center space-y-4 shadow-2xl relative"
+            >
+              <button 
+                onClick={() => setShowIosComingSoon(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors"
+              >
+                ✕
+              </button>
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#E23744]/20 via-[#E23744]/10 to-transparent border border-[#E23744]/30 text-white flex items-center justify-center mx-auto text-3xl shadow-inner">
+                🍏
+              </div>
+              <h3 className="text-xl font-extrabold tracking-tight text-white">iOS App Coming Soon!</h3>
+              <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                Our Apple iOS app is currently under review for the App Store. You can download and enjoy our Android app from Google Play today!
+              </p>
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    setShowIosComingSoon(false);
+                    window.open(playStoreUrl, '_blank');
+                  }}
+                  className="w-full bg-[#E23744] hover:bg-[#c92f3b] text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-[#E23744]/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Play className="w-4 h-4 fill-current text-white" />
+                  <span>GET ANDROID APP (PLAY STORE)</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

@@ -65,18 +65,11 @@ function resolveNativeInitialRoute() {
   return '/'
 }
 
-function bootstrapNativeHashRoute() {
-  if (!isNativeLikeShell() || typeof window === 'undefined') return
-
-  const currentHash = String(window.location?.hash || '')
-  if (currentHash.startsWith('#/')) return
-
-  const targetPath = resolveNativeInitialRoute()
-  const search = String(window.location?.search || '')
-  window.history.replaceState(null, '', `#${targetPath}${search}`)
+if (typeof window !== 'undefined') {
+  if (window.location.hash === '#' || window.location.hash === '#/') {
+    window.history.replaceState(null, '', (window.location.pathname || '/') + (window.location.search || ''))
+  }
 }
-
-bootstrapNativeHashRoute()
 
 // ─── Suppress known non-critical errors ──────────────────────────────────────
 
