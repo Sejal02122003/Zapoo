@@ -36,10 +36,10 @@ export default function Refund() {
   }
 
   const handleBack = () => {
-    if (window.history.length > 2) {
-      goBack()
+    if (window.history.state?.idx > 0) {
+      navigate(-1)
     } else {
-      navigate('/food/user')
+      navigate('/')
     }
   }
 

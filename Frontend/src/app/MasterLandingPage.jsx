@@ -1,593 +1,904 @@
-import React, { useState, useEffect } from "react"
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
-import { useNavigate } from "react-router-dom"
-import api from "@food/api"
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import api from "@food/api";
 import {
-  UtensilsCrossed,
   MapPin,
-  Heart,
   Star,
-  ChevronDown,
   Apple,
   Play,
   ShoppingBag,
   Clock,
   Zap,
-  Activity,
-  ShieldCheck,
-  User,
-  Ticket,
-  Award,
   ArrowRight,
   Instagram,
   Twitter,
   Facebook,
   Linkedin,
-  Youtube
-} from "lucide-react"
+  Youtube,
+  UtensilsCrossed,
+  CheckCircle2,
+  ChevronRight,
+  ShieldCheck,
+  Award,
+  Sparkles,
+  Percent,
+  Truck,
+  Car,
+  Tag,
+  Compass,
+  Layers,
+  HeartHandshake,
+  Smartphone,
+  Check
+} from "lucide-react";
 
-// --- Components for Floating Elements ---
-const FloatingFood = ({ src, className, delay = 0, yOffset = 20 }) => (
-  <motion.img
-    src={src}
-    initial={{ opacity: 0, scale: 0.8 }}
-    whileInView={{ opacity: 1, scale: 1 }}
-    viewport={{ once: true }}
-    animate={{ y: [0, yOffset, 0] }}
-    transition={{
-      duration: 6,
-      repeat: Infinity,
-      ease: "easeInOut",
-      delay: delay
-    }}
-    className={`absolute pointer-events-none drop-shadow-2xl z-10 ${className}`}
-  />
-)
+// Asset Constants - Optimized Image URLs (WebP/Auto-format + Compressed Quality)
+const HERO_BG = "https://images.unsplash.com/photo-1449844908441-8829872d2607?q=70&w=1200&auto=format&fit=crop";
 
-const FeatureBadge = ({ icon, text, className, delay = 0, yOffset = 15 }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.8 }}
-    whileInView={{ opacity: 1, scale: 1 }}
-    viewport={{ once: false, amount: 0.2 }}
-    animate={{ y: [0, yOffset, 0] }}
-    transition={{
-      duration: 5,
-      repeat: Infinity,
-      ease: "easeInOut",
-      delay: delay
-    }}
-    className={`absolute bg-white/90 backdrop-blur-xl rounded-[28px] p-4 shadow-[0_20px_40px_rgba(226,55,68,0.12)] flex flex-col items-center justify-center gap-3 border border-white z-20 hover:scale-110 transition-transform ${className}`}
-  >
-    <div className="w-14 h-14 bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl flex items-center justify-center shadow-inner border border-red-100/50">
-      <img src={icon} alt={text} className="w-8 h-8 object-contain drop-shadow-sm" onError={(e) => e.target.style.display = 'none'} />
-    </div>
-    <span className="text-sm font-bold text-gray-800 text-center leading-tight tracking-tight">{text}</span>
-  </motion.div>
-)
+const HERO_FOOD_IMAGES = [
+  "https://images.unsplash.com/photo-1552611052-33e04de081de?q=75&w=700&auto=format&fit=crop", // Spicy Ramen Bowl
+  "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=75&w=700&auto=format&fit=crop", // Gourmet Cheeseburger
+  "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=75&w=700&auto=format&fit=crop", // Loaded Cheesy Pizza
+  "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=75&w=700&auto=format&fit=crop"  // Fresh Salmon Sushi
+];
 
-const FeatureRow = ({ title, desc, Icon, delay = 0 }) => (
-  <motion.div
-    initial={{ opacity: 0, x: -30 }}
-    whileInView={{ opacity: 1, x: 0 }}
-    viewport={{ once: false, amount: 0.2 }}
-    transition={{ delay, duration: 0.5 }}
-    className="flex gap-5 items-start bg-white/50 backdrop-blur-sm p-4 rounded-3xl hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-red-50 hover:shadow-xl"
-  >
-    <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-red-100">
-      <Icon className="w-7 h-7" />
-    </div>
-    <div>
-      <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-500 font-medium leading-relaxed">{desc}</p>
-    </div>
-  </motion.div>
-)
+const ABOUT_IMG_1 = "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=75&w=800&auto=format&fit=crop";
+const ABOUT_IMG_2 = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=75&w=600&auto=format&fit=crop";
+const APP_MOCKUP = "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=75&w=500&auto=format&fit=crop";
 
-const FeatureRowRight = ({ title, desc, Icon, delay = 0 }) => (
-  <motion.div
-    initial={{ opacity: 0, x: 30 }}
-    whileInView={{ opacity: 1, x: 0 }}
-    viewport={{ once: false, amount: 0.2 }}
-    transition={{ delay, duration: 0.5 }}
-    className="flex gap-5 items-start md:flex-row-reverse md:text-right bg-white/50 backdrop-blur-sm p-4 rounded-3xl hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-red-50 hover:shadow-xl"
-  >
-    <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-red-100">
-      <Icon className="w-7 h-7" />
-    </div>
-    <div>
-      <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-500 font-medium leading-relaxed">{desc}</p>
-    </div>
-  </motion.div>
-)
-
-
-const SLIDES = [
-  {
-    id: 1,
-    image: "https://imgs.search.brave.com/kIcb6MhCPlZRyadtSs3RA8YRS0_gVuwmXaadnDR50qk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pbWcu/bWFnbmlmaWMuY29t/L3ByZW1pdW0tcGhv/dG8vY2hlZi1zZXJ2/aW5nLWRpc2gtc3Rl/YW1lZC1mb29kLXdp/dGgtZm9ya18xMzUz/MjQ0LTIyMzkxLmpw/Zz9zZW10PWFpc19o/eWJyaWQmdz03NDAm/cT04MA",
-    title: "Zapoo",
-    subtitle: "Giving you the best service and all"
-  },
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1534080564583-6be75777b70a?q=80&w=2070&auto=format&fit=crop",
-    title: "Elegant Interior and Design",
-    subtitle: "High-class Professional Service"
-  },
-  {
-    id: 3,
-    image: "https://imgs.search.brave.com/2bZ2bQHFZyIX3VGaUH-pJljecOdn0jb37I7zQZhhFv0/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvODg4/OTk0OTYyL3Bob3Rv/L2Nsb3NlLXVwLW9m/LWZhc3QtZm9vZC1v/bi10YWJsZS5qcGc_/cz02MTJ4NjEyJnc9/MCZrPTIwJmM9dGt5/c0daOFl1VURtNWkt/VTgzWWtqaUc2V2lR/TFRpWmEyZlVsc1JT/VnVhaz0",
-    title: "Tradition & Passion",
-    subtitle: "Only the best ingredients for our dishes"
-  }
-]
+const PLAY_STORE_URL = "https://play.google.com/store/search?q=zapoo&c=apps&hl=en";
 
 export default function MasterLandingPage() {
-  const navigate = useNavigate()
-  const { scrollYProgress } = useScroll()
-  const yHero = useTransform(scrollYProgress, [0, 1], ["0%", "40%"])
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [landingSettings, setLandingSettings] = useState(null)
+  const navigate = useNavigate();
+  const [landingSettings, setLandingSettings] = useState(null);
+  const [currentFoodIndex, setCurrentFoodIndex] = useState(0);
 
-  const activeSlides = landingSettings?.heroSlides?.length > 0 ? landingSettings.heroSlides : SLIDES;
-
+  // Auto-rotate Hero Food Images every 4 seconds
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % activeSlides.length)
-    }, 5000)
-    return () => clearInterval(timer)
-  }, [activeSlides.length])
+      setCurrentFoodIndex((prev) => (prev + 1) % HERO_FOOD_IMAGES.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
 
+  // Fetch Public Landing Settings from Backend
   useEffect(() => {
-    api.get('/food/landing/settings/public').then(res => {
-      if (res.data?.success) {
-        setLandingSettings(res.data.data)
-      }
-    }).catch(err => console.error("Failed to load landing settings", err))
-  }, [])
+    api.get("/food/landing/settings/public")
+      .then((res) => {
+        if (res.data?.success) {
+          setLandingSettings(res.data.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load Zapoo landing settings", err);
+      });
+  }, []);
 
-  // Colors
-  const zRed = "#E23744"
-  const zBlack = "#1C1C1C"
+  const openAppStore = () => {
+    window.open(PLAY_STORE_URL, '_blank');
+  };
+
+  const scrollToDownloadApp = openAppStore;
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-red-500/30 overflow-x-hidden relative">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
-        .font-cursive {
-          font-family: 'Great Vibes', cursive;
-        }
-      `}</style>
-
-      {/* 1. HERO SECTION (SLIDER) */}
-      <section className="relative h-screen w-full flex items-center justify-center overflow-hidden bg-[#0a0a0a]">
-
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentSlide}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
-            className="absolute inset-0 z-0"
-          >
-            <div className="absolute inset-0 bg-black/60 z-10" />
-            {activeSlides[currentSlide]?.type === 'video' ? (
-              <video
-                src={activeSlides[currentSlide]?.image || activeSlides[currentSlide]?.url}
-                autoPlay
-                loop
-                muted
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <img
-                src={activeSlides[currentSlide]?.image || activeSlides[currentSlide]?.url}
-                alt="Hero Background"
-                className="w-full h-full object-cover"
-              />
-            )}
-
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
-              <motion.h1
-                initial={{ y: -60, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
-                className="text-[60px] md:text-[90px] text-white mb-4 font-cursive tracking-wider"
-                style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
-              >
-                {activeSlides[currentSlide]?.title}
-              </motion.h1>
-
-              <motion.p
-                initial={{ y: 60, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
-                className="text-lg md:text-2xl text-gray-200 font-medium tracking-wide"
-                style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.8)' }}
-              >
-                {activeSlides[currentSlide]?.subtitle}
-              </motion.p>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Slide Indicators */}
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 flex gap-3">
-          {activeSlides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`w-3 h-3 rounded-full border border-white transition-all duration-300 ${index === currentSlide ? 'bg-orange-400 border-orange-400' : 'bg-transparent hover:bg-white/50'
-                }`}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* 2. BETTER FOOD FOR BETTER PEOPLE */}
-      <section className="relative py-32 bg-white overflow-hidden flex flex-col items-center">
-        {/* Thin swirly background lines */}
-        <div className="absolute inset-0 pointer-events-none opacity-20">
-          <svg viewBox="0 0 1000 1000" className="w-full h-full text-red-500 fill-transparent stroke-current" strokeWidth="1">
-            <path d="M-100,500 C200,800 300,100 600,400 C900,700 1000,200 1200,500" />
-            <path d="M-100,200 C300,-100 400,900 800,600 C1100,300 1200,800 1200,500" />
-          </svg>
-        </div>
-
-        {/* Floating food items (Flaticon transparent PNGs) */}
-        <FloatingFood src="https://cdn-icons-png.flaticon.com/512/3075/3075977.png" className="w-48 md:w-64 -left-10 md:left-20 top-40" delay={0} yOffset={15} />
-        <FloatingFood src="https://cdn-icons-png.flaticon.com/512/5029/5029280.png" className="w-40 md:w-56 right-10 top-20" delay={1} yOffset={-20} />
-        <FloatingFood src="https://cdn-icons-png.flaticon.com/512/3132/3132693.png" className="w-44 md:w-60 right-20 bottom-40" delay={0.5} yOffset={25} />
-
-        {/* Tomato & Mint floating */}
-        <FloatingFood src="https://cdn-icons-png.flaticon.com/512/1202/1202125.png" className="w-12 h-12 left-1/4 bottom-1/4" delay={0.2} yOffset={-10} />
-        <FloatingFood src="https://cdn-icons-png.flaticon.com/512/1202/1202125.png" className="w-10 h-10 right-1/4 top-1/3" delay={0.8} yOffset={10} />
-        <FloatingFood src="https://cdn-icons-png.flaticon.com/512/1685/1685412.png" className="w-8 h-8 left-1/3 top-20" delay={1.5} yOffset={15} />
-
-        <div className="relative z-20 text-center max-w-3xl mx-auto px-6 pt-10">
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            className="text-5xl md:text-[64px] font-bold text-[#E23744] leading-[1.1] mb-6"
-          >
-            Better food for<br />better people
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ delay: 0.1 }}
-            className="text-xl md:text-2xl text-gray-500 font-medium max-w-2xl mx-auto"
-          >
-            For over a decade, we've enabled our customers to discover new tastes, delivered right to their doorstep
-          </motion.p>
-        </div>
-
-        {/* Stats Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-          className="relative z-20 mt-32 bg-white rounded-3xl p-8 md:p-10 shadow-[0_15px_50px_rgba(0,0,0,0.06)] border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-8 md:gap-10 w-[95%] max-w-6xl mx-auto"
+    <div className="min-h-screen bg-[#0a0a0a] text-white font-sans overflow-x-hidden selection:bg-[#E23744] selection:text-white">
+      
+      {/* --- NAVBAR --- */}
+      <nav className="absolute top-0 w-full z-50 flex items-center justify-between px-6 md:px-12 py-6 bg-gradient-to-b from-black/90 via-black/50 to-transparent">
+        <div 
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="flex items-center gap-3 cursor-pointer group"
         >
-          <div className="flex items-center gap-4 md:gap-6 flex-1 justify-center md:justify-start">
-            <div className="text-center md:text-left">
-              <h3 className="text-3xl md:text-[40px] font-black text-gray-700 whitespace-nowrap">{landingSettings?.stats?.restaurants || "3,00,000+"}</h3>
-              <p className="text-gray-500 text-lg font-medium whitespace-nowrap">restaurants</p>
-            </div>
-            <div className="w-12 h-12 md:w-14 md:h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center shrink-0">
-              <UtensilsCrossed className="w-6 h-6 md:w-7 md:h-7" />
-            </div>
+          <div className="w-10 h-10 rounded-xl bg-[#E23744] flex items-center justify-center shadow-lg shadow-[#E23744]/40 group-hover:scale-105 transition-transform">
+            <UtensilsCrossed className="text-white w-6 h-6" />
           </div>
-
-          <div className="hidden md:block w-px h-16 bg-gray-200 shrink-0"></div>
-
-          <div className="flex items-center gap-4 md:gap-6 flex-1 justify-center md:justify-center">
-            <div className="text-center md:text-left">
-              <h3 className="text-3xl md:text-[40px] font-black text-gray-700 whitespace-nowrap">{landingSettings?.stats?.cities || "800+"}</h3>
-              <p className="text-gray-500 text-lg font-medium whitespace-nowrap">cities</p>
-            </div>
-            <div className="w-12 h-12 md:w-14 md:h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center shrink-0">
-              <MapPin className="w-6 h-6 md:w-7 md:h-7" />
-            </div>
-          </div>
-
-          <div className="hidden md:block w-px h-16 bg-gray-200 shrink-0"></div>
-
-          <div className="flex items-center gap-4 md:gap-6 flex-1 justify-center md:justify-end">
-            <div className="text-center md:text-left">
-              <h3 className="text-3xl md:text-[40px] font-black text-gray-700 whitespace-nowrap">{landingSettings?.stats?.orders || "3 billion+"}</h3>
-              <p className="text-gray-500 text-lg font-medium whitespace-nowrap">orders delivered</p>
-            </div>
-            <div className="w-12 h-12 md:w-14 md:h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center shrink-0">
-              <ShoppingBag className="w-6 h-6 md:w-7 md:h-7" />
-            </div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* 3. WHAT'S WAITING FOR YOU */}
-      <section className="relative py-32 bg-gradient-to-b from-white via-rose-50/30 to-[#FDFBF7] overflow-hidden flex flex-col items-center">
-        {/* Decorative Background Elements */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-red-400/5 rounded-full blur-[80px] pointer-events-none" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-orange-400/5 rounded-full blur-[100px] pointer-events-none" />
-        
-        <div className="text-center max-w-3xl mx-auto px-6 mb-20 relative z-20">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: false, amount: 0.2 }}
-            className="inline-block mb-4 px-4 py-1.5 rounded-full bg-red-50 border border-red-100 text-red-500 font-bold text-sm tracking-wide uppercase"
-          >
-            Features
-          </motion.div>
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0.2 }}
-            className="text-4xl md:text-[56px] font-black text-[#E23744] leading-[1.1] mb-6 drop-shadow-sm"
-          >
-            What's waiting for you<br />on the app?
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0.2 }}
-            transition={{ delay: 0.1 }}
-            className="text-xl md:text-2xl text-gray-600 font-medium max-w-2xl mx-auto"
-          >
-            Our app is packed with features that enable you to experience food delivery like never before
-          </motion.p>
+          <span className="text-2xl font-black tracking-tight text-white group-hover:text-[#E23744] transition-colors">Zapoo</span>
         </div>
 
-        <div className="relative w-full max-w-7xl mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-8 z-20">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={scrollToDownloadApp}
+            className="bg-[#E23744] text-white px-5 py-2.5 rounded-lg font-bold text-xs tracking-wider uppercase shadow-lg shadow-[#E23744]/30 hover:bg-[#c92f3b] hover:scale-[1.02] transition-all cursor-pointer"
+          >
+            GET THE APP
+          </button>
+        </div>
+      </nav>
+
+      {/* ========================================================================= */}
+      {/* 1. HERO SECTION */}
+      {/* ========================================================================= */}
+      <section className="relative min-h-screen flex items-center pt-28 pb-20 overflow-hidden">
+        {/* Background Image & Overlay */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={HERO_BG} 
+            alt="Zapoo Background" 
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+            className="w-full h-full object-cover opacity-25 scale-105" 
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/90 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0a0a0a]" />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 w-full grid lg:grid-cols-2 gap-12 items-center">
           
-          {/* Left Feature Column */}
-          <div className="flex-1 space-y-4 w-full order-2 lg:order-1">
-            <FeatureRow title="Lightning Fast Delivery" desc="Experience superfast delivery for food delivered fresh & on time" Icon={Zap} delay={0.1} />
-            <FeatureRow title="Live Order Tracking" desc="Know where your order is at all times, from the restaurant to your doorstep" Icon={MapPin} delay={0.2} />
-            <FeatureRow title="No Minimum Order" desc="Order in for yourself or for the group, with no restrictions on order value" Icon={ShoppingBag} delay={0.3} />
-          </div>
+          {/* Hero Left Content */}
+          <motion.div 
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="flex flex-col items-start"
+          >
+            <div className="inline-flex items-center gap-2 bg-[#E23744]/20 border border-[#E23744]/40 text-[#E23744] text-xs font-extrabold px-3.5 py-1.5 rounded-full uppercase tracking-wider mb-6">
+              <Sparkles className="w-3.5 h-3.5" />
+              ORDER. PICK UP. ENJOY.
+            </div>
+            
+            <h1 className="text-5xl sm:text-6xl lg:text-[4.8rem] font-black leading-[0.95] tracking-tight mb-6">
+              GOOD FOOD,<br />
+              <span className="text-[#E23744]">JUST A TAP AWAY.</span>
+            </h1>
+            
+            <p className="text-gray-400 text-lg md:text-xl font-medium max-w-xl leading-relaxed mb-8">
+              Discover the best food around you, order your favourites for delivery, or order ahead for a quick and easy pickup.
+            </p>
 
-          {/* Center Phone Mockup */}
-          <div className="flex justify-center shrink-0 order-1 lg:order-2 relative">
-            {/* Glowing Aura behind phone */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[550px] bg-gradient-to-br from-red-400/20 to-orange-400/20 blur-[80px] rounded-full z-0" />
+            {/* Hero CTAs */}
+            <div className="flex flex-wrap items-center gap-4">
+              <button 
+                onClick={scrollToDownloadApp}
+                className="flex items-center gap-2.5 bg-[#E23744] text-white px-7 py-4 rounded-xl font-bold text-sm tracking-wide shadow-xl shadow-[#E23744]/30 hover:bg-[#c92f3b] hover:scale-[1.03] transition-all cursor-pointer"
+              >
+                <span>GET THE APP</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={scrollToDownloadApp}
+                className="flex items-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white px-6 py-4 rounded-xl font-bold text-sm tracking-wide backdrop-blur-md transition-all cursor-pointer"
+              >
+                <span>ORDER ON MOBILE</span>
+                <ShoppingBag className="w-4 h-4 text-emerald-400" />
+              </button>
+            </div>
+          </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, amount: 0.2 }}
-              className="relative z-10 w-[300px] h-[600px] rounded-[50px] shadow-[0_30px_60px_rgba(226,55,68,0.15)] border-[12px] border-[#1C1C1C] overflow-hidden bg-white"
-            >
-              <div className="absolute top-0 inset-x-0 h-6 bg-[#1C1C1C] rounded-b-3xl w-1/2 mx-auto z-20" />
-              
-              {/* Realistic App Mockup UI */}
-              <div className="w-full h-full bg-[#f8f9fa] flex flex-col pt-10 pb-6 relative overflow-hidden">
-                <div className="px-5 mb-6">
-                  <div className="w-24 h-4 bg-gray-200 rounded-full mb-2" />
-                  <div className="w-40 h-6 bg-gradient-to-r from-gray-300 to-gray-200 rounded-full" />
-                </div>
-                
-                <div className="flex gap-3 px-5 mb-6 overflow-hidden">
-                  <div className="w-16 h-16 bg-red-100 rounded-2xl flex-shrink-0" />
-                  <div className="w-16 h-16 bg-orange-100 rounded-2xl flex-shrink-0" />
-                  <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex-shrink-0" />
-                  <div className="w-16 h-16 bg-green-100 rounded-2xl flex-shrink-0" />
-                </div>
-                
-                <div className="px-5 flex-1 flex flex-col gap-4">
-                  <div className="w-full bg-white rounded-[24px] shadow-sm border border-gray-100 p-3">
-                     <div className="w-full h-24 bg-gray-100 rounded-[16px] mb-3" />
-                     <div className="w-3/4 h-3 bg-gray-200 rounded-full mb-2" />
-                     <div className="w-1/2 h-2 bg-gray-200 rounded-full" />
-                  </div>
-                  <div className="w-full bg-white rounded-[24px] shadow-sm border border-gray-100 p-3">
-                     <div className="w-full h-24 bg-gray-100 rounded-[16px] mb-3" />
-                     <div className="w-3/4 h-3 bg-gray-200 rounded-full mb-2" />
-                     <div className="w-1/2 h-2 bg-gray-200 rounded-full" />
-                  </div>
-                </div>
-
-                {/* Central Floating Feature Simulation */}
-                <div className="absolute inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center z-10">
-                  <motion.div 
-                    animate={{ scale: [1, 1.03, 1], y: [0, -5, 0] }} 
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="bg-white p-6 rounded-3xl shadow-[0_20px_40px_rgba(226,55,68,0.2)] flex flex-col items-center border border-red-50"
-                  >
-                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-3">
-                      <Clock className="w-8 h-8 text-[#E23744]" />
-                    </div>
-                    <span className="font-black text-gray-900 text-center leading-tight text-lg">Schedule<br />your order</span>
-                  </motion.div>
-                </div>
-                
-                <div className="mt-auto px-5 relative z-20">
-                  <div className="h-16 w-full bg-white rounded-[24px] shadow-md border border-gray-100 flex items-center justify-around px-2">
-                     <div className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center"><User className="w-5 h-5" /></div>
-                     <div className="w-6 h-6 bg-gray-200 rounded-full" />
-                     <div className="w-6 h-6 bg-gray-200 rounded-full" />
-                  </div>
-                </div>
+          {/* Hero Right Visual & Floating Cards (Purely Visual / Non-Clickable) */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+            className="relative flex justify-center lg:justify-end pointer-events-none select-none"
+          >
+            <div className="relative w-[340px] h-[340px] sm:w-[450px] sm:h-[450px] rounded-full p-2.5 bg-gradient-to-tr from-[#E23744] via-rose-500/20 to-transparent pointer-events-none">
+              <div className="w-full h-full rounded-full overflow-hidden border-8 border-[#0a0a0a] shadow-2xl relative pointer-events-none">
+                <AnimatePresence mode="wait">
+                  <motion.img 
+                    key={currentFoodIndex}
+                    src={HERO_FOOD_IMAGES[currentFoodIndex]} 
+                    alt="Zapoo Good Food" 
+                    initial={{ opacity: 0, scale: 1.15, rotate: -2 }}
+                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, rotate: 2 }}
+                    transition={{ duration: 0.7, ease: "easeInOut" }}
+                    className="w-full h-full object-cover absolute inset-0 pointer-events-none" 
+                  />
+                </AnimatePresence>
               </div>
+            </div>
+
+            {/* Floating Card 1: Quick Delivery (Non-Clickable) */}
+            <motion.div 
+              animate={{ y: [-8, 8, -8] }} 
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-2 -left-6 sm:top-6 sm:-left-14 lg:-left-16 bg-[#141414]/90 border border-white/10 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 shadow-2xl backdrop-blur-md max-w-[210px] sm:max-w-[230px] z-20 pointer-events-none"
+            >
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#E23744]/20 text-[#E23744] flex items-center justify-center shrink-0">
+                <Truck className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-white font-bold text-xs">QUICK DELIVERY</div>
+                <div className="text-gray-400 text-[11px] font-medium leading-tight">Hot food. Right to your doorstep.</div>
+              </div>
+            </motion.div>
+
+            {/* Floating Card 2: Under ₹99 (Non-Clickable) */}
+            <motion.div 
+              animate={{ y: [8, -8, 8] }} 
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              className="absolute top-1/2 -right-16 sm:-right-28 lg:-right-36 -translate-y-1/2 bg-[#141414]/90 border border-white/10 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 shadow-2xl backdrop-blur-md max-w-[200px] sm:max-w-[220px] z-20 pointer-events-none"
+            >
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <Percent className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-white font-bold text-xs">UNDER ₹99</div>
+                <div className="text-gray-400 text-[11px] font-medium leading-tight">Big cravings. Small prices.</div>
+              </div>
+            </motion.div>
+
+            {/* Floating Card 3: Order Ahead (Non-Clickable) */}
+            <motion.div 
+              animate={{ y: [-6, 6, -6] }} 
+              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              className="absolute bottom-2 -left-4 sm:bottom-4 sm:-left-12 lg:-left-14 bg-[#141414]/90 border border-white/10 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 shadow-2xl backdrop-blur-md max-w-[220px] sm:max-w-[240px] z-20 pointer-events-none"
+            >
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-white font-bold text-xs">ORDER AHEAD</div>
+                <div className="text-gray-400 text-[11px] font-medium leading-tight">Order now. Pick up when ready.</div>
+              </div>
+            </motion.div>
+
+          </motion.div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 2. INTRO SECTION */}
+      {/* ========================================================================= */}
+      <section className="bg-white text-black py-28 px-6 md:px-12 overflow-hidden">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+          
+          <motion.div 
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            <div className="text-[#E23744] text-xs font-extrabold uppercase tracking-[0.25em] mb-4">THE ZAPOO EXPERIENCE</div>
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight mb-6 leading-tight text-gray-900">
+              FOOD FOR <span className="text-[#E23744]">EVERY MOOD.</span>
+            </h2>
+            <p className="text-gray-600 text-lg font-medium leading-relaxed mb-10 max-w-lg">
+              Hungry for something quick? Planning a feast? Or simply looking for your next favourite meal? Zapoo helps you discover restaurants, explore menus, order your favourites and get them delivered or ready for pickup.
+            </p>
+            
+            {/* Live Stats */}
+            <div className="grid grid-cols-3 bg-[#f8f8f8] rounded-2xl p-6 border border-gray-100 divide-x divide-gray-200">
+              <div className="pr-4 text-center sm:text-left">
+                <div className="text-[#E23744] text-2xl sm:text-3xl font-black mb-1">
+                  {landingSettings?.stats?.restaurants || "3,00,000+"}
+                </div>
+                <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Restaurants</div>
+              </div>
+              <div className="px-4 text-center sm:text-left">
+                <div className="text-gray-900 text-2xl sm:text-3xl font-black mb-1">
+                  {landingSettings?.stats?.cities || "800+"}
+                </div>
+                <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Cities</div>
+              </div>
+              <div className="pl-4 text-center sm:text-left">
+                <div className="text-gray-900 text-2xl sm:text-3xl font-black mb-1">
+                  {landingSettings?.stats?.orders || "3 Billion+"}
+                </div>
+                <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Orders Delivered</div>
+              </div>
+            </div>
+          </motion.div>
+
+          <div className="relative h-[380px] sm:h-[460px]">
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              className="absolute right-0 top-0 w-4/5 h-[320px] rounded-2xl overflow-hidden shadow-2xl"
+            >
+              <img src={ABOUT_IMG_1} alt="Zapoo Dining" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ delay: 0.2 }}
+              className="absolute left-0 bottom-0 w-3/4 h-[250px] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.25)] border-8 border-white"
+            >
+              <img src={ABOUT_IMG_2} alt="Zapoo Meal" loading="lazy" decoding="async" className="w-full h-full object-cover" />
             </motion.div>
           </div>
 
-          {/* Right Feature Column */}
-          <div className="flex-1 space-y-4 w-full order-3">
-            <FeatureRowRight title="Huge Discounts & Offers" desc="Enjoy exciting offers, discounts and coupons exclusively on the app" Icon={Ticket} delay={0.1} />
-            <FeatureRowRight title="Zapoo GOLD" desc="Get free delivery and extra discounts on every order with premium membership" Icon={Award} delay={0.2} />
-            <FeatureRowRight title="Safety & Hygiene" desc="Best in class safety standards with regular temperature checks" Icon={ShieldCheck} delay={0.3} />
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 3. FEATURES SECTION (8 CARDS) */}
+      {/* ========================================================================= */}
+      <section className="bg-[#111] text-white py-28 px-6 md:px-12 border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-[#E23744] text-xs font-extrabold uppercase tracking-[0.25em] mb-3 block">WHAT'S WAITING FOR YOU?</span>
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight mb-4">MORE WAYS TO ENJOY YOUR FOOD.</h2>
+            <p className="text-gray-400 font-medium text-base">Everything you need to discover, order and enjoy great food—all in one place.</p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            {/* Card 1 */}
+            <motion.div 
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+              className="bg-[#181818] border border-white/10 rounded-2xl p-6 hover:border-[#E23744] hover:shadow-[0_10px_30px_rgba(226,55,68,0.15)] transition-all group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                <Percent className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white group-hover:text-amber-400 transition-colors">Under ₹99</h3>
+              <p className="text-gray-400 text-sm font-medium leading-relaxed">Craving something delicious without spending too much? Discover meals, snacks and combos under ₹99.</p>
+            </motion.div>
+
+            {/* Card 2 */}
+            <motion.div 
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+              className="bg-[#181818] border border-white/10 rounded-2xl p-6 hover:border-[#E23744] hover:shadow-[0_10px_30px_rgba(226,55,68,0.15)] transition-all group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#E23744]/20 text-[#E23744] flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                <Truck className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#E23744] transition-colors">Quick Delivery</h3>
+              <p className="text-gray-400 text-sm font-medium leading-relaxed">Order from your favourite restaurants and get your food delivered straight to your doorstep.</p>
+            </motion.div>
+
+            {/* Card 3 */}
+            <motion.div 
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+              className="bg-[#181818] border border-white/10 rounded-2xl p-6 hover:border-[#E23744] hover:shadow-[0_10px_30px_rgba(226,55,68,0.15)] transition-all group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                <ShoppingBag className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white group-hover:text-emerald-400 transition-colors">Takeaway</h3>
+              <p className="text-gray-400 text-sm font-medium leading-relaxed">In a hurry? Order ahead and pick up your food without waiting.</p>
+            </motion.div>
+
+            {/* Card 4 */}
+            <motion.div 
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+              className="bg-[#181818] border border-white/10 rounded-2xl p-6 hover:border-[#E23744] hover:shadow-[0_10px_30px_rgba(226,55,68,0.15)] transition-all group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white group-hover:text-purple-400 transition-colors">Gourmet</h3>
+              <p className="text-gray-400 text-sm font-medium leading-relaxed">Looking for something special? Explore premium restaurants and delicious gourmet experiences.</p>
+            </motion.div>
+
+            {/* Card 5 */}
+            <motion.div 
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+              className="bg-[#181818] border border-white/10 rounded-2xl p-6 hover:border-[#E23744] hover:shadow-[0_10px_30px_rgba(226,55,68,0.15)] transition-all group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                <Tag className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white group-hover:text-rose-400 transition-colors">Offers & Deals</h3>
+              <p className="text-gray-400 text-sm font-medium leading-relaxed">Discover exciting deals and save more on your favourite food.</p>
+            </motion.div>
+
+            {/* Card 6 */}
+            <motion.div 
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+              className="bg-[#181818] border border-white/10 rounded-2xl p-6 hover:border-[#E23744] hover:shadow-[0_10px_30px_rgba(226,55,68,0.15)] transition-all group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                <MapPin className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors">Live Tracking</h3>
+              <p className="text-gray-400 text-sm font-medium leading-relaxed">Know where your order is from the moment it's prepared until it reaches you.</p>
+            </motion.div>
+
+            {/* Card 7 */}
+            <motion.div 
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+              className="bg-[#181818] border border-white/10 rounded-2xl p-6 hover:border-[#E23744] hover:shadow-[0_10px_30px_rgba(226,55,68,0.15)] transition-all group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                <Compass className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white group-hover:text-teal-400 transition-colors">Explore Nearby</h3>
+              <p className="text-gray-400 text-sm font-medium leading-relaxed">Find restaurants, cuisines and dishes based on your location and cravings.</p>
+            </motion.div>
+
+            {/* Card 8 */}
+            <motion.div 
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+              className="bg-[#181818] border border-white/10 rounded-2xl p-6 hover:border-[#E23744] hover:shadow-[0_10px_30px_rgba(226,55,68,0.15)] transition-all group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                <Clock className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white group-hover:text-orange-400 transition-colors">Order Ahead</h3>
+              <p className="text-gray-400 text-sm font-medium leading-relaxed">Plan your meal in advance and have it ready when you arrive.</p>
+            </motion.div>
+
           </div>
 
         </div>
       </section>
 
-      {/* 4. DOWNLOAD THE APP NOW */}
-      <section className="py-24 bg-white flex justify-center px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="w-full max-w-5xl bg-[#FFF6F7] rounded-[40px] p-8 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 border border-[#ffe0e3]"
-        >
-          <div className="flex-1 text-center md:text-left">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-              Download the app now!
-            </h2>
-            <p className="text-xl text-gray-500 font-medium mb-10 max-w-md">
-              Experience seamless online ordering only on the Zapoo app
-            </p>
-            <div className="flex gap-4 justify-center md:justify-start">
-              <img 
-                src="https://b.zmtcdn.com/data/webuikit/23e930757c3df49840c482a8638bf5c31556001144.png" 
-                alt="Google Play" 
-                className="h-12 object-contain cursor-pointer" 
-                onClick={() => window.open(landingSettings?.appLinks?.playStore || 'https://play.google.com/store/apps/details?id=com.indian.bite.user', '_blank')}
-              />
-              <img 
-                src="https://b.zmtcdn.com/data/webuikit/9f0c85a5e33adb783fa0aef667075f9e1556003622.png" 
-                alt="App Store" 
-                className="h-12 object-contain cursor-pointer" 
-                onClick={() => window.open(landingSettings?.appLinks?.appStore || '#', '_blank')}
-              />
-            </div>
-          </div>
+      {/* ========================================================================= */}
+      {/* 4. MOBILE APP SECTION */}
+      {/* ========================================================================= */}
+      <section id="download-app-section" className="bg-[#fcfcfc] text-black py-28 px-6 md:px-12 overflow-hidden relative">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+          
+          {/* Phone Mockup with Top-to-Bottom Scroll Reveal & Floating Bounce */}
+          <motion.div 
+            initial={{ opacity: 0, y: -150, scale: 0.9 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ type: "spring", stiffness: 60, damping: 14, mass: 1.2 }}
+            className="flex justify-center"
+          >
+            <motion.div 
+              animate={{ y: [-10, 10, -10], rotate: [-1, 1, -1] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+              className="relative w-[290px] h-[580px] bg-white rounded-[45px] shadow-[0_35px_70px_rgba(0,0,0,0.18)] border-[12px] border-[#1C1C1C] overflow-hidden flex flex-col hover:scale-[1.02] transition-transform duration-300"
+            >
+              <div className="absolute top-0 inset-x-0 h-7 bg-[#1C1C1C] rounded-b-3xl w-[140px] mx-auto z-20" />
+              
+              <div className="p-4 pt-12 flex-1 flex flex-col bg-[#fafafa]">
+                <div className="w-full h-44 rounded-2xl overflow-hidden mb-4 shadow-sm relative">
+                  <img src={APP_MOCKUP} alt="Zapoo App" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                  <div className="absolute top-3 left-3 bg-[#E23744] text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase shadow">Zapoo App</div>
+                </div>
+                <h3 className="text-2xl font-black text-gray-900">Delicious Meals</h3>
+                <div className="text-gray-500 text-xs font-semibold mb-6 flex items-center gap-1">
+                  POPULAR • 4.9 <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                </div>
+                
+                <div className="flex justify-between items-center text-xs font-bold border-t border-b border-gray-100 py-3 mb-auto">
+                  <span className="text-[#E23744] flex items-center gap-1"><Truck className="w-3.5 h-3.5"/> LIVE GPS</span>
+                  <span className="text-gray-700">15 MINS</span>
+                </div>
 
-          <div className="flex-shrink-0 relative">
-            <div className="absolute inset-0 bg-[#E23744]/5 blur-[50px] rounded-full pointer-events-none" />
-            <div className="relative w-64 h-[450px] bg-white rounded-[40px] shadow-2xl border-[10px] border-[#1C1C1C] overflow-hidden flex flex-col items-center justify-center p-6">
-              <div className="absolute top-0 inset-x-0 h-6 bg-[#1C1C1C] rounded-b-3xl w-1/2 mx-auto z-20" />
-              <p className="text-sm font-bold text-gray-700 text-center mb-6 mt-4">
-                Scan the QR code to<br />download the app
-              </p>
-              <div className="w-40 h-40 bg-gray-100 rounded-2xl flex items-center justify-center border border-gray-200">
-                {/* Fake QR Code */}
-                <div className="w-32 h-32 grid grid-cols-4 grid-rows-4 gap-1">
-                  {Array.from({ length: 16 }).map((_, i) => (
-                    <div key={i} className={`bg-black rounded-sm ${Math.random() > 0.3 ? 'opacity-100' : 'opacity-0'}`} />
-                  ))}
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white border border-gray-200 rounded-md flex items-center justify-center">
-                    <span className="text-xs font-black text-[#E23744]">IB</span>
-                  </div>
+                <button 
+                  onClick={openAppStore}
+                  className="mt-4 bg-[#E23744] text-white text-center py-3.5 rounded-xl font-bold text-xs tracking-wider uppercase shadow-md hover:bg-[#c92f3b] transition-colors cursor-pointer"
+                >
+                  GET THE ZAPOO APP
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            <div className="text-[#E23744] text-xs font-extrabold uppercase tracking-[0.25em] mb-4">THE ZAPOO APP</div>
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight mb-6 leading-tight text-gray-900">
+              DISCOVER. ORDER.<br />TRACK. ENJOY.
+            </h2>
+            <p className="text-gray-500 text-lg font-medium leading-relaxed mb-8 max-w-lg">
+              Your favourite restaurants, delicious food and easy ordering—all in one app. Browse menus, customise your order, pay securely and track your delivery in real time.
+            </p>
+            
+            {/* App Highlights */}
+            <div className="grid sm:grid-cols-2 gap-4 mb-8">
+              <div className="flex items-start gap-3 bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm">
+                <span className="text-xl">🍔</span>
+                <div>
+                  <div className="font-bold text-sm text-gray-900">Discover Food</div>
+                  <div className="text-gray-500 text-xs font-medium">Find something delicious for every craving.</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm">
+                <span className="text-xl">⚡</span>
+                <div>
+                  <div className="font-bold text-sm text-gray-900">Order Faster</div>
+                  <div className="text-gray-500 text-xs font-medium">A simple experience from menu to checkout.</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm">
+                <span className="text-xl">📍</span>
+                <div>
+                  <div className="font-bold text-sm text-gray-900">Track Live</div>
+                  <div className="text-gray-500 text-xs font-medium">Follow your order every step of the way.</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm">
+                <span className="text-xl">🛍️</span>
+                <div>
+                  <div className="font-bold text-sm text-gray-900">Easy Pickup</div>
+                  <div className="text-gray-500 text-xs font-medium">Order ahead and collect your food when ready.</div>
                 </div>
               </div>
             </div>
-          </div>
-        </motion.div>
+
+            <div className="flex flex-wrap gap-4">
+              <button 
+                onClick={() => window.open(landingSettings?.appLinks?.appStore || '#', '_blank')}
+                className="flex items-center gap-3 bg-[#1a1a1a] text-white px-6 py-3 rounded-xl hover:bg-black transition-colors shadow-lg"
+              >
+                <Apple className="w-5 h-5 fill-current" />
+                <div className="text-left">
+                  <div className="text-[9px] leading-tight text-gray-400">Download on the</div>
+                  <div className="text-xs font-bold leading-tight">App Store</div>
+                </div>
+              </button>
+              <button 
+                onClick={openAppStore}
+                className="flex items-center gap-3 bg-white text-black border border-gray-200 px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors shadow-lg cursor-pointer"
+              >
+                <Play className="w-5 h-5 fill-current text-gray-700" />
+                <div className="text-left">
+                  <div className="text-[9px] leading-tight text-gray-500">GET IT ON</div>
+                  <div className="text-xs font-bold leading-tight">Google Play</div>
+                </div>
+              </button>
+            </div>
+          </motion.div>
+
+        </div>
       </section>
 
-
-      {/* 6. FOOTER */}
-      <footer className="bg-[#0f0f0f] text-white pt-20 pb-10">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row justify-between mb-16 gap-12">
-            <div className="lg:w-1/4">
-              <h1 className="text-4xl font-black italic tracking-tighter mb-8">
-                Zapoo
-              </h1>
-            </div>
-
-            <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-8">
-              <div>
-                <h4 className="font-bold text-lg mb-6 uppercase tracking-wider text-gray-200">About IB</h4>
-                <ul className="space-y-3 text-gray-400 font-medium">
-                  {(landingSettings?.footerLinks?.about || [
-                    { label: 'Who We Are', url: '#' },
-                    { label: 'Blog', url: '#' },
-                    { label: 'Work With Us', url: '#' },
-                    { label: 'Investor Relations', url: '#' },
-                    { label: 'Report Fraud', url: '#' }
-                  ]).map((link, i) => (
-                    <li key={i}><a href={link.url} className="hover:text-white transition-colors">{link.label}</a></li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-lg mb-6 uppercase tracking-wider text-gray-200">For Restaurants</h4>
-                <ul className="space-y-3 text-gray-400 font-medium">
-                  {(landingSettings?.footerLinks?.forRestaurants || [
-                    { label: 'Partner With Us', url: '#' },
-                    { label: 'Apps For You', url: '#' }
-                  ]).map((link, i) => (
-                    <li key={i}><a href={link.url} className="hover:text-white transition-colors">{link.label}</a></li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-lg mb-6 uppercase tracking-wider text-gray-200">Learn More</h4>
-                <ul className="space-y-3 text-gray-400 font-medium">
-                  {(landingSettings?.footerLinks?.learnMore || [
-                    { label: 'Privacy', url: '#' },
-                    { label: 'Security', url: '#' },
-                    { label: 'Terms', url: '#' },
-                    { label: 'Sitemap', url: '#' }
-                  ]).map((link, i) => (
-                    <li key={i}><a href={link.url} className="hover:text-white transition-colors">{link.label}</a></li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+      {/* ========================================================================= */}
+      {/* 5. ORDER AHEAD SECTION */}
+      {/* ========================================================================= */}
+      <section className="bg-white text-black py-28 px-6 md:px-12 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto">
+          
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-[#E23744] text-xs font-extrabold uppercase tracking-[0.25em] mb-3 block">SKIP THE WAIT</span>
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight mb-4 text-gray-900">ORDER NOW. PICK UP WHEN YOU'RE READY.</h2>
+            <p className="text-gray-500 font-medium text-base">Got somewhere to be? Place your order in advance and have your food ready when you arrive.</p>
           </div>
 
-          <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex gap-4">
-              {(!landingSettings?.socialLinks || landingSettings.socialLinks.linkedin) && (
-                <div onClick={() => window.open(landingSettings?.socialLinks?.linkedin || '#', '_blank')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#E23744] transition-colors cursor-pointer text-white">
-                  <Linkedin className="w-5 h-5" />
-                </div>
-              )}
-              {(!landingSettings?.socialLinks || landingSettings.socialLinks.instagram) && (
-                <div onClick={() => window.open(landingSettings?.socialLinks?.instagram || '#', '_blank')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#E23744] transition-colors cursor-pointer text-white">
-                  <Instagram className="w-5 h-5" />
-                </div>
-              )}
-              {(!landingSettings?.socialLinks || landingSettings.socialLinks.twitter) && (
-                <div onClick={() => window.open(landingSettings?.socialLinks?.twitter || '#', '_blank')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#E23744] transition-colors cursor-pointer text-white">
-                  <Twitter className="w-5 h-5" />
-                </div>
-              )}
-              {(!landingSettings?.socialLinks || landingSettings.socialLinks.youtube) && (
-                <div onClick={() => window.open(landingSettings?.socialLinks?.youtube || '#', '_blank')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#E23744] transition-colors cursor-pointer text-white">
-                  <Youtube className="w-5 h-5" />
-                </div>
-              )}
-              {(!landingSettings?.socialLinks || landingSettings.socialLinks.facebook) && (
-                <div onClick={() => window.open(landingSettings?.socialLinks?.facebook || '#', '_blank')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#E23744] transition-colors cursor-pointer text-white">
-                  <Facebook className="w-5 h-5" />
-                </div>
-              )}
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            
+            {/* Step 1 */}
+            <div className="bg-[#f8f8f8] border border-gray-200/80 rounded-2xl p-8 text-center flex flex-col items-center hover:shadow-lg transition-all">
+              <div className="w-14 h-14 rounded-2xl bg-[#E23744]/10 text-[#E23744] font-black text-xl flex items-center justify-center mb-6">
+                01
+              </div>
+              <h3 className="text-xl font-black mb-3 text-gray-900 uppercase tracking-wide">DISCOVER</h3>
+              <p className="text-gray-500 text-sm font-medium leading-relaxed">Find restaurants and explore their menus.</p>
             </div>
 
-            <div className="flex gap-4">
-              <img 
-                src="https://b.zmtcdn.com/data/webuikit/23e930757c3df49840c482a8638bf5c31556001144.png" 
-                alt="Google Play" 
-                className="h-10 opacity-70 hover:opacity-100 transition-opacity cursor-pointer" 
-                onClick={() => window.open(landingSettings?.appLinks?.playStore || 'https://play.google.com/store/apps/details?id=com.indian.bite.user', '_blank')}
-              />
-              <img 
-                src="https://b.zmtcdn.com/data/webuikit/9f0c85a5e33adb783fa0aef667075f9e1556003622.png" 
-                alt="App Store" 
-                className="h-10 opacity-70 hover:opacity-100 transition-opacity cursor-pointer" 
+            {/* Step 2 */}
+            <div className="bg-[#f8f8f8] border border-gray-200/80 rounded-2xl p-8 text-center flex flex-col items-center hover:shadow-lg transition-all">
+              <div className="w-14 h-14 rounded-2xl bg-[#E23744]/10 text-[#E23744] font-black text-xl flex items-center justify-center mb-6">
+                02
+              </div>
+              <h3 className="text-xl font-black mb-3 text-gray-900 uppercase tracking-wide">ORDER AHEAD</h3>
+              <p className="text-gray-500 text-sm font-medium leading-relaxed">Choose your food and place your order in advance.</p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="bg-[#f8f8f8] border border-gray-200/80 rounded-2xl p-8 text-center flex flex-col items-center hover:shadow-lg transition-all">
+              <div className="w-14 h-14 rounded-2xl bg-[#E23744]/10 text-[#E23744] font-black text-xl flex items-center justify-center mb-6">
+                03
+              </div>
+              <h3 className="text-xl font-black mb-3 text-gray-900 uppercase tracking-wide">PICK UP</h3>
+              <p className="text-gray-500 text-sm font-medium leading-relaxed">Arrive, collect your order and get on with your day.</p>
+            </div>
+
+          </div>
+
+          <div className="text-center">
+            <button 
+              onClick={scrollToDownloadApp}
+              className="inline-flex items-center gap-2.5 bg-[#E23744] text-white px-8 py-4 rounded-xl font-bold text-sm tracking-wide shadow-lg shadow-[#E23744]/20 hover:bg-[#c92f3b] transition-all cursor-pointer"
+            >
+              <span>GET THE APP TO ORDER</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 6. SAVINGS SECTION */}
+      {/* ========================================================================= */}
+      <section className="bg-[#0f0f0f] text-white py-28 px-6 md:px-12 border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-[#E23744] text-xs font-extrabold uppercase tracking-[0.25em] mb-3 block">MORE FOOD. LESS SPEND.</span>
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight mb-4">GOOD FOOD DOESN'T HAVE TO COST MORE.</h2>
+            <p className="text-gray-400 font-medium text-base">Get more from every order with exclusive deals, affordable meals and exciting offers.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            
+            {/* Offer 1 */}
+            <div className="bg-[#181818] border border-white/10 rounded-2xl p-8 hover:border-[#E23744]/50 transition-all flex flex-col justify-between">
+              <div>
+                <div className="inline-block bg-amber-500/20 text-amber-400 text-xs font-extrabold px-3 py-1 rounded-md mb-4 uppercase tracking-wider">
+                  OFFER 1
+                </div>
+                <h3 className="text-2xl font-black mb-3">UNDER ₹99</h3>
+                <p className="text-gray-400 text-sm font-medium leading-relaxed">Delicious picks at pocket-friendly prices.</p>
+              </div>
+              <button 
+                onClick={scrollToDownloadApp}
+                className="mt-6 text-[#E23744] font-bold text-xs flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-wider cursor-pointer"
+              >
+                GET DEALS ON APP <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Offer 2 */}
+            <div className="bg-[#181818] border border-white/10 rounded-2xl p-8 hover:border-[#E23744]/50 transition-all flex flex-col justify-between">
+              <div>
+                <div className="inline-block bg-[#E23744]/20 text-[#E23744] text-xs font-extrabold px-3 py-1 rounded-md mb-4 uppercase tracking-wider">
+                  OFFER 2
+                </div>
+                <h3 className="text-2xl font-black mb-3">EXCLUSIVE DEALS</h3>
+                <p className="text-gray-400 text-sm font-medium leading-relaxed">Save more on your favourite restaurants.</p>
+              </div>
+              <button 
+                onClick={scrollToDownloadApp}
+                className="mt-6 text-[#E23744] font-bold text-xs flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-wider cursor-pointer"
+              >
+                GET DEALS ON APP <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Offer 3 */}
+            <div className="bg-[#181818] border border-white/10 rounded-2xl p-8 hover:border-[#E23744]/50 transition-all flex flex-col justify-between">
+              <div>
+                <div className="inline-block bg-emerald-500/20 text-emerald-400 text-xs font-extrabold px-3 py-1 rounded-md mb-4 uppercase tracking-wider">
+                  OFFER 3
+                </div>
+                <h3 className="text-2xl font-black mb-3">EVERYDAY OFFERS</h3>
+                <p className="text-gray-400 text-sm font-medium leading-relaxed">New deals to make every craving worth it.</p>
+              </div>
+              <button 
+                onClick={scrollToDownloadApp}
+                className="mt-6 text-[#E23744] font-bold text-xs flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-wider cursor-pointer"
+              >
+                GET DEALS ON APP <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+          </div>
+
+          <div className="text-center">
+            <button 
+              onClick={scrollToDownloadApp}
+              className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white px-8 py-4 rounded-xl font-bold text-sm tracking-wide transition-all cursor-pointer"
+            >
+              <span>SEE ALL OFFERS ON APP</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 7. WHY ZAPOO */}
+      {/* ========================================================================= */}
+      <section className="bg-white text-black py-28 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto">
+          
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-[#E23744] text-xs font-extrabold uppercase tracking-[0.25em] mb-3 block">WHY ZAPOO?</span>
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-gray-900">YOUR FOOD. YOUR WAY.</h2>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            {/* Point 1 */}
+            <div className="p-6 rounded-2xl bg-[#f8f8f8] border border-gray-100 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-[#E23744]/10 text-[#E23744] flex items-center justify-center shrink-0">
+                <UtensilsCrossed className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black mb-1 text-gray-900">MORE CHOICE</h3>
+                <p className="text-gray-500 text-sm font-medium leading-relaxed">Explore restaurants, cuisines and dishes for every craving.</p>
+              </div>
+            </div>
+
+            {/* Point 2 */}
+            <div className="p-6 rounded-2xl bg-[#f8f8f8] border border-gray-100 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-[#E23744]/10 text-[#E23744] flex items-center justify-center shrink-0">
+                <Percent className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black mb-1 text-gray-900">BETTER VALUE</h3>
+                <p className="text-gray-500 text-sm font-medium leading-relaxed">Discover affordable meals, deals and offers.</p>
+              </div>
+            </div>
+
+            {/* Point 3 */}
+            <div className="p-6 rounded-2xl bg-[#f8f8f8] border border-gray-100 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-[#E23744]/10 text-[#E23744] flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black mb-1 text-gray-900">EASY ORDERING</h3>
+                <p className="text-gray-500 text-sm font-medium leading-relaxed">Find your food and place your order in just a few taps.</p>
+              </div>
+            </div>
+
+            {/* Point 4 */}
+            <div className="p-6 rounded-2xl bg-[#f8f8f8] border border-gray-100 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-[#E23744]/10 text-[#E23744] flex items-center justify-center shrink-0">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black mb-1 text-gray-900">LIVE TRACKING</h3>
+                <p className="text-gray-500 text-sm font-medium leading-relaxed">Stay updated from order confirmation to delivery.</p>
+              </div>
+            </div>
+
+            {/* Point 5 */}
+            <div className="p-6 rounded-2xl bg-[#f8f8f8] border border-gray-100 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-[#E23744]/10 text-[#E23744] flex items-center justify-center shrink-0">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black mb-1 text-gray-900">QUICK PICKUP</h3>
+                <p className="text-gray-500 text-sm font-medium leading-relaxed">Order ahead and skip the wait.</p>
+              </div>
+            </div>
+
+            {/* Point 6 */}
+            <div className="p-6 rounded-2xl bg-[#f8f8f8] border border-gray-100 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-[#E23744]/10 text-[#E23744] flex items-center justify-center shrink-0">
+                <Compass className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black mb-1 text-gray-900">FOOD AROUND YOU</h3>
+                <p className="text-gray-500 text-sm font-medium leading-relaxed">Discover restaurants and delicious options near your location.</p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 8. FINAL CTA */}
+      {/* ========================================================================= */}
+      <section className="bg-[#0a0a0a] text-white py-28 px-6 md:px-12 relative overflow-hidden border-t border-white/5 text-center">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#E23744]/10 rounded-full blur-[140px] pointer-events-none" />
+
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <h2 className="text-5xl sm:text-6xl font-black tracking-tight mb-4">READY TO EAT?</h2>
+          <p className="text-gray-400 text-lg md:text-xl font-medium max-w-2xl mx-auto mb-6">
+            From everyday cravings to quick pickups, Zapoo makes finding and ordering food simple.
+          </p>
+          <div className="text-[#E23744] font-black text-xl uppercase tracking-widest mb-10">
+            DOWNLOAD THE APP TO GET STARTED.
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-4">
+            <button 
+              onClick={scrollToDownloadApp}
+              className="flex items-center gap-2.5 bg-[#E23744] text-white px-8 py-4 rounded-xl font-bold text-sm tracking-wide shadow-xl shadow-[#E23744]/30 hover:bg-[#c92f3b] hover:scale-[1.03] transition-all cursor-pointer"
+            >
+              <span>DOWNLOAD APP NOW</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 9. FOOTER */}
+      {/* ========================================================================= */}
+      <footer className="bg-white text-black pt-16 pb-8 px-6 md:px-12 border-t border-gray-200/80 font-sans">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-16">
+            
+            {/* Col 1: ZAPOO Branding */}
+            <div className="lg:col-span-2 space-y-4 pr-0 lg:pr-8">
+              <div 
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="flex items-center gap-2.5 cursor-pointer"
+              >
+                <div className="w-9 h-9 rounded-xl bg-[#E23744] flex items-center justify-center">
+                  <UtensilsCrossed className="text-white w-5 h-5" />
+                </div>
+                <span className="text-2xl font-black tracking-tight text-gray-900">Zapoo</span>
+              </div>
+              <p className="text-[#E23744] font-bold text-sm">Good food. Wherever you are.</p>
+              <p className="text-gray-500 text-sm font-medium leading-relaxed max-w-sm">
+                Discover restaurants, order your favourites, grab great deals or order ahead for a quick pickup.
+              </p>
+            </div>
+
+            {/* Col 2: EXPLORE */}
+            <div>
+              <h4 className="text-xs font-extrabold text-gray-900 uppercase tracking-widest mb-4">EXPLORE</h4>
+              <ul className="space-y-2.5 text-sm font-semibold text-gray-600">
+                <li><span className="hover:text-[#E23744] transition-colors">Order Food</span></li>
+                <li><span className="hover:text-[#E23744] transition-colors">Under ₹99</span></li>
+                <li><span className="hover:text-[#E23744] transition-colors">Gourmet</span></li>
+                <li><span className="hover:text-[#E23744] transition-colors">Takeaway</span></li>
+                <li><span className="hover:text-[#E23744] transition-colors">Order Ahead</span></li>
+                <li><span className="hover:text-[#E23744] transition-colors">Offers</span></li>
+              </ul>
+            </div>
+
+            {/* Col 3: PARTNERS */}
+            <div>
+              <h4 className="text-xs font-extrabold text-gray-900 uppercase tracking-widest mb-4">PARTNERS</h4>
+              <ul className="space-y-2.5 text-sm font-semibold text-gray-600">
+                <li><a href="https://share.google/LGq4J5ulU5bTmzVqD" target="_blank" rel="noopener noreferrer" className="hover:text-[#E23744] transition-colors cursor-pointer">Partner With Us</a></li>
+                <li><a href="https://share.google/LGq4J5ulU5bTmzVqD" target="_blank" rel="noopener noreferrer" className="hover:text-[#E23744] transition-colors cursor-pointer">Restaurant Login</a></li>
+                <li><a href="https://play.google.com/store/apps/details?id=com.zapoo.delivery1&hl=en" target="_blank" rel="noopener noreferrer" className="hover:text-[#E23744] transition-colors cursor-pointer">Delivery Partner</a></li>
+                <li><a href="/contact-us" className="hover:text-[#E23744] transition-colors cursor-pointer">Business Solutions</a></li>
+              </ul>
+            </div>
+
+            {/* Col 4: SUPPORT */}
+            <div>
+              <h4 className="text-xs font-extrabold text-gray-900 uppercase tracking-widest mb-4">SUPPORT</h4>
+              <ul className="space-y-2.5 text-sm font-semibold text-gray-600">
+                <li><a href="/help-support" className="hover:text-[#E23744] transition-colors">Help & Support</a></li>
+                <li><a href="/contact-us" className="hover:text-[#E23744] transition-colors">Contact Us</a></li>
+                <li><a href="/terms-conditions" className="hover:text-[#E23744] transition-colors">Terms & Conditions</a></li>
+                <li><a href="/privacy-policy" className="hover:text-[#E23744] transition-colors">Privacy Policy</a></li>
+                <li><a href="/refund-policy" className="hover:text-[#E23744] transition-colors">Refund Policy</a></li>
+              </ul>
+            </div>
+
+          </div>
+
+          {/* Download App Section */}
+          <div className="border-t border-b border-gray-200/80 py-8 flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
+            <div>
+              <h4 className="text-base font-black text-gray-900">DOWNLOAD ZAPOO</h4>
+              <p className="text-gray-500 text-xs font-medium">Order food. Track deliveries. Discover more.</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button 
+                onClick={openAppStore}
+                className="flex items-center gap-2.5 bg-black text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors shadow-md cursor-pointer"
+              >
+                <Play className="w-4 h-4 fill-current text-white" />
+                <div className="text-left">
+                  <div className="text-[9px] uppercase tracking-wider leading-none text-gray-400">GET IT ON</div>
+                  <div className="text-xs font-bold leading-tight">Google Play</div>
+                </div>
+              </button>
+              <button 
                 onClick={() => window.open(landingSettings?.appLinks?.appStore || '#', '_blank')}
-              />
+                className="flex items-center gap-2.5 bg-black text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors shadow-md"
+              >
+                <Apple className="w-4 h-4 fill-current text-white" />
+                <div className="text-left">
+                  <div className="text-[9px] tracking-wider leading-none text-gray-400">Download on the</div>
+                  <div className="text-xs font-bold leading-tight">App Store</div>
+                </div>
+              </button>
             </div>
           </div>
 
-          <div className="text-gray-500 text-sm font-medium mt-10 text-center md:text-left leading-relaxed">
-            By continuing past this page, you agree to our Terms of Service, Cookie Policy, Privacy Policy and Content Policies. All trademarks are properties of their respective owners. <br />
-            {landingSettings?.copyrightText || '© 2026 Zapoo™ Ltd. All rights reserved.'}
+          {/* Bottom Copyright */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-bold uppercase tracking-wider text-gray-400">
+            <div>© 2026 Zapoo. All rights reserved.</div>
+            <div className="flex items-center gap-2 text-emerald-500 font-extrabold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>SYSTEM HEALTH: 100% OPERATIONAL</span>
+            </div>
           </div>
         </div>
       </footer>
+
     </div>
-  )
+  );
 }

@@ -9,6 +9,13 @@ const NATIVE_LAST_ROUTE_KEY = 'native_last_route'
 const FoodApp = lazy(() => import('../modules/Food/routes'))
 const AuthApp = lazy(() => import('../modules/auth/routes'))
 import ProtectedRoute from '@food/components/ProtectedRoute'
+import MasterLandingPage from './MasterLandingPage'
+const AdminRouter = lazy(() => import('../modules/Food/components/admin/AdminRouter'))
+const Terms = lazy(() => import('../modules/Food/pages/user/profile/Terms'))
+const Privacy = lazy(() => import('../modules/Food/pages/user/profile/Privacy'))
+const Refund = lazy(() => import('../modules/Food/pages/user/profile/Refund'))
+const Support = lazy(() => import('../modules/Food/pages/user/profile/Support'))
+const ContactUs = lazy(() => import('../modules/Food/pages/user/profile/ContactUs'))
 
 const PageLoader = () => {
   if (typeof window !== 'undefined') {
@@ -48,34 +55,33 @@ const RedirectToFood = () => {
   return <Navigate to={`/food${location.pathname}${location.search}`} replace />;
 };
 
-const MasterLandingPage = lazy(() => import('./MasterLandingPage'))
-const AdminRouter = lazy(() => import('../modules/Food/components/admin/AdminRouter'))
-
 const AppRoutes = () => {
   const location = useLocation()
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-
-    const protocol = String(window.location?.protocol || '').toLowerCase()
-    const userAgent = String(window.navigator?.userAgent || '').toLowerCase()
-    const isNativeLikeShell =
-      Boolean(window.flutter_inappwebview) ||
-      Boolean(window.ReactNativeWebView) ||
-      protocol === 'file:' ||
-      userAgent.includes(' wv') ||
-      userAgent.includes('; wv')
-
-    if (!isNativeLikeShell) return
-
-    const route = `${location.pathname || ''}${location.search || ''}`
-    if (route.startsWith('/food/') || route.startsWith('/admin')) {
-      localStorage.setItem(NATIVE_LAST_ROUTE_KEY, route)
+    if (typeof window !== 'undefined' && location.pathname !== '/') {
+      try {
+        const fullPath = `${location.pathname}${location.search}`
+        window.localStorage.setItem(NATIVE_LAST_ROUTE_KEY, fullPath)
+      } catch (err) {
+        console.warn('Failed to save native last route:', err)
+      }
     }
   }, [location.pathname, location.search])
 
   return (
     <Routes>
+      {/* Public Legal & Support Routes */}
+      <Route path="/help-support" element={<Suspense fallback={null}><Support /></Suspense>} />
+      <Route path="/contact-us" element={<Suspense fallback={null}><ContactUs /></Suspense>} />
+      <Route path="/terms-conditions" element={<Suspense fallback={null}><Terms /></Suspense>} />
+      <Route path="/terms" element={<Suspense fallback={null}><Terms /></Suspense>} />
+      <Route path="/privacy-policy" element={<Suspense fallback={null}><Privacy /></Suspense>} />
+      <Route path="/privacy" element={<Suspense fallback={null}><Privacy /></Suspense>} />
+      <Route path="/refund-policy" element={<Suspense fallback={null}><Refund /></Suspense>} />
+      <Route path="/refund" element={<Suspense fallback={null}><Refund /></Suspense>} />
+
       {/* Auth Module */}
       <Route path="/user/auth/*" element={<AuthApp />} />
       <Route path="/delivery/auth/*" element={<AuthApp />} />
@@ -92,7 +98,7 @@ const AppRoutes = () => {
       <Route path="/admin/*" element={<AdminRouter />} />
 
       {/* Handle root and other paths via FoodAppWrapper */}
-      <Route path="/" element={<Navigate to="/food/user" replace />} />
+      <Route path="/" element={<MasterLandingPage />} />
       <Route path="/*" element={<FoodAppWrapper />} />
     </Routes>
   )

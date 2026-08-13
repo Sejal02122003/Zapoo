@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import AnimatedPage from "@food/components/user/AnimatedPage"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
@@ -10,7 +10,16 @@ import { toast } from "sonner"
 import { ArrowLeft, Building2, HelpCircle, ShoppingBag, ChevronRight } from "lucide-react"
 
 export default function Support() {
+  const navigate = useNavigate()
   const [step, setStep] = useState("pick")
+
+  const handleBack = () => {
+    if (window.history.state?.idx > 0) {
+      navigate(-1)
+    } else {
+      navigate('/')
+    }
+  }
   const [type, setType] = useState("")
   const [orders, setOrders] = useState([])
   const [restaurants, setRestaurants] = useState([])
@@ -48,8 +57,9 @@ export default function Support() {
       const res = await orderAPI.getOrders({ limit: 10, page: 1 })
       const list = res?.data?.data?.orders || res?.data?.orders || []
       setOrders(list)
-    } catch {
-      toast.error("Failed to load orders")
+    } catch (err) {
+      console.warn("Could not fetch orders for support:", err?.message)
+      setOrders([])
     }
   }
 
@@ -58,8 +68,9 @@ export default function Support() {
       const res = await restaurantAPI.getRestaurants({ limit: 20, page: 1 })
       const list = res?.data?.data?.restaurants || res?.data?.restaurants || []
       setRestaurants(list)
-    } catch {
-      toast.error("Failed to load restaurants")
+    } catch (err) {
+      console.warn("Could not fetch restaurants for support:", err?.message)
+      setRestaurants([])
     }
   }
 
@@ -217,11 +228,9 @@ export default function Support() {
       <div className="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 sm:py-6 md:py-8 pb-20">
         <div className="mb-4">
           {step === "pick" ? (
-            <Link to="/food/user/profile">
-              <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                <ArrowLeft className="h-5 w-5 text-black dark:text-white" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="icon" className="h-8 w-8 p-0" onClick={handleBack}>
+              <ArrowLeft className="h-5 w-5 text-black dark:text-white" />
+            </Button>
           ) : (
             <Button variant="ghost" size="icon" className="h-8 w-8 p-0" onClick={() => setStep("pick")}>
               <ArrowLeft className="h-5 w-5 text-black dark:text-white" />

@@ -36,10 +36,10 @@ export default function Privacy() {
   }
 
   const handleBack = () => {
-    if (window.history.length > 2) {
+    if (window.history.state?.idx > 0) {
       navigate(-1)
     } else {
-      navigate('/food/user')
+      navigate('/')
     }
   }
 
