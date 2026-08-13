@@ -38,9 +38,6 @@ function getAuthToken() {
           localStorage.removeItem('user_refreshToken');
           localStorage.removeItem('user_authenticated');
           localStorage.removeItem('user_user');
-          if (typeof window !== "undefined") {
-            window.location.replace('/food/user/auth/login');
-          }
           return null;
         }
       }

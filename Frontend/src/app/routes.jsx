@@ -59,13 +59,16 @@ const AppRoutes = () => {
   const location = useLocation()
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (typeof window !== 'undefined' && location.pathname !== '/') {
-      try {
-        const fullPath = `${location.pathname}${location.search}`
-        window.localStorage.setItem(NATIVE_LAST_ROUTE_KEY, fullPath)
-      } catch (err) {
-        console.warn('Failed to save native last route:', err)
+    if (typeof window !== 'undefined') {
+      if (location.pathname !== '/') {
+        try {
+          const fullPath = `${location.pathname}${location.search}`
+          window.localStorage.setItem(NATIVE_LAST_ROUTE_KEY, fullPath)
+        } catch (err) {
+          console.warn('Failed to save native last route:', err)
+        }
+      } else {
+        window.localStorage.removeItem(NATIVE_LAST_ROUTE_KEY)
       }
     }
   }, [location.pathname, location.search])
