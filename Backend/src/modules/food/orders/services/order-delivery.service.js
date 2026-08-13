@@ -1469,6 +1469,12 @@ export async function updateOrderStatusDelivery(orderId, deliveryPartnerId, orde
 
   if (orderStatus === 'delivered' || orderStatus === 'completed') {
       appEvents.emit(EVENTS.ORDER_COMPLETED, order);
+      try {
+        const { creditPendingCashbackForOrder } = await import('../../admin/services/cashback.service.js');
+        await creditPendingCashbackForOrder(order._id);
+      } catch (cbErr) {
+        logger.error(`[CASHBACK] Error crediting pending cashback in updateOrderStatusDelivery: ${cbErr?.message}`);
+      }
   }
 
   return order.toObject();

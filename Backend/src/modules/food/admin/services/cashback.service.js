@@ -138,8 +138,12 @@ export async function createPendingCashbackLedger({ orderId, userId, cashbackRul
 export async function creditPendingCashbackForOrder(orderId) {
     if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) return [];
 
-    const oId = new mongoose.Types.ObjectId(orderId);
-    const pendingLedgers = await CashbackLedger.find({ orderId: oId, status: 'PENDING' });
+    const rawStr = String(orderId || '').trim();
+    const oId = mongoose.Types.ObjectId.isValid(rawStr) ? new mongoose.Types.ObjectId(rawStr) : null;
+    const pendingLedgers = await CashbackLedger.find({
+        orderId: oId ? { $in: [oId, rawStr] } : rawStr,
+        status: 'PENDING'
+    });
 
     if (!pendingLedgers || pendingLedgers.length === 0) return [];
 

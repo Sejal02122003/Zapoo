@@ -3748,6 +3748,29 @@ export default function OrdersMain() {
                 </div>
               ) : null}
 
+              {selectedOrder.type === "Takeaway" && (String(selectedOrder.status).toLowerCase() === "ready" || String(selectedOrder.status).toLowerCase() === "ready_for_pickup") && (
+                <div className="mb-4">
+                  <button
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow transition-colors flex items-center justify-center gap-2"
+                    onClick={async () => {
+                      try {
+                        const targetId = selectedOrder.mongoId || selectedOrder.orderId;
+                        await restaurantAPI.updateOrderStatus(targetId, { orderStatus: "completed" });
+                        toast.success("Takeaway order marked as completed & handed over!");
+                        setIsSheetOpen(false);
+                        setRefreshToken(prev => prev + 1);
+                      } catch (err) {
+                        toast.error(err?.response?.data?.message || "Failed to complete takeaway order");
+                      }
+                    }}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Mark as Handed Over & Complete
+                  </button>
+                </div>
+              )}
+
               <div className="flex gap-3 mt-4">
                   <button
                     className="flex-1 bg-white border-2 border-primary text-primary py-2.5 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors"
@@ -3968,6 +3991,18 @@ function OrderCard({
                   className="px-3 py-1.5 rounded-lg text-[9px] font-black text-white shadow-sm transition-transform active:scale-95 disabled:opacity-50"
                   style={{ backgroundColor: brandColor }}>
                   {isMarkingReady ? "..." : "MARK READY"}
+                </button>
+              )}
+
+              {isReady && type === "Takeaway" && onHandoverComplete && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onHandoverComplete({ orderId, mongoId, customerName });
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-[9px] font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-transform active:scale-95">
+                  HANDOVER & COMPLETE
                 </button>
               )}
             </div>
@@ -4402,6 +4437,17 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
     );
   }
 
+  const handleHandoverComplete = async ({ mongoId, orderId }) => {
+    try {
+      const targetId = mongoId || orderId;
+      await restaurantAPI.updateOrderStatus(targetId, { orderStatus: "completed" });
+      toast.success("Takeaway order marked as completed & handed over!");
+      setOrders(prev => prev.filter(o => (o.mongoId || o.orderId) !== targetId));
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to complete takeaway order");
+    }
+  };
+
   return (
     <div className="pt-1 pb-6">
       <div className="flex items-baseline justify-between mb-3">
@@ -4419,6 +4465,7 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
               key={order.orderId || order.mongoId}
               {...order}
               onSelect={onSelectOrder}
+              onHandoverComplete={handleHandoverComplete}
             />
           ))}
         </div>
