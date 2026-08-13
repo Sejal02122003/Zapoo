@@ -43,7 +43,7 @@ function isNativeLikeShell() {
 }
 
 function resolveNativeInitialRoute() {
-  if (typeof window === 'undefined') return '/food/user'
+  if (typeof window === 'undefined') return '/'
 
   const rawPathname = String(window.location?.pathname || '')
   const pathname = rawPathname.replace(/\/index\.html$/i, '') || '/'
@@ -54,16 +54,15 @@ function resolveNativeInitialRoute() {
   if (pathname.startsWith('/delivery')) return `/food${pathname}`
   if (pathname.startsWith('/user')) return `/food${pathname}`
   if (pathname.startsWith('/admin')) return pathname
-  if (storedRoute.startsWith('/food/') || storedRoute.startsWith('/admin')) {
+  if (storedRoute.startsWith('/food/restaurant') || storedRoute.startsWith('/food/delivery') || storedRoute.startsWith('/admin')) {
     return storedRoute
   }
 
   if (isModuleAuthenticated('restaurant')) return '/food/restaurant'
   if (isModuleAuthenticated('delivery')) return '/food/delivery'
   if (isModuleAuthenticated('admin')) return '/admin'
-  if (isModuleAuthenticated('user')) return '/food/user'
 
-  return '/food/user'
+  return '/'
 }
 
 function bootstrapNativeHashRoute() {
