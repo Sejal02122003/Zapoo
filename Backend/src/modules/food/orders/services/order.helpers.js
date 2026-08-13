@@ -53,6 +53,15 @@ export function sanitizeOrderForExternal(orderDoc) {
       }
     };
   }
+  const method = String(o.payment?.method || o.paymentMethod || 'cash').toLowerCase();
+  const status = String(o.payment?.status || '').toLowerCase();
+  const isPaid = status === 'paid' || method === 'wallet' || (method === 'razorpay' && status === 'paid');
+  if (o.payment) {
+    if (isPaid) {
+      o.payment.status = 'paid';
+      o.payment.amountDue = 0;
+    }
+  }
   o.orderMongoId = (o._id || orderDoc?._id || "").toString();
   // Ensure orderId field for UI always contains the pretty ID
   o.orderId = o.order_id || o.orderMongoId; 
@@ -191,6 +200,18 @@ export function buildDeliverySocketPayload(orderDoc, restaurantDoc = null) {
     orderDoc?._id?.toString?.() || order?._id?.toString?.() || order?._id;
   const displayOrderId = order?.order_id || orderMongoId;
 
+  const method = String(order?.payment?.method || order?.paymentMethod || 'cash').toLowerCase();
+  const status = String(order?.payment?.status || '').toLowerCase();
+  const isPaid = status === 'paid' || method === 'wallet' || (method === 'razorpay' && status === 'paid');
+  const amountDue = isPaid ? 0 : Number(order?.payment?.amountDue ?? order?.pricing?.total ?? 0);
+
+  const paymentObj = {
+    ...(order?.payment || {}),
+    method,
+    status: isPaid ? 'paid' : (order?.payment?.status || 'cod_pending'),
+    amountDue,
+  };
+
   return {
     _id: orderMongoId,
     orderMongoId,
@@ -199,8 +220,10 @@ export function buildDeliverySocketPayload(orderDoc, restaurantDoc = null) {
     items: order?.items || [],
     pricing: order?.pricing,
     total: order?.pricing?.total,
-    payment: order?.payment,
-    paymentMethod: order?.payment?.method,
+    payment: paymentObj,
+    paymentMethod: method,
+    isPrepaid: isPaid,
+    collectAmount: isPaid ? 0 : amountDue,
     restaurantId:
       order?.restaurantId?._id?.toString?.() ||
       order?.restaurantId?.toString?.() ||

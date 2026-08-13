@@ -620,6 +620,7 @@ export async function verifyPayment(userId, dto) {
   if (!valid) throw new ValidationError("Payment verification failed");
 
   order.payment.status = "paid";
+  order.payment.amountDue = 0;
   order.payment.razorpay.paymentId = dto.razorpayPaymentId;
   order.payment.razorpay.signature = dto.razorpaySignature;
   pushStatusHistory(order, {

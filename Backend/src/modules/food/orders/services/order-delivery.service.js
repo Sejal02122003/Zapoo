@@ -300,7 +300,12 @@ export async function getCurrentTripDelivery(deliveryPartnerId) {
   const out = sanitizeOrderForExternal(order);
   if (tx) {
     out.paymentMethod = tx.payment?.method || tx.paymentMethod || out.paymentMethod;
-    out.payment = tx.payment || out.payment;
+    const isPaid = tx.status === 'captured' || tx.payment?.status === 'paid' || ['wallet'].includes(String(out.paymentMethod).toLowerCase()) || (String(out.paymentMethod).toLowerCase() === 'razorpay' && (tx.status === 'captured' || tx.payment?.status === 'paid'));
+    out.payment = {
+      ...(tx.payment || out.payment || {}),
+      status: isPaid ? 'paid' : (tx.payment?.status || out.payment?.status || 'cod_pending'),
+      amountDue: isPaid ? 0 : Number(tx.payment?.amountDue ?? out.payment?.amountDue ?? out.pricing?.total ?? 0),
+    };
     out.pricing = tx.pricing || out.pricing;
     out.amounts = tx.amounts || out.amounts;
     out.transactionStatus = tx.status || out.transactionStatus;
@@ -364,11 +369,25 @@ export async function listOrdersAvailableDelivery(deliveryPartnerId, query) {
 
   const enriched = (docs || []).map((doc) => {
     const tx = txByOrderId.get(String(doc?._id)) || null;
-    if (!tx) return doc;
+    const paymentMethod = tx?.payment?.method || tx?.paymentMethod || doc.paymentMethod || doc.payment?.method || 'cash';
+    const isPaid = doc.payment?.status === 'paid' || tx?.status === 'captured' || tx?.payment?.status === 'paid' || ['wallet'].includes(String(paymentMethod).toLowerCase()) || (String(paymentMethod).toLowerCase() === 'razorpay' && (tx?.status === 'captured' || doc.payment?.status === 'paid'));
+    const paymentObj = {
+      ...(tx?.payment || doc.payment || {}),
+      method: paymentMethod,
+      status: isPaid ? 'paid' : (tx?.payment?.status || doc.payment?.status || 'cod_pending'),
+      amountDue: isPaid ? 0 : Number(tx?.payment?.amountDue ?? doc.payment?.amountDue ?? doc.pricing?.total ?? 0),
+    };
+    if (!tx) {
+      return {
+        ...doc,
+        paymentMethod,
+        payment: paymentObj,
+      };
+    }
     return {
       ...doc,
-      paymentMethod: tx.payment?.method || tx.paymentMethod || doc.paymentMethod,
-      payment: tx.payment || doc.payment,
+      paymentMethod,
+      payment: paymentObj,
       pricing: tx.pricing || doc.pricing,
       amounts: tx.amounts || doc.amounts,
       transactionStatus: tx.status || doc.transactionStatus,

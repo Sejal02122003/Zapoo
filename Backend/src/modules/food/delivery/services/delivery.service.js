@@ -692,11 +692,12 @@ const toTripDto = (order) => {
         order?.restaurant?.restaurantName ||
         '';
 
-    const paymentMethod = order?.payment?.method || order?.paymentMethod || '';
+    const paymentMethod = String(order?.payment?.method || order?.paymentMethod || '').toLowerCase();
     const pricingTotal = Number(order?.pricing?.total) || Number(order?.totalAmount) || 0;
 
     const earningAmount = Number(order?.riderEarning ?? order?.deliveryEarning ?? 0) || 0;
-    const codAmount = paymentMethod === 'cash' ? Number(order?.payment?.amountDue) || 0 : 0;
+    const isPaidOnline = paymentMethod !== 'cash' || order?.payment?.status === 'paid' || Number(order?.payment?.amountDue) === 0;
+    const codAmount = (paymentMethod === 'cash' && !isPaidOnline) ? (Number(order?.payment?.amountDue) || pricingTotal) : 0;
     const codCollectedAmount = paymentMethod === 'cash' && order?.payment?.status === 'paid' ? codAmount : 0;
     return {
         id: order?._id,

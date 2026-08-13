@@ -201,6 +201,10 @@ export async function updateTransactionStatus(orderId, kind, details = {}) {
     if (!transaction) return null;
 
     if (details.status) transaction.status = details.status;
+    if (details.status === 'captured' || kind === 'captured') {
+        transaction.payment.status = 'paid';
+        transaction.payment.amountDue = 0;
+    }
     if (details.razorpayPaymentId) transaction.gateway.razorpayPaymentId = details.razorpayPaymentId;
     if (details.razorpaySignature) transaction.gateway.razorpaySignature = details.razorpaySignature;
 
@@ -225,7 +229,10 @@ export async function updateTransactionStatus(orderId, kind, details = {}) {
         try {
             const updateFields = {};
             if (details.paymentMethod) updateFields['payment.method'] = details.paymentMethod;
-            if (details.status === 'captured') updateFields['payment.status'] = 'paid';
+            if (details.status === 'captured' || kind === 'captured') {
+                updateFields['payment.status'] = 'paid';
+                updateFields['payment.amountDue'] = 0;
+            }
 
             await mongoose.model('FoodOrder').updateOne(
                 { _id: orderId },
