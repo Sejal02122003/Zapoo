@@ -17,6 +17,8 @@ const Refund = lazy(() => import('../modules/Food/pages/user/profile/Refund'))
 const Support = lazy(() => import('../modules/Food/pages/user/profile/Support'))
 const ContactUs = lazy(() => import('../modules/Food/pages/user/profile/ContactUs'))
 
+import { isModuleAuthenticated } from '@food/utils/auth'
+
 const PageLoader = () => {
   if (typeof window !== 'undefined') {
     const path = window.location.pathname.toLowerCase()
@@ -55,12 +57,25 @@ const RedirectToFood = () => {
   return <Navigate to={`/food${location.pathname}${location.search}`} replace />;
 };
 
+const RootRouteHandler = () => {
+  if (isModuleAuthenticated('restaurant')) {
+    return <Navigate to="/food/restaurant" replace />
+  }
+  if (isModuleAuthenticated('delivery')) {
+    return <Navigate to="/food/delivery" replace />
+  }
+  if (isModuleAuthenticated('admin')) {
+    return <Navigate to="/admin" replace />
+  }
+  return <FoodAppWrapper />
+}
+
 const AppRoutes = () => {
   const location = useLocation()
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      if (location.pathname !== '/') {
+      if (location.pathname !== '/' && location.pathname !== '/landing') {
         try {
           const fullPath = `${location.pathname}${location.search}`
           window.localStorage.setItem(NATIVE_LAST_ROUTE_KEY, fullPath)
@@ -100,8 +115,11 @@ const AppRoutes = () => {
       {/* Global Admin Portal - AdminRouter handles its own protection for sub-routes */}
       <Route path="/admin/*" element={<AdminRouter />} />
 
-      {/* Handle root and other paths via FoodAppWrapper */}
-      <Route path="/" element={<MasterLandingPage />} />
+      {/* Web Search Marketing Landing Page - accessible at /landing */}
+      <Route path="/landing" element={<MasterLandingPage />} />
+
+      {/* Handle root / and other paths via RootRouteHandler / FoodAppWrapper */}
+      <Route path="/" element={<RootRouteHandler />} />
       <Route path="/*" element={<FoodAppWrapper />} />
     </Routes>
   )
