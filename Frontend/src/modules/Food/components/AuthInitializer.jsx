@@ -43,8 +43,22 @@ export default function AuthInitializer({ children }) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Show loader while rehydrating auth state on app initialization
+  // Show loader while rehydrating auth state on app initialization (except on root landing page and legal/support pages)
   if (isRehydrating) {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.toLowerCase()
+      if (
+        path === '/' ||
+        path === '' ||
+        path.includes('/terms') ||
+        path.includes('/privacy') ||
+        path.includes('/support') ||
+        path.includes('/contact') ||
+        path.includes('/help')
+      ) {
+        return children
+      }
+    }
     return <Loader />;
   }
 

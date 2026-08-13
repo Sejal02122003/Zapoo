@@ -13,13 +13,17 @@ export default function PageLoader() {
 
   useEffect(() => {
     if (
+      location.pathname === '/' ||
+      location.pathname === '' ||
       location.pathname.includes('/under99') ||
       location.pathname.includes('/under-99') ||
       location.pathname.includes('/under-250') ||
       location.pathname.includes('/restaurants/') ||
       location.pathname.includes('/terms') ||
       location.pathname.includes('/privacy') ||
-      location.pathname.includes('/support')
+      location.pathname.includes('/support') ||
+      location.pathname.includes('/contact') ||
+      location.pathname.includes('/help')
     ) {
       setIsNavigating(false)
       return undefined
