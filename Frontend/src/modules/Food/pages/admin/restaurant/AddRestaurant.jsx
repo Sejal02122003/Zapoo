@@ -447,13 +447,15 @@ export default function AddRestaurant() {
 
   const validateStep3 = () => {
     const errors = []
-    if (!step3.panNumber?.trim()) errors.push("PAN number is required")
-    if (step3.panNumber?.trim() && !PAN_REGEX.test(step3.panNumber.trim())) errors.push("PAN number must be in valid format")
-    if (!step3.nameOnPan?.trim()) errors.push("Name on PAN is required")
+    const selectedIdType = step3.idType || "PAN Card"
+    if (!step3.panNumber?.trim()) errors.push(`${selectedIdType} number is required`)
+    if (selectedIdType === "PAN Card" && step3.panNumber?.trim() && !PAN_REGEX.test(step3.panNumber.trim())) errors.push("PAN number must be in valid format")
+    if (selectedIdType === "Aadhaar Card" && step3.panNumber?.trim() && step3.panNumber.replace(/\s+/g, "").length !== 12) errors.push("Aadhaar number must be 12 digits")
+    if (!step3.nameOnPan?.trim()) errors.push(`Name on ${selectedIdType} is required`)
     if (step3.nameOnPan?.trim() && (!NAME_REGEX.test(step3.nameOnPan.trim()) || !hasLetters(step3.nameOnPan))) {
-      errors.push("Name on PAN must contain characters only")
+      errors.push(`Name on ${selectedIdType} must contain characters only`)
     }
-    if (!step3.panImage) errors.push("PAN image is required")
+    if (!step3.panImage) errors.push(`${selectedIdType} image is required`)
     if (!step3.fssaiNumber?.trim()) errors.push("FSSAI number is required")
     if (step3.fssaiNumber?.trim() && !FSSAI_REGEX.test(step3.fssaiNumber.trim())) errors.push("FSSAI number must be 14 digits")
     if (!step3.fssaiExpiry?.trim()) errors.push("FSSAI expiry date is required")
@@ -1284,32 +1286,52 @@ export default function AddRestaurant() {
     </div>
   )
 
-  const renderStep3 = () => (
+  const renderStep3 = () => {
+    const selectedIdType = step3.idType || "PAN Card"
+    return (
     <div className="space-y-6">
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
-        <h2 className="text-lg font-semibold text-black">PAN details</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
+          <h2 className="text-lg font-semibold text-black">Identity Details</h2>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs font-bold text-gray-600">ID Document Type:</Label>
+            <select
+              value={selectedIdType}
+              onChange={(e) => setStep3({ ...step3, idType: e.target.value })}
+              className="text-xs border border-gray-300 rounded-md p-1.5 bg-gray-50 font-semibold focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              <option value="PAN Card">PAN Card</option>
+              <option value="Aadhaar Card">Aadhaar Card</option>
+              <option value="Voter ID Card">Voter ID Card</option>
+              <option value="Driving License">Driving License</option>
+              <option value="Passport">Passport</option>
+            </select>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label className="text-xs text-gray-700">PAN number*</Label>
+            <Label className="text-xs text-gray-700">{selectedIdType} Number*</Label>
             <Input
               value={step3.panNumber || ""}
-              onChange={(e) => setStep3({ ...step3, panNumber: sanitizePan(e.target.value) })}
+              onChange={(e) => setStep3({ ...step3, panNumber: selectedIdType === "PAN Card" ? sanitizePan(e.target.value) : e.target.value.toUpperCase() })}
               className="mt-1 bg-white text-sm text-black placeholder-black"
-              placeholder="ABCDE1234F"
-              maxLength={10}
+              placeholder={selectedIdType === "Aadhaar Card" ? "1234 5678 9012" : selectedIdType === "PAN Card" ? "ABCDE1234F" : `Enter ${selectedIdType} Number`}
+              maxLength={selectedIdType === "PAN Card" ? 10 : 20}
             />
           </div>
           <div>
-            <Label className="text-xs text-gray-700">Name on PAN*</Label>
+            <Label className="text-xs text-gray-700">Name on {selectedIdType}*</Label>
             <Input
               value={step3.nameOnPan || ""}
               onChange={(e) => setStep3({ ...step3, nameOnPan: normalizeName(e.target.value) })}
               className="mt-1 bg-white text-sm text-black placeholder-black"
+              placeholder="Full Name as printed on ID"
             />
           </div>
         </div>
         <div>
-          <Label className="text-xs text-gray-700">PAN image*</Label>
+          <Label className="text-xs text-gray-700">{selectedIdType} Image*</Label>
           <Input
             type="file"
             accept="image/*"
