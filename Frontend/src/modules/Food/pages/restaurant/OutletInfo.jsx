@@ -61,7 +61,7 @@ export default function OutletInfo() {
           setRestaurantId(data.restaurantId || data.id || "")
           const mongoId = String(data.id || data._id || "")
           setRestaurantMongoId(mongoId)
-          setTakeawayStatus(data.isTakeawayEnabled === true)
+          setTakeawayStatus(data.isTakeawayEnabled !== false)
           setPackagingFee(data.packagingFee != null ? String(data.packagingFee) : "")
           
           if (data.profileImage?.url) {

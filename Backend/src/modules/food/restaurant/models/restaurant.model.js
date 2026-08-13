@@ -128,7 +128,7 @@ const restaurantSchema = new mongoose.Schema(
     },
     isTakeawayEnabled: {
       type: Boolean,
-      default: false,
+      default: true,
       index: true,
     },
     packagingFee: {
