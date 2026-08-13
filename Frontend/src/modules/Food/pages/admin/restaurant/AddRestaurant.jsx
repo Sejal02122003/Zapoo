@@ -1430,7 +1430,8 @@ export default function AddRestaurant() {
         <Input value={step3.accountHolderName || ""} onChange={(e) => setStep3({ ...step3, accountHolderName: normalizeName(e.target.value) })} className="bg-white text-sm" placeholder="Account holder name*" />
       </section>
     </div>
-  )
+    )
+  }
 
   const renderStep = () => {
     if (step === 1) return renderStep1()

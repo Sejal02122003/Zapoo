@@ -2839,7 +2839,8 @@ function RestaurantOnboardingContent() {
         />
       </section>
     </div>
-  )
+    )
+  }
 
   const renderStep = () => {
     if (step === 1) return renderStep1()
