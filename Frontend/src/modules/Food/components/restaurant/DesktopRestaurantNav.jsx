@@ -54,11 +54,13 @@ export default function DesktopRestaurantNav() {
         const data = response?.data?.data?.restaurant || response?.data?.restaurant || response?.data?.data
         if (data) {
           setRestaurantData(data)
-          const savedStatus = localStorage.getItem('restaurant_online_status')
-          if (savedStatus !== null) {
-            setStatus(JSON.parse(savedStatus) ? "Online" : "Offline")
-          } else {
+          if (data.isAcceptingOrders !== undefined) {
             setStatus(data.isAcceptingOrders ? "Online" : "Offline")
+          } else {
+            const savedStatus = localStorage.getItem('restaurant_online_status')
+            if (savedStatus !== null) {
+              setStatus(JSON.parse(savedStatus) ? "Online" : "Offline")
+            }
           }
         }
       } catch (error) {

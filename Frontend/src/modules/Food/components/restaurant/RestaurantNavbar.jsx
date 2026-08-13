@@ -286,26 +286,17 @@ export default function RestaurantNavbar({
     }
   }, [restaurantData, propLocation])
 
-  // Load status from localStorage on mount and listen for changes
+  // Load status from restaurantData/localStorage on mount and listen for changes
   useEffect(() => {
     const updateStatus = () => {
       try {
-        const savedStatus = localStorage.getItem('restaurant_online_status')
         let isOnline = false;
-        if (savedStatus !== null) {
-          isOnline = JSON.parse(savedStatus)
+        if (restaurantData && restaurantData.isAcceptingOrders !== undefined) {
+          isOnline = Boolean(restaurantData.isAcceptingOrders)
         } else {
-          isOnline = Boolean(restaurantData?.isAcceptingOrders)
-        }
-
-        // Force offline if closed today according to registration
-        if (restaurantData?.openDays && Array.isArray(restaurantData.openDays)) {
-          const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-          const today = days[new Date().getDay()];
-          
-          if (restaurantData.openDays.length > 0 && !restaurantData.openDays.includes(today)) {
-            isOnline = false;
-            localStorage.setItem('restaurant_online_status', JSON.stringify(false));
+          const savedStatus = localStorage.getItem('restaurant_online_status')
+          if (savedStatus !== null) {
+            isOnline = JSON.parse(savedStatus)
           }
         }
 
@@ -321,10 +312,10 @@ export default function RestaurantNavbar({
     updateStatus()
 
     // Listen for status changes from RestaurantStatus page
-  const handleStatusChange = (event) => {
-      const isOnline = event.detail?.isOnline || false
+    const handleStatusChange = (event) => {
+      const isOnline = Boolean(event.detail?.isOnline)
       setStatus(isOnline ? "Online" : "Offline")
-  }
+    }
 
     window.addEventListener('restaurantStatusChanged', handleStatusChange)
     

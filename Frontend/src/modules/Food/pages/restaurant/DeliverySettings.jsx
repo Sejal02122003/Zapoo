@@ -70,7 +70,7 @@ export default function DeliverySettings() {
           response?.data?.data?.restaurant ||
           response?.data?.restaurant ||
           null
-        const nextStatus = restaurant?.isAcceptingOrders === true
+        const nextStatus = restaurant?.isAcceptingOrders !== false
         if (!cancelled) {
           setDeliveryStatus(nextStatus)
           syncStatusLocally(nextStatus)
@@ -93,21 +93,6 @@ export default function DeliverySettings() {
 
     return () => {
       cancelled = true
-    }
-  }, [])
-
-  // Keep backward-compatible local key in sync if another screen updates it.
-  useEffect(() => {
-    try {
-      const savedStatus = localStorage.getItem(DELIVERY_STATUS_KEY)
-      if (savedStatus !== null) {
-        setDeliveryStatus(JSON.parse(savedStatus))
-      }
-    } catch (error) {
-      // Only log error if it's not a network/timeout error (backend might be down/slow)
-      if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-        debugError("Error loading delivery status:", error)
-      }
     }
   }, [])
 
@@ -136,6 +121,9 @@ export default function DeliverySettings() {
     const value = Boolean(status)
     setDeliveryStatus(value)
     syncStatusLocally(value)
+    window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
+      detail: { isOnline: value } 
+    }))
 
     if (value) {
       showToast("Delivery is now ON - You're receiving orders")
