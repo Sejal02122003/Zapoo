@@ -3819,6 +3819,7 @@ function OrderCard({
   onSelect,
   onCancel,
   onMarkReady,
+  onHandoverComplete = null,
   isMarkingReady = false,
   scheduledAt = null,
   restaurantNote = null,
