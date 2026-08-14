@@ -524,40 +524,47 @@ export async function calculateOrderPricing(userId, dto) {
   }
   // --- End Location Coupon Service Execution ---
 
-  const couponDiscount = discount;
-  const totalDiscount = couponDiscount + restaurantCouponDiscount;
+  const couponDiscount = Math.round(discount);
+  const roundedRestaurantCouponDiscount = Math.round(restaurantCouponDiscount);
+  const totalDiscount = couponDiscount + roundedRestaurantCouponDiscount;
   
   // Recalculate itemTax and total tax based on reduced subtotal due to restaurant discount
-  const taxableSubtotal = Math.max(0, subtotal - restaurantCouponDiscount);
+  const taxableSubtotal = Math.max(0, subtotal - roundedRestaurantCouponDiscount);
   itemTax = (Number.isFinite(gstRate) && gstRate > 0) ? (taxableSubtotal * (gstRate / 100)) : 0;
   tax = Math.round(itemTax + deliveryTax + platformTax + packagingTax + weatherGST);
 
-  const totalBeforeDiscount = subtotal + deliveryFee + tax + platformFee + packagingFee + weatherFee;
-  const total = Math.max(0, totalBeforeDiscount - totalDiscount);
+  const roundedSubtotal = Math.round(subtotal);
+  const roundedDeliveryFee = Math.round(deliveryFee);
+  const roundedPlatformFee = Math.round(platformFee);
+  const roundedPackagingFee = Math.round(packagingFee);
+  const roundedWeatherFee = Math.round(weatherFee);
+
+  const totalBeforeDiscount = roundedSubtotal + roundedDeliveryFee + tax + roundedPlatformFee + roundedPackagingFee + roundedWeatherFee;
+  const total = Math.round(Math.max(0, totalBeforeDiscount - totalDiscount));
 
   return {
 
     pricing: {
-      subtotal,
+      subtotal: roundedSubtotal,
       tax,
       taxBreakdown: {
-        itemTax,
-        deliveryTax,
-        platformTax,
-        packagingTax
+        itemTax: Math.round(itemTax),
+        deliveryTax: Math.round(deliveryTax),
+        platformTax: Math.round(platformTax),
+        packagingTax: Math.round(packagingTax)
       },
-      packagingFee,
-      deliveryFee,
+      packagingFee: roundedPackagingFee,
+      deliveryFee: roundedDeliveryFee,
       deliveryFeeBreakdown: deliveryFeeBreakdown || undefined,
-      weatherFee,
-      weatherGST,
+      weatherFee: roundedWeatherFee,
+      weatherGST: Math.round(weatherGST),
       weatherPricing: weatherPricingSnapshot,
       freeDeliveryUpTo: Number.isFinite(freeUpTo) ? freeUpTo : undefined,
-      platformFee,
+      platformFee: roundedPlatformFee,
       discount: totalDiscount,
-      itemDiscount: itemDiscountTotal > 0 ? itemDiscountTotal : undefined,
+      itemDiscount: itemDiscountTotal > 0 ? Math.round(itemDiscountTotal) : undefined,
       couponDiscount: couponDiscount > 0 ? couponDiscount : undefined,
-      restaurantCouponDiscount: restaurantCouponDiscount > 0 ? restaurantCouponDiscount : undefined,
+      restaurantCouponDiscount: roundedRestaurantCouponDiscount > 0 ? roundedRestaurantCouponDiscount : undefined,
       deductGstFromRestaurant: feeSettings.deductGstFromRestaurant !== false,
       total,
       currency: "INR",

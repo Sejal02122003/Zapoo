@@ -247,34 +247,36 @@ export async function createOrder(userId, dto) {
     return sum + Math.max(0, price) * Math.max(0, qty);
   }, 0);
   const normalizedPricing = {
-    subtotal: Number(dto.pricing?.subtotal ?? computedSubtotal),
-    tax: Number(dto.pricing?.tax ?? 0),
-    packagingFee: Number(dto.pricing?.packagingFee ?? 0),
-    deliveryFee: Number(dto.pricing?.deliveryFee ?? 0),
-    platformFee: Number(dto.pricing?.platformFee ?? 0),
-    discount: Number(dto.pricing?.discount ?? 0),
-    total: Number(dto.pricing?.total ?? 0),
+    subtotal: Math.round(Number(dto.pricing?.subtotal ?? computedSubtotal)),
+    tax: Math.round(Number(dto.pricing?.tax ?? 0)),
+    packagingFee: Math.round(Number(dto.pricing?.packagingFee ?? 0)),
+    deliveryFee: Math.round(Number(dto.pricing?.deliveryFee ?? 0)),
+    platformFee: Math.round(Number(dto.pricing?.platformFee ?? 0)),
+    discount: Math.round(Number(dto.pricing?.discount ?? 0)),
+    total: Math.round(Number(dto.pricing?.total ?? 0)),
     walletAmountUsed: 0,
     currency: String(dto.pricing?.currency || "INR"),
   };
-  const computedTotal = Math.max(
-    0,
-    (Number.isFinite(normalizedPricing.subtotal)
-      ? normalizedPricing.subtotal
-      : 0) +
-      (Number.isFinite(normalizedPricing.tax) ? normalizedPricing.tax : 0) +
-      (Number.isFinite(normalizedPricing.packagingFee)
-        ? normalizedPricing.packagingFee
+  const computedTotal = Math.round(
+    Math.max(
+      0,
+      (Number.isFinite(normalizedPricing.subtotal)
+        ? normalizedPricing.subtotal
         : 0) +
-      (Number.isFinite(normalizedPricing.deliveryFee)
-        ? normalizedPricing.deliveryFee
-        : 0) +
-      (Number.isFinite(normalizedPricing.platformFee)
-        ? normalizedPricing.platformFee
-        : 0) -
-      (Number.isFinite(normalizedPricing.discount)
-        ? normalizedPricing.discount
-        : 0),
+        (Number.isFinite(normalizedPricing.tax) ? normalizedPricing.tax : 0) +
+        (Number.isFinite(normalizedPricing.packagingFee)
+          ? normalizedPricing.packagingFee
+          : 0) +
+        (Number.isFinite(normalizedPricing.deliveryFee)
+          ? normalizedPricing.deliveryFee
+          : 0) +
+        (Number.isFinite(normalizedPricing.platformFee)
+          ? normalizedPricing.platformFee
+          : 0) -
+        (Number.isFinite(normalizedPricing.discount)
+          ? normalizedPricing.discount
+          : 0),
+    )
   );
   if (
     !Number.isFinite(normalizedPricing.total) ||
@@ -282,6 +284,7 @@ export async function createOrder(userId, dto) {
   ) {
     normalizedPricing.total = computedTotal;
   }
+  normalizedPricing.total = Math.round(normalizedPricing.total);
 
   // Handle Split Payment Logic
   let payableAmount = normalizedPricing.total;
@@ -298,7 +301,7 @@ export async function createOrder(userId, dto) {
       if (balance > 0) {
         walletAmountToUse = Math.min(balance, normalizedPricing.total);
         normalizedPricing.walletAmountUsed = walletAmountToUse;
-        payableAmount = Number((normalizedPricing.total - walletAmountToUse).toFixed(2));
+        payableAmount = Math.round(Math.max(0, normalizedPricing.total - walletAmountToUse));
         
         if (payableAmount === 0) {
           paymentMethod = "wallet";
