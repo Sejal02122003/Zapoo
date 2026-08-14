@@ -6,7 +6,6 @@ import {
   Navigation, CheckCircle2, Camera, Loader2, Image as ImageIcon
 } from 'lucide-react';
 import { ActionSlider } from '@/modules/DeliveryV2/components/ui/ActionSlider';
-import { ProtectedCallModal } from '@/modules/DeliveryV2/components/modals/ProtectedCallModal';
 import { toast } from 'sonner';
 
 /**
@@ -23,9 +22,6 @@ export const PickupActionModal = ({
   onPickedUp,
   onMinimize
 }) => {
-  const [isUploading, setIsUploading] = useState(false);
-  const [showCallModal, setShowCallModal] = useState(false);
-  const fileInputRef = useRef(null);
   const [showItems, setShowItems] = useState(false);
   const [pickupOtp, setPickupOtp] = useState('');
   const [otpRequested, setOtpRequested] = useState(false);
@@ -87,9 +83,8 @@ export const PickupActionModal = ({
           <div className="flex gap-2">
             {restaurantPhone && (
               <button
-                onClick={() => setShowCallModal(true)}
-                title="Call Restaurant (Protected Call)"
-                className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 border border-green-100 cursor-pointer"
+                onClick={() => window.location.href = `tel:${restaurantPhone}`}
+                className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 border border-green-100"
               >
                 <Phone className="w-5 h-5" />
               </button>
