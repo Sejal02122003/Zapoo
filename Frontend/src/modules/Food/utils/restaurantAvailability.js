@@ -151,16 +151,6 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
   const isActive = restaurant.isActive !== false
   const isAcceptingOrders = restaurant.isAcceptingOrders !== false
 
-  // Explicit manual overrides from backend
-  if (restaurant.isClosed === true || restaurant.status === 'inactive' || restaurant.isOpen === false) {
-    return {
-      isOpen: false,
-      isActive: false,
-      isAcceptingOrders: false,
-      isWithinTimings: false,
-      reason: "manually-closed" }
-  }
-
   if (!ignoreOperationalStatus && !isActive) {
     return {
       isOpen: false,
@@ -177,6 +167,28 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
       isAcceptingOrders,
       isWithinTimings: false,
       reason: "not-accepting-orders" }
+  }
+
+  // When restaurant owner has actively turned ON "isAcceptingOrders: true" in dashboard, respect live toggle
+  if (restaurant.isAcceptingOrders === true && isActive && restaurant.isClosed !== true) {
+    return {
+      isOpen: true,
+      isActive: true,
+      isAcceptingOrders: true,
+      isWithinTimings: true,
+      openingTime: restaurant?.deliveryTimings?.openingTime || restaurant?.openingTime || null,
+      closingTime: restaurant?.deliveryTimings?.closingTime || restaurant?.closingTime || null,
+      reason: "open" }
+  }
+
+  // Explicit manual overrides from backend
+  if (restaurant.isClosed === true || restaurant.status === 'inactive' || (restaurant.isOpen === false && restaurant.isAcceptingOrders === false)) {
+    return {
+      isOpen: false,
+      isActive: false,
+      isAcceptingOrders: false,
+      isWithinTimings: false,
+      reason: "manually-closed" }
   }
 
   const dayName = DAY_NAMES[now.getDay()]

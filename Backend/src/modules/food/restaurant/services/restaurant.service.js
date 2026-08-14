@@ -551,7 +551,7 @@ export const updateRestaurantAcceptingOrders = async (restaurantId, isAcceptingO
     const value = Boolean(isAcceptingOrders);
     const doc = await FoodRestaurant.findByIdAndUpdate(
         restaurantId,
-        { $set: { isAcceptingOrders: value } },
+        { $set: { isAcceptingOrders: value, isClosed: !value, isOpen: value } },
         {
             new: true,
             runValidators: true,
@@ -606,6 +606,12 @@ export const updateRestaurantAcceptingOrders = async (restaurantId, isAcceptingO
             ].join(' ')
         }
     ).lean();
+    try {
+        const { invalidateCache } = await import('../../../../middleware/cache.js');
+        await invalidateCache('*restaurant*');
+    } catch (cacheErr) {
+        // Non-fatal
+    }
     return toRestaurantProfile(doc);
 };
 

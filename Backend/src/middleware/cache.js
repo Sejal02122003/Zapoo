@@ -10,8 +10,8 @@ import { config } from '../config/env.js';
  */
 export const cacheResponse = (ttlInSeconds = 300, prefix = 'api_cache') => {
     return async (req, res, next) => {
-        // Skip caching if Redis is disabled or not a GET request
-        if (!config.redisEnabled || req.method !== 'GET') return next();
+        // Skip caching if Redis is disabled, not a GET request, or noCache is requested
+        if (!config.redisEnabled || req.method !== 'GET' || req.query?.noCache === 'true' || req.query?.noCache === true) return next();
 
         const redis = getRedisClient();
         if (!redis || !redis.isReady) return next();
