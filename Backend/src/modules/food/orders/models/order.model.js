@@ -354,7 +354,7 @@ const orderSchema = new mongoose.Schema(
         scheduledAt: { type: Date, default: null },
         riderEarning: { type: Number, default: 0, min: 0 },
         deliveryBonusAmount: { type: Number, default: 0, min: 0 },
-        platformProfit: { type: Number, default: 0, min: 0 },
+        platformProfit: { type: Number, default: 0 },
         // Late Delivery Penalty Fields
         expectedDeliveryTime: { type: Date, default: null },
         actualDeliveryTime: { type: Date, default: null },
