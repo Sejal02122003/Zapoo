@@ -3758,7 +3758,7 @@ export default function OrdersMain() {
                         await restaurantAPI.updateOrderStatus(targetId, { orderStatus: "completed" });
                         toast.success("Takeaway order marked as completed & handed over!");
                         setIsSheetOpen(false);
-                        setRefreshToken(prev => prev + 1);
+                        requestOrdersRefresh();
                       } catch (err) {
                         toast.error(err?.response?.data?.message || "Failed to complete takeaway order");
                       }
