@@ -23,6 +23,7 @@ import { PickupActionModal } from '@/modules/DeliveryV2/components/modals/Pickup
 import { DeliveryVerificationModal } from '@/modules/DeliveryV2/components/modals/DeliveryVerificationModal';
 import { OrderSummaryModal } from '@/modules/DeliveryV2/components/modals/OrderSummaryModal';
 import { PhotoUploadModal } from '@/modules/DeliveryV2/components/modals/PhotoUploadModal';
+import { ProtectedCallModal } from '@/modules/DeliveryV2/components/modals/ProtectedCallModal';
 import ActionSlider from '@/modules/DeliveryV2/components/ui/ActionSlider';
 
 // Sub Pages
@@ -35,8 +36,9 @@ import {
   Bell, HelpCircle, AlertTriangle, 
   Wallet, History, User as UserIcon, LayoutGrid,
   Plus, Minus, Navigation2, Target, Play, CheckCircle2, Clock, ChevronDown,
-  Contact, Package, Phone, MapPin
+  Contact, Package, Phone, MapPin, ShieldCheck
 } from 'lucide-react';
+import { maskPhoneNumber } from '@/modules/DeliveryV2/utils/phoneMask';
 
 import { shouldSendLocationUpdate } from "@delivery/utils/trackingInterval";
 import { getHaversineDistance, calculateETA, calculateHeading } from '@/modules/DeliveryV2/utils/geo';
@@ -85,6 +87,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
 
   const [incomingOrders, setIncomingOrders] = useState([]);
   const [selectedIncomingId, setSelectedIncomingId] = useState(null);
+  const [callModalData, setCallModalData] = useState(null);
   const lockedIncomingOrderIdRef = useRef(null);
 
   const incomingOrder = useMemo(
@@ -1426,14 +1429,29 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                                  <p className="text-gray-500 text-sm font-medium leading-relaxed mt-1 line-clamp-2">
                                     {activeOrder?.deliveryAddress?.address || activeOrder?.deliveryAddress?.street || "Customer Location"}
                                  </p>
+                                 {(activeOrder?.userPhone || activeOrder?.deliveryAddress?.phone || activeOrder?.user?.phone) && (
+                                   <div className="flex items-center gap-1.5 mt-2 text-xs text-slate-600 font-medium bg-emerald-50/80 px-2.5 py-1 rounded-lg border border-emerald-100/80 w-fit">
+                                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                     <span className="font-semibold text-emerald-950">
+                                       {maskPhoneNumber(activeOrder?.userPhone || activeOrder?.deliveryAddress?.phone || activeOrder?.user?.phone)}
+                                     </span>
+                                     <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider">
+                                       Protected
+                                     </span>
+                                   </div>
+                                 )}
                               </div>
                               {(activeOrder?.userPhone || activeOrder?.deliveryAddress?.phone || activeOrder?.user?.phone) && (
                                 <button
                                   onClick={() => {
                                     const num = activeOrder?.userPhone || activeOrder?.deliveryAddress?.phone || activeOrder?.user?.phone;
-                                    if (num) window.location.href = `tel:${num}`;
+                                    const name = activeOrder?.user?.name || activeOrder?.deliveryAddress?.name || "Customer";
+                                    if (num) {
+                                      setCallModalData({ phone: num, name });
+                                    }
                                   }}
-                                  className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100 active:scale-95 transition-all shadow-sm shrink-0 mt-1"
+                                  title="Call Customer (Protected Call)"
+                                  className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100 active:scale-95 transition-all shadow-sm shrink-0 mt-1 cursor-pointer"
                                 >
                                   <Phone className="w-4 h-4 fill-current" />
                                 </button>
@@ -1670,6 +1688,13 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
            </button>
         </motion.div>
       )}
+
+      <ProtectedCallModal
+        isOpen={!!callModalData}
+        onClose={() => setCallModalData(null)}
+        recipientName={callModalData?.name}
+        phone={callModalData?.phone}
+      />
 
       {/* â”€â”€â”€ 3. BOTTOM NAV (Fixed - Compact Pro) â”€â”€â”€ */}
       <div className="bg-white border-t border-gray-100 px-8 py-3 pb-6 flex justify-between items-center z-[200] shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
