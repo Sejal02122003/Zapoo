@@ -39,6 +39,17 @@ const debugError = (...args) => {};
 
 const STORAGE_KEY = "restaurant_online_status";
 
+const safeFormatTime = (dateVal) => {
+  if (!dateVal) return "Just now";
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return "Just now";
+    return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+  } catch (e) {
+    return "Just now";
+  }
+};
+
 // Top filter tabs
 const filterTabs = [
   { id: "new", label: "New" },
@@ -130,9 +141,7 @@ function CompletedOrders({ onSelectOrder, refreshToken = 0 }) {
             customerName: order.userId?.name || order.customerName || "Customer",
             type: order.orderType === 'takeaway' ? 'Takeaway' : "Home Delivery",
             tableOrToken: null,
-            timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit" }),
+            timePlaced: safeFormatTime(order.createdAt),
             deliveredAt:
               order.deliveredAt || order.updatedAt || order.createdAt,
             itemsSummary:
@@ -332,9 +341,7 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
             customerName: order.userId?.name || order.customerName || "Customer",
             type: order.orderType === 'takeaway' ? 'Takeaway' : "Home Delivery",
             tableOrToken: null,
-            timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit" }),
+            timePlaced: safeFormatTime(order.createdAt),
             cancelledAt:
               order.cancelledAt || order.updatedAt || order.createdAt,
             cancelledBy: order.cancelledBy || "unknown",
@@ -561,9 +568,7 @@ function DeadOrders({ onSelectOrder, refreshToken = 0 }) {
             customerName: order.userId?.name || order.customerName || "Customer",
             type: order.orderType === 'takeaway' ? 'Takeaway' : "Home Delivery",
             tableOrToken: null,
-            timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit" }),
+            timePlaced: safeFormatTime(order.createdAt),
             cancelledAt: order.cancelledAt || order.updatedAt || order.createdAt,
             cancellationReason: order.cancellationReason || "Auto-killed: Order was not delivered within 1 hour",
             itemsSummary: order.items?.map((item) => `${item.quantity}x ${item.name}`).join(", ") || "No items",
@@ -3821,7 +3826,7 @@ function OrderCard({
   cancellationReason = null,
   rejectionReason = null }) {
   const normalizedStatus = String(status || "").toLowerCase();
-  const isReady = normalizedStatus === "ready";
+  const isReady = normalizedStatus === "ready" || normalizedStatus === "ready_for_pickup";
   const isPreparing = normalizedStatus === "preparing";
   const brandColor = "#2563eb";
 
@@ -3933,12 +3938,18 @@ function OrderCard({
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[8px] font-bold text-green-600 uppercase">Scheduled For</span>
                   <span className="text-[10px] font-black text-green-700">
-                    {new Date(scheduledAt).toLocaleString("en-US", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true })}
+                    {(() => {
+                      try {
+                        return new Date(scheduledAt).toLocaleString("en-US", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true });
+                      } catch (e) {
+                        return String(scheduledAt);
+                      }
+                    })()}
                   </span>
                 </div>
               ) : (
@@ -4046,7 +4057,7 @@ function PreparingOrders({
             const initialETA = order.estimatedDeliveryTime || 30; // in minutes
             const preparingTimestamp = order.tracking?.preparing?.timestamp
               ? new Date(order.tracking.preparing.timestamp)
-              : new Date(order.createdAt); // Fallback to createdAt if preparing timestamp not available
+              : (order.createdAt ? new Date(order.createdAt) : new Date());
 
             return {
               orderId: order.orderId || order._id,
@@ -4055,12 +4066,9 @@ function PreparingOrders({
               customerName: order.userId?.name || "Customer",
               type: order.orderType === 'takeaway' ? 'Takeaway' : (order.deliveryFleet === "standard" ? "Home Delivery" : "Express Delivery"),
               tableOrToken: null,
-              timePlaced: new Date(order.createdAt).toLocaleTimeString(
-                "en-US",
-                { hour: "2-digit", minute: "2-digit" },
-              ),
+              timePlaced: safeFormatTime(order.createdAt),
               initialETA, // Store initial ETA in minutes
-              preparingTimestamp, // Store when order started preparing
+              preparingTimestamp: isNaN(preparingTimestamp.getTime()) ? new Date() : preparingTimestamp,
               itemsSummary:
                 order.items
                   ?.map((item) => `${item.quantity}x ${item.name}`)
@@ -4356,9 +4364,9 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
         if (!isMounted) return;
 
         if (response.data?.success && response.data.data?.orders) {
-          // Filter orders with 'ready' status
+          // Filter orders with 'ready' or 'ready_for_pickup' status
           const readyOrders = response.data.data.orders.filter(
-            (order) => order.status === "ready",
+            (order) => order.status === "ready" || order.status === "ready_for_pickup",
           );
 
           const transformedOrders = readyOrders.map((order) => ({
@@ -4368,9 +4376,7 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
             customerName: order.userId?.name || "Customer",
             type: order.orderType === 'takeaway' ? 'Takeaway' : (order.deliveryFleet === "standard" ? "Home Delivery" : "Express Delivery"),
             tableOrToken: null,
-            timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit" }),
+            timePlaced: safeFormatTime(order.createdAt),
             eta: null, // Don't show ETA for ready orders
             itemsSummary:
               order.items
@@ -4502,9 +4508,7 @@ const OutForDeliveryOrders = ({ onSelectOrder, refreshToken = 0 }) => {
             customerName: order.userId?.name || "Customer",
             type: order.orderType === 'takeaway' ? 'Takeaway' : (order.deliveryFleet === "standard" ? "Home Delivery" : "Express Delivery"),
             tableOrToken: null,
-            timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit" }),
+            timePlaced: safeFormatTime(order.createdAt),
             eta: null,
             itemsSummary:
               order.items
