@@ -169,8 +169,8 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
       reason: "not-accepting-orders" }
   }
 
-  // When restaurant owner has actively turned ON "isAcceptingOrders: true" in dashboard, respect live toggle
-  if (restaurant.isAcceptingOrders === true && isActive && restaurant.isClosed !== true) {
+  // When restaurant owner has actively turned ON "isAcceptingOrders" in dashboard (or default), respect live toggle
+  if (isAcceptingOrders && isActive && restaurant.isClosed !== true) {
     return {
       isOpen: true,
       isActive: true,
