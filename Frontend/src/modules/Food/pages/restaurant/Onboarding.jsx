@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { Input } from "@food/components/ui/input"
 import { Button } from "@food/components/ui/button"
 import { Label } from "@food/components/ui/label"
-import { Image as ImageIcon, Upload, Clock, Calendar as CalendarIcon, Sparkles, X, LogOut, FileText, Loader2 } from "lucide-react"
+import { Image as ImageIcon, Upload, Clock, Calendar as CalendarIcon, Sparkles, X, LogOut, FileText, Loader2, ArrowLeft } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@food/components/ui/popover"
 import { Calendar } from "@food/components/ui/calendar"
 import {
@@ -1547,6 +1547,15 @@ function RestaurantOnboardingContent() {
 
 
 
+  const handleBack = () => {
+    if (step > 1) {
+      setStep((prev) => Math.max(1, prev - 1))
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      navigate(-1)
+    }
+  }
+
   const handleNext = async () => {
     setError("")
 
@@ -2961,12 +2970,21 @@ function RestaurantOnboardingContent() {
           </div>
         )}
 
-        <footer className={`px-4 sm:px-6 py-3 bg-white ${keyboardInset ? "hidden" : ""}`}>
-          <div className="flex justify-end items-center">
+        <footer className={`px-4 sm:px-6 py-3 bg-white border-t border-gray-100 ${keyboardInset ? "hidden" : ""}`}>
+          <div className="flex justify-between items-center w-full">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBack}
+              className="text-sm font-semibold px-5 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center gap-2 rounded-xl"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
             <Button
               onClick={handleNext}
               disabled={saving || (step === 3 && !isEditing)}
-              className={`text-sm bg-black text-white px-6 ${(step === 3 && !isEditing) ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`text-sm bg-[#E23744] hover:bg-[#c82835] text-white px-6 font-semibold rounded-xl ${(step === 3 && !isEditing) ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               {step === 3 ? (saving ? "Uploading Documents..." : "Submit Profile") : saving ? "Saving..." : "Continue"}
             </Button>

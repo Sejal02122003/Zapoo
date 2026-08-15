@@ -5,8 +5,11 @@ import { processAndSaveImage } from '../../../utils/sharp.util.js';
 
 const router = express.Router();
 
-// POST /api/v1/uploads/image - Upload single image (validated 5MB, sharp converted to webp)
+// POST /api/v1/uploads/image - Upload single image (validated 25MB, sharp converted to webp)
 router.post('/image', uploadMiddleware.single('file'), uploadImageController);
+
+// POST /api/v1/uploads/file - Upload single document / file / PDF
+router.post('/file', uploadMiddleware.single('file'), uploadImageController);
 
 // DELETE /api/v1/uploads/image - Delete image from local VPS storage
 router.delete('/image', deleteImageController);

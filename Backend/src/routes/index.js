@@ -69,6 +69,7 @@ router.get('/v1/food/dining/bookings/restaurant/:restaurantId', authMiddleware, 
 router.patch('/v1/food/dining/bookings/:bookingId/status', authMiddleware, privateRateLimiter, requireRoles('RESTAURANT', 'ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), updateBookingStatus);
 
 router.use('/v1/uploads', uploadRoutes);
+router.use('/v1/food/uploads', uploadRoutes);
 
 // Public Admin Settings (Public Category B)
 router.get('/v1/food/admin/business-settings/public', businessSettingsController.getBusinessSettings);
