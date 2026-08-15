@@ -268,7 +268,6 @@ export const verifyUserOtpAndLogin = async (
               });
             }
         }
-      }
     } catch (e) {
       // Never fail login due to referral errors.
       logger?.warn?.({ err: e }, "Referral crediting failed (user)");
