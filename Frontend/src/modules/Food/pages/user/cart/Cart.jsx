@@ -878,7 +878,7 @@ export default function Cart() {
     fetchAddons()
   }, [restaurantData, cart.length, loadingRestaurant])
 
-  // Fetch coupons for items in cart
+  // Fetch coupons for items in cart and store/platform wide coupons
   useEffect(() => {
     const fetchCouponsForCartItems = async () => {
       if (cart.length === 0 || !restaurantId) {
@@ -891,8 +891,65 @@ export default function Cart() {
 
       const allCoupons = []
       const uniqueCouponCodes = new Set()
+      const currentSubtotal = cart.reduce((total, item) => total + (Number(item.price || 0) * (Number(item.quantity) || 1)), 0);
 
-      // Fetch coupons for each item in cart in parallel
+      // 1. Fetch store-wide / platform-wide available coupons (including cashback coupons)
+      try {
+        const globalRes = await userAPI.getAvailableCoupons({ restaurantId });
+        const globalCouponsList = globalRes?.data?.data || globalRes?.data || [];
+        if (Array.isArray(globalCouponsList)) {
+          globalCouponsList.forEach((coupon) => {
+            const code = String(coupon.code || coupon.couponCode || '').trim().toUpperCase();
+            if (code && !uniqueCouponCodes.has(code)) {
+              uniqueCouponCodes.add(code);
+
+              const isRewardCashback = coupon.rewardType === 'CASHBACK';
+              const isRewardBoth = coupon.rewardType === 'BOTH';
+
+              const isPct = String(coupon.discountType).toUpperCase() === 'PERCENTAGE';
+              let calcDiscount = isPct ? currentSubtotal * ((Number(coupon.discountValue || 0)) / 100) : Number(coupon.discountValue || 0);
+              if (coupon.maxDiscountCap > 0 && calcDiscount > coupon.maxDiscountCap) calcDiscount = coupon.maxDiscountCap;
+              if (isRewardCashback) calcDiscount = 0;
+
+              const isCbPct = String(coupon.cashbackType || (isRewardCashback && !coupon.cashbackValue ? coupon.discountType : 'PERCENTAGE')).toUpperCase() === 'PERCENTAGE';
+              const rawCbVal = Number(coupon.cashbackValue ?? (isRewardCashback ? coupon.discountValue : 0) ?? 0);
+              const cbCap = Number(coupon.maxCashbackCap ?? (isRewardCashback ? coupon.maxDiscountCap : 0) ?? 0);
+
+              let calcCashback = 0;
+              if (isRewardCashback || isRewardBoth) {
+                calcCashback = isCbPct ? currentSubtotal * (rawCbVal / 100) : rawCbVal;
+                if (cbCap > 0 && calcCashback > cbCap) calcCashback = cbCap;
+              }
+
+              let discountDisplay = '';
+              if (isRewardBoth) {
+                discountDisplay = `${isPct ? `${coupon.discountValue}%` : `₹${coupon.discountValue}`} OFF + ${isCbPct ? `${rawCbVal}%` : `₹${rawCbVal}`} Cashback`;
+              } else if (isRewardCashback) {
+                discountDisplay = isCbPct ? `${rawCbVal}% Cashback` : `₹${rawCbVal} Cashback`;
+              } else {
+                discountDisplay = isPct ? `${coupon.discountValue}% OFF` : `₹${coupon.discountValue} OFF`;
+              }
+
+              allCoupons.push({
+                code,
+                discount: Math.round(calcDiscount),
+                discountPercentage: isPct ? coupon.discountValue : undefined,
+                discountDisplay,
+                minOrder: Number(coupon.minOrderValue || 0),
+                description: coupon.description || (isRewardCashback ? `Earn ₹${Math.round(calcCashback)} cashback after delivery` : `Save ₹${Math.round(calcDiscount)} with '${code}'`),
+                customerGroup: coupon.userSegment === 'NEW_USERS_ONLY' ? 'new' : 'all',
+                isGlobalCoupon: coupon.restaurantScope === 'ALL',
+                rewardType: coupon.rewardType || 'INSTANT_DISCOUNT',
+                cashbackValue: Math.round(calcCashback)
+              });
+            }
+          });
+        }
+      } catch (err) {
+        debugError('[CART-COUPONS] Error fetching general coupons:', err);
+      }
+
+      // 2. Fetch coupons for each item in cart in parallel
       await Promise.all(cart.map(async (cartItem) => {
         const couponItemId = cartItem.itemId || cartItem.id
         if (!couponItemId) return
@@ -907,31 +964,50 @@ export default function Cart() {
 
             // Add coupons, avoiding duplicates
             coupons.forEach(coupon => {
-                if (!uniqueCouponCodes.has(coupon.couponCode)) {
-                  uniqueCouponCodes.add(coupon.couponCode)
+                const code = String(coupon.couponCode || coupon.code || '').trim().toUpperCase();
+                if (code && !uniqueCouponCodes.has(code)) {
+                  uniqueCouponCodes.add(code)
                   
-                  // Calculate dynamic discount based on cart total
-                  const currentSubtotal = cart.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
+                  const isRewardCashback = coupon.rewardType === 'CASHBACK';
+                  const isRewardBoth = coupon.rewardType === 'BOTH';
+
                   const isPct = String(coupon.discountType).toUpperCase() === "PERCENTAGE";
                   let calcDiscount = isPct ? currentSubtotal * ((coupon.discountPercentage || coupon.discountValue || 0) / 100) : (coupon.discountValue || 0);
                   if (coupon.maxDiscount > 0 && calcDiscount > coupon.maxDiscount) calcDiscount = coupon.maxDiscount;
+                  if (coupon.maxDiscountCap > 0 && calcDiscount > coupon.maxDiscountCap) calcDiscount = coupon.maxDiscountCap;
+                  if (isRewardCashback) calcDiscount = 0;
                   
-                  const isCbPct = String(coupon.cashbackType).toUpperCase() === "PERCENTAGE";
-                  let calcCashback = isCbPct ? currentSubtotal * ((coupon.cashbackValue || 0) / 100) : (coupon.cashbackValue || 0);
-                  if (coupon.maxCashbackCap > 0 && calcCashback > coupon.maxCashbackCap) calcCashback = coupon.maxCashbackCap;
+                  const isCbPct = String(coupon.cashbackType || (isRewardCashback && !coupon.cashbackValue ? coupon.discountType : 'PERCENTAGE')).toUpperCase() === "PERCENTAGE";
+                  const rawCbVal = Number(coupon.cashbackValue ?? (isRewardCashback ? coupon.discountValue : 0) ?? 0);
+                  const cbCap = Number(coupon.maxCashbackCap ?? (isRewardCashback ? coupon.maxDiscountCap : 0) ?? 0);
+
+                  let calcCashback = 0;
+                  if (isRewardCashback || isRewardBoth) {
+                    calcCashback = isCbPct ? currentSubtotal * (rawCbVal / 100) : rawCbVal;
+                    if (cbCap > 0 && calcCashback > cbCap) calcCashback = cbCap;
+                  }
+
+                  let discountDisplay = '';
+                  if (isRewardBoth) {
+                    discountDisplay = `${isPct ? `${coupon.discountPercentage || coupon.discountValue}%` : `₹${coupon.discountValue}`} OFF + ${isCbPct ? `${rawCbVal}%` : `₹${rawCbVal}`} Cashback`;
+                  } else if (isRewardCashback) {
+                    discountDisplay = isCbPct ? `${rawCbVal}% Cashback` : `₹${rawCbVal} Cashback`;
+                  } else {
+                    discountDisplay = isPct
+                      ? `${coupon.discountPercentage || coupon.discountValue}% OFF`
+                      : `${RUPEE_SYMBOL}${coupon.discountValue} OFF`;
+                  }
 
                   // Convert backend coupon format to frontend format
                   allCoupons.push({
-                    code: coupon.couponCode,
+                    code,
                     discount: Math.round(calcDiscount),
                     discountPercentage: coupon.discountPercentage,
-                    discountDisplay: isPct
-                      ? `${coupon.discountPercentage || coupon.discountValue}% OFF`
-                      : `${RUPEE_SYMBOL}${coupon.discountValue} OFF`,
+                    discountDisplay,
                     minOrder: coupon.minOrderValue || 0,
-                    description: isPct
-                      ? `${coupon.discountPercentage || coupon.discountValue}% OFF with '${coupon.couponCode}'`
-                      : `Save ${RUPEE_SYMBOL}${coupon.discountValue} with '${coupon.couponCode}'`,
+                    description: isRewardCashback 
+                      ? `Earn ₹${Math.round(calcCashback)} cashback after delivery`
+                      : (isPct ? `${coupon.discountPercentage || coupon.discountValue}% OFF with '${code}'` : `Save ${RUPEE_SYMBOL}${coupon.discountValue} with '${code}'`),
                     originalPrice: coupon.originalPrice,
                     discountedPrice: coupon.discountedPrice,
                     customerGroup: coupon.customerGroup || "all",
@@ -3057,6 +3133,12 @@ export default function Cart() {
                       <div className="flex justify-between text-sm text-green-600 font-medium">
                         <span>Wallet Cashback ({pricing.appliedCoupon.code})</span>
                         <span>+{RUPEE_SYMBOL}{pricing.appliedCoupon.amount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {((pricing?.ruleCashback?.amount || 0) > 0) && (
+                      <div className="flex justify-between text-sm text-green-600 font-medium">
+                        <span>Order Cashback ({pricing.ruleCashback.name || 'Offer'})</span>
+                        <span>+{RUPEE_SYMBOL}{Number(pricing.ruleCashback.amount).toFixed(2)}</span>
                       </div>
                     )}
                     {/* Platform Pricing Comparison - Bottom */}

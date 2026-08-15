@@ -542,8 +542,34 @@ export async function calculateOrderPricing(userId, dto) {
   const totalBeforeDiscount = roundedSubtotal + roundedDeliveryFee + tax + roundedPlatformFee + roundedPackagingFee + roundedWeatherFee;
   const total = Math.round(Math.max(0, totalBeforeDiscount - totalDiscount));
 
-  return {
+  // --- Rule-based Cashback Evaluation for Pricing Display ---
+  let ruleCashback = null;
+  try {
+    const { evaluateCashbackRule } = await import('../../admin/services/cashback.service.js');
+    const cashbackResult = await evaluateCashbackRule({
+      restaurantId: dto.restaurantId,
+      userId,
+      orderSubtotal: eligibleSubtotalForCoupon,
+      orderType: (dto.orderType || 'DELIVERY').toUpperCase(),
+      hasCouponApplied: Boolean(appliedCoupon)
+    });
+    if (cashbackResult && cashbackResult.amount > 0) {
+      ruleCashback = {
+        ruleId: cashbackResult.rule._id,
+        name: cashbackResult.rule.name || 'Order Cashback',
+        amount: cashbackResult.amount,
+        cashbackType: cashbackResult.rule.cashbackType,
+        cashbackValue: cashbackResult.rule.cashbackValue
+      };
+    }
+  } catch (err) {
+    // Non-fatal
+  }
 
+  const couponCashbackAmount = (appliedCashbackCoupon?.amount || (appliedCoupon?.rewardType === 'CASHBACK' || appliedCoupon?.rewardType === 'BOTH' ? appliedCoupon.amount : 0) || 0);
+  const totalCashbackAmount = couponCashbackAmount + (ruleCashback?.amount || 0);
+
+  return {
     pricing: {
       subtotal: roundedSubtotal,
       tax,
@@ -575,6 +601,8 @@ export async function calculateOrderPricing(userId, dto) {
       restaurantCouponCode: appliedRestaurantCoupon?.code || restaurantCodeRaw || null,
       appliedCoupon,
       appliedRestaurantCoupon,
+      ruleCashback,
+      cashbackAmount: totalCashbackAmount > 0 ? totalCashbackAmount : undefined,
       couponError,
     },
   };

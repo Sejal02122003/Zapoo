@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, IndianRupee, Plus, ArrowDownCircle, ArrowUpCircle, RefreshCw, Loader2 } from "lucide-react"
+import { ArrowLeft, IndianRupee, Plus, ArrowDownCircle, ArrowUpCircle, RefreshCw, Loader2, Sparkles, Clock, CheckCircle2 } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Card, CardContent } from "@food/components/ui/card"
 import AnimatedPage from "@food/components/user/AnimatedPage"
@@ -16,10 +16,10 @@ const debugError = (...args) => {}
 
 const TRANSACTION_TYPES = {
   ALL: "all",
+  CASHBACKS: "cashbacks",
   ADDITIONS: "additions",
   DEDUCTIONS: "deductions",
-  REFUNDS: "refunds",
-  CASHBACKS: "cashbacks" }
+  REFUNDS: "refunds" }
 
 export default function Wallet() {
   const companyName = useCompanyName()
@@ -80,7 +80,7 @@ export default function Wallet() {
     return transactions
       .filter(
         (transaction) =>
-          transaction.type === "addition" &&
+          String(transaction.type || "").toLowerCase() === "addition" &&
           transaction.status === "Completed" &&
           (transaction?.metadata?.source === "referral_signup" ||
             String(transaction.description || "").toLowerCase().startsWith("referral reward"))
@@ -94,17 +94,18 @@ export default function Wallet() {
     }
 
     return transactions.filter((transaction) => {
+      const typeLower = String(transaction.type || "").toLowerCase()
       if (selectedFilter === TRANSACTION_TYPES.ADDITIONS) {
-        return transaction.type === "addition"
+        return typeLower === "addition" || typeLower === "topup"
       }
       if (selectedFilter === TRANSACTION_TYPES.DEDUCTIONS) {
-        return transaction.type === "deduction" || transaction.type === "ORDER_PAYMENT"
+        return typeLower === "deduction" || typeLower === "order_payment"
       }
       if (selectedFilter === TRANSACTION_TYPES.REFUNDS) {
-        return transaction.type === "refund" || transaction.type === "REFUND"
+        return typeLower === "refund"
       }
       if (selectedFilter === TRANSACTION_TYPES.CASHBACKS) {
-        return transaction.type === "cashback" || transaction.type === "CASHBACK" || transaction?.metadata?.source === "cashback_reward"
+        return typeLower === "cashback" || transaction?.sourceType === "PROMOTIONAL" || transaction?.metadata?.source === "cashback_reward"
       }
       return true
     })
@@ -140,23 +141,33 @@ export default function Wallet() {
   }
 
   const getTransactionIcon = (type) => {
-    switch (type) {
+    const t = String(type || "").toLowerCase()
+    switch (t) {
       case "addition":
+      case "topup":
         return <ArrowDownCircle className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-green-600 dark:text-green-400" />
+      case "cashback":
+        return <Sparkles className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-orange-500 dark:text-orange-400" />
       case "deduction":
+      case "order_payment":
         return <ArrowUpCircle className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-red-600 dark:text-red-400" />
       case "refund":
         return <RefreshCw className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-blue-600 dark:text-blue-400" />
       default:
-        return null
+        return <ArrowDownCircle className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-gray-400" />
     }
   }
 
   const getTransactionColor = (type) => {
-    switch (type) {
+    const t = String(type || "").toLowerCase()
+    switch (t) {
       case "addition":
+      case "topup":
         return "text-green-600 dark:text-green-400"
+      case "cashback":
+        return "text-orange-500 dark:text-orange-400"
       case "deduction":
+      case "order_payment":
         return "text-red-600 dark:text-red-400"
       case "refund":
         return "text-blue-600 dark:text-blue-400"
@@ -302,6 +313,39 @@ export default function Wallet() {
                 </div>
               </div>
 
+              {selectedFilter === TRANSACTION_TYPES.CASHBACKS && cashbackLedgers.length > 0 && (
+                <div className="space-y-3 mb-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Cashback Breakdown by Orders</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {cashbackLedgers.map((ledger) => (
+                      <div key={ledger._id} className="p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-orange-50/40 dark:bg-orange-950/20 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {ledger.status === 'CREDITED' ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          ) : ledger.status === 'PENDING' ? (
+                            <Clock className="h-5 w-5 text-orange-500 animate-pulse" />
+                          ) : (
+                            <Sparkles className="h-5 w-5 text-gray-400" />
+                          )}
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {ledger.sourceType === 'COUPON' ? `Coupon: ${ledger.couponId?.code || 'Cashback Coupon'}` : `Offer: ${ledger.cashbackRuleId?.name || 'Cashback Offer'}`}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {ledger.status === 'CREDITED' ? 'Credited to wallet' : ledger.status === 'PENDING' ? 'Pending delivery completion' : ledger.status}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-bold text-orange-600 dark:text-orange-400 text-base">+{formatAmount(ledger.amount)}</span>
+                          <p className="text-[10px] text-gray-400">{formatDate(ledger.createdAt)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {filteredTransactions.length > 0 ? (
                 <div className="space-y-3 md:space-y-4">
                   {filteredTransactions.map((transaction) => (
@@ -328,7 +372,7 @@ export default function Wallet() {
                                   Referral reward
                                 </p>
                               )}
-                              {(transaction.type === "cashback" || transaction.type === "CASHBACK" || transaction?.metadata?.source === "cashback_reward") && (transaction?.expiryDate || transaction?.metadata?.expiryDate) && (
+                              {(String(transaction.type || "").toLowerCase() === "cashback" || transaction?.metadata?.source === "cashback_reward") && (transaction?.expiryDate || transaction?.metadata?.expiryDate) && (
                                 <p className="text-[11px] md:text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">
                                   {getRemainingDays(transaction.expiryDate || transaction.metadata.expiryDate) > 0 
                                     ? `Expires in ${getRemainingDays(transaction.expiryDate || transaction.metadata.expiryDate)} days` 
@@ -342,8 +386,8 @@ export default function Wallet() {
                           </div>
 
                           <div className={`flex-shrink-0 font-bold text-lg md:text-xl lg:text-2xl ${getTransactionColor(transaction.type)}`}>
-                            {transaction.type === "deduction" ? "-" : "+"}
-                            {formatAmount(transaction.amount)}
+                            {String(transaction.type || "").toLowerCase() === "deduction" || String(transaction.type || "").toLowerCase() === "order_payment" || Number(transaction.amount) < 0 ? "-" : "+"}
+                            {formatAmount(Math.abs(Number(transaction.amount) || 0))}
                           </div>
                         </div>
                       </CardContent>
