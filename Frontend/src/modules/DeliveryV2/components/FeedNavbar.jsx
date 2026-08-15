@@ -140,7 +140,7 @@ export default function FeedNavbar({ className = "" }) {
     }
   };
 
-  const handleProfileClick = () => navigate("/delivery/profile");
+  const handleProfileClick = () => navigate("/food/delivery/profile");
 
   const handleToggle = async (e) => {
     e?.preventDefault?.();

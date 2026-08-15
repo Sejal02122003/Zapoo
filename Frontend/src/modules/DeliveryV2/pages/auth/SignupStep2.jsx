@@ -612,7 +612,7 @@ export default function SignupStep2() {
           <p className="text-gray-600 mb-6">
             We are currently not accepting new delivery partner applications. Please try again later.
           </p>
-          <button onClick={() => navigate("/delivery/login")} className="w-full bg-[#FFA500] hover:bg-orange-600 text-white py-3 px-4 rounded-xl">
+          <button onClick={() => navigate("/food/delivery/login")} className="w-full bg-[#FFA500] hover:bg-orange-600 text-white py-3 px-4 rounded-xl">
             Go to Login
           </button>
         </div>
