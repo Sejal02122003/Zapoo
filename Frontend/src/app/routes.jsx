@@ -61,37 +61,67 @@ const RedirectToFood = () => {
   return <Navigate to={`${newPath}${location.search}`} replace />;
 };
 
-const getSubdomainModule = () => {
-  if (typeof window === 'undefined') return null;
+export const detectAppModule = () => {
+  if (typeof window === 'undefined') return 'user';
+
+  const pathname = (window.location.pathname || '').toLowerCase();
+  const search = (window.location.search || '').toLowerCase();
+  const hash = (window.location.hash || '').toLowerCase();
+  const userAgent = (window.navigator?.userAgent || '').toLowerCase();
   const host = (window.location.hostname || '').toLowerCase();
-  if (host.startsWith('restaurant.') || host.startsWith('vendor.') || host.startsWith('merchant.')) {
-    return 'restaurant';
-  }
-  if (host.startsWith('delivery.') || host.startsWith('driver.') || host.startsWith('rider.')) {
-    return 'delivery';
-  }
-  if (host.startsWith('admin.')) {
-    return 'admin';
-  }
-  return null;
+
+  // 1. Direct path check
+  if (pathname.includes('/restaurant') || pathname.includes('/food/restaurant')) return 'restaurant';
+  if (pathname.includes('/delivery') || pathname.includes('/food/delivery')) return 'delivery';
+  if (pathname.includes('/admin')) return 'admin';
+
+  // 2. Query param check (e.g. ?module=delivery or ?app=restaurant or ?role=delivery)
+  if (search.includes('module=restaurant') || search.includes('app=restaurant') || search.includes('role=restaurant') || search.includes('type=restaurant')) return 'restaurant';
+  if (search.includes('module=delivery') || search.includes('app=delivery') || search.includes('role=delivery') || search.includes('type=delivery')) return 'delivery';
+  if (search.includes('module=admin') || search.includes('app=admin')) return 'admin';
+
+  // 3. Hash check (e.g. #restaurant or #/delivery)
+  if (hash.includes('restaurant')) return 'restaurant';
+  if (hash.includes('delivery')) return 'delivery';
+  if (hash.includes('admin')) return 'admin';
+
+  // 4. Injected window variables (from Flutter/React Native/Capacitor WebView)
+  const globalModule = String(window.APP_MODULE || window.MODULE_NAME || window.NATIVE_APP_TYPE || window.NATIVE_MODULE || '').toLowerCase();
+  if (globalModule === 'restaurant' || globalModule === 'delivery' || globalModule === 'admin') return globalModule;
+
+  // 5. UserAgent check (for native mobile app WebViews)
+  if (userAgent.includes('restaurant') || userAgent.includes('vendor') || userAgent.includes('zapoo_restaurant') || userAgent.includes('zapoorestaurant')) return 'restaurant';
+  if (userAgent.includes('delivery') || userAgent.includes('driver') || userAgent.includes('rider') || userAgent.includes('zapoo_delivery') || userAgent.includes('zapoodelivery')) return 'delivery';
+  if (userAgent.includes('admin') || userAgent.includes('zapoo_admin')) return 'admin';
+
+  // 6. Subdomain check
+  if (host.startsWith('restaurant.') || host.startsWith('vendor.') || host.startsWith('merchant.')) return 'restaurant';
+  if (host.startsWith('delivery.') || host.startsWith('driver.') || host.startsWith('rider.')) return 'delivery';
+  if (host.startsWith('admin.')) return 'admin';
+
+  // 7. Stored app module key (saved when native app opens)
+  const storedAppModule = (localStorage.getItem('native_app_module') || '').toLowerCase();
+  if (storedAppModule === 'restaurant' || storedAppModule === 'delivery' || storedAppModule === 'admin') return storedAppModule;
+
+  return 'user';
 };
 
 const RootRouteHandler = () => {
-  const subModule = getSubdomainModule();
+  const targetModule = detectAppModule();
 
-  if (subModule === 'restaurant') {
+  if (targetModule === 'restaurant') {
     return isModuleAuthenticated('restaurant')
       ? <Navigate to="/food/restaurant" replace />
       : <Navigate to="/food/restaurant/login" replace />;
   }
 
-  if (subModule === 'delivery') {
+  if (targetModule === 'delivery') {
     return isModuleAuthenticated('delivery')
       ? <Navigate to="/food/delivery" replace />
       : <Navigate to="/food/delivery/login" replace />;
   }
 
-  if (subModule === 'admin') {
+  if (targetModule === 'admin') {
     return isModuleAuthenticated('admin')
       ? <Navigate to="/admin" replace />
       : <Navigate to="/admin/login" replace />;

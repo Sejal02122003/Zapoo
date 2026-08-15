@@ -46,14 +46,64 @@ function resolveNativeInitialRoute() {
   if (typeof window === 'undefined') return '/'
 
   const rawPathname = String(window.location?.pathname || '')
+  const search = String(window.location?.search || '').toLowerCase()
+  const hash = String(window.location?.hash || '').toLowerCase()
+  const userAgent = String(window.navigator?.userAgent || '').toLowerCase()
   const pathname = rawPathname.replace(/\/index\.html$/i, '') || '/'
   const storedRoute = String(localStorage.getItem(NATIVE_LAST_ROUTE_KEY) || '').trim()
+
+  // Native WebView query parameter / UserAgent / Injected variable check
+  if (
+    search.includes('module=restaurant') ||
+    search.includes('app=restaurant') ||
+    search.includes('role=restaurant') ||
+    search.includes('type=restaurant') ||
+    hash.includes('restaurant') ||
+    userAgent.includes('restaurant') ||
+    userAgent.includes('vendor') ||
+    userAgent.includes('zapoo_restaurant')
+  ) {
+    localStorage.setItem('native_app_module', 'restaurant')
+    return isModuleAuthenticated('restaurant') ? '/food/restaurant' : '/food/restaurant/login'
+  }
+
+  if (
+    search.includes('module=delivery') ||
+    search.includes('app=delivery') ||
+    search.includes('role=delivery') ||
+    search.includes('type=delivery') ||
+    hash.includes('delivery') ||
+    userAgent.includes('delivery') ||
+    userAgent.includes('driver') ||
+    userAgent.includes('rider') ||
+    userAgent.includes('zapoo_delivery')
+  ) {
+    localStorage.setItem('native_app_module', 'delivery')
+    return isModuleAuthenticated('delivery') ? '/food/delivery' : '/food/delivery/login'
+  }
+
+  if (
+    search.includes('module=admin') ||
+    search.includes('app=admin') ||
+    hash.includes('admin') ||
+    userAgent.includes('admin') ||
+    userAgent.includes('zapoo_admin')
+  ) {
+    localStorage.setItem('native_app_module', 'admin')
+    return isModuleAuthenticated('admin') ? '/admin' : '/admin/login'
+  }
 
   if (pathname.startsWith('/food/')) return pathname
   if (pathname.startsWith('/restaurant')) return `/food${pathname}`
   if (pathname.startsWith('/delivery')) return `/food${pathname}`
   if (pathname.startsWith('/user')) return `/food${pathname}`
   if (pathname.startsWith('/admin')) return pathname
+
+  const storedModule = localStorage.getItem('native_app_module')
+  if (storedModule === 'restaurant') return isModuleAuthenticated('restaurant') ? '/food/restaurant' : '/food/restaurant/login'
+  if (storedModule === 'delivery') return isModuleAuthenticated('delivery') ? '/food/delivery' : '/food/delivery/login'
+  if (storedModule === 'admin') return isModuleAuthenticated('admin') ? '/admin' : '/admin/login'
+
   if (storedRoute.startsWith('/food/restaurant') || storedRoute.startsWith('/food/delivery') || storedRoute.startsWith('/admin')) {
     return storedRoute
   }
