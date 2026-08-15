@@ -2583,9 +2583,33 @@ export async function updateRestaurantById(id, body = {}) {
         }
     }
 
-    if (body.openingTime !== undefined) doc.openingTime = normalizeRestaurantTime(body.openingTime) || '';
-    if (body.closingTime !== undefined) doc.closingTime = normalizeRestaurantTime(body.closingTime) || '';
+    if (body.openingTime !== undefined && String(body.openingTime).trim() !== '') {
+        const normOpening = normalizeRestaurantTime(body.openingTime);
+        if (normOpening) doc.openingTime = normOpening;
+    }
+    if (body.closingTime !== undefined && String(body.closingTime).trim() !== '') {
+        const normClosing = normalizeRestaurantTime(body.closingTime);
+        if (normClosing) doc.closingTime = normClosing;
+    }
     validateOpeningClosingTimes(doc.openingTime, doc.closingTime);
+
+    if (body.openingTime !== undefined || body.closingTime !== undefined) {
+        try {
+            const { getOutletTimingsForRestaurant, upsertOutletTimingsForRestaurant } = await import('../restaurant/services/outletTimings.service.js');
+            const currentRes = await getOutletTimingsForRestaurant(id);
+            const outletMap = currentRes?.outletTimings || {};
+            for (const d of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']) {
+                if (outletMap[d]) {
+                    if (doc.openingTime && outletMap[d].isOpen) outletMap[d].openingTime = doc.openingTime;
+                    if (doc.closingTime && outletMap[d].isOpen) outletMap[d].closingTime = doc.closingTime;
+                }
+            }
+            await upsertOutletTimingsForRestaurant(id, outletMap);
+        } catch (e) {
+            // Ignore background sync errors
+        }
+    }
+
     if (body.openDays !== undefined && Array.isArray(body.openDays)) {
         doc.openDays = body.openDays.map(d => toStr(d)).filter(Boolean);
     }

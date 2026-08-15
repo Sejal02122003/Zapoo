@@ -106,6 +106,24 @@ export async function upsertOutletTimingsForRestaurant(restaurantId, outletTimin
         { upsert: true, new: true, setDefaultsOnInsert: true, projection: 'timings updatedAt' }
     ).lean();
 
+    // Sync openingTime, closingTime, openDays onto FoodRestaurant model
+    try {
+        const openDayNames = timings.filter((t) => t.isOpen).map((t) => t.day);
+        const firstOpen = timings.find((t) => t.isOpen) || timings[0];
+        if (firstOpen) {
+            const { FoodRestaurant } = await import('../models/restaurant.model.js');
+            await FoodRestaurant.findByIdAndUpdate(restaurantId, {
+                $set: {
+                    openDays: openDayNames,
+                    openingTime: firstOpen.openingTime || '09:00',
+                    closingTime: firstOpen.closingTime || '22:00'
+                }
+            });
+        }
+    } catch (err) {
+        // Log sync error silently without failing main operation
+    }
+
     return { outletTimings: toClientShape(doc) };
 }
 

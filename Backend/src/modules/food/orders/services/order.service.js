@@ -191,25 +191,41 @@ export async function createOrder(userId, dto) {
       const currentMinutes = istTime.getHours() * 60 + istTime.getMinutes();
       
       const parseTime = (timeStr) => {
-        const [h, m] = timeStr.split(':').map(Number);
-        return h * 60 + m;
+        if (!timeStr || typeof timeStr !== 'string') return null;
+        const normalized = timeStr.trim().toLowerCase();
+        const meridiemMatch = normalized.match(/^(\d{1,2}):(\d{2})\s*([ap]m)$/);
+        if (meridiemMatch) {
+          let h = Number(meridiemMatch[1]);
+          const m = Number(meridiemMatch[2]);
+          const period = meridiemMatch[3];
+          if (period === 'pm' && h < 12) h += 12;
+          if (period === 'am' && h === 12) h = 0;
+          return h * 60 + m;
+        }
+        const match24 = normalized.match(/^(\d{1,2}):(\d{2})$/);
+        if (match24) {
+          return Number(match24[1]) * 60 + Number(match24[2]);
+        }
+        return null;
       };
       
       const openingMinutes = parseTime(todayTiming.openingTime);
       const closingMinutes = parseTime(todayTiming.closingTime);
       
-      let isOpenNow = true;
-      if (openingMinutes === closingMinutes) {
-        isOpenNow = true;
-      } else if (closingMinutes > openingMinutes) {
-        isOpenNow = currentMinutes >= openingMinutes && currentMinutes <= closingMinutes;
-      } else {
-        // Overnight, e.g., 20:00 to 02:00
-        isOpenNow = currentMinutes >= openingMinutes || currentMinutes <= closingMinutes;
-      }
-      
-      if (!isOpenNow) {
-        throw new ValidationError("Restaurant is currently closed");
+      if (openingMinutes !== null && closingMinutes !== null) {
+        let isOpenNow = true;
+        if (openingMinutes === closingMinutes) {
+          isOpenNow = true;
+        } else if (closingMinutes > openingMinutes) {
+          isOpenNow = currentMinutes >= openingMinutes && currentMinutes <= closingMinutes;
+        } else {
+          // Overnight, e.g., 20:00 to 02:00
+          isOpenNow = currentMinutes >= openingMinutes || currentMinutes <= closingMinutes;
+        }
+        
+        if (!isOpenNow) {
+          throw new ValidationError("Restaurant is currently closed");
+        }
       }
     }
   }

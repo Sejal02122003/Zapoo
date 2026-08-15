@@ -488,6 +488,22 @@ export default function EditRestaurant() {
                   <Label>Offer</Label>
                   <Input value={detailsForm.offer} onChange={(e) => setDetailsForm((p) => ({ ...p, offer: e.target.value }))} />
                 </div>
+                <div>
+                  <Label>Opening Time</Label>
+                  <Input
+                    type="time"
+                    value={detailsForm.openingTime || "09:00"}
+                    onChange={(e) => setDetailsForm((p) => ({ ...p, openingTime: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Closing Time</Label>
+                  <Input
+                    type="time"
+                    value={detailsForm.closingTime || "22:00"}
+                    onChange={(e) => setDetailsForm((p) => ({ ...p, closingTime: e.target.value }))}
+                  />
+                </div>
               </div>
             </section>
 

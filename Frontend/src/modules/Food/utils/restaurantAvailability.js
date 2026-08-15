@@ -160,7 +160,7 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
       reason: "inactive" }
   }
 
-  if (!ignoreOperationalStatus && !isAcceptingOrders) {
+  if (!ignoreOperationalStatus && (!isAcceptingOrders || restaurant.isClosed === true || restaurant.status === 'inactive')) {
     return {
       isOpen: false,
       isActive,
@@ -169,32 +169,18 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
       reason: "not-accepting-orders" }
   }
 
-  // When restaurant owner has actively turned ON "isAcceptingOrders" in dashboard (or default), respect live toggle
-  if (isAcceptingOrders && isActive && restaurant.isClosed !== true) {
-    return {
-      isOpen: true,
-      isActive: true,
-      isAcceptingOrders: true,
-      isWithinTimings: true,
-      openingTime: restaurant?.deliveryTimings?.openingTime || restaurant?.openingTime || null,
-      closingTime: restaurant?.deliveryTimings?.closingTime || restaurant?.closingTime || null,
-      reason: "open" }
-  }
-
-  // Explicit manual overrides from backend
-  if (restaurant.isClosed === true || restaurant.status === 'inactive' || (restaurant.isOpen === false && restaurant.isAcceptingOrders === false)) {
-    return {
-      isOpen: false,
-      isActive: false,
-      isAcceptingOrders: false,
-      isWithinTimings: false,
-      reason: "manually-closed" }
-  }
-
   const dayName = DAY_NAMES[now.getDay()]
   const todayTiming = getTodayTiming(restaurant, dayName)
 
-  // Legacy openDays can get stale; enforce only when no explicit outlet timing exists for today.
+  if (todayTiming?.isOpen === false) {
+    return {
+      isOpen: false,
+      isActive,
+      isAcceptingOrders,
+      isWithinTimings: false,
+      reason: "day-closed" }
+  }
+
   const openDays = Array.isArray(restaurant.openDays) ? restaurant.openDays : []
   if (!todayTiming && openDays.length > 0) {
     const normalizedOpenDays = new Set(openDays.map((day) => normalizeDay(day)).filter(Boolean))
@@ -206,15 +192,6 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
         isWithinTimings: false,
         reason: "closed-day" }
     }
-  }
-
-  if (todayTiming?.isOpen === false) {
-    return {
-      isOpen: false,
-      isActive,
-      isAcceptingOrders,
-      isWithinTimings: false,
-      reason: "day-closed" }
   }
 
   const openingTime =
@@ -231,16 +208,13 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
   const openingMinutes = parseTimeToMinutes(openingTime)
   const closingMinutes = parseTimeToMinutes(closingTime)
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
-  const hasExplicitWindow = Boolean(openingTime || closingTime)
-  // If a restaurant provides only one side of the window, treat timings as not enforced
-  // (prevents accidental "offline" due to partial data).
+  const hasExplicitWindow = openingMinutes !== null && closingMinutes !== null
+
   const isWithinTimings = hasExplicitWindow
-    ? (openingMinutes !== null && closingMinutes !== null
-      ? isWithinTimeWindow(nowMinutes, openingMinutes, closingMinutes)
-      : true)
+    ? isWithinTimeWindow(nowMinutes, openingMinutes, closingMinutes)
     : true
 
-  const minutesUntilClose = isWithinTimings
+  const minutesUntilClose = isWithinTimings && hasExplicitWindow
     ? getMinutesUntilClosing(nowMinutes, openingMinutes, closingMinutes)
     : null
 
@@ -256,6 +230,6 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
       ? formatClosingCountdown(minutesUntilClose, closingTime)
       : null,
     reason: isWithinTimings
-      ? (isAcceptingOrders ? "open" : "open-by-timings")
+      ? "open"
       : (hasExplicitWindow ? "outside-hours" : "no-timings") }
 }

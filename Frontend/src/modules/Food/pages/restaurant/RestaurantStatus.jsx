@@ -125,7 +125,6 @@ export default function RestaurantStatus() {
       if (dayData.isOpen === false) {
         setIsDayClosed(true)
         setIsWithinTimings(false)
-        setShowOutletClosedDialog(true)
         return
       }
 
