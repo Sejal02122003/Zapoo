@@ -13,6 +13,7 @@ import { useAppLocation } from "@food/hooks/useAppLocation"
 import LocationGuard from "./LocationGuard"
 import MaintenanceScreen from "../MaintenanceScreen"
 import { publicAPI } from "@food/api"
+import Loader from "@food/components/Loader"
 
 const debugWarn = (...args) => {}
 

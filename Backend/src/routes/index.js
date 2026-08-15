@@ -39,6 +39,7 @@ router.get('/v1/health', (req, res) => {
 
 // App Config Route (Public Category B)
 router.use('/v1/app-config', appConfigRoutes);
+router.use('/v1/food/app-config', appConfigRoutes);
 
 // Food-prefixed auth routes (Category A Auth limiter attached inside auth.routes.js)
 router.use('/v1/food/auth', authRoutes);
