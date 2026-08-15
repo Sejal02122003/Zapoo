@@ -158,7 +158,7 @@ export default function DeliverySignup() {
         name: formData.name.trim(),
         phone: formData.phone.trim(),
         countryCode: formData.countryCode || "+91",
-        ref: String(searchParams.get("ref") || "").trim() || undefined,
+        ref: String(searchParams.get("ref") || sessionStorage.getItem("referralCode") || "").trim() || undefined,
       }
       sessionStorage.setItem("deliverySignupDetails", JSON.stringify(signupDetails))
       clearModuleAuth("delivery")

@@ -81,7 +81,7 @@ export default function SignIn() {
       const fullPhone = `${countryCode} ${phoneDigits}`
       await authAPI.sendOTP(fullPhone, "login", null)
 
-      const ref = String(searchParams.get("ref") || "").trim()
+      const ref = String(searchParams.get("ref") || sessionStorage.getItem("referralCode") || "").trim()
       const authData = {
         method: "phone",
         phone: fullPhone,

@@ -201,33 +201,31 @@ export const verifyUserOtpAndLogin = async (
   const refRaw = typeof ref === "string" ? String(ref).trim() : "";
   if (isNewUser && refRaw) {
     try {
+      let referrerQuery = { referralCode: refRaw };
       if (mongoose.Types.ObjectId.isValid(refRaw)) {
-        const referrerId = new mongoose.Types.ObjectId(refRaw);
-        if (String(referrerId) !== String(userDoc._id)) {
-          const [referrer, settingsDoc] = await Promise.all([
-            FoodUser.findById(referrerId).select("_id referralCount").lean(),
-            FoodReferralSettings.findOne({ isActive: true })
-              .sort({ createdAt: -1 })
-              .lean(),
-          ]);
+        referrerQuery = {
+          $or: [
+            { _id: new mongoose.Types.ObjectId(refRaw) },
+            { referralCode: refRaw }
+          ]
+        };
+      }
 
-          if (referrer && settingsDoc) {
-            const reward = Math.max(
-              0,
-              Number(settingsDoc.referralRewardUser) || 0,
-            );
-            const limit = Math.max(
-              0,
-              Number(settingsDoc.referralLimitUser) || 0,
-            );
+      const [referrer, settingsDoc] = await Promise.all([
+        FoodUser.findOne(referrerQuery).select("_id referralCount").lean(),
+        FoodReferralSettings.findOne({ isActive: true })
+          .sort({ createdAt: -1 })
+          .lean(),
+      ]);
 
-            if (
-              reward > 0 &&
-              limit > 0 &&
-              Number(referrer.referralCount || 0) < limit
-            ) {
-              userDoc.referredBy = referrerId;
-              await userDoc.save();
+      if (referrer && String(referrer._id) !== String(userDoc._id) && settingsDoc) {
+        const referrerId = referrer._id;
+        const reward = Math.max(0, Number(settingsDoc.referralRewardUser) || 0);
+        const limit = Math.max(0, Number(settingsDoc.referralLimitUser) || 0);
+
+        if (reward > 0 && limit > 0 && Number(referrer.referralCount || 0) < limit) {
+          userDoc.referredBy = referrerId;
+          await userDoc.save();
 
               const log = await FoodReferralLog.create({
                 referrerId,
@@ -269,7 +267,6 @@ export const verifyUserOtpAndLogin = async (
                       : "limit_reached",
               });
             }
-          }
         }
       }
     } catch (e) {

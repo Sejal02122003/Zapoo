@@ -40,6 +40,16 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const ref = params.get('ref')
+      if (ref) {
+        sessionStorage.setItem('referralCode', ref)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     if (showSplash) {
       const safetyTimer = setTimeout(() => {
         setShowSplash(false)
