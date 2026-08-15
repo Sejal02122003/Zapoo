@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import AppRoutes from './routes'
 import SplashScreen from '@/shared/components/SplashScreen.jsx'
 import PageLoader from '@/shared/components/PageLoader.jsx'
@@ -16,7 +16,9 @@ function App() {
         path.includes('/support') ||
         path.includes('/restaurant') ||
         path.includes('/delivery') ||
-        path.includes('/admin')
+        path.includes('/admin') ||
+        path.includes('/food') ||
+        path.includes('/user')
       ) {
         return false
       }
@@ -25,17 +27,26 @@ function App() {
         return false
       }
     }
-    return true
+    return false
   })
 
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleSplashFinish = () => {
+  const handleSplashFinish = useCallback(() => {
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('splashShown', 'true')
     }
     setShowSplash(false)
-  }
+  }, [])
+
+  useEffect(() => {
+    if (showSplash) {
+      const safetyTimer = setTimeout(() => {
+        setShowSplash(false)
+      }, 2500)
+      return () => clearTimeout(safetyTimer)
+    }
+  }, [showSplash])
 
   // Normal Loading Spinner (if needed in future)
   if (isLoading) {

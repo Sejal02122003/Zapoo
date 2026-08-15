@@ -6,17 +6,26 @@ export default function SplashScreen({ onFinish }) {
   const [isFinishing, setIsFinishing] = useState(false);
 
   useEffect(() => {
-    // Show splash for 1.8 seconds then start finish animation
-    const timer = setTimeout(() => {
+    // Show splash for 1.5 seconds then start finish animation
+    const timer1 = setTimeout(() => {
       setIsFinishing(true);
-      // Wait for the finish animation (zoom) to complete then unmount
-      setTimeout(() => {
+      const timer2 = setTimeout(() => {
         if (onFinish) onFinish();
-      }, 600); // Duration of the zoom out
-    }, 1800);
+      }, 500);
+      return () => clearTimeout(timer2);
+    }, 1500);
 
-    return () => clearTimeout(timer);
-  }, [onFinish]);
+    // Absolute safety timer to ensure onFinish is called
+    const safetyTimer = setTimeout(() => {
+      if (onFinish) onFinish();
+    }, 2200);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(safetyTimer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const foodIcons = [
     { Icon: Zap, x: '10%', y: '20%', delay: 0.1 },

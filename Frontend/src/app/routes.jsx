@@ -127,15 +127,6 @@ const RootRouteHandler = () => {
       : <Navigate to="/admin/login" replace />;
   }
 
-  if (isModuleAuthenticated('restaurant')) {
-    return <Navigate to="/food/restaurant" replace />;
-  }
-  if (isModuleAuthenticated('delivery')) {
-    return <Navigate to="/food/delivery" replace />;
-  }
-  if (isModuleAuthenticated('admin')) {
-    return <Navigate to="/admin" replace />;
-  }
   return <FoodAppWrapper />;
 };
 
