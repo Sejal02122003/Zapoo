@@ -456,22 +456,24 @@ export default function OrdersPage({ statusKey = "all" }) {
 
 
       let displayStatus = order.orderStatus
-      if (!backendStatus || backendStatus === "created" || backendStatus === "pending") {
+      if (!backendStatus || backendStatus === "created" || backendStatus === "pending" || backendStatus === "placed") {
         displayStatus = "Pending"
       } else if (backendStatus === "confirmed" || backendStatus === "accepted") {
         displayStatus = "Accepted"
-      } else if (backendStatus === "preparing" || backendStatus === "ready_for_pickup" || backendStatus === "processing") {
+      } else if (backendStatus === "preparing" || backendStatus === "ready_for_pickup" || backendStatus === "processing" || backendStatus === "processed" || backendStatus === "ready") {
         displayStatus = "Processing"
-      } else if (backendStatus === "picked_up" || backendStatus === "reached_pickup" || backendStatus === "en_route_to_delivery" || backendStatus === "at_drop") {
+      } else if (backendStatus === "picked_up" || backendStatus === "reached_pickup" || backendStatus === "en_route_to_delivery" || backendStatus === "out_for_delivery" || backendStatus === "at_drop" || backendStatus === "reached_drop") {
         displayStatus = "Food On The Way"
-      } else if (backendStatus === "delivered" || backendStatus === "completed" || backendStatus === "reached_drop") {
+      } else if (backendStatus === "delivered" || backendStatus === "completed") {
         displayStatus = "Delivered"
-      } else if (backendStatus === "cancelled_by_restaurant") {
+      } else if (backendStatus === "cancelled_by_restaurant" || backendStatus === "restaurant_cancelled") {
         displayStatus = "Cancelled by Restaurant"
       } else if (backendStatus === "cancelled_by_user") {
         displayStatus = "Cancelled by User"
       } else if (backendStatus === "cancelled_by_admin" || backendStatus === "cancelled" || backendStatus === "canceled") {
         displayStatus = "Canceled"
+      } else if (backendStatus === "dead") {
+        displayStatus = "Delivery Failed"
       } else if (backendStatus === "needs_manual_assignment") {
         displayStatus = "Needs Manual Assignment"
       }

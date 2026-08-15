@@ -8,16 +8,22 @@ const getStatusColor = (orderStatus) => {
     "Scheduled": "bg-blue-100 text-blue-700",
     "Accepted": "bg-green-100 text-green-700",
     "Processing": "bg-orange-100 text-orange-700",
+    "Ready": "bg-purple-100 text-purple-700",
+    "Food ready": "bg-purple-100 text-purple-700",
     "Food On The Way": "bg-yellow-100 text-yellow-700",
     "Canceled": "bg-rose-100 text-rose-700",
+    "Cancelled": "bg-rose-100 text-rose-700",
     "Cancelled by Restaurant": "bg-red-100 text-red-700",
     "Cancelled by User": "bg-orange-100 text-orange-700",
     "Cancelled by Admin": "bg-red-100 text-red-700",
+    "Delivery Failed": "bg-red-100 text-red-700",
+    "Dead": "bg-red-100 text-red-700",
     "Payment Failed": "bg-red-100 text-red-700",
     "Refunded": "bg-sky-100 text-sky-700",
     "Dine In": "bg-indigo-100 text-indigo-700",
     "Offline Payments": "bg-slate-100 text-slate-700",
-    "Needs Manual Assignment": "bg-red-100 text-red-700 font-bold" }
+    "Needs Manual Assignment": "bg-red-100 text-red-700 font-bold"
+  }
   return colors[orderStatus] || "bg-slate-100 text-slate-700"
 }
 

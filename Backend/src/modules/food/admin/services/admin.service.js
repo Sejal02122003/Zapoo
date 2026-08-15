@@ -316,11 +316,45 @@ export async function getRestaurantMenuPdfDownloadUrl(restaurantId) {
     return { url };
 }
 
-const CANCELLED_ORDER_STATUSES = ['cancelled_by_user', 'cancelled_by_restaurant', 'cancelled_by_admin', 'dead'];
-const PENDING_ORDER_STATUSES = ['created', 'confirmed', 'preparing', 'ready_for_pickup', 'picked_up'];
-const DASHBOARD_PENDING_ORDER_STATUSES = ['created', 'confirmed'];
-const DASHBOARD_PROCESSING_ORDER_STATUSES = ['preparing', 'ready_for_pickup'];
-const DELIVERED_ORDER_STATUS_EXPR = { $eq: ['$orderStatus', 'delivered'] };
+const CANCELLED_ORDER_STATUSES = [
+    'cancelled_by_user',
+    'cancelled_by_restaurant',
+    'cancelled_by_admin',
+    'restaurant_cancelled',
+    'cancelled',
+    'canceled',
+    'dead'
+];
+const PENDING_ORDER_STATUSES = [
+    'created',
+    'pending',
+    'placed',
+    'confirmed',
+    'accepted',
+    'preparing',
+    'processed',
+    'ready',
+    'ready_for_pickup',
+    'picked_up',
+    'out_for_delivery',
+    'en_route_to_delivery',
+    'at_drop',
+    'reached_drop'
+];
+const DASHBOARD_PENDING_ORDER_STATUSES = ['created', 'pending', 'placed', 'confirmed', 'accepted'];
+const DASHBOARD_PROCESSING_ORDER_STATUSES = [
+    'preparing',
+    'processed',
+    'ready',
+    'ready_for_pickup',
+    'picked_up',
+    'out_for_delivery',
+    'en_route_to_delivery',
+    'at_drop',
+    'reached_drop'
+];
+const DELIVERED_ORDER_STATUSES = ['delivered', 'completed'];
+const DELIVERED_ORDER_STATUS_EXPR = { $in: ['$orderStatus', ['delivered', 'completed']] };
 const DASHBOARD_DERIVED_PLATFORM_FEE_EXPR = {
     $max: [
         0,
@@ -457,7 +491,7 @@ export async function getDashboardStats(query = {}) {
                 $group: {
                     _id: null,
                     totalOrders: { $sum: 1 },
-                    delivered: { $sum: { $cond: [{ $eq: ['$orderStatus', 'delivered'] }, 1, 0] } },
+                    delivered: { $sum: { $cond: [DELIVERED_ORDER_STATUS_EXPR, 1, 0] } },
                     cancelled: {
                         $sum: {
                             $cond: [{ $in: ['$orderStatus', CANCELLED_ORDER_STATUSES] }, 1, 0]
@@ -550,13 +584,13 @@ export async function getDashboardStats(query = {}) {
                     orders: { $sum: 1 },
                     revenue: { 
                         $sum: { 
-                            $cond: [{ $eq: ['$orderStatus', 'delivered'] }, { $ifNull: ['$pricing.total', 0] }, 0] 
+                            $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.total', 0] }, 0] 
                         } 
                     },
                     commission: {
                         $sum: {
                             $cond: [
-                                { $eq: ['$orderStatus', 'delivered'] },
+                                DELIVERED_ORDER_STATUS_EXPR,
                                 { $ifNull: ['$platformProfit', { $ifNull: ['$pricing.platformFee', 0] }] },
                                 0
                             ]
@@ -581,7 +615,7 @@ export async function getDashboardStats(query = {}) {
             ...orderMatch,
             orderStatus: { $in: PENDING_ORDER_STATUSES },
         }).sort({ createdAt: -1 }).limit(5).select('orderId createdAt').lean(),
-        FoodOrder.find({ ...orderMatch, orderStatus: 'delivered' }).sort({ updatedAt: -1 }).limit(5).select('orderId updatedAt').lean(),
+        FoodOrder.find({ ...orderMatch, orderStatus: { $in: DELIVERED_ORDER_STATUSES } }).sort({ updatedAt: -1 }).limit(5).select('orderId updatedAt').lean(),
         FoodOrder.find({ 
             ...orderMatch,
             orderStatus: { $in: CANCELLED_ORDER_STATUSES },
