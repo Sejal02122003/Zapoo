@@ -442,17 +442,19 @@ export default function DeliveryRouter() {
           }
           path="help/id-card"
         />
-        <Route
-          element={
-            <ProtectedRoute>
-              <DeliveryLayout>
-                <ChangeLanguage />
-              </DeliveryLayout>
-            </ProtectedRoute>
-          }
-          path="help/language"
-        />
-      </Routes>
+          <Route
+            element={
+              <ProtectedRoute>
+                <DeliveryLayout>
+                  <ChangeLanguage />
+                </DeliveryLayout>
+              </ProtectedRoute>
+            }
+            path="help/language"
+          />
+          <Route path="dashboard/*" element={<Navigate to="/food/delivery" replace />} />
+          <Route path="*" element={<Navigate to="/food/delivery/login" replace />} />
+        </Routes>
     </Suspense>
   )
 }

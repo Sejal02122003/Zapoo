@@ -141,7 +141,10 @@ export default function RestaurantRouter() {
             <Route path="reservations" element={<DiningReservations />} />
             <Route path="zone-setup" element={<ZoneSetup />} />
             <Route path="coupon" element={<RestaurantLocationCoupons />} />
+            <Route path="dashboard/*" element={<Navigate to="/food/restaurant" replace />} />
+            <Route path="*" element={<Navigate to="/food/restaurant" replace />} />
           </Route>
+          <Route path="*" element={<Navigate to="/food/restaurant/login" replace />} />
         </Routes>
       </Suspense>
       <GlobalPickupOtpModal />
