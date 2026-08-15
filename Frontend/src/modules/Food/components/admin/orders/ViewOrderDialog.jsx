@@ -561,7 +561,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                   <span className="font-medium text-emerald-600">-₹{order.couponDiscount.toFixed(2)}</span>
                 </div>
               )}
-              {order.deliveryCharge !== undefined && (
+              {order.deliveryType !== 'Takeaway' && order.deliveryCharge !== undefined && (
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Customer Delivery Charge</span>
                   <span className="font-medium text-slate-900">
@@ -569,7 +569,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                   </span>
                 </div>
               )}
-              {order.riderPay !== undefined && order.riderPay > 0 && (
+              {order.deliveryType !== 'Takeaway' && order.riderPay !== undefined && order.riderPay > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-amber-700 font-medium">Rider Delivery Payout (Paid to Rider)</span>
                   <span className="font-bold text-amber-700">₹{order.riderPay.toFixed(2)}</span>

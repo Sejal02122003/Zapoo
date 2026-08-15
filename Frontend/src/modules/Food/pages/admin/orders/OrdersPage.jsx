@@ -407,11 +407,16 @@ export default function OrdersPage({ statusKey = "all" }) {
             hour12: true }).toUpperCase()
         : ""
 
+      const isTakeaway = order.orderType === 'takeaway' || order.deliveryType === 'Takeaway'
       const pricing = order.pricing || {}
       const subtotal = Number(pricing.subtotal || 0)
-      const deliveryFee = Number(pricing.deliveryFee || 0)
+      const deliveryFee = isTakeaway ? 0 : Number(pricing.deliveryFee || 0)
       const platformFee = Number(pricing.platformFee || 0)
-      const platformNetProfit = Number(order.platformProfit || 0)
+      const riderPay = isTakeaway ? 0 : Number(order.riderEarning || order.pricing?.riderEarning || order.deliveryEarning || 0)
+      const commAmount = Number(order.pricing?.restaurantCommission || 0)
+      const platformNetProfit = isTakeaway 
+        ? (platformFee + commAmount)
+        : Number(order.platformProfit != null ? order.platformProfit : (platformFee + commAmount - riderPay))
       const taxAmount = Number(pricing.tax || 0)
       const discountAmount = Number(pricing.discount || 0)
       const computedTotal = subtotal + deliveryFee + platformFee + taxAmount - discountAmount
@@ -518,7 +523,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         couponDiscount: discountAmount,
         itemDiscount: 0,
         deliveryCharge: deliveryFee,
-        riderPay: Number(order.riderEarning || order.pricing?.riderEarning || order.deliveryEarning || 0),
+        riderPay,
         vatTax: taxAmount,
         platformFee,
         platformNetProfit,

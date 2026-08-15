@@ -353,16 +353,19 @@ export async function createOrder(userId, dto) {
     );
   }
 
-  let riderEarning = await getRiderEarning(distanceKm);
-  if (!riderEarning || riderEarning === 0) {
-      riderEarning = Number(normalizedPricing.deliveryFee || 0);
-  }
-  
-  // Apply delivery bonus from fee settings
-  const feeSettings = await FoodFeeSettings.findOne({ isActive: true }).lean();
-  const deliveryBonusAmount = Number(feeSettings?.deliveryBonusAmount || 0);
-  if (deliveryBonusAmount > 0) {
-    riderEarning += deliveryBonusAmount;
+  let riderEarning = 0;
+  if (orderType !== 'takeaway') {
+    riderEarning = await getRiderEarning(distanceKm);
+    if (!riderEarning || riderEarning === 0) {
+        riderEarning = Number(normalizedPricing.deliveryFee || 0);
+    }
+    
+    // Apply delivery bonus from fee settings
+    const feeSettings = await FoodFeeSettings.findOne({ isActive: true }).lean();
+    const deliveryBonusAmount = Number(feeSettings?.deliveryBonusAmount || 0);
+    if (deliveryBonusAmount > 0) {
+      riderEarning += deliveryBonusAmount;
+    }
   }
   
   // Calculate restaurant commission and taxes from subtotal
@@ -378,10 +381,12 @@ export async function createOrder(userId, dto) {
   normalizedPricing.tcs = commissionSnapshot.tcs || 0;
 
   const rawPlatformProfit =
-    (Number.isFinite(normalizedPricing.deliveryFee) ? normalizedPricing.deliveryFee : 0) +
-    (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) +
-    normalizedPricing.restaurantCommission -
-    riderEarning;
+    orderType === 'takeaway'
+      ? (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) + normalizedPricing.restaurantCommission
+      : (Number.isFinite(normalizedPricing.deliveryFee) ? normalizedPricing.deliveryFee : 0) +
+        (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) +
+        normalizedPricing.restaurantCommission -
+        riderEarning;
   const platformProfit = Math.round(rawPlatformProfit * 100) / 100;
 
   const order = new FoodOrder({
@@ -842,12 +847,46 @@ export async function recoverStuckOrders() {
   const TWO_MIN = 2 * 60 * 1000;
 
   try {
+    // 0. Auto-heal any orders mistakenly marked 'dead' after being completed or delivered
+    const falselyDeadOrders = await FoodOrder.find({
+      orderStatus: 'dead',
+      $or: [
+        { 'statusHistory.to': { $in: ['completed', 'delivered'] } },
+        { deliveredAt: { $ne: null } },
+        { completedAt: { $ne: null } }
+      ]
+    });
+
+    if (falselyDeadOrders.length > 0) {
+      for (const order of falselyDeadOrders) {
+        const wasCompleted = order.orderType === 'takeaway' || order.statusHistory.some(h => h.to === 'completed');
+        order.orderStatus = wasCompleted ? 'completed' : 'delivered';
+        if (order.dispatch && order.orderType !== 'takeaway') {
+          order.dispatch.status = 'delivered';
+        }
+        await order.save();
+        logger.info(`Watchdog: Restored falsely dead order ${order.orderId || order._id} to ${order.orderStatus}.`);
+      }
+    }
+
     // 1. Stuck in 'assigned' (partner never accepted) for > 2m
     const stuckAssigned = await FoodOrder.find({
       'dispatch.status': 'assigned',
       'dispatch.acceptedAt': { $exists: false },
       'dispatch.assignedAt': { $lt: new Date(now - TWO_MIN) },
-      orderStatus: { $nin: ['delivered', 'cancelled_by_user', 'cancelled_by_restaurant'] }
+      orderStatus: { 
+        $nin: [
+          'delivered', 
+          'completed', 
+          'cancelled_by_user', 
+          'cancelled_by_restaurant', 
+          'cancelled_by_admin', 
+          'restaurant_cancelled', 
+          'cancelled', 
+          'canceled', 
+          'dead'
+        ] 
+      }
     });
 
     if (stuckAssigned.length > 0) {
@@ -896,11 +935,24 @@ export async function recoverStuckOrders() {
       logger.info(`Watchdog: Auto-cancelled ${staleUnpaidResult.modifiedCount} stale unpaid Razorpay orders.`);
     }
 
-    // 4. Mark orders dead if not delivered within 1 hour
-    const ONE_HOUR = 60 * 60 * 1000;
+    // 4. Mark orders dead if not delivered within 2 hours (Only delivery orders that were NEVER delivered/completed/cancelled)
+    const TWO_HOURS = 2 * 60 * 60 * 1000;
     const deadOrders = await FoodOrder.find({
-      createdAt: { $lt: new Date(now - ONE_HOUR) },
-      orderStatus: { $nin: ['delivered', 'cancelled_by_user', 'cancelled_by_restaurant', 'cancelled_by_admin', 'dead'] }
+      createdAt: { $lt: new Date(now - TWO_HOURS) },
+      orderType: { $ne: 'takeaway' },
+      orderStatus: { 
+        $nin: [
+          'delivered', 
+          'completed', 
+          'cancelled_by_user', 
+          'cancelled_by_restaurant', 
+          'cancelled_by_admin', 
+          'restaurant_cancelled', 
+          'cancelled', 
+          'canceled', 
+          'dead'
+        ] 
+      }
     });
 
     let deadCount = 0;
@@ -915,7 +967,7 @@ export async function recoverStuckOrders() {
           byRole: 'SYSTEM',
           from: 'system_auto',
           to: 'dead',
-          note: 'Auto-killed: order was not delivered within 1 hour'
+          note: 'Auto-killed: delivery order was not completed within 2 hours'
         });
         await order.save();
         deadCount++;
@@ -925,11 +977,13 @@ export async function recoverStuckOrders() {
           io.to(rooms.delivery(order.dispatch.deliveryPartnerId)).emit('order_auto_killed', {
             orderId: order.order_id || order._id.toString(),
             orderMongoId: order._id.toString(),
-            message: 'Order exceeded 1 hour and was auto-cancelled. Please specify a reason.'
+            message: 'Order exceeded time limit and was auto-cancelled.'
           });
         }
       }
-      logger.info(`Watchdog: Auto-killed ${deadCount} orders that exceeded 1 hour limit.`);
+      if (deadCount > 0) {
+        logger.info(`Watchdog: Auto-killed ${deadCount} orders that exceeded delivery limit.`);
+      }
     }
 
   } catch (err) {
