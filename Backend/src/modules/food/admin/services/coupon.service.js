@@ -205,9 +205,9 @@ export async function redeemCouponAtomic({ couponId, userId, orderId, amount, re
         discountAmount: amount
     });
 
-    // If rewardType === CASHBACK, create PENDING CashbackLedger entry
+    // If rewardType === CASHBACK or BOTH, create PENDING CashbackLedger entry
     let cashbackLedger = null;
-    if (rewardType === 'CASHBACK' && amount > 0) {
+    if ((rewardType === 'CASHBACK' || rewardType === 'BOTH') && amount > 0) {
         cashbackLedger = await CashbackLedger.create({
             userId: new mongoose.Types.ObjectId(userId),
             orderId: new mongoose.Types.ObjectId(orderId),

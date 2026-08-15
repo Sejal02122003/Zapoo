@@ -94,8 +94,10 @@ export async function processExpiredCashbackEntries() {
     return { processedCount, totalAmountExpired };
 }
 
+import { processPendingCashbacks } from '../../scripts/processPendingCashbacks.js';
+
 export const startCashbackExpiryScheduler = () => {
-    // Run daily at 02:00 AM
+    // Run daily at 02:00 AM for expired entries
     cron.schedule('0 2 * * *', async () => {
         try {
             await processExpiredCashbackEntries();
@@ -104,5 +106,17 @@ export const startCashbackExpiryScheduler = () => {
         }
     });
 
-    logger.info('Cashback Expiry Scheduler started (daily at 02:00 AM).');
+    // Run every 5 minutes to credit pending cashbacks for completed/delivered orders
+    cron.schedule('*/5 * * * *', async () => {
+        try {
+            await processPendingCashbacks();
+        } catch (error) {
+            logger.error(`Error in Pending Cashback Sync: ${error?.message}`);
+        }
+    });
+
+    // Immediately trigger a sync on server startup
+    processPendingCashbacks().catch(err => logger.error(`Initial processPendingCashbacks failed: ${err?.message}`));
+
+    logger.info('Cashback Expiry & Sync Schedulers started.');
 };

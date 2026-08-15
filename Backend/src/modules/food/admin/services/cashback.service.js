@@ -136,12 +136,28 @@ export async function createPendingCashbackLedger({ orderId, userId, cashbackRul
  * Transitions PENDING CashbackLedger entries for an order to CREDITED upon delivery.
  */
 export async function creditPendingCashbackForOrder(orderId) {
-    if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) return [];
+    if (!orderId) return [];
 
     const rawStr = String(orderId || '').trim();
-    const oId = mongoose.Types.ObjectId.isValid(rawStr) ? new mongoose.Types.ObjectId(rawStr) : null;
+    let oId = mongoose.Types.ObjectId.isValid(rawStr) ? new mongoose.Types.ObjectId(rawStr) : null;
+    let customOrderId = null;
+
+    const { FoodOrder } = await import('../../orders/models/order.model.js');
+    if (!oId) {
+        const orderDoc = await FoodOrder.findOne({ orderId: rawStr }).select('_id orderId').lean();
+        if (orderDoc?._id) {
+            oId = orderDoc._id;
+            customOrderId = orderDoc.orderId;
+        }
+    }
+
+    const orderQueryConditions = [];
+    if (oId) orderQueryConditions.push({ orderId: oId });
+    if (rawStr) orderQueryConditions.push({ orderId: rawStr });
+    if (customOrderId) orderQueryConditions.push({ orderId: customOrderId });
+
     const pendingLedgers = await CashbackLedger.find({
-        orderId: oId ? { $in: [oId, rawStr] } : rawStr,
+        $or: orderQueryConditions,
         status: 'PENDING'
     });
 

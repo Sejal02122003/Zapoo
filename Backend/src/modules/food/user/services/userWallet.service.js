@@ -32,16 +32,22 @@ export const getUserWallet = async (userId) => {
     const oid = new mongoose.Types.ObjectId(id);
     const wallet = await ensureWallet(userId);
 
-    const ledgerEntries = await WalletLedgerEntry.find({ userId: oid })
-        .sort({ createdAt: -1 })
-        .limit(100)
-        .lean();
+    const now = new Date();
 
-    const cashBalance = Number(wallet.cashBalance || 0);
-    const cashbackBalance = Number(wallet.cashbackBalance || 0);
-    const totalBalance = cashBalance + cashbackBalance;
+    // Auto-expire any cashback entries past their expiry date
+    const expiredEntries = await WalletLedgerEntry.find({
+        userId: oid,
+        sourceType: 'PROMOTIONAL',
+        status: { $in: ['ACTIVE', 'PARTIALLY_USED'] },
+        expiryDate: { $lt: now }
+    });
+    for (const exp of expiredEntries) {
+        exp.status = 'EXPIRED';
+        exp.remainingAmount = 0;
+        await exp.save();
+    }
 
-    // Find active cashback expiring soon
+    // Fetch all active non-expired cashback entries
     const activeCashbacks = await WalletLedgerEntry.find({
         userId: oid,
         sourceType: 'PROMOTIONAL',
@@ -51,10 +57,27 @@ export const getUserWallet = async (userId) => {
     .sort({ expiryDate: 1 })
     .lean();
 
+    const activeCashbackBalance = activeCashbacks.reduce((sum, c) => sum + (Number(c.remainingAmount) || 0), 0);
+    const cashBalance = Number(wallet.cashBalance || 0);
+
+    // Auto-sync wallet model if cache/balance document is out of sync with ledgers
+    if (Number(wallet.cashbackBalance) !== activeCashbackBalance) {
+        wallet.cashbackBalance = activeCashbackBalance;
+        wallet.balance = cashBalance + activeCashbackBalance;
+        await wallet.save();
+    }
+
+    const totalBalance = cashBalance + activeCashbackBalance;
+
+    const ledgerEntries = await WalletLedgerEntry.find({ userId: oid })
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .lean();
+
     return {
         balance: totalBalance,
         cashBalance,
-        cashbackBalance,
+        cashbackBalance: activeCashbackBalance,
         referralEarnings: Number(wallet.referralEarnings) || 0,
         activeCashbacks: activeCashbacks.map((c) => ({
             id: String(c._id),
