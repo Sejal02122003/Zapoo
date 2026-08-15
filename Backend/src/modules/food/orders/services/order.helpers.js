@@ -309,6 +309,49 @@ export async function notifyRestaurantNewOrder(orderDoc) {
   }
 }
 
+export async function notifyUserNewOrder(orderDoc) {
+  try {
+    if (!orderDoc) return;
+    const userId = orderDoc.userId?.toString?.() || orderDoc.userId;
+    if (!userId) return;
+
+    const io = getIO();
+    const orderIdStr = String(orderDoc.order_id || orderDoc._id?.toString?.() || "");
+    const orderMongoIdStr = String(orderDoc._id?.toString?.() || "");
+
+    if (io) {
+      const payload = {
+        orderMongoId: orderMongoIdStr,
+        orderId: orderIdStr,
+        orderStatus: orderDoc.orderStatus || "pending",
+        title: "Order Placed Successfully! 🎉",
+        message: `Your order #${orderIdStr} has been placed successfully and sent to the restaurant.`,
+      };
+      logger.info(`[UserOrders] Emitting order_status_update to ${rooms.user(userId)} for order ${orderMongoIdStr}`);
+      io.to(rooms.user(userId)).emit("order_status_update", payload);
+      io.to(rooms.user(userId)).emit("order_placed", payload);
+    }
+
+    await notifyOwnersSafely(
+      [{ ownerType: "USER", ownerId: userId }],
+      {
+        title: "Order Placed Successfully! 🎉",
+        body: `Your order #${orderIdStr} has been placed successfully.`,
+        data: {
+          type: "order_placed",
+          orderId: orderIdStr,
+          orderMongoId: orderMongoIdStr,
+          link: `/user/orders/${orderMongoIdStr}`,
+          targetUrl: `/user/orders/${orderMongoIdStr}`,
+          click_action: `/user/orders/${orderMongoIdStr}`,
+        },
+      },
+    );
+  } catch (err) {
+    logger.warn(`[UserOrders] Failed to send user order creation notification: ${err?.message}`);
+  }
+}
+
 export const STATUS_PRIORITY = {
   created: 10,
   confirmed: 20,

@@ -53,6 +53,7 @@ import {
   applyAggregateRating,
   buildDeliverySocketPayload,
   notifyRestaurantNewOrder,
+  notifyUserNewOrder,
   isStatusAdvance,
 } from './order.helpers.js';
 import { getOutletTimingsForRestaurant } from '../../restaurant/services/outletTimings.service.js';
@@ -495,6 +496,7 @@ export async function createOrder(userId, dto) {
     // duplicate FCM push to the restaurant for the same order.
     if (!isAwaitingOnlinePayment) {
       await notifyRestaurantNewOrder(order);
+      await notifyUserNewOrder(order);
     }
   } catch {
     // Don't block order placement on socket failures.
@@ -660,8 +662,9 @@ export async function verifyPayment(userId, dto) {
     recordedById: new mongoose.Types.ObjectId(userId)
   });
 
-  // After online payment is verified, now notify restaurant about the new order.
+  // After online payment is verified, now notify restaurant & user about the new order.
   await notifyRestaurantNewOrder(order);
+  await notifyUserNewOrder(order);
 
 
 

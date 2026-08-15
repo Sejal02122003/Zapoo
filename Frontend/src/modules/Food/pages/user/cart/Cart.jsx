@@ -22,6 +22,7 @@ import { useCompanyName } from "@food/hooks/useCompanyName"
 import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
 import zoopSound from "@food/assets/audio/zomato_sms.mp3"
+import { playUserOrderNotificationAlarm } from "@food/utils/soundUtils"
 const debugLog = (...args) => { }
 const debugWarn = (...args) => { }
 const debugError = (...args) => { }
@@ -208,24 +209,9 @@ export default function Cart() {
   })
 
   useEffect(() => {
-    const audio = new Audio(zoopSound)
-    audio.preload = "auto"
-    audio.volume = 0.8
-    orderSuccessAudioRef.current = audio
+    if (!showOrderSuccess) return
 
-    return () => {
-      if (orderSuccessAudioRef.current) {
-        orderSuccessAudioRef.current.pause()
-        orderSuccessAudioRef.current = null
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!showOrderSuccess || !orderSuccessAudioRef.current) return
-
-    orderSuccessAudioRef.current.currentTime = 0
-    orderSuccessAudioRef.current.play().catch((error) => {
+    playUserOrderNotificationAlarm().catch((error) => {
       debugWarn("Order success sound blocked by browser:", error?.message || error)
     })
   }, [showOrderSuccess])

@@ -7,6 +7,7 @@ import {
   acquireUserSocket,
   releaseUserSocket,
   subscribeUserSocketConnection } from '@food/utils/userSocketManager';
+import { playUserOrderNotificationAlarm } from '@food/utils/soundUtils';
 
 const debugLog = (...args) => {
   if (import.meta.env.DEV) {
@@ -82,13 +83,14 @@ export const useUserNotifications = () => {
         statusKey === lastOrderStatusToastRef.current.key &&
         now - lastOrderStatusToastRef.current.at < ORDER_STATUS_DEDUPE_MS;
 
-      if (isImportant && !isOrderTrackingScreen && !isDuplicateStatusToast) {
+      if (!isDuplicateStatusToast) {
         lastOrderStatusToastRef.current = { key: statusKey, at: now };
         toast.dismiss(ORDER_STATUS_TOAST_ID);
-        toast.message(title, {
+        toast.success(title, {
           id: ORDER_STATUS_TOAST_ID,
           description: message,
-          duration: 6000 });
+          duration: 7000 });
+        playUserOrderNotificationAlarm();
       }
 
       window.dispatchEvent(
@@ -169,12 +171,16 @@ export const useUserNotifications = () => {
     };
 
     sock.on('order_status_update', onOrderStatus);
+    sock.on('order_placed', onOrderStatus);
+    sock.on('new_order', onOrderStatus);
     sock.on('order_state', onOrderState);
     sock.on('delivery_drop_otp', onDropOtp);
     sock.on('admin_notification', onAdminNotification);
 
     return () => {
       sock.off('order_status_update', onOrderStatus);
+      sock.off('order_placed', onOrderStatus);
+      sock.off('new_order', onOrderStatus);
       sock.off('order_state', onOrderState);
       sock.off('delivery_drop_otp', onDropOtp);
       sock.off('admin_notification', onAdminNotification);
