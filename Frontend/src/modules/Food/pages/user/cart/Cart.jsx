@@ -294,53 +294,7 @@ export default function Cart() {
     }
   }, [availableCoupons, subtotal, appliedCoupon, hasShownAutoApply, userOrderCount])
 
-  // Auto-apply logic — runs whenever coupons finish loading or subtotal changes.
-  // Only fires when: coupons are ready, subtotal > 0, and no coupon is already applied.
-  useEffect(() => {
-    if (loadingCoupons || availableCoupons.length === 0 || cart.length === 0 || subtotal <= 0) return;
-    // If a coupon is already applied, don't override it
-    if (appliedCoupon && appliedRestaurantCoupon) return;
 
-    const userOrderCountValue = userProfile?.orderCount || userProfile?.orders?.length || 0;
-    let bestAdminCoupon = null;
-    let bestRestaurantCoupon = null;
-
-    availableCoupons.forEach(coupon => {
-      if (
-        subtotal >= (Number(coupon.minOrder) || 0) &&
-        !(coupon.customerGroup === "new" && userOrderCountValue > 0)
-      ) {
-        if (coupon.isGlobalCoupon) {
-          if (!bestAdminCoupon || (coupon.discount || 0) > (bestAdminCoupon.discount || 0)) {
-            bestAdminCoupon = coupon;
-          }
-        } else {
-          if (!bestRestaurantCoupon || (coupon.discount || 0) > (bestRestaurantCoupon.discount || 0)) {
-            bestRestaurantCoupon = coupon;
-          }
-        }
-      }
-    });
-
-    const codes = [];
-    let applied = false;
-
-    if (bestAdminCoupon && !appliedCoupon) {
-      setAppliedCoupon(bestAdminCoupon);
-      setCouponCode(bestAdminCoupon.code);
-      codes.push(bestAdminCoupon.code);
-      applied = true;
-    }
-    if (bestRestaurantCoupon && !appliedRestaurantCoupon) {
-      setAppliedRestaurantCoupon(bestRestaurantCoupon);
-      codes.push(bestRestaurantCoupon.code);
-      applied = true;
-    }
-
-    if (applied && codes.length > 0) {
-      toast.success(`🎉 Best offer auto-applied: ${codes.join(' & ')}!`);
-    }
-  }, [availableCoupons, loadingCoupons, subtotal, cart.length]);
 
 
   // Fee settings from database (used for platform fee and GST fallback only)
@@ -1670,38 +1624,6 @@ export default function Cart() {
     setAppliedCoupon(null)
     setCouponCode("")
     setManualCouponCode("")
-
-    // Recalculate pricing without coupon
-    if (cart.length > 0) {
-      try {
-        const items = cart.map(item => ({
-          itemId: item.itemId || item.id,
-          name: item.name,
-          price: item.price,
-          variantId: item.variantId || undefined,
-          variantName: item.variantName || undefined,
-          variantPrice: item.variantPrice || item.price,
-          quantity: item.quantity || 1,
-          image: item.image,
-          description: item.description,
-          isVeg: item.isVeg === true || item.foodType === 'Veg'
-        }))
-
-        const response = await orderAPI.calculateOrder({
-          items,
-          restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
-          deliveryAddress: defaultAddress,
-          couponCode: null,
-          orderType: orderType
-        })
-
-        if (response?.data?.success && response?.data?.data?.pricing) {
-          setPricing(response.data.data.pricing)
-        }
-      } catch (error) {
-        debugError("Error recalculating pricing:", error)
-      }
-    }
   }
 
 
@@ -2647,16 +2569,36 @@ export default function Cart() {
                 )}
 
                 {/* Applied Coupon View */}
-                {appliedCoupon ? (
-                  <div className="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between">
-                    <div className="flex items-start gap-3">
-                       <Percent className="h-5 w-5 text-primary mt-0.5" />
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">'{appliedCoupon.code}' applied</p>
-                         <p className="text-xs text-primary font-medium mt-0.5">You saved {RUPEE_SYMBOL}{discount}</p>
+                {(appliedCoupon || appliedRestaurantCoupon) ? (
+                  <div className="px-4 py-3 md:px-6 md:py-4 flex flex-col gap-3">
+                    {appliedCoupon && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-start gap-3">
+                           <Percent className="h-5 w-5 text-primary mt-0.5" />
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">'{appliedCoupon.code}' applied</p>
+                             <p className="text-xs text-primary font-medium mt-0.5">Platform offer applied</p>
+                          </div>
+                        </div>
+                         <button onClick={handleRemoveCoupon} className="text-primary text-xs font-semibold px-2 hover:underline">REMOVE</button>
                       </div>
-                    </div>
-                     <button onClick={handleRemoveCoupon} className="text-primary text-xs font-semibold px-2 hover:underline">REMOVE</button>
+                    )}
+                    {appliedRestaurantCoupon && (
+                      <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-3 mt-1">
+                        <div className="flex items-start gap-3">
+                           <Percent className="h-5 w-5 text-green-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">'{appliedRestaurantCoupon.code}' applied</p>
+                             <p className="text-xs text-green-600 font-medium mt-0.5">Restaurant offer applied</p>
+                          </div>
+                        </div>
+                         <button onClick={() => {
+                            setAppliedRestaurantCoupon(null);
+                            // Set manual coupon code to empty to trigger a fresh order calculation
+                            setManualCouponCode(""); 
+                         }} className="text-green-600 text-xs font-semibold px-2 hover:underline">REMOVE</button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   /* Available / Input View */
