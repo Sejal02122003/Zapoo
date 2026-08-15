@@ -54,10 +54,11 @@ export default function AdminEarningReport() {
         const response = await adminAPI.getTransactionReport(params)
 
         if (response?.data?.success && response.data.data) {
-          // Filter to only successful orders (where order is delivered) to match dashboard earnings
-          const validTx = response.data.data.transactions.filter(t => 
-            String(t.orderStatus).toLowerCase() === 'delivered'
-          )
+          // Filter to only successful orders (where order is delivered or completed) to match dashboard earnings
+          const validTx = response.data.data.transactions.filter(t => {
+            const st = String(t.orderStatus || '').toLowerCase()
+            return st === 'delivered' || st === 'completed'
+          })
           setTransactions(validTx || [])
         } else {
           setTransactions([])

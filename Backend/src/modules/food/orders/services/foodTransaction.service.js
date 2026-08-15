@@ -86,7 +86,6 @@ export async function createInitialTransaction(order) {
 
     // Split logic
     const totalCustomerPaid = order.pricing?.total || 0;
-    const riderShare = order.riderEarning || order.pricing?.deliveryFee || 0;
 
     const restaurantCommissionFromOrder = Number(order.pricing?.restaurantCommission);
     const restaurantCommission =
@@ -104,15 +103,20 @@ export async function createInitialTransaction(order) {
     const tcs = commissionSnapshot.tcs || 0;
 
     const orderType = String(order.orderType || 'delivery').toLowerCase();
-    const deductGst = orderType === 'takeaway' ? true : (order.pricing?.deductGstFromRestaurant !== false);
+    const isTakeawayOrder = orderType === 'takeaway';
+    const deductGst = isTakeawayOrder ? true : (order.pricing?.deductGstFromRestaurant !== false);
 
     const restaurantCouponDiscount = Number(order.pricing?.restaurantCouponDiscount) || 0;
     const restaurantNet = (order.pricing?.subtotal || 0) + (order.pricing?.packagingFee || 0) - restaurantCommission - (deductGst ? gstOnCommission : 0) - tcs - restaurantCouponDiscount;
 
-    const calculatedPlatformNetProfit = (order.pricing?.platformFee || 0) + (order.pricing?.deliveryFee || 0) + (order.pricing?.weatherFee || 0) + restaurantCommission - riderShare - (order.pricing?.discount || 0);
+    const riderShare = isTakeawayOrder ? 0 : (order.riderEarning || order.pricing?.deliveryFee || 0);
+    const platformDiscount = Math.max(0, Number(order.pricing?.couponDiscount || (Number(order.pricing?.discount || 0) - restaurantCouponDiscount)));
+    const calculatedPlatformNetProfit = isTakeawayOrder
+        ? (order.pricing?.platformFee || 0) + restaurantCommission - platformDiscount
+        : (order.pricing?.platformFee || 0) + (order.pricing?.deliveryFee || 0) + (order.pricing?.weatherFee || 0) + restaurantCommission - riderShare - platformDiscount;
     const platformNetProfit = order.platformProfit !== undefined
         ? order.platformProfit
-        : calculatedPlatformNetProfit;
+        : Math.round(calculatedPlatformNetProfit * 100) / 100;
 
     const transaction = new FoodTransaction({
         orderId: order._id,

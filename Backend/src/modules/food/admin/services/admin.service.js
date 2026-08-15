@@ -864,9 +864,16 @@ export async function getTransactionReport(query = {}) {
                 ? Number(pricing.platformFee || 0) || 0
                 : platformFeeDerived;
 
-        const deliveryFeeUser = Number(pricing.deliveryFee || 0);
-        const deliveryCostAdmin = Number(tx.amounts?.riderShare) || Number(order.riderEarning) || 30;
-        const deliveryGstAdmin = deliveryCostAdmin * 0.18;
+        const isTakeaway = order.orderType === 'takeaway' || tx.orderType === 'takeaway';
+        const deliveryFeeUser = isTakeaway ? 0 : Number(pricing.deliveryFee || 0);
+        const deliveryCostAdmin = isTakeaway ? 0 : Number(tx.amounts?.riderShare ?? order.riderEarning ?? 0);
+        const deliveryGstAdmin = isTakeaway ? 0 : (deliveryCostAdmin * 0.18);
+        const platformDiscount = Math.max(0, Number(pricing.couponDiscount || (Number(pricing.discount || 0) - Number(pricing.restaurantCouponDiscount || 0))));
+        const platformNetProfit = tx.amounts?.platformNetProfit !== undefined
+            ? tx.amounts.platformNetProfit
+            : isTakeaway
+                ? (platformFee + Number(pricing.restaurantCommission || 0) - platformDiscount)
+                : (platformFee + deliveryFeeUser + Number(pricing.weatherFee || 0) + Number(pricing.restaurantCommission || 0) - deliveryCostAdmin - platformDiscount);
 
         return {
             id: tx._id,
@@ -880,7 +887,7 @@ export async function getTransactionReport(query = {}) {
             referralDiscount: 0,
             discountedAmount: Math.max(0, (pricing.subtotal || 0) - (pricing.discount || 0)),
             vatTax: tx.amounts?.taxAmount || pricing.tax || 0,
-            deliveryCharge: pricing.deliveryFee || 0,
+            deliveryCharge: deliveryFeeUser,
             platformFee,
             orderAmount: tx.amounts?.totalCustomerPaid || pricing.total || 0,
             status: tx.status,
@@ -894,7 +901,7 @@ export async function getTransactionReport(query = {}) {
                 gstOnCommission: Number(pricing.gstOnCommission || 0),
                 paymentGatewayFee: Number(pricing.paymentGatewayFee || 0),
                 tcs: Number(pricing.tcs || 0),
-                totalAdminReceivable: Number(pricing.totalAdminReceivable || 0),
+                totalAdminReceivable: platformNetProfit,
                 deliveryCostToAdmin: deliveryCostAdmin,
                 deliveryGstToAdmin: deliveryGstAdmin,
                 gstCollectedFromUser: Number(pricing.tax || 0)
@@ -920,28 +927,39 @@ export async function getTransactionReport(query = {}) {
 
     for (const tx of transactionRows) {
         // Calculate Summary
-        if (tx.orderId && tx.orderId.orderStatus === 'delivered') {
-            completedTransaction += tx.amounts?.totalCustomerPaid || 0;
-            adminEarning += tx.amounts?.platformNetProfit || 0;
-            restaurantEarning += tx.amounts?.restaurantShare || 0;
-            // Breakdown
+        const orderStatus = String(tx.orderId?.orderStatus || '').toLowerCase();
+        if (tx.orderId && (orderStatus === 'delivered' || orderStatus === 'completed')) {
+            completedTransaction += tx.amounts?.totalCustomerPaid || tx.pricing?.total || 0;
             const order = tx.orderId || {};
-            const pricing = order.pricing || {};
+            const pricing = order.pricing || tx.pricing || {};
+            const isTakeaway = order.orderType === 'takeaway' || tx.orderType === 'takeaway';
             
-            const deliveryFeeUser = Number(pricing.deliveryFee || 0);
-            const rShare = Number(tx.amounts?.riderShare) || Number(order.riderEarning) || deliveryFeeUser || 0;
+            const deliveryFeeUser = isTakeaway ? 0 : Number(pricing.deliveryFee || 0);
+            const rShare = isTakeaway ? 0 : Number(tx.amounts?.riderShare ?? order.riderEarning ?? 0);
             
-            if (tx.deliveryManId || tx.riderId || tx.deliveryPartnerId || order.deliveryPartnerId) {
+            if (!isTakeaway && (tx.deliveryManId || tx.riderId || tx.deliveryPartnerId || order.deliveryPartnerId)) {
                 deliverymanEarning += rShare;
             }
             
-            const deliveryCostAdmin = rShare || 30;
-            const deliveryGstAdmin = deliveryCostAdmin * 0.18;
+            const deliveryCostAdmin = rShare;
+            const deliveryGstAdmin = isTakeaway ? 0 : (deliveryCostAdmin * 0.18);
+            
+            const platformFee = Number(pricing.platformFee || 0);
+            const restaurantCommission = Number(pricing.restaurantCommission || 0);
+            const platformDiscount = Math.max(0, Number(pricing.couponDiscount || (Number(pricing.discount || 0) - Number(pricing.restaurantCouponDiscount || 0))));
+            const netProfit = tx.amounts?.platformNetProfit !== undefined
+                ? tx.amounts.platformNetProfit
+                : isTakeaway
+                    ? (platformFee + restaurantCommission - platformDiscount)
+                    : (platformFee + deliveryFeeUser + Number(pricing.weatherFee || 0) + restaurantCommission - deliveryCostAdmin - platformDiscount);
+
+            adminEarning += netProfit;
+            restaurantEarning += tx.amounts?.restaurantShare || 0;
             
             adminEarningBreakdown.deliveryProfit += (deliveryFeeUser - deliveryCostAdmin - deliveryGstAdmin);
-            adminEarningBreakdown.platformFee += Number(pricing.platformFee || 0);
+            adminEarningBreakdown.platformFee += platformFee;
             adminEarningBreakdown.packagingFee += Number(pricing.packagingFee || 0);
-            adminEarningBreakdown.restaurantCommission += Number(pricing.restaurantCommission || 0);
+            adminEarningBreakdown.restaurantCommission += restaurantCommission;
             adminEarningBreakdown.gstOnCommission += Number(pricing.gstOnCommission || 0);
             adminEarningBreakdown.paymentGatewayFee += Number(pricing.paymentGatewayFee || 0);
             adminEarningBreakdown.tcs += Number(pricing.tcs || 0);
