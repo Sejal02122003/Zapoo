@@ -1571,8 +1571,10 @@ export default function Home() {
                 restaurantId: restaurant.restaurantId,
                 pureVegRestaurant: restaurant.pureVegRestaurant === true,
                 location: restaurant.location, // Store location for distance recalculation
-                isActive: restaurant.isActive !== false, // Default to true if not specified
-                isAcceptingOrders: restaurant.isAcceptingOrders !== false, // Default to true if not specified
+                isActive: restaurant.isActive !== false,
+                isAcceptingOrders: restaurant.isAcceptingOrders !== false && restaurant.isClosed !== true && restaurant.isOpen !== false,
+                isClosed: Boolean(restaurant.isClosed === true || restaurant.isAcceptingOrders === false || restaurant.isOpen === false),
+                isOpen: Boolean(restaurant.isOpen !== false && restaurant.isAcceptingOrders !== false && restaurant.isClosed !== true),
                 openDays: Array.isArray(restaurant.openDays)
                   ? restaurant.openDays
                   : [],
@@ -2024,8 +2026,10 @@ export default function Home() {
         slug: restaurant?.slug || restaurant?.restaurantId || restaurantId,
         offer: null,
         pureVegRestaurant: restaurant?.pureVegRestaurant === true,
-        isActive: true,
-        isAcceptingOrders: true };
+        isActive: restaurant?.isActive !== false,
+        isAcceptingOrders: restaurant?.isAcceptingOrders !== false && restaurant?.isClosed !== true && restaurant?.isOpen !== false,
+        isClosed: Boolean(restaurant?.isClosed === true || restaurant?.isAcceptingOrders === false || restaurant?.isOpen === false),
+        isOpen: Boolean(restaurant?.isOpen !== false && restaurant?.isAcceptingOrders !== false && restaurant?.isClosed !== true), };
     });
 
     // Keep admin-selected order when IDs exist.

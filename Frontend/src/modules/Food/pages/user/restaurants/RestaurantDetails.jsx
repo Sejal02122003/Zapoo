@@ -587,9 +587,9 @@ function RestaurantDetailsContent() {
             onboarding: actualRestaurant?.onboarding || apiRestaurant?.onboarding || null,
             // Availability fields for grayscale styling
             isActive: (actualRestaurant?.isActive ?? apiRestaurant?.isActive) !== false,
-            isAcceptingOrders: (actualRestaurant?.isAcceptingOrders ?? apiRestaurant?.isAcceptingOrders) !== false,
-            isClosed: Boolean(actualRestaurant?.isClosed ?? apiRestaurant?.isClosed ?? false),
-            isOpen: (actualRestaurant?.isOpen ?? apiRestaurant?.isOpen) !== false,
+            isAcceptingOrders: (actualRestaurant?.isAcceptingOrders ?? apiRestaurant?.isAcceptingOrders) !== false && (actualRestaurant?.isClosed ?? apiRestaurant?.isClosed) !== true && (actualRestaurant?.isOpen ?? apiRestaurant?.isOpen) !== false,
+            isClosed: Boolean((actualRestaurant?.isClosed ?? apiRestaurant?.isClosed) === true || (actualRestaurant?.isAcceptingOrders ?? apiRestaurant?.isAcceptingOrders) === false || (actualRestaurant?.isOpen ?? apiRestaurant?.isOpen) === false),
+            isOpen: (actualRestaurant?.isOpen ?? apiRestaurant?.isOpen) !== false && (actualRestaurant?.isAcceptingOrders ?? apiRestaurant?.isAcceptingOrders) !== false && (actualRestaurant?.isClosed ?? apiRestaurant?.isClosed) !== true,
             discount: actualRestaurant?.discount || apiRestaurant?.discount || 0,
             itemDiscounts: Array.isArray(actualRestaurant?.itemDiscounts) ? actualRestaurant.itemDiscounts : (Array.isArray(apiRestaurant?.itemDiscounts) ? apiRestaurant.itemDiscounts : []),
             discountRules: Array.isArray(actualRestaurant?.discountRules) ? actualRestaurant.discountRules : (Array.isArray(apiRestaurant?.discountRules) ? apiRestaurant.discountRules : []),
