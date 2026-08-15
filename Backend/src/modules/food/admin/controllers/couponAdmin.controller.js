@@ -129,11 +129,24 @@ export async function deleteCoupon(req, res, next) {
         if (!coupon) {
             throw new ValidationError('Coupon not found');
         }
-        // Soft delete to preserve historical redemptions
-        coupon.isActive = false;
-        await coupon.save();
 
-        return sendResponse(res, 200, 'Coupon deactivated successfully', { success: true });
+        const { CouponRedemption } = await import('../models/couponRedemption.model.js');
+        const { CashbackLedger } = await import('../models/cashbackLedger.model.js');
+
+        const [redemptionCount, ledgerCount] = await Promise.all([
+            CouponRedemption.countDocuments({ couponId: coupon._id }),
+            CashbackLedger.countDocuments({ couponId: coupon._id })
+        ]);
+
+        if (redemptionCount === 0 && ledgerCount === 0) {
+            await Coupon.findByIdAndDelete(id);
+        } else {
+            // Soft delete to preserve historical redemptions
+            coupon.isActive = false;
+            await coupon.save();
+        }
+
+        return sendResponse(res, 200, 'Coupon deleted successfully', { success: true });
     } catch (error) {
         next(error);
     }

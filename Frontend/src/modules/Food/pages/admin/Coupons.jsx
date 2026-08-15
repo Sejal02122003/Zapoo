@@ -97,12 +97,16 @@ export default function Coupons() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to deactivate this coupon?")) return;
+    if (!window.confirm("Are you sure you want to delete this coupon?")) return;
+    setError("");
+    setSuccessMsg("");
     try {
       await adminClient.delete(`/food/admin/coupons/${id}`);
+      setSuccessMsg("Coupon deleted successfully!");
+      setCoupons(prev => prev.filter(c => c._id !== id));
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete coupon");
+      setError(err.response?.data?.message || "Failed to delete coupon");
     }
   };
 

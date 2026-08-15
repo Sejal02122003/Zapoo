@@ -33,13 +33,14 @@ export default function Cashback() {
     setLoading(true);
     try {
       const [rulesRes, restRes, reportRes] = await Promise.allSettled([
-        adminClient.get("/food/admin/cashback-rules?includeInactive=true"),
+        adminClient.get("/food/admin/cashback-rules"),
         adminClient.get("/food/admin/restaurants"),
         adminClient.get("/food/admin/wallet/expiry-report")
       ]);
 
       if (rulesRes.status === "fulfilled") {
-        setCashbacks(rulesRes.value.data?.data || []);
+        const rawRules = rulesRes.value.data?.data || [];
+        setCashbacks(Array.isArray(rawRules) ? rawRules.filter(r => r.isActive !== false) : []);
       }
       if (restRes.status === "fulfilled") {
         const list = restRes.value.data?.data?.restaurants || restRes.value.data?.data || [];
@@ -77,12 +78,16 @@ export default function Cashback() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to deactivate this cashback rule?")) return;
+    if (!window.confirm("Are you sure you want to delete this cashback rule?")) return;
+    setError("");
+    setSuccessMsg("");
     try {
       await adminClient.delete(`/food/admin/cashback-rules/${id}`);
+      setSuccessMsg("Cashback rule deleted successfully!");
+      setCashbacks(prev => prev.filter(c => c._id !== id));
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete rule");
+      setError(err.response?.data?.message || "Failed to delete cashback rule");
     }
   };
 

@@ -363,7 +363,7 @@ export async function updateCashbackRule(ruleId, updates) {
 }
 
 /**
- * Soft delete cashback rule (sets isActive: false to preserve historical ledgers)
+ * Delete or deactivate cashback rule
  */
 export async function deleteCashbackRule(ruleId) {
     if (!ruleId || !mongoose.Types.ObjectId.isValid(ruleId)) {
@@ -371,8 +371,15 @@ export async function deleteCashbackRule(ruleId) {
     }
     const rule = await CashbackRule.findById(ruleId);
     if (!rule) throw new ValidationError('Cashback rule not found');
-    rule.isActive = false;
-    await rule.save();
+
+    const ledgerCount = await CashbackLedger.countDocuments({ cashbackRuleId: rule._id });
+    if (ledgerCount === 0) {
+        await CashbackRule.findByIdAndDelete(ruleId);
+    } else {
+        rule.isActive = false;
+        await rule.save();
+    }
+
     return { success: true };
 }
 
