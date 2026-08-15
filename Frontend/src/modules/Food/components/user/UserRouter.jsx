@@ -109,6 +109,8 @@ export default function UserRouter() {
         <Route element={<UserLayout />}>
           {/* Home & Discovery */}
           <Route path="" element={<ProtectedUser><Home /></ProtectedUser>} />
+          <Route path="user" element={<ProtectedUser><Home /></ProtectedUser>} />
+          <Route path="food" element={<ProtectedUser><Home /></ProtectedUser>} />
           <Route path="dining" element={<ProtectedUser><Dining /></ProtectedUser>} />
           <Route path="dining/:category" element={<ProtectedUser><DiningCategory /></ProtectedUser>} />
           <Route path="dining/explore/upto50" element={<ProtectedUser><DiningExplore50 /></ProtectedUser>} />

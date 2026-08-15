@@ -136,6 +136,11 @@ export default function UserLayout() {
   const [isSettingsLoading, setIsSettingsLoading] = useState(true)
 
   useEffect(() => {
+    // 1.5s safety net timeout so user layout never gets stuck on blank screen
+    const safetyTimer = setTimeout(() => {
+      setIsSettingsLoading(false)
+    }, 1500)
+
     const fetchSettings = async () => {
       try {
         const response = await publicAPI.getBusinessSettings()
@@ -145,14 +150,17 @@ export default function UserLayout() {
       } catch (error) {
         console.error("Error fetching business settings:", error)
       } finally {
+        clearTimeout(safetyTimer)
         setIsSettingsLoading(false)
       }
     }
     fetchSettings()
+
+    return () => clearTimeout(safetyTimer)
   }, [])
 
   if (isSettingsLoading) {
-    return <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center"></div>
+    return <Loader />
   }
 
   if (isMaintenanceMode) {
