@@ -4,27 +4,29 @@ import { FoodOrder } from '../../orders/models/order.model.js';
 import { AccountDeletion } from '../../admin/models/accountDeletion.model.js';
 
 /**
- * Permanently delete a RESTAURANT account.
- * 1. Snapshot financial data into account_deletions
- * 2. Anonymize orders (keep financial fields, null out restaurantId)
- * 3. Delete restaurant-specific data (foods, addons, menus, wallet, tickets, etc.)
- * 4. Delete the restaurant document itself
+ * Permanently delete a RESTAURANT account and all its associated data.
  */
 export async function deleteRestaurantAccount(userId) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    const rawId = String(userId || '').trim();
+    if (!rawId || !mongoose.Types.ObjectId.isValid(rawId)) {
+        throw new Error('Invalid restaurant ID');
+    }
+    const rId = new mongoose.Types.ObjectId(rawId);
 
+    const restaurant = await FoodRestaurant.findById(rId).lean();
+    if (!restaurant) throw new Error('Restaurant not found');
+
+    const phone = restaurant.ownerPhone || restaurant.phone || restaurant.primaryContactNumber || '';
+    const email = restaurant.ownerEmail || restaurant.email || '';
+
+    // 1. Snapshot financial data
     try {
-        const restaurant = await FoodRestaurant.findById(userId).session(session).lean();
-        if (!restaurant) throw new Error('Restaurant not found');
-
-        // --- 1. Collect financial snapshot ---
         let walletBalance = 0;
         let totalEarnings = 0;
         try {
             const walletDoc = await mongoose.connection.db
                 .collection('food_restaurant_wallets')
-                .findOne({ restaurantId: new mongoose.Types.ObjectId(userId) });
+                .findOne({ restaurantId: rId });
             walletBalance = walletDoc?.balance || 0;
             totalEarnings = walletDoc?.totalEarnings || 0;
         } catch (_) {}
@@ -34,12 +36,7 @@ export async function deleteRestaurantAccount(userId) {
             const withdrawalAgg = await mongoose.connection.db
                 .collection('food_restaurant_withdrawals')
                 .aggregate([
-                    {
-                        $match: {
-                            restaurantId: new mongoose.Types.ObjectId(userId),
-                            status: 'pending'
-                        }
-                    },
+                    { $match: { restaurantId: rId, status: 'pending' } },
                     { $group: { _id: null, total: { $sum: '$amount' } } }
                 ])
                 .toArray();
@@ -51,7 +48,7 @@ export async function deleteRestaurantAccount(userId) {
             const commissionAgg = await mongoose.connection.db
                 .collection('food_restaurant_commissions')
                 .aggregate([
-                    { $match: { restaurantId: new mongoose.Types.ObjectId(userId) } },
+                    { $match: { restaurantId: rId } },
                     { $group: { _id: null, total: { $sum: '$amount' } } }
                 ])
                 .toArray();
@@ -59,7 +56,7 @@ export async function deleteRestaurantAccount(userId) {
         } catch (_) {}
 
         const orderStats = await FoodOrder.aggregate([
-            { $match: { restaurantId: new mongoose.Types.ObjectId(userId) } },
+            { $match: { restaurantId: rId } },
             {
                 $group: {
                     _id: null,
@@ -67,87 +64,90 @@ export async function deleteRestaurantAccount(userId) {
                     count: { $sum: 1 }
                 }
             }
-        ]).session(session);
+        ]);
 
         const stats = orderStats[0] || { totalAmount: 0, count: 0 };
 
-        // --- 2. Save financial snapshot ---
-        await AccountDeletion.create(
-            [
-                {
-                    accountType: 'RESTAURANT',
-                    originalId: restaurant._id,
-                    phone: restaurant.phone || '',
-                    name: restaurant.restaurantName || restaurant.name || 'Unknown',
-                    email: restaurant.email || '',
-                    financialSnapshot: {
-                        totalOrderAmount: stats.totalAmount,
-                        walletBalance,
-                        totalEarnings,
-                        pendingWithdrawals,
-                        totalCommissionPaid
-                    },
-                    orderCount: stats.count
-                }
-            ],
-            { session }
-        );
-
-        // --- 3. Anonymize orders ---
-        await FoodOrder.updateMany(
-            { restaurantId: new mongoose.Types.ObjectId(userId) },
-            {
-                $set: {
-                    restaurantId: null,
-                    'restaurant.name': 'Deleted Restaurant',
-                    'restaurant.restaurantName': 'Deleted Restaurant',
-                    'restaurant.phone': ''
-                }
+        await AccountDeletion.create({
+            accountType: 'RESTAURANT',
+            originalId: restaurant._id,
+            phone: phone || '',
+            name: restaurant.restaurantName || restaurant.name || 'Unknown',
+            email: email || '',
+            financialSnapshot: {
+                totalOrderAmount: stats.totalAmount,
+                walletBalance,
+                totalEarnings,
+                pendingWithdrawals,
+                totalCommissionPaid
             },
-            { session }
-        );
-
-        // --- 4. Anonymize transactions ---
-        try {
-            await mongoose.connection.db.collection('food_transactions').updateMany(
-                { restaurantId: new mongoose.Types.ObjectId(userId) },
-                { $set: { restaurantId: null, restaurantName: 'Deleted Restaurant' } },
-                { session }
-            );
-        } catch (_) {}
-
-        // --- 5. Delete restaurant-specific data ---
-        const collectionsToClean = [
-            { col: 'food_restaurant_wallets', field: 'restaurantId' },
-            { col: 'food_restaurant_support_tickets', field: 'restaurantId' },
-            { col: 'food_restaurant_withdrawals', field: 'restaurantId' },
-            { col: 'food_items', field: 'restaurantId' },
-            { col: 'food_addons', field: 'restaurantId' },
-            { col: 'food_restaurant_menus', field: 'restaurantId' },
-            { col: 'food_restaurant_outlet_timings', field: 'restaurantId' },
-            { col: 'food_restaurant_commissions', field: 'restaurantId' },
-            { col: 'food_dining_restaurants', field: 'restaurantId' },
-            { col: 'food_dining_requests', field: 'restaurantId' }
-        ];
-
-        for (const { col, field } of collectionsToClean) {
-            try {
-                await mongoose.connection.db.collection(col).deleteMany(
-                    { [field]: new mongoose.Types.ObjectId(userId) },
-                    { session }
-                );
-            } catch (_) {}
-        }
-
-        // --- 6. Delete the restaurant document ---
-        await FoodRestaurant.deleteOne({ _id: userId }, { session });
-
-        await session.commitTransaction();
-        return { success: true, message: 'Account deleted successfully' };
-    } catch (error) {
-        await session.abortTransaction();
-        throw error;
-    } finally {
-        session.endSession();
+            orderCount: stats.count
+        }).catch(() => {});
+    } catch (snapshotErr) {
+        console.warn('[deleteRestaurantAccount] Snapshot warning:', snapshotErr.message);
     }
+
+    // 2. Anonymize orders (keep financial fields, clear restaurantId)
+    await FoodOrder.updateMany(
+        { restaurantId: rId },
+        {
+            $set: {
+                restaurantId: null,
+                'restaurant.name': 'Deleted Restaurant',
+                'restaurant.restaurantName': 'Deleted Restaurant',
+                'restaurant.phone': ''
+            }
+        }
+    ).catch(() => {});
+
+    // 3. Anonymize transactions
+    try {
+        await mongoose.connection.db.collection('food_transactions').updateMany(
+            { restaurantId: rId },
+            { $set: { restaurantId: null, restaurantName: 'Deleted Restaurant' } }
+        );
+    } catch (_) {}
+
+    // 4. Delete restaurant-specific data from all related collections
+    const collectionsToClean = [
+        { col: 'food_restaurant_wallets', field: 'restaurantId' },
+        { col: 'food_restaurant_support_tickets', field: 'restaurantId' },
+        { col: 'food_restaurant_withdrawals', field: 'restaurantId' },
+        { col: 'food_items', field: 'restaurantId' },
+        { col: 'food_addons', field: 'restaurantId' },
+        { col: 'food_categories', field: 'restaurantId' },
+        { col: 'food_restaurant_menus', field: 'restaurantId' },
+        { col: 'food_restaurant_outlet_timings', field: 'restaurantId' },
+        { col: 'food_restaurant_commissions', field: 'restaurantId' },
+        { col: 'food_dining_restaurants', field: 'restaurantId' },
+        { col: 'food_dining_requests', field: 'restaurantId' },
+        { col: 'food_offers', field: 'restaurantId' },
+        { col: 'food_restaurant_joining_requests', field: 'restaurantId' },
+        { col: 'food_restaurant_challenges', field: 'restaurantId' },
+        { col: 'food_restaurant_challenge_participations', field: 'restaurantId' },
+        { col: 'food_restaurant_bonus_transactions', field: 'restaurantId' }
+    ];
+
+    for (const { col, field } of collectionsToClean) {
+        try {
+            await mongoose.connection.db.collection(col).deleteMany({ [field]: rId });
+        } catch (_) {}
+    }
+
+    // 5. Delete joining requests matched by phone or email
+    try {
+        const queryConditions = [];
+        if (rId) queryConditions.push({ restaurantId: rId }, { _id: rId });
+        if (phone) queryConditions.push({ ownerPhone: phone }, { phone }, { primaryContactNumber: phone });
+        if (email) queryConditions.push({ ownerEmail: email }, { email });
+
+        if (queryConditions.length > 0) {
+            await mongoose.connection.db.collection('food_restaurant_joining_requests').deleteMany({ $or: queryConditions });
+        }
+    } catch (_) {}
+
+    // 6. Delete the restaurant document
+    await FoodRestaurant.deleteOne({ _id: rId });
+
+    return { success: true, id: rId, message: 'Restaurant deleted permanently' };
 }

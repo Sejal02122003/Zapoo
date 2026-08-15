@@ -33,6 +33,7 @@ import { FoodTransaction } from '../../orders/models/foodTransaction.model.js';
 import { FoodRestaurantWithdrawal } from '../../restaurant/models/foodRestaurantWithdrawal.model.js';
 import { FoodDeliveryWithdrawal } from '../../delivery/models/foodDeliveryWithdrawal.model.js';
 import { FoodDeliveryWallet } from '../../delivery/models/deliveryWallet.model.js';
+import { deleteRestaurantAccount } from '../../restaurant/services/deleteAccount.service.js';
 import { FoodDeliveryCashDeposit } from '../../delivery/models/foodDeliveryCashDeposit.model.js';
 import {
     backfillLegacyCategoryWorkflow,
@@ -3714,32 +3715,7 @@ export async function rejectRestaurant(id, reason) {
 
 export async function deleteRestaurant(id) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
-    const restaurantId = new mongoose.Types.ObjectId(id);
-
-    const restaurant = await FoodRestaurant.findById(restaurantId).lean();
-    if (!restaurant) return null;
-
-    // Cascading deletion
-    await Promise.all([
-        // Delete all food items
-        FoodItem.deleteMany({ restaurantId }),
-        // Delete all addons
-        FoodAddon.deleteMany({ restaurantId }),
-        // Delete restaurant-specific categories
-        FoodCategory.deleteMany({ restaurantId }),
-        // Delete commissions
-        FoodRestaurantCommission.deleteMany({ restaurantId }),
-        // Delete withdrawals
-        FoodRestaurantWithdrawal.deleteMany({ restaurantId }),
-        // Delete support tickets
-        FoodRestaurantSupportTicket.deleteMany({ restaurantId }),
-        // Delete offers linked to this restaurant
-        FoodOffer.deleteMany({ restaurantId, restaurantScope: 'selected' }),
-        // Finally delete the restaurant
-        FoodRestaurant.findByIdAndDelete(restaurantId)
-    ]);
-
-    return { id: restaurantId };
+    return await deleteRestaurantAccount(id);
 }
 
 // ----- Offers & Coupons -----
