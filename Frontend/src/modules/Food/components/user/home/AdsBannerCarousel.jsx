@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Megaphone } from "lucide-react";
 
-export default function AdsBannerCarousel({ banners = [], data = [] }) {
+export default function AdsBannerCarousel({ banners = [], data = [], backendOrigin = "" }) {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [failedIndices, setFailedIndices] = useState({});
   const autoSlideIntervalRef = useRef(null);
 
   const startAutoSlide = () => {
@@ -25,8 +26,23 @@ export default function AdsBannerCarousel({ banners = [], data = [] }) {
 
   if (banners.length === 0) return null;
 
-  const currentBanner = banners[currentIndex];
+  const resolveUrl = (url) => {
+    if (!url || typeof url !== "string") return "";
+    let clean = url.trim();
+    if (/^\/uploads\//i.test(clean) || clean.startsWith("/")) {
+      const origin = backendOrigin || (typeof window !== "undefined" ? window.location.origin : "");
+      clean = `${origin.replace(/\/$/, "")}${clean.startsWith("/") ? clean : `/${clean}`}`;
+    }
+    if (typeof window !== "undefined" && window.location.protocol === "https:" && clean.startsWith("http:")) {
+      clean = clean.replace(/^http:/, "https:");
+    }
+    return clean;
+  };
+
+  const rawBanner = banners[currentIndex];
+  const currentBanner = resolveUrl(rawBanner);
   const currentData = data[currentIndex];
+  const isImageFailed = failedIndices[currentIndex];
 
   const handleBannerClick = () => {
     const linkedRestaurants = currentData?.linkedRestaurants || [];
@@ -61,7 +77,7 @@ export default function AdsBannerCarousel({ banners = [], data = [] }) {
       </div>
 
       <div 
-        className="relative w-full overflow-hidden h-[130px] sm:h-[160px] rounded-2xl shadow-md cursor-pointer group"
+        className="relative w-full overflow-hidden h-[130px] sm:h-[160px] rounded-2xl shadow-md cursor-pointer group bg-gradient-to-r from-orange-600 to-red-600"
         onClick={handleBannerClick}
       >
         {/* Shimmer effect overlay */}
@@ -80,16 +96,21 @@ export default function AdsBannerCarousel({ banners = [], data = [] }) {
         </div>
 
         <AnimatePresence mode="popLayout" initial={false}>
-          <motion.img
-            key={currentIndex}
-            src={currentBanner}
-            alt={`Ad Banner ${currentIndex + 1}`}
-            initial={{ opacity: 0, scale: 1.05 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          {currentBanner && !isImageFailed && (
+            <motion.img
+              key={currentBanner || currentIndex}
+              src={currentBanner}
+              alt=""
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.6, ease: "easeInOut" }}
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={() => {
+                setFailedIndices((prev) => ({ ...prev, [currentIndex]: true }));
+              }}
+            />
+          )}
         </AnimatePresence>
         
         {/* Subtle overlay for better contrast if image is too bright or has text */}

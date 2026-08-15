@@ -1155,7 +1155,17 @@ export default function Home() {
             ? data
             : [];
         const images = list
-          .map((b) => (b && typeof b.imageUrl === "string" ? b.imageUrl : ""))
+          .map((b) => {
+            const rawUrl = b && (
+              (typeof b.imageUrl === "string" && b.imageUrl) ||
+              (typeof b.image === "string" && b.image) ||
+              (typeof b.bannerImage === "string" && b.bannerImage) ||
+              (typeof b.url === "string" && b.url) ||
+              (typeof b.banner === "string" && b.banner) ||
+              ""
+            );
+            return rawUrl ? formatImageUrl(rawUrl) : "";
+          })
           .filter(Boolean);
         setAdsBannerImages(images);
         setAdsBannersData(list);
@@ -2679,7 +2689,7 @@ export default function Home() {
 
                   {/* Ads Banner Section (Moved here to separate from Hero Banners) */}
                   <div className="pt-2 sm:pt-3 lg:pt-4">
-                    <AdsBannerCarousel banners={adsBannerImages} data={adsBannersData} />
+                    <AdsBannerCarousel banners={adsBannerImages} data={adsBannersData} backendOrigin={BACKEND_ORIGIN} />
                   </div>
 
                   <ExploreMoreSection
