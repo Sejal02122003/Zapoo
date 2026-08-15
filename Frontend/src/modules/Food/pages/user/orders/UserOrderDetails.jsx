@@ -532,17 +532,37 @@ export default function UserOrderDetails() {
       <div className="p-4 space-y-4">
         {/* Status Card */}
         <div className="bg-white dark:bg-[#121212] p-4 rounded-xl flex items-center gap-3 shadow-sm border dark:border-gray-800">
-          <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
-            <ShoppingBag className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+          <div className={`p-2.5 rounded-xl ${
+            order.status === "delivered" || order.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400" :
+            order.status?.includes("cancel") || order.status === "dead" ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400" :
+            "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
+          }`}>
+            <ShoppingBag className="w-6 h-6" />
           </div>
-          <div>
-            <h2 className="font-semibold text-gray-800 dark:text-gray-100">
-              {order.status === "delivered"
-                ? "Order was delivered"
-                : (order.status === "cancelled" || order.status === "cancelled_by_restaurant" || order.status === "restaurant_cancelled" || order.status?.includes('cancel')) 
-                  ? "Order was cancelled"
-                  : "Order status: " + (order.status || "Processing")}
-            </h2>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-gray-900 dark:text-gray-100 text-base">
+                {order.status === "delivered" || order.status === "completed"
+                  ? "Order Delivered"
+                  : order.status === "restaurant_cancelled" || order.status === "cancelled_by_restaurant"
+                    ? "Restaurant Cancelled"
+                    : order.status === "cancelled_by_user"
+                      ? "Cancelled by You"
+                      : order.status?.includes("cancel")
+                        ? "Order Cancelled"
+                        : order.status === "picked_up" || order.status === "out_for_delivery"
+                          ? "Out for Delivery"
+                          : order.status === "ready" || order.status === "ready_for_pickup"
+                            ? "Food Ready"
+                            : order.status === "preparing"
+                              ? "Preparing Food"
+                              : order.status === "confirmed" || order.status === "accepted"
+                                ? "Order Confirmed"
+                                : order.status === "placed" || order.status === "created"
+                                  ? "Order Placed"
+                                  : "Status: " + (order.status || "Processing")}
+              </h2>
+            </div>
             {(order.status === "cancelled" || order.status === "cancelled_by_restaurant" || order.status === "restaurant_cancelled" || order.status?.includes('cancel')) && (
               <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl">
                   <p className="text-sm text-red-700 dark:text-red-400 font-bold mb-1">Cancellation Reason:</p>

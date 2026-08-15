@@ -87,15 +87,63 @@ export default function Orders() {
     return () => clearInterval(interval)
   }, [orders])
 
-  // Get order status text
+  // Get normalized order status text
   const getOrderStatus = (order) => {
-    const status = order.status
-    if (status === 'delivered' || status === 'completed') return 'delivered'
-    if (status === 'out_for_delivery' || status === 'outForDelivery') return 'outForDelivery'
-    if (status === 'ready' || status === 'preparing') return 'preparing'
-    if (String(status).toLowerCase().includes('cancel')) return 'cancelled'
-    if (status === 'dead') return 'dead'
-    return status || 'confirmed'
+    const raw = String(order?.orderStatus || order?.status || '').toLowerCase().trim();
+    if (raw === 'delivered' || raw === 'completed') return 'delivered';
+    if (raw === 'picked_up' || raw === 'out_for_delivery' || raw === 'outfordelivery' || raw === 'en_route_to_delivery') return 'outForDelivery';
+    if (raw === 'at_drop' || raw === 'reached_drop') return 'at_drop';
+    if (raw === 'ready' || raw === 'ready_for_pickup') return 'ready';
+    if (raw === 'preparing' || raw === 'processed') return 'preparing';
+    if (raw === 'confirmed' || raw === 'accepted') return 'confirmed';
+    if (raw === 'placed' || raw === 'created' || raw === 'pending') return 'placed';
+    if (raw === 'restaurant_cancelled') return 'restaurant_cancelled';
+    if (raw === 'cancelled_by_restaurant') return 'restaurant_cancelled';
+    if (raw === 'cancelled_by_user') return 'cancelled_by_user';
+    if (raw.includes('cancel')) return 'cancelled';
+    if (raw === 'dead') return 'dead';
+    return raw || 'placed';
+  }
+
+  const getOrderStatusDisplay = (rawStatus) => {
+    const s = String(rawStatus || '').toLowerCase();
+    switch (s) {
+      case 'placed':
+      case 'created':
+      case 'pending':
+        return { label: 'Order Placed', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800' };
+      case 'confirmed':
+      case 'accepted':
+        return { label: 'Order Confirmed', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800' };
+      case 'preparing':
+      case 'processed':
+        return { label: 'Preparing Food', color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800' };
+      case 'ready':
+      case 'ready_for_pickup':
+        return { label: 'Food Ready', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800' };
+      case 'outfordelivery':
+      case 'out_for_delivery':
+      case 'picked_up':
+      case 'en_route_to_delivery':
+        return { label: 'Out for Delivery', color: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800' };
+      case 'at_drop':
+      case 'reached_drop':
+        return { label: 'Arrived at Doorstep', color: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-400 dark:border-teal-800' };
+      case 'delivered':
+      case 'completed':
+        return { label: 'Delivered', color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800' };
+      case 'restaurant_cancelled':
+      case 'cancelled_by_restaurant':
+        return { label: 'Restaurant Cancelled', color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800' };
+      case 'cancelled_by_user':
+        return { label: 'Cancelled by You', color: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700' };
+      case 'cancelled':
+        return { label: 'Cancelled', color: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700' };
+      case 'dead':
+        return { label: 'Delivery Failed', color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800' };
+      default:
+        return { label: rawStatus ? String(rawStatus).replace(/_/g, ' ') : 'Placed', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800' };
+    }
   }
 
   // Auto-show rating popup when order is delivered (only once per order)
@@ -783,6 +831,7 @@ Order again from this restaurant in the ${companyName} app.`
             const isRestaurantCancelled = order.isRestaurantCancelled || order.status === 'restaurant_cancelled'
             const isUserCancelled = order.isUserCancelled || (isCancelled && order.cancelledBy === 'user')
             const isDead = order.isDead || order.status === 'dead'
+            const statusDisplay = getOrderStatusDisplay(order.status)
             // Prefer food image from first item; fallback to restaurant image, then generic food photo
             const firstItemImage = order.items?.[0]?.image
             const restaurantImage = firstItemImage
@@ -794,7 +843,7 @@ Order again from this restaurant in the ${companyName} app.`
               <div key={order.id} className="relative bg-white dark:bg-[#121212] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
                 {/* Card Header: Restaurant Info */}
                 <div className="flex items-start justify-between p-4 pb-2">
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 flex-1 min-w-0">
                     {/* Restaurant Image */}
                     <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0">
                       <img
@@ -829,13 +878,18 @@ Order again from this restaurant in the ${companyName} app.`
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => toggleMenuForOrder(order.id)}
-                    className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                  >
-                    <MoreVertical className="w-5 h-5 text-gray-400" />
-                  </button>
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                    <span className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-sm ${statusDisplay.color}`}>
+                      {statusDisplay.label}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleMenuForOrder(order.id)}
+                      className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <MoreVertical className="w-5 h-5 text-gray-400" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Three-dots dropdown menu */}
@@ -1092,7 +1146,9 @@ Order again from this restaurant in the ${companyName} app.`
                     </div>
                   ) : (
                     <div>
-                      <p className="text-xs text-gray-500">{order.status === 'preparing' ? 'Preparing' : order.status === 'outForDelivery' ? 'Out for delivery' : order.status === 'confirmed' ? 'Order confirmed' : ''}</p>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {statusDisplay.label}
+                      </p>
                       {/* Countdown Timer */}
                       {countdowns[order.id] && countdowns[order.id] > 0 && (
                         <div className="flex items-center gap-1 mt-1 text-xs text-primary font-medium">
@@ -1103,8 +1159,8 @@ Order again from this restaurant in the ${companyName} app.`
                     </div>
                   )}
 
-                  {/* Right Side: Reorder Button */}
-                  {isDelivered && !paymentFailed && (
+                  {/* Right Side: Reorder or Track Order Button */}
+                  {isDelivered && !paymentFailed ? (
                     <button
                       onClick={() => handleReorder(order)}
                       className="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1 shadow-sm transition-colors"
@@ -1112,7 +1168,13 @@ Order again from this restaurant in the ${companyName} app.`
                       <RotateCcw className="w-3.5 h-3.5" />
                       Reorder
                     </button>
-                  )}
+                  ) : !isCancelled && !paymentFailed ? (
+                    <Link to={`/user/orders/${order.id}`}>
+                      <button className="bg-primary hover:bg-secondary text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 shadow-sm transition-colors">
+                        Track Order &gt;
+                      </button>
+                    </Link>
+                  ) : null}
                 </div>
               </div>
             )
