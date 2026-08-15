@@ -51,24 +51,63 @@ const FoodAppWrapper = () => {
 
 const RedirectToFood = () => {
   const location = useLocation();
-  // We safely replace the exact current pathname with a /food prefixed pathname
-  // This effectively catches programmatic navigation to absolute paths like '/restaurant/login'
-  // and turns them into '/food/restaurant/login'
-  return <Navigate to={`/food${location.pathname}${location.search}`} replace />;
+  const path = location.pathname;
+  let newPath = `/food${path}`;
+  if (path.startsWith('/restaurant')) {
+    newPath = path.replace('/restaurant', '/food/restaurant');
+  } else if (path.startsWith('/delivery')) {
+    newPath = path.replace('/delivery', '/food/delivery');
+  }
+  return <Navigate to={`${newPath}${location.search}`} replace />;
+};
+
+const getSubdomainModule = () => {
+  if (typeof window === 'undefined') return null;
+  const host = (window.location.hostname || '').toLowerCase();
+  if (host.startsWith('restaurant.') || host.startsWith('vendor.') || host.startsWith('merchant.')) {
+    return 'restaurant';
+  }
+  if (host.startsWith('delivery.') || host.startsWith('driver.') || host.startsWith('rider.')) {
+    return 'delivery';
+  }
+  if (host.startsWith('admin.')) {
+    return 'admin';
+  }
+  return null;
 };
 
 const RootRouteHandler = () => {
+  const subModule = getSubdomainModule();
+
+  if (subModule === 'restaurant') {
+    return isModuleAuthenticated('restaurant')
+      ? <Navigate to="/food/restaurant" replace />
+      : <Navigate to="/food/restaurant/login" replace />;
+  }
+
+  if (subModule === 'delivery') {
+    return isModuleAuthenticated('delivery')
+      ? <Navigate to="/food/delivery" replace />
+      : <Navigate to="/food/delivery/login" replace />;
+  }
+
+  if (subModule === 'admin') {
+    return isModuleAuthenticated('admin')
+      ? <Navigate to="/admin" replace />
+      : <Navigate to="/admin/login" replace />;
+  }
+
   if (isModuleAuthenticated('restaurant')) {
-    return <Navigate to="/food/restaurant" replace />
+    return <Navigate to="/food/restaurant" replace />;
   }
   if (isModuleAuthenticated('delivery')) {
-    return <Navigate to="/food/delivery" replace />
+    return <Navigate to="/food/delivery" replace />;
   }
   if (isModuleAuthenticated('admin')) {
-    return <Navigate to="/admin" replace />
+    return <Navigate to="/admin" replace />;
   }
-  return <FoodAppWrapper />
-}
+  return <FoodAppWrapper />;
+};
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -100,10 +139,10 @@ const AppRoutes = () => {
       <Route path="/refund-policy" element={<Suspense fallback={null}><Refund /></Suspense>} />
       <Route path="/refund" element={<Suspense fallback={null}><Refund /></Suspense>} />
 
-      {/* Auth Module */}
+      {/* Auth Module Routes */}
       <Route path="/user/auth/*" element={<AuthApp />} />
-      <Route path="/delivery/auth/*" element={<AuthApp />} />
-      <Route path="/restaurant/auth/*" element={<AuthApp />} />
+      <Route path="/delivery/auth/*" element={<Navigate to="/food/delivery/login" replace />} />
+      <Route path="/restaurant/auth/*" element={<Navigate to="/food/restaurant/login" replace />} />
 
       {/* Direct Module Routing Shortcuts */}
       <Route path="/restaurant/*" element={<RedirectToFood />} />
