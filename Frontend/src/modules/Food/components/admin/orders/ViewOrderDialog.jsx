@@ -575,14 +575,22 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                   <span className="font-bold text-amber-700">₹{order.riderPay.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Platform Fee</span>
-                <span className="font-medium text-slate-900">
-                  {order.platformFee !== undefined && order.platformFee > 0 
-                    ? `₹${order.platformFee.toFixed(2)}` 
-                    : <span className="text-slate-400">₹0.00</span>}
-                </span>
-              </div>
+              {order.restaurantCommission !== undefined && order.restaurantCommission > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Restaurant Commission</span>
+                  <span className="font-medium text-emerald-600">+₹{order.restaurantCommission.toFixed(2)}</span>
+                </div>
+              )}
+              {order.platformFee !== undefined && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Platform Fee</span>
+                  <span className="font-medium text-slate-900">
+                    {order.platformFee > 0 
+                      ? `₹${order.platformFee.toFixed(2)}` 
+                      : <span className="text-slate-400">₹0.00</span>}
+                  </span>
+                </div>
+              )}
               {order.vatTax !== undefined && order.vatTax > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Tax (GST)</span>
@@ -591,8 +599,10 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
               )}
               {order.platformNetProfit !== undefined && (
                 <div className="flex justify-between text-sm mt-1 pt-1 border-t border-slate-100 border-dashed">
-                  <span className="text-emerald-700 font-medium">Platform Net Profit</span>
-                  <span className="font-bold text-emerald-700">₹{order.platformNetProfit.toFixed(2)}</span>
+                  <span className="text-slate-700 font-medium">Platform Net Profit</span>
+                  <span className={`font-bold ${order.platformNetProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                    ₹{order.platformNetProfit.toFixed(2)}
+                  </span>
                 </div>
               )}
               {order.lateDeliveryPenalty && (

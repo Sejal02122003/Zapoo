@@ -380,13 +380,18 @@ export async function createOrder(userId, dto) {
   normalizedPricing.paymentGatewayFee = commissionSnapshot.paymentGatewayFee || 0;
   normalizedPricing.tcs = commissionSnapshot.tcs || 0;
 
+  const platformDiscount = Math.max(0, Number(normalizedPricing.couponDiscount || (Number(normalizedPricing.discount || 0) - Number(normalizedPricing.restaurantCouponDiscount || 0))));
   const rawPlatformProfit =
     orderType === 'takeaway'
-      ? (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) + normalizedPricing.restaurantCommission
+      ? (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) + 
+        normalizedPricing.restaurantCommission - 
+        platformDiscount
       : (Number.isFinite(normalizedPricing.deliveryFee) ? normalizedPricing.deliveryFee : 0) +
         (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) +
+        (Number.isFinite(normalizedPricing.weatherFee) ? normalizedPricing.weatherFee : 0) +
         normalizedPricing.restaurantCommission -
-        riderEarning;
+        riderEarning -
+        platformDiscount;
   const platformProfit = Math.round(rawPlatformProfit * 100) / 100;
 
   const order = new FoodOrder({
@@ -866,6 +871,37 @@ export async function recoverStuckOrders() {
         }
         await order.save();
         logger.info(`Watchdog: Restored falsely dead order ${order.orderId || order._id} to ${order.orderStatus}.`);
+      }
+    }
+
+    // 0b. Auto-heal takeaway orders that had phantom rider payouts or negative platform profit attached
+    const faultyTakeawayOrders = await FoodOrder.find({
+      orderType: 'takeaway',
+      $or: [
+        { riderEarning: { $gt: 0 } },
+        { platformProfit: { $lt: 0 } }
+      ]
+    });
+
+    if (faultyTakeawayOrders.length > 0) {
+      for (const order of faultyTakeawayOrders) {
+        order.riderEarning = 0;
+        const comm = Number(order.pricing?.restaurantCommission || 0);
+        const pFee = Number(order.pricing?.platformFee || 0);
+        const pDiscount = Math.max(0, Number(order.pricing?.couponDiscount || (Number(order.pricing?.discount || 0) - Number(order.pricing?.restaurantCouponDiscount || 0))));
+        order.platformProfit = Math.max(0, pFee + comm - pDiscount);
+        await order.save();
+
+        await FoodTransaction.updateOne(
+          { orderId: order._id },
+          {
+            $set: {
+              'amounts.riderShare': 0,
+              'amounts.platformNetProfit': order.platformProfit
+            }
+          }
+        );
+        logger.info(`Watchdog: Fixed takeaway financials for order ${order.orderId || order._id} (platformProfit: ${order.platformProfit}).`);
       }
     }
 

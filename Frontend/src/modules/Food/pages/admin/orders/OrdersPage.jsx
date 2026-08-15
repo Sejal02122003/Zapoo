@@ -526,6 +526,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         riderPay,
         vatTax: taxAmount,
         platformFee,
+        restaurantCommission: commAmount,
         platformNetProfit,
         totalAmount,
         paymentType,
