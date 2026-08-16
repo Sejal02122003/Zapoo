@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import { FoodRestaurant } from '../../modules/food/restaurant/models/restaurant.model.js';
 import { FoodRestaurantOutletTimings } from '../../modules/food/restaurant/models/outletTimings.model.js';
 import { getIO, rooms } from '../../config/socket.js';
-import { invalidateCache } from '../../utils/cache.js';
+import { invalidateCache } from '../../middleware/cache.js';
 import { logger } from '../../utils/logger.js';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
