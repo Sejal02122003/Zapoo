@@ -114,8 +114,20 @@ export const useRestaurantNotifications = () => {
   const alertLoopTimerRef = useRef(null);
   const alertLoopStartedAtRef = useRef(0);
   const userInteractedRef = useRef(false); // Track user interaction for autoplay policy
-  const audioUnlockAttemptedRef = useRef(false);
-  const [restaurantId, setRestaurantId] = useState(null);
+  const [restaurantId, setRestaurantId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('restaurant_id') || localStorage.getItem('restaurantId') || '';
+        if (stored) return stored;
+        const userStr = localStorage.getItem('restaurant') || localStorage.getItem('user') || '';
+        if (userStr) {
+          const parsed = JSON.parse(userStr);
+          return parsed?._id || parsed?.id || parsed?.restaurantId || '';
+        }
+      } catch {}
+    }
+    return null;
+  });
   const lastConnectErrorLogRef = useRef(0);
   const lastAlertAtByOrderRef = useRef(new Map());
   const lastBrowserNotificationAtByOrderRef = useRef(new Map());
@@ -322,7 +334,7 @@ export const useRestaurantNotifications = () => {
   useEffect(() => {
     if (!restaurantId) return;
 
-    const ALERT_POLL_MS = 8000;
+    const ALERT_POLL_MS = 4000;
     let isCancelled = false;
 
     const pollOrders = async () => {
@@ -772,7 +784,7 @@ export const useRestaurantNotifications = () => {
     });
 
     // Listen for new order notifications
-    socketRef.current.on('new_order', (orderData) => {
+    const handleNewOrderEvent = (orderData) => {
       const normalizedOrder = {
         ...orderData,
         orderMongoId: orderData?.orderMongoId || orderData?._id || orderData?.order_mongo_id,
@@ -788,11 +800,13 @@ export const useRestaurantNotifications = () => {
         }
       }
 
-      debugLog('?? New order received:', normalizedOrder);
+      debugLog('🔔 New order received via socket:', normalizedOrder);
       enqueueOrder(normalizedOrder); // add to queue
-
       handleIncomingOrderAlert(normalizedOrder, 'socket');
-    });
+    };
+
+    socketRef.current.on('new_order', handleNewOrderEvent);
+    socketRef.current.on('food:order:restaurant_new_order', handleNewOrderEvent);
     
     // Listen for new dining booking notifications
     socketRef.current.on('new_dining_booking', (bookingData) => {

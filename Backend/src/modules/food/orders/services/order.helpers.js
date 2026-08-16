@@ -266,10 +266,24 @@ export function buildDeliverySocketPayload(orderDoc, restaurantDoc = null) {
 }
 
 export function canExposeOrderToRestaurant(orderLike) {
+  if (!orderLike) return false;
   const method = String(orderLike?.payment?.method || "").toLowerCase();
   const status = String(orderLike?.payment?.status || "").toLowerCase();
-  if (["cash", "wallet"].includes(method)) return true;
-  return ["paid", "authorized", "captured", "settled"].includes(status);
+  const orderStatus = String(orderLike?.orderStatus || "").toLowerCase();
+  const orderType = String(orderLike?.orderType || "").toLowerCase();
+
+  // If payment method is cash, cod, wallet, or pay_at_counter
+  if (["cash", "cod", "wallet", "pay_at_counter"].includes(method)) return true;
+  // If payment status is settled or cod_pending
+  if (["paid", "authorized", "captured", "settled", "cod_pending"].includes(status)) return true;
+  // If order is active
+  if (["created", "pending", "confirmed", "preparing", "ready"].includes(orderStatus)) return true;
+  if (orderType === 'takeaway') return true;
+
+  // Only skip if explicitly awaiting online razorpay checkout initialization
+  if (method === "razorpay" && status === "created") return false;
+
+  return true;
 }
 
 export async function notifyRestaurantNewOrder(orderDoc) {
@@ -277,23 +291,33 @@ export async function notifyRestaurantNewOrder(orderDoc) {
     if (!orderDoc || !canExposeOrderToRestaurant(orderDoc)) return;
 
     const io = getIO();
-    if (io) {
+    const restId = String(orderDoc.restaurantId || '');
+    if (io && restId) {
+      const rawDoc = typeof orderDoc.toObject === 'function' ? orderDoc.toObject() : orderDoc;
       const payload = {
-        ...orderDoc.toObject(),
-        orderMongoId: orderDoc._id?.toString?.() || undefined,
-        orderId: orderDoc.order_id || orderDoc._id?.toString?.(),
+        ...rawDoc,
+        orderMongoId: rawDoc._id?.toString?.() || rawDoc.orderMongoId,
+        orderId: rawDoc.order_id || rawDoc.orderId || rawDoc._id?.toString?.(),
       };
       logger.info(
-        `[RestaurantOrders] Emitting new_order to ${rooms.restaurant(orderDoc.restaurantId)} for order ${orderDoc._id?.toString?.() || ''}`,
+        `[RestaurantOrders] Emitting new_order & play_notification_sound to restaurant:${restId} for order ${payload.orderId}`,
       );
-      io.to(rooms.restaurant(orderDoc.restaurantId)).emit("new_order", payload);
+      // Emit to named room and raw ID
+      io.to(rooms.restaurant(restId)).emit("new_order", payload);
+      io.to(rooms.restaurant(restId)).emit("food:order:restaurant_new_order", payload);
+      io.to(rooms.restaurant(restId)).emit("play_notification_sound", payload);
+      io.to(`restaurant:${restId}`).emit("new_order", payload);
+      io.to(`restaurant:${restId}`).emit("food:order:restaurant_new_order", payload);
+      io.to(`restaurant:${restId}`).emit("play_notification_sound", payload);
     }
 
     await notifyOwnersSafely(
       [{ ownerType: "RESTAURANT", ownerId: orderDoc.restaurantId }],
       {
-        title: "New order received",
+        title: "New order received! 🔔",
         body: `Order #${orderDoc.order_id || orderDoc._id} is waiting for review.`,
+        sound: "alert.mp3",
+        priority: "high",
         data: {
           type: "new_order",
           orderId: orderDoc._id.toString(),
@@ -304,8 +328,8 @@ export async function notifyRestaurantNewOrder(orderDoc) {
         },
       },
     );
-  } catch {
-    // Do not block order/payment flow if notification fails.
+  } catch (err) {
+    logger.warn(`Failed to send new order notification to restaurant: ${err?.message}`);
   }
 }
 
