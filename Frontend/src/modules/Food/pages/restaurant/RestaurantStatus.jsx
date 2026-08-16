@@ -189,9 +189,26 @@ export default function RestaurantStatus() {
     }
   }, [currentDateTime, outletTimings])
 
-  // Note: Delivery status is now manually controlled by user via toggle
-  // We don't automatically set it based on timings anymore
-  // The isWithinTimings is only used to show warning messages
+  // Auto-sync delivery toggle state with outlet timings (auto-turn ON at open time, auto-turn OFF at close time)
+  useEffect(() => {
+    if (isWithinTimings === null) return;
+
+    if (isWithinTimings !== deliveryStatus) {
+      setDeliveryStatus(isWithinTimings)
+      persistRestaurantOnlineStatus(isWithinTimings)
+      try {
+        localStorage.setItem('restaurant_online_status', JSON.stringify(isWithinTimings))
+      } catch {}
+      window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
+        detail: { isOnline: isWithinTimings } 
+      }))
+
+      // Sync backend state automatically
+      restaurantAPI.updateAcceptingOrders(isWithinTimings).catch((err) => {
+        debugError("Error auto-updating restaurant delivery status:", err)
+      })
+    }
+  }, [isWithinTimings])
 
   // Load delivery status from backend
   useEffect(() => {
@@ -232,6 +249,18 @@ export default function RestaurantStatus() {
     }
 
     loadDeliveryStatus()
+
+    // Listen for external real-time status updates (e.g., from socket or navbar)
+    const handleExternalStatusChange = (event) => {
+      if (event.detail?.isOnline !== undefined) {
+        setDeliveryStatus(Boolean(event.detail.isOnline))
+      }
+    }
+    window.addEventListener('restaurantStatusChanged', handleExternalStatusChange)
+
+    return () => {
+      window.removeEventListener('restaurantStatusChanged', handleExternalStatusChange)
+    }
   }, [])
 
   // Handle delivery status change

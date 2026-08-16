@@ -78,10 +78,12 @@ app.use('/api', responseTimeLogger);
 
 import { startCashbackExpiryScheduler } from './core/jobs/cashbackExpiry.scheduler.js';
 import { startSurgeScheduler } from './core/jobs/surgeScheduler.job.js';
+import { startRestaurantTimingScheduler } from './core/jobs/restaurantTimingScheduler.job.js';
 
 // Initialize background schedulers
 startCashbackExpiryScheduler();
 startSurgeScheduler();
+startRestaurantTimingScheduler();
 
 // API Routes (Includes Auth -> Category A Auth Limiter, Public -> Category B Unrestricted, Private -> Category C User+IP Limiter)
 app.use('/api', routes);

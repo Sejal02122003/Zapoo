@@ -311,7 +311,21 @@ export default function RestaurantNavbar({
     // Load initial status
     updateStatus()
 
-    // Listen for status changes from RestaurantStatus page
+    // Periodically sync status from backend / local storage every 60s
+    const pollInterval = setInterval(() => {
+      restaurantAPI.getCurrentRestaurant().then((res) => {
+        const data = res?.data?.data?.restaurant || res?.data?.restaurant;
+        if (data && data.isAcceptingOrders !== undefined) {
+          const isOnline = Boolean(data.isAcceptingOrders);
+          setStatus(isOnline ? "Online" : "Offline");
+          try {
+            localStorage.setItem('restaurant_online_status', JSON.stringify(isOnline));
+          } catch {}
+        }
+      }).catch(() => {});
+    }, 60000);
+
+    // Listen for status changes from RestaurantStatus page / socket
     const handleStatusChange = (event) => {
       const isOnline = Boolean(event.detail?.isOnline)
       setStatus(isOnline ? "Online" : "Offline")
@@ -320,6 +334,7 @@ export default function RestaurantNavbar({
     window.addEventListener('restaurantStatusChanged', handleStatusChange)
     
     return () => {
+      clearInterval(pollInterval)
       window.removeEventListener('restaurantStatusChanged', handleStatusChange)
     }
   }, [restaurantData])

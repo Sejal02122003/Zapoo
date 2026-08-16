@@ -14,6 +14,7 @@ import { upsertOutletTimingsForRestaurant } from './outletTimings.service.js';
 import { FoodRestaurantOutletTimings } from '../models/outletTimings.model.js';
 import { getDrivingDistances } from '../../../../services/googleMaps.service.js';
 import { parseQueryLimit, parseQueryPage } from '../../../../utils/helpers.js';
+import { evaluateRestaurantOpenStatus } from '../../../../core/jobs/restaurantTimingScheduler.job.js';
 
 const normalizeName = (value) =>
     String(value || '')
@@ -1895,8 +1896,30 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, query = {}) => {
     const outletTimingsDoc = await FoodRestaurantOutletTimings.findOne({ restaurantId: doc._id }).lean();
     const outletTimings = outletTimingsDoc?.timings || [];
 
+    // Dynamically evaluate open status based on current time & outlet timings
+    let isAcceptingOrders = doc.isAcceptingOrders !== false;
+    let isOpen = doc.isOpen !== false;
+    let isClosed = Boolean(doc.isClosed);
+
+    if (doc.status === 'approved') {
+        const { isOpenNow } = evaluateRestaurantOpenStatus(doc, outletTimingsDoc, new Date());
+        isAcceptingOrders = isOpenNow;
+        isOpen = isOpenNow;
+        isClosed = !isOpenNow;
+
+        // Auto-update DB if state drifted
+        if (doc.isAcceptingOrders !== isOpenNow || doc.isOpen !== isOpenNow || doc.isClosed !== !isOpenNow) {
+            FoodRestaurant.findByIdAndUpdate(doc._id, {
+                $set: { isAcceptingOrders: isOpenNow, isClosed: !isOpenNow, isOpen: isOpenNow }
+            }).catch(() => {});
+        }
+    }
+
     return {
         ...doc,
+        isAcceptingOrders,
+        isOpen,
+        isClosed,
         outletTimings,
         offers,
         restaurantOffers: {

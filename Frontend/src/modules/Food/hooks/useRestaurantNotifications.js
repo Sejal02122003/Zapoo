@@ -853,6 +853,20 @@ export const useRestaurantNotifications = () => {
       dispatchNotificationInboxRefresh();
     });
 
+    // Listen for automatic restaurant availability changes (opening / closing time auto-toggle)
+    socketRef.current.on('food:restaurant:availability_changed', (data) => {
+      debugLog('🔄 Restaurant availability changed:', data);
+      const isOnline = Boolean(data?.isOnline);
+      try {
+        localStorage.setItem('restaurant_online_status', JSON.stringify(isOnline));
+      } catch {}
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('restaurantStatusChanged', { detail: { isOnline, ...data } })
+        );
+      }
+    });
+
     // Load notification sound
     audioRef.current = new Audio(resolveAudioSource(alertSound));
     audioRef.current.preload = 'auto';

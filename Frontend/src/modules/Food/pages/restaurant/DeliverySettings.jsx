@@ -91,8 +91,21 @@ export default function DeliverySettings() {
 
     loadDeliveryStatus()
 
+    const handleExternalStatusChange = (event) => {
+      if (event.detail?.isOnline !== undefined && !cancelled) {
+        const isOnline = Boolean(event.detail.isOnline)
+        setDeliveryStatus(isOnline)
+        try {
+          localStorage.setItem(DELIVERY_STATUS_KEY, JSON.stringify(isOnline))
+          localStorage.setItem(RESTAURANT_ONLINE_STATUS_KEY, JSON.stringify(isOnline))
+        } catch (_) {}
+      }
+    }
+    window.addEventListener('restaurantStatusChanged', handleExternalStatusChange)
+
     return () => {
       cancelled = true
+      window.removeEventListener('restaurantStatusChanged', handleExternalStatusChange)
     }
   }, [])
 

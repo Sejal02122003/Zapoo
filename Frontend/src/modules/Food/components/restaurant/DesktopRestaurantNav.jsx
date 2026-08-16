@@ -67,7 +67,10 @@ export default function DesktopRestaurantNav() {
         // silent fallback
       }
     }
-    fetchRestaurantData()
+    fetchRestaurantData();
+    const pollInterval = setInterval(() => {
+      fetchRestaurantData();
+    }, 60000);
 
     const handleStatusChange = (event) => {
       const isOnline = event.detail?.isOnline || false
@@ -76,6 +79,7 @@ export default function DesktopRestaurantNav() {
     window.addEventListener('restaurantStatusChanged', handleStatusChange)
 
     return () => {
+      clearInterval(pollInterval)
       window.removeEventListener('restaurantStatusChanged', handleStatusChange)
     }
   }, [])
