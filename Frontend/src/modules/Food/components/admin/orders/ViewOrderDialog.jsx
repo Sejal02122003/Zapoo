@@ -581,6 +581,12 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                   <span className="font-medium text-emerald-600">+₹{order.restaurantCommission.toFixed(2)}</span>
                 </div>
               )}
+              {order.cashbackAmount !== undefined && order.cashbackAmount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Cashback Given to User (Platform Expense)</span>
+                  <span className="font-medium text-rose-600">-₹{order.cashbackAmount.toFixed(2)}</span>
+                </div>
+              )}
               {order.platformFee !== undefined && (
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Platform Fee</span>

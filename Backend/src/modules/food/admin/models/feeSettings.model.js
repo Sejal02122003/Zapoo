@@ -73,7 +73,7 @@ const feeSettingsSchema = new mongoose.Schema(
         globalGstOnItem: { type: Number, min: 0, max: 100, default: 0 },
         globalGstOnCommission: { type: Number, min: 0, max: 100, default: 18 },
         globalPaymentGatewayFee: { type: Number, min: 0, max: 100, default: 2 },
-        globalTcs: { type: Number, min: 0, max: 100, default: 1 },
+        globalTcs: { type: Number, min: 0, max: 100, default: 0 },
         applyGlobalTaxes: { type: Boolean, default: true },
         deductGstFromRestaurant: { type: Boolean, default: true },
         

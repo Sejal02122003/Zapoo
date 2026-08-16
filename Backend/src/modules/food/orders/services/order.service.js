@@ -38,6 +38,8 @@ import * as paymentService from './order-payment.service.js';
 import { redeemCouponAtomic } from '../../admin/services/coupon.service.js';
 import { evaluateCashbackRule, createPendingCashbackLedger, creditPendingCashbackForOrder } from '../../admin/services/cashback.service.js';
 import { Coupon } from '../../admin/models/coupon.model.js';
+import { CashbackLedger } from '../../admin/models/cashbackLedger.model.js';
+import { FoodUserWallet } from '../../user/models/userWallet.model.js';
 import {
   enqueueOrderEvent,
   haversineKm,
@@ -381,17 +383,20 @@ export async function createOrder(userId, dto) {
   normalizedPricing.tcs = commissionSnapshot.tcs || 0;
 
   const platformDiscount = Math.max(0, Number(normalizedPricing.couponDiscount || (Number(normalizedPricing.discount || 0) - Number(normalizedPricing.restaurantCouponDiscount || 0))));
+  const platformCashback = Number(normalizedPricing.cashbackAmount || 0);
+  const totalPlatformExpenses = platformDiscount + platformCashback;
+
   const rawPlatformProfit =
     orderType === 'takeaway'
       ? (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) + 
         normalizedPricing.restaurantCommission - 
-        platformDiscount
+        totalPlatformExpenses
       : (Number.isFinite(normalizedPricing.deliveryFee) ? normalizedPricing.deliveryFee : 0) +
         (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) +
         (Number.isFinite(normalizedPricing.weatherFee) ? normalizedPricing.weatherFee : 0) +
         normalizedPricing.restaurantCommission -
         riderEarning -
-        platformDiscount;
+        totalPlatformExpenses;
   const platformProfit = Math.round(rawPlatformProfit * 100) / 100;
 
   const order = new FoodOrder({
@@ -874,36 +879,65 @@ export async function recoverStuckOrders() {
       }
     }
 
-    // 0b. Auto-heal takeaway orders that had phantom rider payouts or negative platform profit attached
-    const faultyTakeawayOrders = await FoodOrder.find({
-      orderType: 'takeaway',
-      $or: [
-        { riderEarning: { $gt: 0 } },
-        { platformProfit: { $lt: 0 } }
-      ]
+    // 0b. Auto-heal all orders financial profit to include cashback & takeaway zero-rider-pay
+    const allCompletedOrders = await FoodOrder.find({
+      orderStatus: { $in: ['completed', 'delivered'] }
     });
 
-    if (faultyTakeawayOrders.length > 0) {
-      for (const order of faultyTakeawayOrders) {
+    for (const order of allCompletedOrders) {
+      const isTakeaway = order.orderType === 'takeaway';
+      if (isTakeaway && order.riderEarning > 0) {
         order.riderEarning = 0;
-        const comm = Number(order.pricing?.restaurantCommission || 0);
-        const pFee = Number(order.pricing?.platformFee || 0);
-        const pDiscount = Math.max(0, Number(order.pricing?.couponDiscount || (Number(order.pricing?.discount || 0) - Number(order.pricing?.restaurantCouponDiscount || 0))));
-        order.platformProfit = Math.max(0, pFee + comm - pDiscount);
+      }
+      const comm = Number(order.pricing?.restaurantCommission || 0);
+      const pFee = Number(order.pricing?.platformFee || 0);
+      const dFee = isTakeaway ? 0 : Number(order.pricing?.deliveryFee || 0);
+      const rPay = isTakeaway ? 0 : Number(order.riderEarning || 0);
+      const pDiscount = Math.max(0, Number(order.pricing?.couponDiscount || (Number(order.pricing?.discount || 0) - Number(order.pricing?.restaurantCouponDiscount || 0))));
+      
+      const orderCashbackLedgers = await CashbackLedger.find({
+        orderId: order._id,
+        status: { $in: ['PENDING', 'CREDITED'] }
+      }).lean();
+      let totalCashbackGiven = orderCashbackLedgers.reduce((sum, cl) => sum + (Number(cl.amount) || 0), 0);
+
+      const wallet = await FoodUserWallet.findOne({ userId: order.userId }).lean();
+      if (wallet && Array.isArray(wallet.transactions)) {
+        const orderTxns = wallet.transactions.filter(t => 
+          t.type === 'cashback' && 
+          (t.description?.includes(String(order._id)) || t.description?.includes(String(order.orderId)))
+        );
+        const walletCashbackSum = orderTxns.reduce((s, t) => s + (Number(t.amount) || 0), 0);
+        if (walletCashbackSum > totalCashbackGiven) {
+          totalCashbackGiven = walletCashbackSum;
+        }
+      }
+
+      const correctProfit = Math.round(((pFee + dFee + comm) - (rPay + pDiscount + totalCashbackGiven)) * 100) / 100;
+      
+      if (order.platformProfit !== correctProfit || (order.pricing && order.pricing.cashbackAmount !== totalCashbackGiven)) {
+        order.platformProfit = correctProfit;
+        if (order.pricing) {
+          order.pricing.cashbackAmount = totalCashbackGiven;
+        }
         await order.save();
 
         await FoodTransaction.updateOne(
           { orderId: order._id },
           {
             $set: {
-              'amounts.riderShare': 0,
-              'amounts.platformNetProfit': order.platformProfit
+              'amounts.riderShare': rPay,
+              'amounts.platformNetProfit': correctProfit,
+              'pricing.cashbackAmount': totalCashbackGiven
             }
           }
         );
-        logger.info(`Watchdog: Fixed takeaway financials for order ${order.orderId || order._id} (platformProfit: ${order.platformProfit}).`);
+        logger.info(`Watchdog: Reconciled financials for order ${order.orderId || order._id} (platformProfit: ${correctProfit}, cashbackGiven: ${totalCashbackGiven}).`);
       }
     }
+
+    // 0c. Ensure default globalTcs is 0 in fee settings if not explicitly enabled
+    await FoodFeeSettings.updateMany({ globalTcs: 1 }, { $set: { globalTcs: 0 } });
 
     // 1. Stuck in 'assigned' (partner never accepted) for > 2m
     const stuckAssigned = await FoodOrder.find({

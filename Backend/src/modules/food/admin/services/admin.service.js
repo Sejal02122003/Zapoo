@@ -547,16 +547,21 @@ export async function getDashboardStats(query = {}) {
                             $cond: [
                                 DELIVERED_ORDER_STATUS_EXPR, 
                                 { 
-                                    $subtract: [
+                                    $ifNull: [
+                                        '$platformProfit',
                                         { 
-                                            $add: [
-                                                { $ifNull: ['$pricing.restaurantCommission', 0] },
-                                                DASHBOARD_PLATFORM_FEE_EXPR,
-                                                DASHBOARD_DELIVERY_FEE_EXPR
+                                            $subtract: [
+                                                { 
+                                                    $add: [
+                                                        { $ifNull: ['$pricing.restaurantCommission', 0] },
+                                                        DASHBOARD_PLATFORM_FEE_EXPR,
+                                                        DASHBOARD_DELIVERY_FEE_EXPR
+                                                    ] 
+                                                },
+                                                { $ifNull: ['$riderEarning', 0] }
                                             ] 
-                                        },
-                                        { $ifNull: ['$riderEarning', 0] }
-                                    ] 
+                                        }
+                                    ]
                                 }, 
                                 0
                             ] 

@@ -165,9 +165,16 @@ export async function creditPendingCashbackForOrder(orderId) {
 
     const results = [];
     for (const ledger of pendingLedgers) {
-        ledger.status = 'CREDITED';
-        ledger.creditedAt = new Date();
-        await ledger.save();
+        // Atomic transition from PENDING -> CREDITED to prevent concurrent duplicate payouts
+        const updatedLedger = await CashbackLedger.findOneAndUpdate(
+            { _id: ledger._id, status: 'PENDING' },
+            { $set: { status: 'CREDITED', creditedAt: new Date() } },
+            { new: true }
+        );
+        if (!updatedLedger) {
+            // Already credited by a concurrent request
+            continue;
+        }
 
         let expiryDays = 60;
         if (ledger.cashbackRuleId) {

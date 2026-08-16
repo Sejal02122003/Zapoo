@@ -527,6 +527,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         vatTax: taxAmount,
         platformFee,
         restaurantCommission: commAmount,
+        cashbackAmount: Number(order.pricing?.cashbackAmount || 0),
         platformNetProfit,
         totalAmount,
         paymentType,

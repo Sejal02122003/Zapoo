@@ -111,9 +111,12 @@ export async function createInitialTransaction(order) {
 
     const riderShare = isTakeawayOrder ? 0 : (order.riderEarning || order.pricing?.deliveryFee || 0);
     const platformDiscount = Math.max(0, Number(order.pricing?.couponDiscount || (Number(order.pricing?.discount || 0) - restaurantCouponDiscount)));
+    const platformCashback = Number(order.pricing?.cashbackAmount || 0);
+    const totalPlatformExpenses = platformDiscount + platformCashback;
+
     const calculatedPlatformNetProfit = isTakeawayOrder
-        ? (order.pricing?.platformFee || 0) + restaurantCommission - platformDiscount
-        : (order.pricing?.platformFee || 0) + (order.pricing?.deliveryFee || 0) + (order.pricing?.weatherFee || 0) + restaurantCommission - riderShare - platformDiscount;
+        ? (order.pricing?.platformFee || 0) + restaurantCommission - totalPlatformExpenses
+        : (order.pricing?.platformFee || 0) + (order.pricing?.deliveryFee || 0) + (order.pricing?.weatherFee || 0) + restaurantCommission - riderShare - totalPlatformExpenses;
     const platformNetProfit = order.platformProfit !== undefined
         ? order.platformProfit
         : Math.round(calculatedPlatformNetProfit * 100) / 100;
