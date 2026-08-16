@@ -857,13 +857,13 @@ export async function recoverStuckOrders() {
   const TWO_MIN = 2 * 60 * 1000;
 
   try {
-    // 0. Auto-heal any orders mistakenly marked 'dead' after being completed or delivered
+    // 0. Auto-heal any orders mistakenly marked 'dead' after being completed or delivered, and clean up statusHistory
     const falselyDeadOrders = await FoodOrder.find({
-      orderStatus: 'dead',
       $or: [
-        { 'statusHistory.to': { $in: ['completed', 'delivered'] } },
-        { deliveredAt: { $ne: null } },
-        { completedAt: { $ne: null } }
+        { orderStatus: 'dead', 'statusHistory.to': { $in: ['completed', 'delivered'] } },
+        { orderStatus: 'dead', deliveredAt: { $ne: null } },
+        { orderStatus: 'dead', completedAt: { $ne: null } },
+        { 'statusHistory.to': 'dead', orderStatus: { $in: ['completed', 'delivered'] } }
       ]
     });
 
@@ -874,8 +874,11 @@ export async function recoverStuckOrders() {
         if (order.dispatch && order.orderType !== 'takeaway') {
           order.dispatch.status = 'delivered';
         }
+        if (Array.isArray(order.statusHistory)) {
+          order.statusHistory = order.statusHistory.filter(h => h.to !== 'dead');
+        }
         await order.save();
-        logger.info(`Watchdog: Restored falsely dead order ${order.orderId || order._id} to ${order.orderStatus}.`);
+        logger.info(`Watchdog: Restored falsely dead order ${order.orderId || order._id} to ${order.orderStatus} and sanitized statusHistory.`);
       }
     }
 
@@ -1010,6 +1013,9 @@ export async function recoverStuckOrders() {
     const deadOrders = await FoodOrder.find({
       createdAt: { $lt: new Date(now - TWO_HOURS) },
       orderType: { $ne: 'takeaway' },
+      deliveredAt: null,
+      completedAt: null,
+      'statusHistory.to': { $nin: ['completed', 'delivered'] },
       orderStatus: { 
         $nin: [
           'delivered', 
