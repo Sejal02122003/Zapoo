@@ -38,9 +38,12 @@ async function evaluateChallengeEvent(order) {
     for (const challenge of activeChallenges) {
         // Evaluate eligibility based on restaurantFilter
         if (challenge.restaurantFilter) {
-            // Note: Simplistic filter evaluation.
-            if (challenge.restaurantFilter.type !== 'ALL' && challenge.restaurantFilter.restaurantId !== order.restaurantId.toString()) {
-                continue;
+            const filterType = challenge.restaurantFilter.type || 'ALL';
+            if (filterType === 'SPECIFIC') {
+                const targetId = challenge.restaurantFilter.restaurantId ? String(challenge.restaurantFilter.restaurantId) : null;
+                if (targetId && targetId !== String(order.restaurantId)) {
+                    continue; // Skip: this challenge is only for a specific restaurant
+                }
             }
         }
 
@@ -164,7 +167,18 @@ export const challengeService = {
 
         const participations = await RestaurantChallengeParticipation.find({ restaurantId }).lean();
         
-        return challenges.map(challenge => {
+        // Filter challenges: only return 'ALL' challenges or challenges specifically for this restaurant
+        const eligibleChallenges = challenges.filter(challenge => {
+            const filterType = challenge.restaurantFilter?.type || 'ALL';
+            if (filterType === 'ALL') return true;
+            if (filterType === 'SPECIFIC') {
+                const targetId = challenge.restaurantFilter?.restaurantId ? String(challenge.restaurantFilter.restaurantId) : null;
+                return targetId && targetId === String(restaurantId);
+            }
+            return true;
+        });
+
+        return eligibleChallenges.map(challenge => {
             const part = participations.find(p => p.challengeId.toString() === challenge._id.toString());
             return {
                 challenge,
