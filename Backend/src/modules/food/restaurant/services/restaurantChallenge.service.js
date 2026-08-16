@@ -147,7 +147,14 @@ export const challengeService = {
     async createChallenge(data, adminId) {
         return RestaurantChallenge.create({ ...data, createdBy: adminId });
     },
-    async getChallenges(filter = {}) {
+    async getChallenges(query = {}) {
+        const filter = {};
+        if (query.status && query.status !== 'ALL') {
+            filter.status = query.status;
+        }
+        if (query.restaurantId) {
+            filter['restaurantFilter.restaurantId'] = query.restaurantId;
+        }
         return RestaurantChallenge.find(filter).sort({ createdAt: -1 });
     },
     async getChallengeById(id) {

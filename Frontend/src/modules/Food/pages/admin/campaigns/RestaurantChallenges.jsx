@@ -51,8 +51,10 @@ export default function RestaurantChallenges() {
     const fetchChallenges = async () => {
         try {
             const res = await adminClient.get('/food/admin/restaurant-challenges');
-            setChallenges(res.data?.data || []);
+            const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+            setChallenges(Array.isArray(list) ? list : []);
         } catch (error) {
+            console.error('Failed to fetch challenges:', error);
             toast.error('Failed to fetch challenges');
         } finally {
             setLoading(false);
