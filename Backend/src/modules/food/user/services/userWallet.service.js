@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodUserWallet } from '../models/userWallet.model.js';
 import { WalletLedgerEntry } from '../models/walletLedgerEntry.model.js';
+import { FoodAdminWallet } from '../../admin/models/adminWallet.model.js';
+import { FoodReferralSettings } from '../../admin/models/referralSettings.model.js';
 import { createRazorpayOrder, getRazorpayKeyId, isRazorpayConfigured, verifyPaymentSignature } from '../../orders/helpers/razorpay.helper.js';
 
 const ensureWallet = async (userId) => {
@@ -34,7 +36,7 @@ export const getUserWallet = async (userId) => {
 
     const now = new Date();
 
-    // Auto-expire any cashback entries past their expiry date
+    // Auto-expire any promotional entries past their expiry date and return funds to Admin Wallet
     const expiredEntries = await WalletLedgerEntry.find({
         userId: oid,
         sourceType: 'PROMOTIONAL',
@@ -42,6 +44,27 @@ export const getUserWallet = async (userId) => {
         expiryDate: { $lt: now }
     });
     for (const exp of expiredEntries) {
+        const amountToExpire = Number(exp.remainingAmount) || 0;
+        if (amountToExpire > 0) {
+            // Automatically return expired funds to Admin Platform Wallet
+            await FoodAdminWallet.findOneAndUpdate(
+                { key: 'platform' },
+                { $inc: { balance: amountToExpire, totalRevenue: amountToExpire } },
+                { upsert: true, new: true }
+            );
+
+            // Record expiry deduction ledger entry
+            await WalletLedgerEntry.create({
+                userId: oid,
+                entryType: 'EXPIRY_DEDUCTION',
+                sourceType: 'PROMOTIONAL',
+                amount: -amountToExpire,
+                status: 'ACTIVE',
+                relatedOrderId: exp.relatedOrderId || null,
+                description: `${exp.description || 'Promotional credit'} expired`,
+                metadata: { originalEntryId: exp._id, expiredAmount: amountToExpire }
+            });
+        }
         exp.status = 'EXPIRED';
         exp.remainingAmount = 0;
         await exp.save();
@@ -183,7 +206,7 @@ export const deductWalletBalance = async (userId, amountInr, description = 'Orde
     return { wallet: await getUserWallet(userId) };
 };
 
-export const creditCashbackToWallet = async (userId, amountInr, expiryDays = 60, relatedOrderId = null, description = 'Order Cashback') => {
+export const creditCashbackToWallet = async (userId, amountInr, expiryDays = 30, relatedOrderId = null, description = 'Order Cashback') => {
     const amount = Number(amountInr);
     if (!Number.isFinite(amount) || amount <= 0) {
         return { wallet: await getUserWallet(userId) };
@@ -192,8 +215,9 @@ export const creditCashbackToWallet = async (userId, amountInr, expiryDays = 60,
     const oid = new mongoose.Types.ObjectId(userId);
     const wallet = await ensureWallet(userId);
 
+    const validDays = Number(expiryDays) > 0 ? Number(expiryDays) : 30;
     const now = new Date();
-    const expiryDate = new Date(now.getTime() + Number(expiryDays) * 24 * 60 * 60 * 1000);
+    const expiryDate = new Date(now.getTime() + validDays * 24 * 60 * 60 * 1000);
 
     const ledgerEntry = await WalletLedgerEntry.create({
         userId: oid,
@@ -206,7 +230,7 @@ export const creditCashbackToWallet = async (userId, amountInr, expiryDays = 60,
         status: 'ACTIVE',
         relatedOrderId: relatedOrderId && mongoose.Types.ObjectId.isValid(relatedOrderId) ? new mongoose.Types.ObjectId(relatedOrderId) : null,
         description,
-        metadata: { source: 'cashback_reward', expiryDays }
+        metadata: { source: 'cashback_reward', expiryDays: validDays }
     });
 
     wallet.cashbackBalance = Number(wallet.cashbackBalance || 0) + amount;
@@ -232,28 +256,83 @@ export const creditReferralReward = async (userId, amountInr, metadata = {}) => 
     const oid = new mongoose.Types.ObjectId(userId);
     const wallet = await ensureWallet(userId);
 
-    wallet.cashBalance = Number(wallet.cashBalance || 0) + amount;
-    wallet.balance = wallet.cashBalance + Number(wallet.cashbackBalance || 0);
+    // Fetch configurable referral expiry days from Admin Settings (default 30 days)
+    let expiryDays = 30;
+    try {
+        const refSettings = await FoodReferralSettings.findOne({ isActive: true }).sort({ createdAt: -1 }).lean();
+        if (refSettings && refSettings.referralExpiryDaysUser) {
+            expiryDays = Number(refSettings.referralExpiryDaysUser);
+        }
+    } catch (_) {}
+
+    const now = new Date();
+    const expiryDate = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000);
+
+    const ledgerEntry = await WalletLedgerEntry.create({
+        userId: oid,
+        entryType: 'REFERRAL_REWARD',
+        sourceType: 'PROMOTIONAL',
+        amount,
+        originalAmount: amount,
+        remainingAmount: amount,
+        expiryDate,
+        status: 'ACTIVE',
+        description: 'Referral reward',
+        metadata: { source: 'referral_reward', expiryDays, ...(metadata || {}) }
+    });
+
+    wallet.cashbackBalance = Number(wallet.cashbackBalance || 0) + amount;
+    wallet.balance = Number(wallet.cashBalance || 0) + wallet.cashbackBalance;
     wallet.referralEarnings = Number(wallet.referralEarnings || 0) + amount;
 
     wallet.transactions.unshift({
-        type: 'addition',
+        type: 'referral_reward',
         amount,
         status: 'Completed',
         description: 'Referral reward',
-        metadata: { source: 'referral_reward', ...(metadata || {}) }
+        metadata: { source: 'referral_reward', referralEntryId: ledgerEntry._id, expiryDate, ...(metadata || {}) }
     });
     await wallet.save();
 
-    await WalletLedgerEntry.create({
+    return { wallet: await getUserWallet(userId) };
+};
+
+export const creditPromotionalBonusToWallet = async (userId, amountInr, expiryDays = 30, description = 'Promotional Bonus', metadata = {}) => {
+    const amount = Number(amountInr);
+    if (!Number.isFinite(amount) || amount <= 0) {
+        return { wallet: await getUserWallet(userId) };
+    }
+    const oid = new mongoose.Types.ObjectId(userId);
+    const wallet = await ensureWallet(userId);
+
+    const validDays = Number(expiryDays) > 0 ? Number(expiryDays) : 30;
+    const now = new Date();
+    const expiryDate = new Date(now.getTime() + validDays * 24 * 60 * 60 * 1000);
+
+    const ledgerEntry = await WalletLedgerEntry.create({
         userId: oid,
-        entryType: 'TOPUP',
-        sourceType: 'CASH',
+        entryType: 'BONUS',
+        sourceType: 'PROMOTIONAL',
         amount,
+        originalAmount: amount,
+        remainingAmount: amount,
+        expiryDate,
         status: 'ACTIVE',
-        description: 'Referral reward',
-        metadata: { source: 'referral_reward', ...(metadata || {}) }
+        description,
+        metadata: { source: 'promotional_bonus', expiryDays: validDays, ...(metadata || {}) }
     });
+
+    wallet.cashbackBalance = Number(wallet.cashbackBalance || 0) + amount;
+    wallet.balance = Number(wallet.cashBalance || 0) + wallet.cashbackBalance;
+
+    wallet.transactions.unshift({
+        type: 'bonus',
+        amount,
+        status: 'Completed',
+        description,
+        metadata: { bonusEntryId: ledgerEntry._id, expiryDate, ...(metadata || {}) }
+    });
+    await wallet.save();
 
     return { wallet: await getUserWallet(userId) };
 };

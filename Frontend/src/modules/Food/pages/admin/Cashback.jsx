@@ -21,12 +21,12 @@ export default function Cashback() {
     cashbackType: "PERCENTAGE",
     cashbackValue: 5,
     maxCashbackAmount: 30,
-    expiryDays: 60,
+    expiryDays: 30,
     stackableWithCoupons: true,
     userSegment: "ALL",
     firstOrderOnlyForRestaurant: false,
     validFrom: new Date().toISOString().split("T")[0],
-    validUntil: new Date(Date.now() + 60 * 86400000).toISOString().split("T")[0]
+    validUntil: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
   });
 
   const fetchData = useCallback(async () => {

@@ -56,7 +56,7 @@ const cashbackRuleSchema = new mongoose.Schema(
         },
         expiryDays: {
             type: Number,
-            default: 60,
+            default: 30,
             min: 1
         },
         stackableWithCoupons: {

@@ -13,7 +13,9 @@ export default function ReferralSettings() {
     referralRewardUser: "",
     referralRewardDelivery: "",
     referralLimitUser: "",
-    referralLimitDelivery: "" })
+    referralLimitDelivery: "",
+    referralExpiryDaysUser: "30"
+  })
 
   const fetchSettings = async () => {
     try {
@@ -25,13 +27,17 @@ export default function ReferralSettings() {
           referralRewardUser: s.referralRewardUser ?? "",
           referralRewardDelivery: s.referralRewardDelivery ?? "",
           referralLimitUser: s.referralLimitUser ?? "",
-          referralLimitDelivery: s.referralLimitDelivery ?? "" })
+          referralLimitDelivery: s.referralLimitDelivery ?? "",
+          referralExpiryDaysUser: s.referralExpiryDaysUser ?? "30"
+        })
       } else {
         setSettings({
           referralRewardUser: "",
           referralRewardDelivery: "",
           referralLimitUser: "",
-          referralLimitDelivery: "" })
+          referralLimitDelivery: "",
+          referralExpiryDaysUser: "30"
+        })
       }
     } catch (e) {
       debugError("Error fetching referral settings:", e)
@@ -53,7 +59,9 @@ export default function ReferralSettings() {
         referralRewardDelivery: settings.referralRewardDelivery === "" ? 0 : Number(settings.referralRewardDelivery),
         referralLimitUser: settings.referralLimitUser === "" ? 0 : Number(settings.referralLimitUser),
         referralLimitDelivery: settings.referralLimitDelivery === "" ? 0 : Number(settings.referralLimitDelivery),
-        isActive: true }
+        referralExpiryDaysUser: settings.referralExpiryDaysUser === "" ? 30 : Number(settings.referralExpiryDaysUser),
+        isActive: true
+      }
       const res = await adminAPI.createOrUpdateReferralSettings(body)
       if (res?.data?.success) {
         toast.success("Referral settings saved successfully")
@@ -63,7 +71,9 @@ export default function ReferralSettings() {
             referralRewardUser: saved.referralRewardUser ?? "",
             referralRewardDelivery: saved.referralRewardDelivery ?? "",
             referralLimitUser: saved.referralLimitUser ?? "",
-            referralLimitDelivery: saved.referralLimitDelivery ?? "" })
+            referralLimitDelivery: saved.referralLimitDelivery ?? "",
+            referralExpiryDaysUser: saved.referralExpiryDaysUser ?? "30"
+          })
         }
       } else {
         toast.error(res?.data?.message || "Failed to save referral settings")
@@ -93,7 +103,7 @@ export default function ReferralSettings() {
           <h1 className="text-2xl font-bold text-slate-900">Referral Settings</h1>
         </div>
         <p className="text-sm text-slate-600">
-          Configure referral reward amounts and maximum credits per referrer.
+          Configure referral reward amounts, wallet expiry validity, and maximum credits per referrer.
         </p>
       </div>
 
@@ -131,24 +141,38 @@ export default function ReferralSettings() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="border border-slate-200 rounded-xl p-4">
-                <h3 className="font-semibold text-slate-900 mb-3">User Referral</h3>
-                <label className="block text-sm text-slate-600 mb-1">Reward amount (₹)</label>
-                <input
-                  value={settings.referralRewardUser}
-                  onChange={onChange("referralRewardUser")}
-                  inputMode="numeric"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                  placeholder="e.g. 50"
-                />
-                <label className="block text-sm text-slate-600 mb-1 mt-3">Max credits per referrer</label>
-                <input
-                  value={settings.referralLimitUser}
-                  onChange={onChange("referralLimitUser")}
-                  inputMode="numeric"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                  placeholder="e.g. 10"
-                />
+              <div className="border border-slate-200 rounded-xl p-4 space-y-3">
+                <h3 className="font-semibold text-slate-900 mb-1">User Referral</h3>
+                <div>
+                  <label className="block text-sm text-slate-600 mb-1">Reward amount (₹)</label>
+                  <input
+                    value={settings.referralRewardUser}
+                    onChange={onChange("referralRewardUser")}
+                    inputMode="numeric"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+                    placeholder="e.g. 50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-600 mb-1">Wallet Validity / Expiry (Days)</label>
+                  <input
+                    value={settings.referralExpiryDaysUser}
+                    onChange={onChange("referralExpiryDaysUser")}
+                    inputMode="numeric"
+                    className="w-full border border-orange-300 rounded-lg px-3 py-2 text-sm font-bold text-orange-700 bg-orange-50/50"
+                    placeholder="Default: 30"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-600 mb-1">Max credits per referrer</label>
+                  <input
+                    value={settings.referralLimitUser}
+                    onChange={onChange("referralLimitUser")}
+                    inputMode="numeric"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+                    placeholder="e.g. 10"
+                  />
+                </div>
               </div>
 
               <div className="border border-slate-200 rounded-xl p-4">

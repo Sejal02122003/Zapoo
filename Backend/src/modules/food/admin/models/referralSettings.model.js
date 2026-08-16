@@ -6,6 +6,7 @@ const referralSettingsSchema = new mongoose.Schema(
         referralRewardDelivery: { type: Number, min: 0, default: 0 },
         referralLimitUser: { type: Number, min: 0, default: 0 },
         referralLimitDelivery: { type: Number, min: 0, default: 0 },
+        referralExpiryDaysUser: { type: Number, min: 1, default: 30 },
         isActive: { type: Boolean, default: true, index: true }
     },
     { collection: 'food_referral_settings', timestamps: true }

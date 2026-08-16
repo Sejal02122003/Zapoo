@@ -6,6 +6,7 @@ const schema = z.object({
     referralRewardDelivery: z.number().min(0).optional(),
     referralLimitUser: z.number().min(0).optional(),
     referralLimitDelivery: z.number().min(0).optional(),
+    referralExpiryDaysUser: z.number().min(1).optional(),
     isActive: z.boolean().optional()
 });
 
@@ -15,6 +16,7 @@ export const validateReferralSettingsUpsertDto = (body) => {
         referralRewardDelivery: body?.referralRewardDelivery !== undefined ? Number(body.referralRewardDelivery) : undefined,
         referralLimitUser: body?.referralLimitUser !== undefined ? Number(body.referralLimitUser) : undefined,
         referralLimitDelivery: body?.referralLimitDelivery !== undefined ? Number(body.referralLimitDelivery) : undefined,
+        referralExpiryDaysUser: body?.referralExpiryDaysUser !== undefined ? Number(body.referralExpiryDaysUser) : undefined,
         isActive: body?.isActive !== undefined ? Boolean(body.isActive) : undefined
     };
 
