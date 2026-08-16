@@ -4,6 +4,7 @@ import { API_BASE_URL } from '@food/api/config';
 import { restaurantAPI } from '@food/api';
 import alertSound from '@food/assets/audio/alert.mp3';
 import { dispatchNotificationInboxRefresh } from '@food/hooks/useNotificationInbox';
+import { playRestaurantOrderNotificationAlarm, playSynthChimeSound } from '@food/utils/soundUtils';
 import { RestaurantNotificationContext } from '../context/RestaurantNotificationContext';
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -334,13 +335,11 @@ export const useRestaurantNotifications = () => {
           response?.data?.data?.data?.orders ||
           [];
 
-        // REST layer normalizes backend statuses so:
-        // - backend "created" -> UI "confirmed"
-        // We alert only for "confirmed/new order waiting for review".
+        // Check for new incoming orders waiting for restaurant review (created / pending / confirmed)
         const confirmed = (rows || [])
           .filter((o) => {
-            const status = String(o?.status || "").toLowerCase();
-            if (status !== "confirmed") return false;
+            const status = String(o?.status || o?.orderStatus || "").toLowerCase();
+            if (!["created", "pending", "confirmed"].includes(status)) return false;
 
             // Skip orders that have been locally marked as cancelled
             const oId = String(o?._id || o?.orderMongoId || o?.orderId || '').trim();
@@ -363,10 +362,10 @@ export const useRestaurantNotifications = () => {
           });
 
         if (confirmed.length > 0) {
-          // Trigger alerts for newest confirmed orders (dedupe prevents spam).
+          // Trigger alerts for newest orders (dedupe prevents spam).
           confirmed.slice(0, 5).forEach((o) => {
             handleIncomingOrderAlert(o, 'poll');
-            enqueueOrder(o); // add each confirmed order to the queue
+            enqueueOrder(o); // add each incoming order to the queue
           });
         }
 
@@ -475,13 +474,13 @@ export const useRestaurantNotifications = () => {
       if (typeof document === 'undefined') return;
       
       if (document.visibilityState === 'visible') {
-        // Force a REST fetch on foreground to catch any orders missed while in background
+        // Force a REST fetch on foreground to catch any orders missed while in background / app open
         if (restaurantId) {
           restaurantAPI.getOrders({ page: 1, limit: 10 }).then(response => {
              const rows = response?.data?.data?.orders || response?.data?.data?.data?.orders || [];
              const confirmed = (rows || []).filter(o => {
-                const status = String(o?.status || "").toLowerCase();
-                if (status !== "confirmed") return false;
+                const status = String(o?.status || o?.orderStatus || "").toLowerCase();
+                if (!["created", "pending", "confirmed"].includes(status)) return false;
                 // Skip orders that have been locally marked as cancelled
                 const oId = String(o?._id || o?.orderMongoId || o?.orderId || '').trim();
                 if (oId && cancelledOrderIdsRef.current.has(oId)) return false;
@@ -489,7 +488,10 @@ export const useRestaurantNotifications = () => {
              }).sort((a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime());
              
              if (confirmed.length > 0) {
-                confirmed.slice(0, 5).forEach(o => enqueueOrder(o));
+                confirmed.slice(0, 5).forEach(o => {
+                  handleIncomingOrderAlert(o, 'foreground_open');
+                  enqueueOrder(o);
+                });
              }
 
              // --- NEW: Fallback for Cancellations if Socket failed ---
@@ -923,16 +925,10 @@ export const useRestaurantNotifications = () => {
 
   const playNotificationSound = async (orderData = {}) => {
     try {
-      // Temporarily disabled native bridge sound trigger
-      // const usedNativeBridge = await triggerWebViewNativeNotification(orderData);
-      const usedNativeBridge = false;
+      const usedNativeBridge = await triggerWebViewNativeNotification(orderData);
       if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
         try {
-          if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
-            // Skip vibration to avoid Chrome intervention warning if user hasn't interacted
-          } else {
-            navigator.vibrate([200, 100, 200, 100, 300]);
-          }
+          navigator.vibrate([300, 150, 300, 150, 500]);
         } catch (e) {
           // Ignore vibration errors
         }
@@ -941,25 +937,36 @@ export const useRestaurantNotifications = () => {
         return;
       }
 
-      // if (audioRef.current) {
-      //   audioRef.current.muted = false;
-      //   audioRef.current.volume = 1;
-      //   audioRef.current.currentTime = 0;
-      //   audioRef.current.play().catch(error => {
-      //     // Don't log autoplay policy errors as they're expected
-      //     if (!error.message?.includes('user didn\'t interact') && !error.name?.includes('NotAllowedError')) {
-      //       debugWarn('Error playing notification sound:', error);
-      //       // Fallback: try one-shot audio instance (more reliable in background tabs on some browsers)
-      //       try {
-      //         const fallbackAudio = new Audio(resolveAudioSource(alertSound, `restaurant-alert-${Date.now()}`));
-      //         fallbackAudio.volume = 1;
-      //         fallbackAudio.play().catch(() => {});
-      //       } catch (fallbackError) {
-      //         debugWarn('Fallback audio playback failed:', fallbackError);
-      //       }
-      //     }
-      //   });
-      // }
+      let soundPlayed = false;
+      if (audioRef.current) {
+        try {
+          audioRef.current.muted = false;
+          audioRef.current.volume = 1;
+          audioRef.current.currentTime = 0;
+          await audioRef.current.play();
+          soundPlayed = true;
+        } catch (error) {
+          // If persistent audio element failed or blocked, try creating one-shot audio
+          try {
+            const fallbackAudio = new Audio(resolveAudioSource(alertSound));
+            fallbackAudio.volume = 1;
+            await fallbackAudio.play();
+            soundPlayed = true;
+          } catch (_) {}
+        }
+      } else {
+        try {
+          const fallbackAudio = new Audio(resolveAudioSource(alertSound));
+          fallbackAudio.volume = 1;
+          await fallbackAudio.play();
+          soundPlayed = true;
+        } catch (_) {}
+      }
+
+      // If HTML5 audio was blocked or failed, trigger synth chime as guaranteed fallback
+      if (!soundPlayed) {
+        await playRestaurantOrderNotificationAlarm();
+      }
     } catch (error) {
       // Don't log autoplay policy errors
       if (!error.message?.includes('user didn\'t interact') && !error.name?.includes('NotAllowedError')) {

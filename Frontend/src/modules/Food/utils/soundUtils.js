@@ -1,3 +1,4 @@
+import alertSound from '@food/assets/audio/alert.mp3';
 import zoopSound from '@food/assets/audio/zomato_sms.mp3';
 
 let sharedAudioContext = null;
@@ -22,6 +23,7 @@ if (typeof window !== 'undefined') {
   };
   window.addEventListener('click', unlockAudio, { capture: true, passive: true });
   window.addEventListener('touchstart', unlockAudio, { capture: true, passive: true });
+  window.addEventListener('pointerdown', unlockAudio, { capture: true, passive: true });
 }
 
 /**
@@ -86,6 +88,28 @@ export async function playUserOrderNotificationAlarm() {
   }
 
   // Always run synth chime if file audio failed or to guarantee sound
+  if (!playedFile) {
+    await playSynthChimeSound();
+  }
+}
+
+/**
+ * Main alarm sound function for Restaurant App new order notifications.
+ * Plays the loud restaurant alert.mp3 with automatic synth chime fallback.
+ */
+export async function playRestaurantOrderNotificationAlarm() {
+  let playedFile = false;
+
+  try {
+    const audio = new Audio(alertSound);
+    audio.volume = 1.0;
+    await audio.play();
+    playedFile = true;
+  } catch {
+    // HTML5 audio blocked or failed — proceed to synth chime
+  }
+
+  // If file audio failed or blocked, run synth chime to guarantee notification sound
   if (!playedFile) {
     await playSynthChimeSound();
   }
