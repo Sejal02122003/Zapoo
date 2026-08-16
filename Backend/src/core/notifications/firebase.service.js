@@ -188,13 +188,30 @@ const buildMessagePayload = (payload = {}, token) => {
 
     message.data = data;
 
+    const soundName = payload.sound ? String(payload.sound).replace(/\.(mp3|wav|ogg|caf)$/i, '') : 'alert';
+    const channelId = payload.androidChannelId || payload.channelId || 'high_importance_channel';
+
     message.android = {
         priority: 'high',
         notification: {
-            channel_id: 'default',
+            channel_id: channelId,
+            sound: soundName,
+            default_sound: !payload.sound,
             click_action: 'FLUTTER_NOTIFICATION_CLICK',
             default_vibrate_timings: true,
             default_light_settings: true
+        }
+    };
+
+    message.apns = {
+        headers: {
+            'apns-priority': '10'
+        },
+        payload: {
+            aps: {
+                sound: `${soundName}.caf`,
+                contentAvailable: true
+            }
         }
     };
 
@@ -258,15 +275,18 @@ export const listOwnerTokens = async ({ ownerType, ownerId, platform }) => {
     if (!ownerType || !ownerId) return [];
     const model = getOwnerModel(ownerType);
     if (!model) return [];
-    const doc = await model.findById(ownerId).select('fcmTokens fcmTokenMobile').lean();
+    const cleanId = String(ownerId?._id || ownerId || '').trim();
+    if (!cleanId) return [];
+    const doc = await model.findById(cleanId).select('fcmTokens fcmTokenMobile').lean();
     return readTokensFromDoc(doc, platform);
 };
 
 export const upsertFirebaseDeviceToken = async ({ ownerType, ownerId, token, platform = 'web' }) => {
     const normalizedToken = sanitizeString(token);
-    console.log(`[FCM-DEBUG] upsertFirebaseDeviceToken: ownerType=${ownerType}, ownerId=${ownerId}, platform=${platform}, tokenPreview=${normalizedToken?.slice(0, 10)}...`);
+    const cleanOwnerId = String(ownerId?._id || ownerId || '').trim();
+    console.log(`[FCM-DEBUG] upsertFirebaseDeviceToken: ownerType=${ownerType}, ownerId=${cleanOwnerId}, platform=${platform}, tokenPreview=${normalizedToken?.slice(0, 10)}...`);
 
-    if (!ownerType || !ownerId || !normalizedToken) {
+    if (!ownerType || !cleanOwnerId || !normalizedToken) {
         console.error('[FCM-DEBUG] upsert - Missing required fields');
         throw new Error('ownerType, ownerId, and token are required.');
     }
@@ -278,9 +298,9 @@ export const upsertFirebaseDeviceToken = async ({ ownerType, ownerId, token, pla
         throw new Error(`Unsupported owner type: ${ownerType}`);
     }
 
-    const doc = await model.findById(ownerId);
+    const doc = await model.findById(cleanOwnerId);
     if (!doc) {
-        console.error(`[FCM-DEBUG] upsert - Owner profile not found for id ${ownerId}`);
+        console.error(`[FCM-DEBUG] upsert - Owner profile not found for id ${cleanOwnerId}`);
         throw new Error('Owner profile not found.');
     }
 

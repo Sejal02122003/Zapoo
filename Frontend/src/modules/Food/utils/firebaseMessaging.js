@@ -741,8 +741,20 @@ export async function registerWebPushForCurrentModule(pathname = window.location
   if (moduleName === "admin") return;
   initPushNotificationClient();
 
-  const accessToken = localStorage.getItem(`${moduleName}_accessToken`);
+  const accessToken =
+    localStorage.getItem(`${moduleName}_accessToken`) ||
+    localStorage.getItem(`${moduleName}Token`) ||
+    localStorage.getItem(`${moduleName}_token`) ||
+    localStorage.getItem("accessToken") ||
+    localStorage.getItem("token");
   if (!accessToken) return;
+
+  // Always register native mobile FCM token immediately if running inside Flutter InAppWebView
+  if (isFlutterWebView()) {
+    pushDebugLog(PUSH_DEBUG_PREFIX, "Flutter WebView detected — registering native FCM token", { moduleName });
+    await registerNativeWebViewFcmToken(moduleName);
+    return null;
+  }
 
   const supportsBrowserPush = isSupportedBrowser() && isSecureContextForPush();
 
