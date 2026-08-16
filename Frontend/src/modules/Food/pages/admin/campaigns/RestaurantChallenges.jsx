@@ -55,7 +55,8 @@ export default function RestaurantChallenges() {
             setChallenges(Array.isArray(list) ? list : []);
         } catch (error) {
             console.error('Failed to fetch challenges:', error);
-            toast.error('Failed to fetch challenges');
+            const msg = error?.response?.data?.message || error?.message || 'Failed to fetch challenges';
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
