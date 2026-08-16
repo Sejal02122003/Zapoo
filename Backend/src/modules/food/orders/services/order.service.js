@@ -356,6 +356,7 @@ export async function createOrder(userId, dto) {
   }
 
   let riderEarning = 0;
+  let deliveryBonusAmount = 0;
   if (orderType !== 'takeaway') {
     riderEarning = await getRiderEarning(distanceKm);
     if (!riderEarning || riderEarning === 0) {
@@ -364,7 +365,7 @@ export async function createOrder(userId, dto) {
     
     // Apply delivery bonus from fee settings
     const feeSettings = await FoodFeeSettings.findOne({ isActive: true }).lean();
-    const deliveryBonusAmount = Number(feeSettings?.deliveryBonusAmount || 0);
+    deliveryBonusAmount = Number(feeSettings?.deliveryBonusAmount || 0);
     if (deliveryBonusAmount > 0) {
       riderEarning += deliveryBonusAmount;
     }
