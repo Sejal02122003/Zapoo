@@ -125,11 +125,6 @@ export const verifyUserOtpAndLogin = async (
     }
   }
 
-  // For first-time signup, require name before OTP verification so OTP is not consumed prematurely.
-  if (!existingUser && !trimmedName) {
-    throw new ValidationError("Name is required for first-time signup");
-  }
-
   const result = await verifyOtp(phone, otp);
 
   if (!result.valid) {
