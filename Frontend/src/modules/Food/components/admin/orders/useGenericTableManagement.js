@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
 import { exportToExcel, exportToPDF } from "./ordersExportUtils"
+import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -34,43 +35,38 @@ export function useGenericTableManagement(data, title, searchFields = []) {
       if (value && value !== "") {
         result = result.filter(item => {
           const itemValue = item[key]
-          if (typeof value === 'string') {
-            return itemValue === value || itemValue?.toString().toLowerCase() === value.toLowerCase()
-          }
-          return itemValue === value
+          if (itemValue === undefined || itemValue === null) return false
+          return itemValue.toString().toLowerCase() === value.toString().toLowerCase()
         })
       }
     })
 
     return result
-  }, [data, searchQuery, filters, searchFields])
-
-  const count = filteredData.length
+  }, [data, searchQuery, searchFields, filters])
 
   // Count active filters
   const activeFiltersCount = useMemo(() => {
-    return Object.values(filters).filter(value => value !== "" && value !== null && value !== undefined).length
+    return Object.values(filters).filter(v => v && v !== "").length
   }, [filters])
 
-  const handleApplyFilters = () => {
+  // Count results
+  const count = filteredData.length
+
+  const handleApplyFilters = (newFilters) => {
+    setFilters(newFilters)
     setIsFilterOpen(false)
   }
 
   const handleResetFilters = () => {
     setFilters({})
+    setIsFilterOpen(false)
   }
 
-  const handleExport = async (format) => {
-    const filename = title.toLowerCase().replace(/\s+/g, "_")
-    switch (format) {
-      case "excel":
-        exportToExcel(filteredData, filename)
-        break
-      case "pdf":
-        await exportToPDF(filteredData, filename)
-        break
-      default:
-        break
+  const handleExport = (type) => {
+    if (type === "excel") {
+      exportToExcel(filteredData, title)
+    } else if (type === "pdf") {
+      exportToPDF(filteredData, title)
     }
   }
 
@@ -84,6 +80,10 @@ export function useGenericTableManagement(data, title, searchFields = []) {
       // Dynamic import of jsPDF and autoTable for instant PDF download
       const { default: jsPDF } = await import('jspdf')
       const { default: autoTable } = await import('jspdf-autotable')
+      const settings = getCachedSettings() || await loadBusinessSettings()
+      const companyName = settings?.companyName || "Zapoo"
+      const zapooFssai = settings?.fssai || "10019064001810"
+      const zapooGstin = settings?.gstin || "19AAZCS8726L1Z5"
       
       const doc = new jsPDF({
         orientation: 'portrait',
@@ -94,20 +94,28 @@ export function useGenericTableManagement(data, title, searchFields = []) {
       // Add title
       doc.setFontSize(18)
       doc.setTextColor(30, 30, 30)
-      doc.text('Order Invoice', 105, 20, { align: 'center' })
+      doc.setFont(undefined, 'bold')
+      doc.text(companyName, 105, 16, { align: 'center' })
+      doc.setFontSize(13)
+      doc.setFont(undefined, 'normal')
+      doc.text('Order Invoice', 105, 23, { align: 'center' })
+      doc.setFontSize(9)
+      doc.setFont(undefined, 'bold')
+      doc.setTextColor(70, 70, 70)
+      doc.text(`FSSAI: ${zapooFssai}   |   GSTIN: ${zapooGstin}`, 105, 29, { align: 'center' })
       
       // Order ID
-      doc.setFontSize(12)
+      doc.setFontSize(10)
+      doc.setFont(undefined, 'normal')
       doc.setTextColor(100, 100, 100)
       const orderId = order.orderId || order.id || order.subscriptionId || 'N/A'
-      doc.text(`Order ID: ${orderId}`, 105, 28, { align: 'center' })
+      doc.text(`Order ID: ${orderId}`, 105, 35, { align: 'center' })
       
       // Date
-      doc.setFontSize(10)
       const orderDate = order.date && order.time ? `${order.date}, ${order.time}` : (order.date || new Date().toLocaleDateString())
-      doc.text(`Date: ${orderDate}`, 105, 34, { align: 'center' })
+      doc.text(`Date: ${orderDate}`, 105, 40, { align: 'center' })
       
-      let startY = 45
+      let startY = 48
       
       // Customer Information
       if (order.customerName || order.customerPhone) {
@@ -147,8 +155,8 @@ export function useGenericTableManagement(data, title, searchFields = []) {
         const tableData = order.items.map((item) => [
           item.quantity || 1,
           item.name || item.itemName || item.title || 'Unknown Item',
-          `?${(item.price || 0).toFixed(2)}`,
-          `?${((item.quantity || 1) * (item.price || 0)).toFixed(2)}`
+          `Rs. ${(item.price || 0).toFixed(2)}`,
+          `Rs. ${((item.quantity || 1) * (item.price || 0)).toFixed(2)}`
         ])
         
         autoTable(doc, {
@@ -188,11 +196,11 @@ export function useGenericTableManagement(data, title, searchFields = []) {
       
       // Total Amount
       if (order.totalAmount) {
-        doc.setFontSize(14)
+        doc.setFontSize(13)
         doc.setTextColor(30, 30, 30)
         doc.setFont(undefined, 'bold')
         const totalAmount = typeof order.totalAmount === 'number' ? order.totalAmount.toFixed(2) : order.totalAmount
-        doc.text(`Total Amount: ?${totalAmount}`, 14, startY)
+        doc.text(`Total Amount: Rs. ${totalAmount}`, 14, startY)
         startY += 8
       }
       
@@ -210,6 +218,15 @@ export function useGenericTableManagement(data, title, searchFields = []) {
         doc.setFontSize(10)
         doc.text(`Order Status: ${order.orderStatus}`, 14, startY)
       }
+
+      // Footer
+      const footerY = 275
+      doc.setDrawColor(226, 232, 240)
+      doc.line(14, footerY - 5, 196, footerY - 5)
+      doc.setFontSize(8)
+      doc.setTextColor(100, 116, 139)
+      doc.text(`Generated on ${new Date().toLocaleString()}`, 14, footerY)
+      doc.text(`${companyName} Platform • FSSAI: ${zapooFssai} • GSTIN: ${zapooGstin}`, 196, footerY, { align: 'right' })
       
       // Save the PDF instantly
       const filename = `Invoice_${orderId}_${new Date().toISOString().split("T")[0]}.pdf`

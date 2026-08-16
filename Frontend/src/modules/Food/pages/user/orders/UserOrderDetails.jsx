@@ -327,8 +327,8 @@ export default function UserOrderDetails() {
         const addrLines = doc.splitTextToSize(settings.address, 85);
         doc.text(addrLines, 14, 60);
       }
-      doc.text(`FSSAI: ${settings.fssai || "N/A"}`, 14, 75);
-      doc.text(`GSTIN: ${settings.gstin || "N/A"}`, 14, 80);
+      doc.text(`FSSAI: ${settings.fssai || "10019064001810"}`, 14, 75);
+      doc.text(`GSTIN: ${settings.gstin || "19AAZCS8726L1Z5"}`, 14, 80);
 
       // Restaurant Info (Right)
       doc.setTextColor(15, 23, 42);

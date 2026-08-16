@@ -298,7 +298,9 @@ export function useOrdersManagement(orders, statusKey, title) {
         : (order.date || new Date().toLocaleDateString())
 
       const settings = getCachedSettings() || await loadBusinessSettings()
-      const companyName = settings?.companyName || "Zapoo Food"
+      const companyName = settings?.companyName || "Zapoo"
+      const zapooFssai = settings?.fssai || "10019064001810"
+      const zapooGstin = settings?.gstin || "19AAZCS8726L1Z5"
       const logoUrl = settings?.logo?.url || quickSpicyLogo
       const logoDataUrl = await imageUrlToDataUrl(logoUrl)
 
@@ -367,7 +369,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       const itemCount = items.reduce((sum, item) => sum + toNumber(item?.quantity || 1), 0) || items.length
 
       doc.setFillColor(15, 118, 110)
-      doc.rect(0, 0, pageWidth, 46, "F")
+      doc.rect(0, 0, pageWidth, 50, "F")
       doc.setFillColor(255, 255, 255)
       doc.setGState(new doc.GState({ opacity: 0.08 }))
       doc.circle(pageWidth - 24, 12, 18, "F")
@@ -384,16 +386,20 @@ export function useOrdersManagement(orders, statusKey, title) {
       }
 
       doc.setTextColor(255, 255, 255)
-      doc.setFontSize(17)
+      doc.setFontSize(16)
       doc.setFont(undefined, "bold")
-      doc.text(companyName, logoDataUrl ? 42 : 14, 17)
+      doc.text(companyName, logoDataUrl ? 42 : 14, 15)
       doc.setFontSize(10)
       doc.setFont(undefined, "normal")
-      doc.text("Order Invoice", logoDataUrl ? 42 : 14, 24)
-      doc.setFontSize(8.5)
-      doc.text("Admin order summary with billing and delivery details", logoDataUrl ? 42 : 14, 30)
+      doc.text("Order Invoice", logoDataUrl ? 42 : 14, 22)
+      doc.setFontSize(8)
+      doc.text("Admin order summary with billing and delivery details", logoDataUrl ? 42 : 14, 28)
+      doc.setFontSize(8)
+      doc.setFont(undefined, "bold")
+      doc.text(`FSSAI: ${zapooFssai}   |   GSTIN: ${zapooGstin}`, logoDataUrl ? 42 : 14, 35)
 
       doc.setFontSize(9)
+      doc.setFont(undefined, "normal")
       doc.text(`Invoice #: ${orderId}`, pageWidth - 14, 14, { align: "right" })
       doc.text(`Date: ${orderDate}`, pageWidth - 14, 20, { align: "right" })
       doc.text(`Status: ${orderStatus}`, pageWidth - 14, 26, { align: "right" })
@@ -445,23 +451,27 @@ export function useOrdersManagement(orders, statusKey, title) {
         return cardHeight
       }
 
-      const customerCardHeight = drawInfoCard("Customer", 14, 53, 58, [
+      const customerCardHeight = drawInfoCard("Customer", 14, 56, 58, [
         { label: "Name", value: customerName },
         { label: "Phone", value: customerPhone },
         { label: "Address", value: deliveryAddress },
       ])
-      const restaurantCardHeight = drawInfoCard("Restaurant", 76, 53, 58, [
+      const restaurantFssai = order.restaurantFssai || order.restaurantId?.fssaiLicense || order.restaurantId?.fssaiNumber || order.restaurant?.fssai || "N/A"
+      const restaurantGstin = order.restaurantGst || order.restaurantId?.gstin || order.restaurantId?.gstNumber || order.restaurant?.gstin || "N/A"
+      const restaurantCardHeight = drawInfoCard("Restaurant", 76, 56, 58, [
         { label: "Name", value: restaurantName },
         { label: "Delivery", value: deliveryType },
         { label: "Items", value: `${itemCount} item${itemCount === 1 ? "" : "s"}` },
+        { label: "FSSAI", value: restaurantFssai },
+        { label: "GSTIN", value: restaurantGstin },
       ], [37, 99, 235])
-      const deliveryCardHeight = drawInfoCard("Delivery Partner", 138, 53, 58, [
+      const deliveryCardHeight = drawInfoCard("Delivery Partner", 138, 56, 58, [
         { label: "Name", value: deliveryPartnerName },
         { label: "Phone", value: deliveryPartnerPhone },
         { label: "Payment", value: paymentType },
       ], [249, 115, 22])
 
-      const infoCardsBottomY = 53 + Math.max(customerCardHeight, restaurantCardHeight, deliveryCardHeight)
+      const infoCardsBottomY = 56 + Math.max(customerCardHeight, restaurantCardHeight, deliveryCardHeight)
 
       autoTable(doc, {
         startY: infoCardsBottomY + 8,
@@ -556,10 +566,10 @@ export function useOrdersManagement(orders, statusKey, title) {
       const footerY = Math.max((doc.lastAutoTable?.finalY || summaryStartY) + 18, 262)
       doc.setDrawColor(226, 232, 240)
       doc.line(14, footerY - 6, pageWidth - 14, footerY - 6)
-      doc.setFontSize(9)
+      doc.setFontSize(8)
       doc.setTextColor(100, 116, 139)
       doc.text(`Generated on ${new Date().toLocaleString()}`, 14, footerY)
-      doc.text("Includes customer, restaurant, and delivery partner details.", pageWidth - 14, footerY, { align: "right" })
+      doc.text(`${companyName} Platform • FSSAI Lic: ${zapooFssai} • GSTIN: ${zapooGstin}`, pageWidth - 14, footerY, { align: "right" })
 
       const filename = `Invoice_${orderId}_${new Date().toISOString().split("T")[0]}.pdf`
       doc.save(filename)

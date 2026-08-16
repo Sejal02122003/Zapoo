@@ -6,6 +6,7 @@ import Lenis from "lenis"
 import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
 import { restaurantAPI } from "@food/api"
+import { loadBusinessSettings, getCachedSettings } from "@food/utils/businessSettings"
 import {
   ArrowLeft,
   Printer,
@@ -345,6 +346,17 @@ export default function OrderDetails() {
       if (!orderData) {
         throw new Error("Order data not found")
       }
+
+      let settings = getCachedSettings() || {}
+      try {
+        if (!settings?.fssai) {
+          settings = (await loadBusinessSettings()) || {}
+        }
+      } catch (_) {}
+
+      const zapooFssai = settings?.fssai || "10019064001810"
+      const zapooGstin = settings?.gstin || "19AAZCS8726L1Z5"
+      const companyName = settings?.companyName || "Zapoo"
       
       const doc = new jsPDF()
       const pageWidth = doc.internal.pageSize.getWidth()
@@ -596,11 +608,11 @@ export default function OrderDetails() {
       // Footer
       yPosition = pageHeight - bottomMargin
       doc.setFontSize(8)
-      doc.setFont("helvetica", "italic")
+      doc.setFont("helvetica", "normal")
       doc.setTextColor(100, 100, 100)
-      doc.text("Thank you for your business!", pageWidth / 2, yPosition, { align: "center" })
-      yPosition += 5
-      doc.text(`Generated on: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: "center" })
+      doc.text("Thank you for your business!", pageWidth / 2, yPosition - 4, { align: "center" })
+      doc.text(`${companyName} Platform • FSSAI Lic: ${zapooFssai} • GSTIN: ${zapooGstin}`, pageWidth / 2, yPosition, { align: "center" })
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition + 4, { align: "center" })
 
       // Save the PDF
       doc.save(`Order_Receipt_${orderData.id}.pdf`)
