@@ -1,4 +1,5 @@
 import cron from 'node-cron';
+import mongoose from 'mongoose';
 import { FoodRestaurant } from '../../modules/food/restaurant/models/restaurant.model.js';
 import { FoodRestaurantOutletTimings } from '../../modules/food/restaurant/models/outletTimings.model.js';
 import { getIO, rooms } from '../../config/socket.js';
@@ -94,6 +95,9 @@ let cronTask = null;
 
 export async function processAutoOpenCloseForAllRestaurants() {
     try {
+        if (mongoose.connection.readyState !== 1) {
+            return;
+        }
         const approvedRestaurants = await FoodRestaurant.find({ status: 'approved' })
             .select('_id restaurantName isAcceptingOrders isClosed isOpen openDays openingTime closingTime')
             .lean();

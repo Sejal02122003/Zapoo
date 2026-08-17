@@ -14,8 +14,12 @@ export async function processPendingCashbacks() {
     }
 
     try {
-        if (mongoose.connection.readyState === 0) {
-            await mongoose.connect(mongoUri);
+        if (mongoose.connection.readyState !== 1) {
+            if (process.argv[1]?.endsWith('processPendingCashbacks.js')) {
+                await mongoose.connect(mongoUri);
+            } else {
+                return;
+            }
         }
         console.log('[CASHBACK_SYNC] Scanning for un-credited pending cashbacks...');
 

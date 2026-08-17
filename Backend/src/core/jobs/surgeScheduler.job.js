@@ -1,4 +1,5 @@
 import cron from 'node-cron';
+import mongoose from 'mongoose';
 import { FoodRestaurant } from '../../modules/food/restaurant/models/restaurant.model.js';
 import { computeSurgeForRestaurant } from '../../modules/food/admin/services/surgeCalculation.service.js';
 import { logger } from '../../utils/logger.js';
@@ -7,6 +8,9 @@ let cronTask = null;
 
 export async function processSurgeCalculationForAllRestaurants() {
     try {
+        if (mongoose.connection.readyState !== 1) {
+            return;
+        }
         const approvedRestaurants = await FoodRestaurant.find({
             status: 'approved',
             isAcceptingOrders: true

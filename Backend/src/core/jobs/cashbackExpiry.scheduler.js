@@ -1,4 +1,5 @@
 import cron from 'node-cron';
+import mongoose from 'mongoose';
 import { WalletLedgerEntry } from '../../modules/food/user/models/walletLedgerEntry.model.js';
 import { FoodUserWallet } from '../../modules/food/user/models/userWallet.model.js';
 import { FoodAdminWallet } from '../../modules/food/admin/models/adminWallet.model.js';
@@ -6,6 +7,9 @@ import { notifyOwnerSafely } from '../notifications/firebase.service.js';
 import { logger } from '../../utils/logger.js';
 
 export async function processExpiredCashbackEntries() {
+    if (mongoose.connection.readyState !== 1) {
+        return { processedCount: 0, totalAmountExpired: 0 };
+    }
     const now = new Date();
     logger.info('[CASHBACK-EXPIRY] Starting daily cashback expiry check...');
 

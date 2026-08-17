@@ -53,6 +53,18 @@ const startServer = async () => {
         // 1.5 Load Environment Variables from Database overrides
         await loadEnvFromDb();
 
+        // 1.75 Start background schedulers (after DB is fully connected)
+        try {
+            const { startCashbackExpiryScheduler } = await import('./src/core/jobs/cashbackExpiry.scheduler.js');
+            const { startSurgeScheduler } = await import('./src/core/jobs/surgeScheduler.job.js');
+            const { startRestaurantTimingScheduler } = await import('./src/core/jobs/restaurantTimingScheduler.job.js');
+            startCashbackExpiryScheduler();
+            startSurgeScheduler();
+            startRestaurantTimingScheduler();
+        } catch (schedErr) {
+            logger.error(`Scheduler startup error: ${schedErr.message}`);
+        }
+
         // 2. Create HTTP server from Express app
         const httpServer = http.createServer(app);
 
