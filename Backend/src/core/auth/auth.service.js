@@ -192,77 +192,116 @@ export const verifyUserOtpAndLogin = async (
     await userDoc.save();
   }
 
-  // Referral crediting: only for brand new accounts.
+  // Referral crediting: for brand new accounts or users without a referrer
   const refRaw = typeof ref === "string" ? String(ref).trim() : "";
-  if (isNewUser && refRaw) {
+  if ((isNewUser || !userDoc.referredBy) && refRaw) {
     try {
-      let referrerQuery = { referralCode: refRaw };
+      const orConditions = [
+        { referralCode: refRaw },
+        { phone: refRaw }
+      ];
       if (mongoose.Types.ObjectId.isValid(refRaw)) {
-        referrerQuery = {
-          $or: [
-            { _id: new mongoose.Types.ObjectId(refRaw) },
-            { referralCode: refRaw }
-          ]
-        };
+        orConditions.push({ _id: new mongoose.Types.ObjectId(refRaw) });
       }
+      const referrerQuery = { $or: orConditions };
 
       const [referrer, settingsDoc] = await Promise.all([
-        FoodUser.findOne(referrerQuery).select("_id referralCount").lean(),
-        FoodReferralSettings.findOne({ isActive: true })
+        FoodUser.findOne(referrerQuery).select("_id referralCount phone name").lean(),
+        FoodReferralSettings.findOne({ isActive: { $ne: false } })
           .sort({ createdAt: -1 })
-          .lean(),
+          .lean()
+          .then(s => s || FoodReferralSettings.findOne().sort({ createdAt: -1 }).lean()),
       ]);
 
-      if (referrer && String(referrer._id) !== String(userDoc._id) && settingsDoc) {
+      if (referrer && String(referrer._id) !== String(userDoc._id)) {
         const referrerId = referrer._id;
-        const reward = Math.max(0, Number(settingsDoc.referralRewardUser) || 0);
-        const limit = Math.max(0, Number(settingsDoc.referralLimitUser) || 0);
+        const reward = Math.max(0, Number(settingsDoc?.referralRewardUser) || 0);
+        const limit = Math.max(0, Number(settingsDoc?.referralLimitUser) || 0);
+        // limit 0 means unlimited
+        const isLimitOk = limit === 0 || Number(referrer.referralCount || 0) < limit;
 
-        if (reward > 0 && limit > 0 && Number(referrer.referralCount || 0) < limit) {
-          userDoc.referredBy = referrerId;
-          await userDoc.save();
+        if (reward > 0 && isLimitOk) {
+          if (!userDoc.referredBy) {
+            userDoc.referredBy = referrerId;
+            await userDoc.save();
+          }
 
-              const log = await FoodReferralLog.create({
-                referrerId,
-                refereeId: userDoc._id,
+          const existingLog = await FoodReferralLog.findOne({
+            refereeId: userDoc._id,
+            role: "USER",
+            status: "credited",
+          }).lean();
+
+          if (!existingLog) {
+            const log = await FoodReferralLog.create({
+              referrerId,
+              refereeId: userDoc._id,
+              role: "USER",
+              rewardAmount: reward,
+              status: "credited",
+            });
+
+            await Promise.all([
+              FoodUser.updateOne(
+                { _id: referrerId },
+                { $inc: { referralCount: 1 } },
+              ),
+              creditReferralReward(referrerId, reward, {
                 role: "USER",
-                rewardAmount: reward,
-                status: "credited",
-              });
-
-              await Promise.all([
-                FoodUser.updateOne(
-                  { _id: referrerId },
-                  { $inc: { referralCount: 1 } },
-                ),
-                creditReferralReward(referrerId, reward, {
-                  role: "USER",
-                  refereeId: String(userDoc._id),
-                  referralLogId: String(log._id),
-                }),
-                creditReferralReward(userDoc._id, reward, {
-                  role: "USER",
-                  referrerId: String(referrerId),
-                  referralLogId: String(log._id),
-                  note: "Signup via referral bonus",
-                }),
-              ]);
-            } else {
-              await FoodReferralLog.create({
-                referrerId,
-                refereeId: userDoc._id,
+                refereeId: String(userDoc._id),
+                referralLogId: String(log._id),
+                note: "Referral bonus for inviting a friend",
+              }),
+              creditReferralReward(userDoc._id, reward, {
                 role: "USER",
-                rewardAmount: reward,
-                status: "rejected",
-                reason:
-                  reward <= 0
-                    ? "reward_disabled"
-                    : limit <= 0
-                      ? "limit_disabled"
-                      : "limit_reached",
-              });
-            }
+                referrerId: String(referrerId),
+                referralLogId: String(log._id),
+                note: "Signup via referral bonus",
+              }),
+            ]);
+
+            // Notify Referrer
+            void notifyOwnersSafely(
+              [{ ownerType: "USER", ownerId: referrerId }],
+              {
+                title: "Referral Bonus Credited! 🎁",
+                body: `₹${reward} has been credited to your wallet for referring a new user!`,
+                data: {
+                  type: "wallet_update",
+                  link: "/food/user/wallet",
+                },
+              },
+            );
+
+            // Notify Referee
+            void notifyOwnersSafely(
+              [{ ownerType: "USER", ownerId: userDoc._id }],
+              {
+                title: "Welcome Referral Bonus! 🎁",
+                body: `₹${reward} has been added to your wallet from referral bonus!`,
+                data: {
+                  type: "wallet_update",
+                  link: "/food/user/wallet",
+                },
+              },
+            );
+          }
+        } else {
+          await FoodReferralLog.create({
+            referrerId,
+            refereeId: userDoc._id,
+            role: "USER",
+            rewardAmount: reward,
+            status: "rejected",
+            reason:
+              reward <= 0
+                ? "reward_disabled"
+                : !isLimitOk
+                  ? "limit_reached"
+                  : "unknown",
+          });
         }
+      }
     } catch (e) {
       // Never fail login due to referral errors.
       logger?.warn?.({ err: e }, "Referral crediting failed (user)");

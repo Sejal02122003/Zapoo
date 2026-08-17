@@ -177,8 +177,11 @@ export default function OTP() {
       const phone = authData?.method === "phone" ? authData.phone : null
       const email = authData?.method === "email" ? authData.email : null
       const purpose = authData?.isSignUp ? "register" : "login"
-      const providedName = authData?.isSignUp ? authData?.name || null : null
-      const referralCode = authData?.referralCode || null
+      const referralCode =
+        authData?.referralCode ||
+        sessionStorage.getItem("referralCode") ||
+        localStorage.getItem("referralCode") ||
+        null;
 
       // Try to get FCM token before verifying OTP
       let fcmToken = null;
@@ -308,8 +311,11 @@ export default function OTP() {
     try {
       const phone = authData?.method === "phone" ? authData.phone : null
       const email = authData?.method === "email" ? authData.email : null
-      const purpose = authData?.isSignUp ? "register" : "login"
-      const referralCode = authData?.referralCode || null
+      const referralCode =
+        authData?.referralCode ||
+        sessionStorage.getItem("referralCode") ||
+        localStorage.getItem("referralCode") ||
+        null;
 
       // Second call with name to auto-register and login
       const response = await authAPI.verifyOTP(

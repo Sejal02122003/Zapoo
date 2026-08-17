@@ -14,7 +14,8 @@ export const getUserReferralStats = async (userId) => {
     const [user, wallet, settingsDoc] = await Promise.all([
         FoodUser.findById(oid).select('_id referralCount referralCode').lean(),
         FoodUserWallet.findOne({ userId: oid }).select('referralEarnings').lean(),
-        FoodReferralSettings.findOne({ isActive: true }).sort({ createdAt: -1 }).lean()
+        FoodReferralSettings.findOne({ isActive: { $ne: false } }).sort({ createdAt: -1 }).lean()
+            .then(s => s || FoodReferralSettings.findOne().sort({ createdAt: -1 }).lean())
     ]);
 
     return {
@@ -34,7 +35,8 @@ export const getUserReferralDetails = async (userId) => {
     const [user, wallet, settingsDoc, logs] = await Promise.all([
         FoodUser.findById(oid).select('_id referralCount referralCode').lean(),
         FoodUserWallet.findOne({ userId: oid }).select('referralEarnings').lean(),
-        FoodReferralSettings.findOne({ isActive: true }).sort({ createdAt: -1 }).lean(),
+        FoodReferralSettings.findOne({ isActive: { $ne: false } }).sort({ createdAt: -1 }).lean()
+            .then(s => s || FoodReferralSettings.findOne().sort({ createdAt: -1 }).lean()),
         FoodReferralLog.find({ referrerId: oid, role: 'USER' })
             .sort({ createdAt: -1 })
             .limit(100)

@@ -43,8 +43,10 @@ function App() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const ref = params.get('ref')
-      if (ref) {
-        sessionStorage.setItem('referralCode', ref)
+      if (ref && typeof ref === 'string' && ref.trim()) {
+        const cleanRef = ref.trim()
+        sessionStorage.setItem('referralCode', cleanRef)
+        localStorage.setItem('referralCode', cleanRef)
       }
     }
   }, [])
