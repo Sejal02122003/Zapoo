@@ -108,19 +108,7 @@ import exploreGourmet from "@/assets/gourmet.jpg";
 import exploreTop10 from "@food/assets/explore more icons/top 10.png";
 import exploreCollection from "@/assets/collection.jpg";
 
-// Local Category Images
-import allImg from "@/assets/all.jpg";
-import burgerImg from "@/assets/burger.png";
-import dosaImg from "@/assets/dosa.jpg";
-import idliImg from "@/assets/idli.jpg";
-import momoImg from "@/assets/momo.jpg";
-import pizzaImg from "@/assets/pizza.jpg";
-import pohaImg from "@/assets/poha.jpg";
-import sandwichImg from "@/assets/sandwich.jpg";
-import southindianImg from "@/assets/southindian.jpg";
-import teaImg from "@/assets/tea.jpg";
-import thaliImg from "@/assets/thali.jpg";
-import vegMealImg from "@/assets/veg meal.jpg";
+
 
 
 // Animated placeholder for search - moved outside component to prevent recreation
@@ -642,40 +630,10 @@ export default function Home() {
   }, [landingCategories, normalizeImageUrl, slugifyCategory]);
 
   const displayCategories = useMemo(() => {
-    const staticCategories = [
-      { id: "static-momo", name: "Momo", slug: "momo", image: momoImg },
-      { id: "static-dosa", name: "Dosa", slug: "dosa", image: dosaImg },
-      { id: "static-pizza", name: "Pizza", slug: "pizza", image: pizzaImg },
-      { id: "static-burger", name: "Burger", slug: "burger", image: burgerImg },
-      { id: "static-poha", name: "Poha", slug: "poha", image: pohaImg },
-      { id: "static-thali", name: "Thali", slug: "thali", image: thaliImg },
-      { id: "static-sandwich", name: "Sandwich", slug: "sandwich", image: sandwichImg },
-      { id: "static-tea", name: "Tea", slug: "tea", image: teaImg },
-      { id: "static-idli", name: "Idli", slug: "idli", image: idliImg },
-      { id: "static-south-indian", name: "South Indian", slug: "south-indian", image: southindianImg },
-      { id: "static-veg-meal", name: "Veg Meal", slug: "veg-meal", image: vegMealImg }
-    ];
-
-    let list = [];
-    if (realCategories.length > 0) list = [...realCategories];
-    else if (menuCategories.length > 0) list = [...menuCategories];
-    else list = [...normalizedLandingCategories];
-
-    // Combine staticCategories and list, avoiding duplicates by name
-    const combinedList = [...staticCategories];
-    const staticNames = new Set(staticCategories.map(c => c.name.toLowerCase()));
-
-    /*
-    list.forEach(category => {
-      const name = String(category.name || category.label || "").toLowerCase();
-      if (!staticNames.has(name)) {
-        combinedList.push(category);
-        staticNames.add(name);
-      }
-    });
-    */
-
-    return combinedList;
+    if (realCategories && realCategories.length > 0) return realCategories;
+    if (menuCategories && menuCategories.length > 0) return menuCategories;
+    if (normalizedLandingCategories && normalizedLandingCategories.length > 0) return normalizedLandingCategories;
+    return [];
   }, [menuCategories, realCategories, normalizedLandingCategories]);
 
   // Swipe functionality for hero banner carousel
