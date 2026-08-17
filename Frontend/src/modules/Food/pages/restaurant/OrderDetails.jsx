@@ -157,7 +157,7 @@ export default function OrderDetails() {
 
           const orderType = String(order.orderType || 'delivery').toLowerCase();
           const deductGst = orderType === 'takeaway' ? true : (pricing.deductGstFromRestaurant !== false);
-          const totalAdminReceivable = deliveryCostToAdmin + deliveryGstToAdmin + platformFee + taxes + packagingFee + restaurantCommission + (deductGst ? gstOnCommission : 0) + tcs;
+          const totalAdminReceivable = Math.max(0, platformFee + restaurantCommission + Math.max(0, deliveryFee - deliveryCostToAdmin) - couponDiscount);
           const restaurantGets = Math.max(0, itemSubtotal + packagingFee - restaurantCommission - (deductGst ? gstOnCommission : 0) - tcs - couponDiscount);
           const deliveryDistance = firstNumber(order.deliveryDistance, order.customer?.distance, 0);
 

@@ -189,25 +189,30 @@ export default function AdminEarningReport() {
                 <tbody className="divide-y divide-slate-200">
                   {transactions.map((tx) => {
                     const breakdown = tx.adminEarningBreakdown || {}
-                    const itemSubtotal = tx.totalItemAmount || 0
-                    const discount = tx.itemDiscount || 0
-                    const taxes = breakdown.gstCollectedFromUser || tx.vatTax || 0
-                    const platformFee = breakdown.platformFee || tx.platformFee || 0
-                    const packagingFee = breakdown.packagingFee || 0
-                    const deliveryFeeUser = tx.deliveryCharge || (breakdown.deliveryProfit || 0) + (breakdown.deliveryCostToAdmin || 0) + (breakdown.deliveryGstToAdmin || 0)
+                    const itemSubtotal = Number(tx.totalItemAmount) || 0
+                    const discount = Number(tx.itemDiscount) || Number(tx.couponDiscount) || 0
+                    const taxes = Number(breakdown.gstCollectedFromUser) || Number(tx.vatTax) || 0
+                    const platformFee = Number(breakdown.platformFee) || Number(tx.platformFee) || 0
+                    const packagingFee = Number(breakdown.packagingFee) || 0
+                    const deliveryFeeUser = Number(tx.deliveryCharge) || Number(breakdown.deliveryFeeUser) || 0
+                    const deliveryCostAdmin = Number(breakdown.deliveryCostToAdmin) || 0
+                    const deliveryGstAdmin = Number(breakdown.deliveryGstToAdmin) || 0
+                    const platformDiscount = Number(breakdown.platformDiscount) || 0
                     
-                    const totalAdmin = Number(
-                      tx.amounts?.platformNetProfit ?? 
-                      ((deliveryFeeUser || 0) - (breakdown.deliveryCostToAdmin || 0) + (breakdown.platformFee || 0) + (breakdown.restaurantCommission || 0))
-                    )
-
                     const restaurantCommission = Number(breakdown.restaurantCommission) || 0
                     const gstOnCommission = Number(breakdown.gstOnCommission) || 0
-                    const paymentGatewayFee = Number(breakdown.paymentGatewayFee) || 0
                     const tcs = Number(breakdown.tcs) || 0
                     const gstOnItem = Number(breakdown.gstOnItem) || 0
-                    
-                    const totalDeductions = restaurantCommission + gstOnCommission + tcs
+
+                    const totalAdminProfit = breakdown.totalAdminReceivable !== undefined
+                      ? Number(breakdown.totalAdminReceivable)
+                      : Number(
+                          tx.amounts?.platformNetProfit ?? 
+                          (platformFee + restaurantCommission + (deliveryFeeUser - deliveryCostAdmin) - platformDiscount)
+                        )
+
+                    const restaurantCouponDiscount = Math.max(0, discount - platformDiscount)
+                    const totalDeductions = restaurantCommission + gstOnCommission + tcs + restaurantCouponDiscount
                     const restaurantGets = Math.max(0, itemSubtotal + packagingFee - totalDeductions)
                     const isExpanded = !!expandedCards[tx.id]
 
@@ -222,7 +227,7 @@ export default function AdminEarningReport() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-right font-semibold text-slate-900">{formatMoney(tx.orderAmount)}</td>
-                          <td className="px-6 py-4 text-right font-bold text-emerald-600">{formatMoney(breakdown.totalAdminReceivable || totalAdmin)}</td>
+                          <td className="px-6 py-4 text-right font-bold text-emerald-600">{formatMoney(totalAdminProfit)}</td>
                           <td className="px-6 py-4 text-right font-bold text-blue-600">{formatMoney(restaurantGets)}</td>
                           <td className="px-6 py-4 text-center">
                             <button 
@@ -250,14 +255,20 @@ export default function AdminEarningReport() {
                                       <span className="text-[13px] text-gray-600 font-medium">Item subtotal</span>
                                       <span className="text-[13px] text-gray-900">{formatMoney(itemSubtotal)}</span>
                                     </div>
+                                    {packagingFee > 0 && (
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[13px] text-gray-600 font-medium">Packaging fee</span>
+                                        <span className="text-[13px] text-gray-900">{formatMoney(packagingFee)}</span>
+                                      </div>
+                                    )}
                                     {discount > 0 && (
                                       <div className="flex items-center justify-between">
                                         <span className="text-[13px] text-gray-600 font-medium">Discount</span>
-                                        <span className="text-[13px] text-red-600">{formatDiscount(discount)}</span>
+                                        <span className="text-[13px] text-red-600">-{formatMoney(discount)}</span>
                                       </div>
                                     )}
                                     <div className="flex items-center justify-between">
-                                      <span className="text-[13px] text-gray-600 font-medium">Delivery fee (user)</span>
+                                      <span className="text-[13px] text-gray-600 font-medium">Delivery fee</span>
                                       <span className="text-[13px] text-gray-900">{formatMoney(deliveryFeeUser)}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
@@ -265,7 +276,7 @@ export default function AdminEarningReport() {
                                       <span className="text-[13px] text-gray-900">{formatMoney(platformFee)}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                      <span className="text-[13px] text-gray-600 font-medium">GST (user bill)</span>
+                                      <span className="text-[13px] text-gray-600 font-medium">GST & Taxes</span>
                                       <span className="text-[13px] text-gray-900">{formatMoney(taxes)}</span>
                                     </div>
                                     <div className="pt-2 mt-2 border-t border-slate-200 flex items-center justify-between">
@@ -275,57 +286,54 @@ export default function AdminEarningReport() {
                                   </div>
                                 </div>
 
-                                {/* Admin Receivable */}
+                                {/* Admin Earning */}
                                 <div className="bg-emerald-50/50 rounded-xl p-4 border border-emerald-100 shadow-sm">
-                                  <h3 className="text-sm font-bold text-emerald-900 mb-3 tracking-wide">Admin Receivable</h3>
+                                  <h3 className="text-sm font-bold text-emerald-900 mb-3 tracking-wide">Admin Earning</h3>
                                   <div className="space-y-2.5">
                                     <div className="flex items-center justify-between">
-                                      <span className="text-[13px] text-gray-600 font-medium">Delivery cost to admin</span>
-                                      <span className="text-[13px] text-gray-900">{formatMoney(breakdown.deliveryCostToAdmin)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-[13px] text-gray-600 font-medium">Delivery GST to admin (18%)</span>
-                                      <span className="text-[13px] text-gray-900">{formatMoney(breakdown.deliveryGstToAdmin)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-[13px] text-gray-600 font-medium">Platform fee to admin</span>
-                                      <span className="text-[13px] text-gray-900">{formatMoney(breakdown.platformFee)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
                                       <span className="text-[13px] text-gray-600 font-medium">Restaurant commission</span>
-                                      <span className="text-[13px] text-gray-900">{formatMoney(restaurantCommission)}</span>
+                                      <span className="text-[13px] text-emerald-700 font-semibold">+{formatMoney(restaurantCommission)}</span>
                                     </div>
-                                    {gstOnItem > 0 && (
+                                    {platformFee > 0 && (
                                       <div className="flex items-center justify-between">
-                                        <span className="text-[13px] text-gray-600 font-medium">GST on item</span>
-                                        <span className="text-[13px] text-gray-900">{formatMoney(gstOnItem)}</span>
+                                        <span className="text-[13px] text-gray-600 font-medium">Platform fee to admin</span>
+                                        <span className="text-[13px] text-emerald-700 font-semibold">+{formatMoney(platformFee)}</span>
+                                      </div>
+                                    )}
+                                    {deliveryFeeUser > 0 && (
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[13px] text-gray-600 font-medium">Delivery fee (from user)</span>
+                                        <span className="text-[13px] text-emerald-700 font-semibold">+{formatMoney(deliveryFeeUser)}</span>
                                       </div>
                                     )}
                                     {gstOnCommission > 0 && (
                                       <div className="flex items-center justify-between">
                                         <span className="text-[13px] text-gray-600 font-medium">GST on commission</span>
-                                        <span className="text-[13px] text-gray-900">{formatMoney(gstOnCommission)}</span>
+                                        <span className="text-[13px] text-gray-900">+{formatMoney(gstOnCommission)}</span>
                                       </div>
                                     )}
-
-                                    {tcs > 0 && (
+                                    {deliveryCostAdmin > 0 && (
                                       <div className="flex items-center justify-between">
-                                        <span className="text-[13px] text-gray-600 font-medium">TCS</span>
-                                        <span className="text-[13px] text-gray-900">{formatMoney(tcs)}</span>
+                                        <span className="text-[13px] text-gray-600 font-medium">Delivery cost to rider</span>
+                                        <span className="text-[13px] text-red-600 font-medium">-{formatMoney(deliveryCostAdmin)}</span>
                                       </div>
                                     )}
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-[13px] text-gray-600 font-medium">GST collected from user</span>
-                                      <span className="text-[13px] text-gray-900">{formatMoney(taxes)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-[13px] text-gray-600 font-medium">Recommended item charge</span>
-                                      <span className="text-[13px] text-gray-900">{formatMoney(packagingFee)}</span>
-                                    </div>
+                                    {deliveryGstAdmin > 0 && (
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[13px] text-gray-600 font-medium">Delivery GST (18%)</span>
+                                        <span className="text-[13px] text-red-600 font-medium">-{formatMoney(deliveryGstAdmin)}</span>
+                                      </div>
+                                    )}
+                                    {platformDiscount > 0 && (
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[13px] text-gray-600 font-medium">Platform coupon discount</span>
+                                        <span className="text-[13px] text-red-600 font-medium">-{formatMoney(platformDiscount)}</span>
+                                      </div>
+                                    )}
                                     <div className="pt-2 mt-2 border-t border-emerald-200 flex items-center justify-between">
                                       <span className="text-sm font-bold text-emerald-900">Total going to admin</span>
                                       <span className="text-sm font-bold text-emerald-900">
-                                        {formatMoney(breakdown.totalAdminReceivable || totalAdmin)}
+                                        {formatMoney(totalAdminProfit)}
                                       </span>
                                     </div>
                                   </div>
@@ -348,25 +356,31 @@ export default function AdminEarningReport() {
                                     
                                     <div className="flex items-center gap-1.5 py-1">
                                       <span className="text-[13px] text-gray-600 font-medium">GST & Fees Deducted:</span>
-                                      <span className="text-[13px] text-red-600">{formatDiscount(totalDeductions)}</span>
+                                      <span className="text-[13px] text-red-600">-{formatMoney(totalDeductions)}</span>
                                     </div>
 
                                     <div className="pl-3 border-l-2 border-blue-100 space-y-2 mt-1 mb-1">
                                       <div className="flex items-center justify-between">
                                         <span className="text-[12px] text-gray-500 font-medium">Restaurant commission</span>
-                                        <span className="text-[12px] text-red-500/80">{formatDiscount(restaurantCommission)}</span>
+                                        <span className="text-[12px] text-red-500/80">-{formatMoney(restaurantCommission)}</span>
                                       </div>
                                       {gstOnCommission > 0 && (
                                         <div className="flex items-center justify-between">
                                           <span className="text-[12px] text-gray-500 font-medium">GST on commission</span>
-                                          <span className="text-[12px] text-red-500/80">{formatDiscount(gstOnCommission)}</span>
+                                          <span className="text-[12px] text-red-500/80">-{formatMoney(gstOnCommission)}</span>
                                         </div>
                                       )}
 
                                       {tcs > 0 && (
                                         <div className="flex items-center justify-between">
                                           <span className="text-[12px] text-gray-500 font-medium">TCS</span>
-                                          <span className="text-[12px] text-red-500/80">{formatDiscount(tcs)}</span>
+                                          <span className="text-[12px] text-red-500/80">-{formatMoney(tcs)}</span>
+                                        </div>
+                                      )}
+                                      {restaurantCouponDiscount > 0 && (
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-[12px] text-gray-500 font-medium">Restaurant coupon discount</span>
+                                          <span className="text-[12px] text-red-500/80">-{formatMoney(restaurantCouponDiscount)}</span>
                                         </div>
                                       )}
                                     </div>

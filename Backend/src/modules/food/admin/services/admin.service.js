@@ -899,7 +899,7 @@ export async function getTransactionReport(query = {}) {
             status: tx.status,
             orderStatus: order.orderStatus || 'unknown',
             adminEarningBreakdown: {
-                deliveryProfit: deliveryFeeUser - deliveryCostAdmin - deliveryGstAdmin,
+                deliveryProfit: isTakeaway ? 0 : (deliveryFeeUser - deliveryCostAdmin),
                 platformFee: platformFee,
                 packagingFee: packagingFee,
                 restaurantCommission: Number(pricing.restaurantCommission || 0),
@@ -910,7 +910,9 @@ export async function getTransactionReport(query = {}) {
                 totalAdminReceivable: platformNetProfit,
                 deliveryCostToAdmin: deliveryCostAdmin,
                 deliveryGstToAdmin: deliveryGstAdmin,
-                gstCollectedFromUser: Number(pricing.tax || 0)
+                deliveryFeeUser: deliveryFeeUser,
+                gstCollectedFromUser: Number(pricing.tax || 0),
+                platformDiscount: platformDiscount
             }
         };
     });
