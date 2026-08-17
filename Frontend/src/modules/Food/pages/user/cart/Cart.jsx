@@ -1177,7 +1177,7 @@ export default function Cart() {
             deliveryFee: response.data.data.feeSettings.deliveryFee ?? 25,
             deliveryFeeRanges: response.data.data.feeSettings.deliveryFeeRanges ?? [],
             freeDeliveryUpTo: response.data.data.feeSettings.freeDeliveryUpTo ?? 0,
-            freeDeliveryThreshold: response.data.data.feeSettings.freeDeliveryThreshold ?? 149,
+            freeDeliveryThreshold: response.data.data.feeSettings.freeDeliveryThreshold ?? 0,
             platformFee: response.data.data.feeSettings.platformFee ?? 5,
             packagingFee: response.data.data.feeSettings.packagingFee ?? 0,
             gstRate: response.data.data.feeSettings.gstRate ?? 5,
@@ -1231,25 +1231,30 @@ export default function Cart() {
     const distanceKm = orderDistanceKm
 
     const ranges = Array.isArray(feeSettings.deliveryFeeRanges) ? [...feeSettings.deliveryFeeRanges] : []
-    if (ranges.length > 0 && Number.isFinite(distanceKm)) {
-      const sortedRanges = ranges.sort((a, b) => Number(a.min) - Number(b.min))
-      for (let i = 0; i < sortedRanges.length; i += 1) {
-        const range = sortedRanges[i]
-        const min = Number(range.min)
-        const max = Number(range.max)
-        const fee = Number(range.fee)
-        const isLastRange = i === sortedRanges.length - 1
-        const inRange = isLastRange
-          ? distanceKm >= min && distanceKm <= max
-          : distanceKm >= min && distanceKm < max
+    if (ranges.length > 0) {
+      if (Number.isFinite(distanceKm)) {
+        const sortedRanges = ranges.sort((a, b) => Number(a.min) - Number(b.min))
+        for (let i = 0; i < sortedRanges.length; i += 1) {
+          const range = sortedRanges[i]
+          const min = Number(range.min)
+          const max = Number(range.max)
+          const fee = Number(range.fee)
+          const isLastRange = i === sortedRanges.length - 1
+          const inRange = isLastRange
+            ? distanceKm >= min && distanceKm <= max
+            : distanceKm >= min && distanceKm < max
 
-        if (inRange) return fee
+          if (inRange) return fee
+        }
+
+        const last = sortedRanges[sortedRanges.length - 1]
+        if (last && Number.isFinite(Number(last.fee))) return Number(last.fee)
       }
 
-      return Number(feeSettings.deliveryFee || 0)
+      if (ranges[0]?.fee != null) return Number(ranges[0].fee)
     }
 
-    return Number(feeSettings.deliveryFee || 0)
+    return Number(feeSettings.deliveryFee != null && Number(feeSettings.deliveryFee) > 0 ? feeSettings.deliveryFee : 25)
   })()
   const deliveryFee = orderType === 'takeaway' ? 0 : (pricing != null ? (pricing.deliveryFee ?? 0) : fallbackDeliveryFee)
   const deliveryFeeBreakdown = pricing?.deliveryFeeBreakdown || null

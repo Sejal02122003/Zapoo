@@ -1349,6 +1349,8 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                     queuedOrders={incomingOrders}
                     onSelectOrder={selectIncomingOrder}
                     onAccept={async (orderFromModal) => {
+                      clearNewOrder();
+                      clearAllIncomingOrders();
                       const acceptTarget = normalizeIncomingOrder(orderFromModal || incomingOrder);
                       const lockedId = lockedIncomingOrderIdRef.current;
 
@@ -1376,7 +1378,6 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
 
                       try {
                         await acceptOrder(acceptTarget);
-                        clearAllIncomingOrders();
                       } catch (err) {
                         const msg = String(err?.response?.data?.message || err?.message || '');
                         const isTaken = msg.toLowerCase().includes('already accepted') || 
@@ -1387,7 +1388,10 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                         }
                       }
                     }}
-                    onReject={dismissCurrentIncomingOrder}
+                    onReject={() => {
+                      clearNewOrder();
+                      dismissCurrentIncomingOrder();
+                    }}
                     onMinimize={() => setIsModalMinimized(true)}
                   />
                 )}

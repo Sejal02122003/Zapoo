@@ -112,15 +112,45 @@ export async function calculateOrderPricing(userId, dto) {
 
   const freeUpTo = Number(feeSettings.freeDeliveryUpTo || 0);
   let distanceKm = null;
-  if (
-    restaurant?.location?.coordinates?.length === 2 &&
-    dto?.deliveryAddress?.location?.coordinates?.length === 2
-  ) {
-    const [rLng, rLat] = restaurant.location.coordinates;
-    const [dLng, dLat] = dto.deliveryAddress.location.coordinates;
+
+  // Extract restaurant coordinates: [lng, lat]
+  let rLng = null, rLat = null;
+  if (Array.isArray(restaurant?.location?.coordinates) && restaurant.location.coordinates.length === 2) {
+    rLng = Number(restaurant.location.coordinates[0]);
+    rLat = Number(restaurant.location.coordinates[1]);
+  } else if (restaurant?.location?.lat != null && restaurant?.location?.lng != null) {
+    rLat = Number(restaurant.location.lat);
+    rLng = Number(restaurant.location.lng);
+  } else if (restaurant?.lat != null && restaurant?.lng != null) {
+    rLat = Number(restaurant.lat);
+    rLng = Number(restaurant.lng);
+  }
+
+  // Extract delivery address coordinates: [lng, lat]
+  let dLng = null, dLat = null;
+  const dLoc = dto?.deliveryAddress?.location;
+  if (Array.isArray(dLoc?.coordinates) && dLoc.coordinates.length === 2) {
+    dLng = Number(dLoc.coordinates[0]);
+    dLat = Number(dLoc.coordinates[1]);
+  } else if (dLoc?.latitude != null && dLoc?.longitude != null) {
+    dLat = Number(dLoc.latitude);
+    dLng = Number(dLoc.longitude);
+  } else if (dLoc?.lat != null && dLoc?.lng != null) {
+    dLat = Number(dLoc.lat);
+    dLng = Number(dLoc.lng);
+  } else if (dto?.deliveryAddress?.latitude != null && dto?.deliveryAddress?.longitude != null) {
+    dLat = Number(dto.deliveryAddress.latitude);
+    dLng = Number(dto.deliveryAddress.longitude);
+  } else if (dto?.deliveryAddress?.lat != null && dto?.deliveryAddress?.lng != null) {
+    dLat = Number(dto.deliveryAddress.lat);
+    dLng = Number(dto.deliveryAddress.lng);
+  }
+
+  if (Number.isFinite(rLat) && Number.isFinite(rLng) && Number.isFinite(dLat) && Number.isFinite(dLng)) {
     const d = haversineKm(rLat, rLng, dLat, dLng);
     distanceKm = Number.isFinite(d) ? d : null;
   }
+
   let deliveryFee = 0;
   let deliveryFeeBreakdown = null;
 
@@ -158,7 +188,7 @@ export async function calculateOrderPricing(userId, dto) {
         fee: deliveryFee
       };
     } else {
-      deliveryFee = slabPr;
+      deliveryFee = slabPr > 0 ? slabPr : Number(feeSettings.deliveryFee || 25);
     }
   } else if (feeSettings.deliveryFeeType === 'matrix') {
     const matrices = Array.isArray(feeSettings.deliveryFeeMatrix)
@@ -213,25 +243,24 @@ export async function calculateOrderPricing(userId, dto) {
             fee: deliveryFee
           };
         } else {
-           throw new ValidationError(`No delivery fee rules configured for this cart value (₹${subtotal.toFixed(2)}).`);
+          const fallbackRule = rules[rules.length - 1];
+          deliveryFee = fallbackRule ? Number(fallbackRule.fee || 25) : Number(feeSettings.deliveryFee || 25);
         }
       } else {
-         throw new ValidationError(`Delivery is not available at this distance (${distanceKm.toFixed(1)} km). Please select a closer address.`);
+        deliveryFee = Number(feeSettings.deliveryFee || 25);
       }
-    } else if (!Number.isFinite(distanceKm)) {
-        deliveryFee = Number(feeSettings.deliveryFee || 0);
     } else {
-        throw new ValidationError(`Delivery is not available at this distance (${distanceKm.toFixed(1)} km). Please select a closer address.`);
+      deliveryFee = Number(feeSettings.deliveryFee || 25);
     }
   } else {
     const ranges = Array.isArray(feeSettings.deliveryFeeRanges)
       ? [...feeSettings.deliveryFeeRanges]
       : [];
     if (ranges.length > 0) {
-      ranges.sort((a, b) => Number(a.min) - Number(b.min));
+      const sortedRanges = ranges.sort((a, b) => Number(a.min) - Number(b.min));
       let matched = null;
-      for (let i = 0; i < ranges.length; i += 1) {
-        const r = ranges[i] || {};
+      for (let i = 0; i < sortedRanges.length; i += 1) {
+        const r = sortedRanges[i] || {};
         const min = Number(r.min);
         const max = Number(r.max);
         const fee = Number(r.fee);
@@ -242,7 +271,7 @@ export async function calculateOrderPricing(userId, dto) {
         ) {
           continue;
         }
-        const isLast = i === ranges.length - 1;
+        const isLast = i === sortedRanges.length - 1;
         if (!Number.isFinite(distanceKm)) {
           continue;
         }
@@ -265,14 +294,17 @@ export async function calculateOrderPricing(userId, dto) {
       }
 
       if (Number.isFinite(distanceKm) && !Number.isFinite(matched)) {
-        throw new ValidationError(`Delivery is not available at this distance (${distanceKm.toFixed(1)} km). Please select a closer address.`);
+        const lastRange = sortedRanges[sortedRanges.length - 1];
+        matched = lastRange && Number.isFinite(Number(lastRange.fee))
+          ? Number(lastRange.fee)
+          : Number(feeSettings.deliveryFee || 25);
       }
 
       deliveryFee = Number.isFinite(matched)
         ? matched
-        : Number(feeSettings.deliveryFee || 0);
+        : (sortedRanges[0]?.fee != null ? Number(sortedRanges[0].fee) : Number(feeSettings.deliveryFee || 25));
     } else {
-      deliveryFee = Number(feeSettings.deliveryFee || 0);
+      deliveryFee = Number(feeSettings.deliveryFee != null && Number(feeSettings.deliveryFee) > 0 ? feeSettings.deliveryFee : 25);
     }
   }
 

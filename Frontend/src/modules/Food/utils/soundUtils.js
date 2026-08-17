@@ -26,9 +26,38 @@ if (typeof window !== 'undefined') {
   window.addEventListener('pointerdown', unlockAudio, { capture: true, passive: true });
 }
 
+let currentDeliveryAudio = null;
+let currentSynthNodes = [];
+
+function stopCurrentSynthChime() {
+  if (Array.isArray(currentSynthNodes) && currentSynthNodes.length > 0) {
+    currentSynthNodes.forEach(osc => {
+      try {
+        osc.stop();
+        osc.disconnect();
+      } catch {}
+    });
+    currentSynthNodes = [];
+  }
+}
+
 /**
-  Plays a crisp multi-note Web Audio synth chime ("Ding-Dong-Chime!")
-  Guaranteed to work across mobile WebViews, iOS Safari, Android, and Desktop.
+ * Stop delivery partner order notification alarm immediately.
+ */
+export function stopDeliveryOrderNotificationAlarm() {
+  if (currentDeliveryAudio) {
+    try {
+      currentDeliveryAudio.pause();
+      currentDeliveryAudio.currentTime = 0;
+    } catch {}
+    currentDeliveryAudio = null;
+  }
+  stopCurrentSynthChime();
+}
+
+/**
+ * Plays a crisp multi-note Web Audio synth chime ("Ding-Dong-Chime!")
+ * Guaranteed to work across mobile WebViews, iOS Safari, Android, and Desktop.
  */
 export async function playSynthChimeSound() {
   try {
@@ -38,6 +67,8 @@ export async function playSynthChimeSound() {
     if (ctx.state === 'suspended') {
       await ctx.resume().catch(() => {});
     }
+
+    stopCurrentSynthChime();
 
     const now = ctx.currentTime;
     const notes = [
@@ -63,6 +94,8 @@ export async function playSynthChimeSound() {
 
       osc.start(now + start);
       osc.stop(now + start + duration);
+
+      currentSynthNodes.push(osc);
     });
 
     return true;
@@ -120,11 +153,13 @@ export async function playRestaurantOrderNotificationAlarm() {
  * Plays the loud alert.mp3 with automatic synth chime fallback.
  */
 export async function playDeliveryOrderNotificationAlarm() {
+  stopDeliveryOrderNotificationAlarm();
   let playedFile = false;
 
   try {
     const audio = new Audio(alertSound);
     audio.volume = 1.0;
+    currentDeliveryAudio = audio;
     await audio.play();
     playedFile = true;
   } catch {

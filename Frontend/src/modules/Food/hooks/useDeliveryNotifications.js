@@ -14,7 +14,7 @@ import {
 import { isValidSocketOrigin, resolveSocketOrigin } from '@food/utils/socketOrigin';
 import { DeliveryNotificationContext } from '../context/DeliveryNotificationContext';
 
-import { playDeliveryOrderNotificationAlarm } from '@food/utils/soundUtils';
+import { playDeliveryOrderNotificationAlarm, stopDeliveryOrderNotificationAlarm } from '@food/utils/soundUtils';
 
 const shouldLogDeliverySocket = () => {
   if (typeof window === 'undefined') return import.meta.env.DEV;
@@ -256,6 +256,8 @@ export const useDeliveryNotifications = () => {
       alertLoopTimerRef.current = null;
     }
     alertLoopStartedAtRef.current = 0;
+    activeOrderRef.current = null;
+    stopDeliveryOrderNotificationAlarm();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
