@@ -47,7 +47,7 @@ const ABOUT_IMG_1 = "https://images.unsplash.com/photo-1514933651103-005eec06c04
 const ABOUT_IMG_2 = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=75&w=600&auto=format&fit=crop";
 const APP_MOCKUP = "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=75&w=500&auto=format&fit=crop";
 
-const PLAY_STORE_URL = "https://play.google.com/store/search?q=zapoo&c=apps&hl=en_IN";
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.zapoo.user1";
 
 export default function MasterLandingPage() {
   const navigate = useNavigate();

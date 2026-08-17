@@ -284,7 +284,7 @@ export default function Profile() {
     };
   }, []);
 
-  const PLAY_STORE_URL = "https://play.google.com/store/search?q=zapoo&c=apps&hl=en_IN";
+  const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.zapoo.user1";
   const refCode = userProfile?.referralCode || userProfile?._id || userProfile?.id || "";
   const referralLink = PLAY_STORE_URL;
 

@@ -10,7 +10,7 @@ import { useProfile } from "@food/context/ProfileContext";
 import { toast } from "sonner";
 import { userAPI } from "@food/api";
 
-const PLAY_STORE_URL = "https://play.google.com/store/search?q=zapoo&c=apps&hl=en_IN";
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.zapoo.user1";
 
 const statusMeta = {
   credited: {

@@ -74,7 +74,7 @@ export default function LandingPageManagement() {
     under99PriceLimit: 99, 
     festBannerImages: [],
     stats: { restaurants: '3,00,000+', cities: '800+', orders: '3 billion+' },
-    appLinks: { playStore: 'https://play.google.com/store/apps/details?id=com.indian.bite.user', appStore: '' },
+    appLinks: { playStore: 'https://play.google.com/store/apps/details?id=com.zapoo.user1', appStore: '' },
     socialLinks: { instagram: '', twitter: '', facebook: '', linkedin: '', youtube: '' },
     footerLinks: {
       about: [
@@ -1137,7 +1137,7 @@ export default function LandingPageManagement() {
           under99PriceLimit: Number(nextSettings.under99PriceLimit) || 99,
           festBannerImages: Array.isArray(nextSettings.festBannerImages) ? nextSettings.festBannerImages : [],
           stats: nextSettings.stats || { restaurants: '3,00,000+', cities: '800+', orders: '3 billion+' },
-          appLinks: nextSettings.appLinks || { playStore: 'https://play.google.com/store/apps/details?id=com.indian.bite.user', appStore: '' },
+          appLinks: nextSettings.appLinks || { playStore: 'https://play.google.com/store/apps/details?id=com.zapoo.user1', appStore: '' },
           socialLinks: nextSettings.socialLinks || { instagram: '', twitter: '', facebook: '', linkedin: '', youtube: '' },
           footerLinks: nextSettings.footerLinks || {
             about: [
