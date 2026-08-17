@@ -886,56 +886,27 @@ export function useLocationEngine() {
                 coordinates: `${latitude.toFixed(8)}, ${longitude.toFixed(8)}`
               })
 
-              // Validate coordinates are in India range BEFORE attempting geocoding
-              // India: Latitude 6.5ï¿½ to 37.1ï¿½ N, Longitude 68.7ï¿½ to 97.4ï¿½ E
-              const isInIndiaRange = latitude >= 6.5 && latitude <= 37.1 && longitude >= 68.7 && longitude <= 97.4 && longitude > 0
-
-              // Reverse geocode (BigDataCloud via reverseGeocodeWithGoogleMaps wrapper)
+              debugLog("?? Calling reverse geocode with coordinates:", { latitude, longitude })
               let addr
-              if (!isInIndiaRange || longitude < 0) {
-                // Coordinates are outside India - skip geocoding and use placeholder
-                debugWarn("?? Coordinates outside India range, skipping geocoding:", { latitude, longitude })
-                addr = {
-                  city: "Current Location",
-                  state: "",
-                  country: "",
-                  area: "",
-                  address: "Select location",
-                  formattedAddress: "Select location" }
-              } else {
-                debugLog("?? Calling reverse geocode with coordinates:", { latitude, longitude })
+              try {
+                addr = await reverseGeocodeWithGoogleMaps(latitude, longitude, {
+                  includePlaceDetails: Boolean(forceFresh && showLoading)
+                })
+                debugLog("? Reverse geocoding successful:", addr)
+              } catch (geocodeErr) {
+                debugWarn("?? Primary geocoding failed, trying fallback:", geocodeErr.message)
                 try {
-                  addr = await reverseGeocodeWithGoogleMaps(latitude, longitude, {
-                    includePlaceDetails: Boolean(forceFresh && showLoading)
-                  })
-                  debugLog("? Reverse geocoding successful:", addr)
-                } catch (geocodeErr) {
-                  debugWarn("?? Primary geocoding failed, trying fallback:", geocodeErr.message)
-                  try {
-                    // Fallback to direct reverse geocode (BigDataCloud)
-                    addr = await reverseGeocodeDirect(latitude, longitude)
-                    debugLog("? Fallback geocoding successful:", addr)
-
-                    // Validate fallback result - if it still has placeholder values, don't use it
-                    if (addr.city === "Current Location" || addr.address.includes(latitude.toFixed(4))) {
-                      debugWarn("?? Fallback geocoding returned placeholder, will not save")
-                      addr = {
-                        city: "Current Location",
-                        state: "",
-                        country: "",
-                        area: "",
-                        address: "Select location",
-                        formattedAddress: "Select location" }
-                    }
-                  } catch (fallbackErr) {
-                    debugError("? All geocoding methods failed:", fallbackErr.message)
-                    addr = {
-                      city: "Current Location",
-                      state: "",
-                      country: "",
-                      area: "",
-                      address: "Select location",
-                      formattedAddress: "Select location" }
+                  addr = await reverseGeocodeDirect(latitude, longitude)
+                  debugLog("? Fallback geocoding successful:", addr)
+                } catch (fallbackErr) {
+                  debugError("? All geocoding methods failed:", fallbackErr.message)
+                  addr = {
+                    city: "Current Location",
+                    state: "",
+                    country: "India",
+                    area: "",
+                    address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+                    formattedAddress: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
                   }
                 }
               }
@@ -1070,11 +1041,11 @@ export function useLocationEngine() {
           async (err) => {
             // If timeout and we haven't retried yet, try with lower accuracy
             if (err.code === 3 && retryCount === 0 && options.enableHighAccuracy) {
-              debugWarn("?? High accuracy timeout, retrying with fast network location...")
-              // Retry with lower accuracy - fast network/cell tower positioning
+              debugWarn("?? High accuracy timeout, retrying with network location...")
+              // Retry with lower accuracy - network/cell tower positioning
               getPositionWithRetry({
                 enableHighAccuracy: false,
-                timeout: 2500,  // 2.5 seconds for network-based location
+                timeout: 8000,  // 8 seconds for network-based location
                 maximumAge: 120000 // Allow cached network location
               }, 1).then(resolve).catch(reject)
               return
@@ -1150,7 +1121,7 @@ export function useLocationEngine() {
     // Otherwise, allow cached location for faster response
     return getPositionWithRetry({
       enableHighAccuracy: true,  // Use GPS for exact location
-      timeout: 3500,             // 3.5s fast timeout before falling back to network positioning
+      timeout: 10000,            // 10s timeout for precise GPS lock
       maximumAge: forceFresh ? 0 : 60000 // 1 minute cache for fast response
     })
   }

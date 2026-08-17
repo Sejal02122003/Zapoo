@@ -70,18 +70,20 @@ export default function PageNavbar({
     let cancelled = false
     const timeoutId = setTimeout(async () => {
       try {
-        let isGranted = false
+        let isDenied = false
         if (navigator.permissions?.query) {
-          const result = await navigator.permissions.query({ name: 'geolocation' })
-          isGranted = result.state === 'granted'
+          try {
+            const result = await navigator.permissions.query({ name: 'geolocation' })
+            isDenied = result.state === 'denied'
+          } catch {}
         }
 
-        if (!isGranted) {
-          debugLog("?? Geolocation permission not granted; waiting for user action")
+        if (isDenied) {
+          debugLog("?? Geolocation permission denied; waiting for user action")
           openLocationSelector()
-          toast.error("Please enter location or enable GPS")
           return
         }
+
         const fetchedLocation = await requestLocationRef.current()
         if (cancelled) return
 
@@ -91,8 +93,6 @@ export default function PageNavbar({
           debugLog("? Location fetched successfully:", fetchedLocation)
         } else {
           debugLog("Location fetch returned placeholder, user may need to select manually")
-          openLocationSelector()
-          toast.error("Please enter location or enable GPS")
         }
       } catch (err) {
         if (!cancelled) {
