@@ -14,6 +14,8 @@ import {
 import { isValidSocketOrigin, resolveSocketOrigin } from '@food/utils/socketOrigin';
 import { DeliveryNotificationContext } from '../context/DeliveryNotificationContext';
 
+import { playDeliveryOrderNotificationAlarm } from '@food/utils/soundUtils';
+
 const shouldLogDeliverySocket = () => {
   if (typeof window === 'undefined') return import.meta.env.DEV;
   try {
@@ -67,10 +69,17 @@ const isRiderOnline = () => {
     const raw = localStorage.getItem('delivery-v2-online-pref');
     if (raw) {
       const parsed = JSON.parse(raw);
-      return !!parsed?.state?.isOnline;
+      if (typeof parsed?.state?.isOnline === 'boolean') {
+        return parsed.state.isOnline;
+      }
     }
+    const legacy = localStorage.getItem('delivery_online_status');
+    if (legacy != null) return legacy === 'true' || legacy === true;
+    const appOnline = localStorage.getItem('app:isOnline');
+    if (appOnline != null) return appOnline === 'true' || appOnline === true;
+    if (localStorage.getItem('delivery_accessToken')) return true;
   } catch (e) {}
-  return false;
+  return true;
 };
 
 const decodeJwtPayload = (token) => {
@@ -272,35 +281,29 @@ export const useDeliveryNotifications = () => {
   
   const playNotificationSound = useCallback(async (orderData = {}) => {
     try {
-      // Temporarily disabled native bridge sound trigger
-      // const usedNativeBridge = await triggerWebViewNativeNotification(orderData);
-      const usedNativeBridge = false;
-
       if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
         navigator.vibrate([200, 100, 200, 100, 300]);
       }
 
-      if (usedNativeBridge) {
-        return;
-      }
+      await playDeliveryOrderNotificationAlarm().catch(() => {});
 
       // Lazily create audio if it doesn't exist yet
       if (!audioRef.current) {
         const soundFile = resolveAudioSource(alertSound);
         audioRef.current = new Audio(soundFile);
         audioRef.current.preload = 'auto';
-        audioRef.current.volume = 0.9;
+        audioRef.current.volume = 1.0;
       }
 
-      // audioRef.current.muted = false;
-      // audioRef.current.volume = 0.9;
-      // audioRef.current.currentTime = 0;
-      // audioRef.current.play().catch(error => {
-      //   // On strict autoplay environments, vibration/native bridge path stays active.
-      //   if (!error.message?.includes('user didn\'t interact') && !error.name?.includes('NotAllowedError')) {
-      //     debugWarn('Error playing notification sound:', error);
-      //   }
-      // });
+      audioRef.current.muted = false;
+      audioRef.current.volume = 1.0;
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(error => {
+        // On strict autoplay environments, vibration/native bridge path stays active.
+        if (!error.message?.includes('user didn\'t interact') && !error.name?.includes('NotAllowedError')) {
+          debugWarn('Error playing notification sound:', error);
+        }
+      });
     } catch (error) {
       if (!error.message?.includes('user didn\'t interact') && !error.name?.includes('NotAllowedError')) {
         debugWarn('Error playing sound:', error);

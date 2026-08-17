@@ -114,3 +114,25 @@ export async function playRestaurantOrderNotificationAlarm() {
     await playSynthChimeSound();
   }
 }
+
+/**
+ * Main alarm sound function for Delivery Partner new order notifications.
+ * Plays the loud alert.mp3 with automatic synth chime fallback.
+ */
+export async function playDeliveryOrderNotificationAlarm() {
+  let playedFile = false;
+
+  try {
+    const audio = new Audio(alertSound);
+    audio.volume = 1.0;
+    await audio.play();
+    playedFile = true;
+  } catch {
+    // HTML5 audio blocked or failed — proceed to synth chime
+  }
+
+  // If file audio failed or blocked, run synth chime to guarantee notification sound
+  if (!playedFile) {
+    await playSynthChimeSound();
+  }
+}

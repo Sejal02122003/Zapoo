@@ -447,22 +447,15 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
       ...identity,
       orderStatus: { $in: acceptedStatuses },
       $or: [
-        {
-          'dispatch.status': 'unassigned',
-          'dispatch.offeredTo': {
-            $elemMatch: {
-              partnerId: partnerId,
-              $or: [
-                { action: 'offered' },
-                { action: { $exists: false } },
-                { action: null },
-              ],
-            },
-          },
-        },
+        { 'dispatch.status': 'unassigned' },
+        { 'dispatch.status': { $exists: false } },
+        { 'dispatch.deliveryPartnerId': null },
         {
           'dispatch.status': 'assigned',
-          'dispatch.deliveryPartnerId': partnerId,
+          $or: [
+            { 'dispatch.deliveryPartnerId': partnerId },
+            { 'dispatch.acceptedAt': { $exists: false } }
+          ]
         },
       ],
     },
