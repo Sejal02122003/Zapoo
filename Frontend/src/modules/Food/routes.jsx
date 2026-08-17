@@ -47,18 +47,28 @@ function RestaurantGlobalNotificationListenerInner() {
 
 function RestaurantGlobalNotificationListener() {
   const location = useLocation()
+  const path = (location.pathname || "").toLowerCase()
   const isRestaurantRoute =
-    location.pathname.startsWith("/food/restaurant") &&
-    !location.pathname.startsWith("/food/restaurants")
+    (path.startsWith("/food/restaurant") || path.startsWith("/restaurant")) &&
+    !path.startsWith("/food/restaurants") &&
+    !path.startsWith("/restaurants")
   const isRestaurantAuthRoute =
-    location.pathname === "/food/restaurant/login" ||
-    location.pathname === "/food/restaurant/auth/sign-in" ||
-    location.pathname === "/food/restaurant/signup" ||
-    location.pathname === "/food/restaurant/signup-email" ||
-    location.pathname === "/food/restaurant/forgot-password" ||
-    location.pathname === "/food/restaurant/otp" ||
-    location.pathname === "/food/restaurant/welcome" ||
-    location.pathname === "/food/restaurant/auth/google-callback"
+    path === "/food/restaurant/login" ||
+    path === "/restaurant/login" ||
+    path === "/food/restaurant/auth/sign-in" ||
+    path === "/restaurant/auth/sign-in" ||
+    path === "/food/restaurant/signup" ||
+    path === "/restaurant/signup" ||
+    path === "/food/restaurant/signup-email" ||
+    path === "/restaurant/signup-email" ||
+    path === "/food/restaurant/forgot-password" ||
+    path === "/restaurant/forgot-password" ||
+    path === "/food/restaurant/otp" ||
+    path === "/restaurant/otp" ||
+    path === "/food/restaurant/welcome" ||
+    path === "/restaurant/welcome" ||
+    path === "/food/restaurant/auth/google-callback" ||
+    path === "/restaurant/auth/google-callback"
   const shouldListen =
     isRestaurantRoute &&
     !isRestaurantAuthRoute &&

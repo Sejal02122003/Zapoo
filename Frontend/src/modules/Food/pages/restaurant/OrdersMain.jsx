@@ -29,6 +29,7 @@ import cancelSound from "@food/assets/audio/order cancellation.mpeg";
 import { restaurantAPI, diningAPI } from "@food/api";
 import { isModuleAuthenticated } from "@food/utils/auth";
 import { useRestaurantNotifications } from "@food/hooks/useRestaurantNotifications";
+import { playRestaurantOrderNotificationAlarm, stopRestaurantOrderNotificationAlarm } from "@food/utils/soundUtils";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import ResendNotificationButton from "@food/components/restaurant/ResendNotificationButton";
@@ -1924,20 +1925,6 @@ export default function OrdersMain() {
     };
   }, []);
 
-  // Ensure audio stops when user comes to the page
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
-        }
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
-
   const [ordersRefreshToken, setOrdersRefreshToken] = useState(0);
   const requestOrdersRefresh = () => setOrdersRefreshToken((t) => t + 1);
 
@@ -2028,18 +2015,15 @@ export default function OrdersMain() {
   // Play audio when popup opens
   useEffect(() => {
     if (showNewOrderPopup && !isMuted) {
+      playRestaurantOrderNotificationAlarm().catch(() => {});
+    } else {
+      stopRestaurantOrderNotificationAlarm();
       if (audioRef.current) {
-        audioRef.current.loop = false;
-        audioRef.current.muted = false;
-        audioRef.current.volume = 1;
-        audioRef.current.currentTime = 0;
-        audioRef.current
-          .play()
-          .catch((err) => debugLog("Audio play failed:", err));
+        try {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        } catch {}
       }
-    } else if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
     }
   }, [showNewOrderPopup, isMuted]);
 

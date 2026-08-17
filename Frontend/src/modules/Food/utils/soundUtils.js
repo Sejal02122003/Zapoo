@@ -27,6 +27,7 @@ if (typeof window !== 'undefined') {
 }
 
 let currentDeliveryAudio = null;
+let currentRestaurantAudio = null;
 let currentSynthNodes = [];
 
 function stopCurrentSynthChime() {
@@ -51,6 +52,20 @@ export function stopDeliveryOrderNotificationAlarm() {
       currentDeliveryAudio.currentTime = 0;
     } catch {}
     currentDeliveryAudio = null;
+  }
+  stopCurrentSynthChime();
+}
+
+/**
+ * Stop restaurant order notification alarm immediately.
+ */
+export function stopRestaurantOrderNotificationAlarm() {
+  if (currentRestaurantAudio) {
+    try {
+      currentRestaurantAudio.pause();
+      currentRestaurantAudio.currentTime = 0;
+    } catch {}
+    currentRestaurantAudio = null;
   }
   stopCurrentSynthChime();
 }
@@ -131,11 +146,13 @@ export async function playUserOrderNotificationAlarm() {
  * Plays the loud restaurant alert.mp3 with automatic synth chime fallback.
  */
 export async function playRestaurantOrderNotificationAlarm() {
+  stopRestaurantOrderNotificationAlarm();
   let playedFile = false;
 
   try {
     const audio = new Audio(alertSound);
     audio.volume = 1.0;
+    currentRestaurantAudio = audio;
     await audio.play();
     playedFile = true;
   } catch {

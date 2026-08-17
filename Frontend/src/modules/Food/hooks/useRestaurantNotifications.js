@@ -4,7 +4,7 @@ import { API_BASE_URL } from '@food/api/config';
 import { restaurantAPI } from '@food/api';
 import alertSound from '@food/assets/audio/alert.mp3';
 import { dispatchNotificationInboxRefresh } from '@food/hooks/useNotificationInbox';
-import { playRestaurantOrderNotificationAlarm, playSynthChimeSound } from '@food/utils/soundUtils';
+import { playRestaurantOrderNotificationAlarm, stopRestaurantOrderNotificationAlarm, playSynthChimeSound } from '@food/utils/soundUtils';
 import { RestaurantNotificationContext } from '../context/RestaurantNotificationContext';
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -114,6 +114,7 @@ export const useRestaurantNotifications = () => {
   const alertLoopTimerRef = useRef(null);
   const alertLoopStartedAtRef = useRef(0);
   const userInteractedRef = useRef(false); // Track user interaction for autoplay policy
+  const audioUnlockAttemptedRef = useRef(false);
   const [restaurantId, setRestaurantId] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -232,6 +233,13 @@ export const useRestaurantNotifications = () => {
       alertLoopTimerRef.current = null;
     }
     alertLoopStartedAtRef.current = 0;
+    stopRestaurantOrderNotificationAlarm();
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      } catch {}
+    }
   };
 
   const removeOrderFromQueue = useCallback((orderIdToRemove) => {
@@ -965,38 +973,8 @@ export const useRestaurantNotifications = () => {
         return;
       }
 
-      let soundPlayed = false;
-      if (audioRef.current) {
-        try {
-          audioRef.current.muted = false;
-          audioRef.current.volume = 1;
-          audioRef.current.currentTime = 0;
-          await audioRef.current.play();
-          soundPlayed = true;
-        } catch (error) {
-          // If persistent audio element failed or blocked, try creating one-shot audio
-          try {
-            const fallbackAudio = new Audio(resolveAudioSource(alertSound));
-            fallbackAudio.volume = 1;
-            await fallbackAudio.play();
-            soundPlayed = true;
-          } catch (_) {}
-        }
-      } else {
-        try {
-          const fallbackAudio = new Audio(resolveAudioSource(alertSound));
-          fallbackAudio.volume = 1;
-          await fallbackAudio.play();
-          soundPlayed = true;
-        } catch (_) {}
-      }
-
-      // If HTML5 audio was blocked or failed, trigger synth chime as guaranteed fallback
-      if (!soundPlayed) {
-        await playRestaurantOrderNotificationAlarm();
-      }
+      await playRestaurantOrderNotificationAlarm();
     } catch (error) {
-      // Don't log autoplay policy errors
       if (!error.message?.includes('user didn\'t interact') && !error.name?.includes('NotAllowedError')) {
         debugWarn('Error playing sound:', error);
       }
