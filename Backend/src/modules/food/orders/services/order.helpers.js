@@ -291,7 +291,7 @@ export async function notifyRestaurantNewOrder(orderDoc) {
     if (!orderDoc || !canExposeOrderToRestaurant(orderDoc)) return;
 
     const io = getIO();
-    const restId = String(orderDoc.restaurantId || '');
+    const restId = String(orderDoc.restaurantId?._id || orderDoc.restaurantId || '').trim();
     if (io && restId) {
       const rawDoc = typeof orderDoc.toObject === 'function' ? orderDoc.toObject() : orderDoc;
       const payload = {
@@ -311,23 +311,25 @@ export async function notifyRestaurantNewOrder(orderDoc) {
       io.to(`restaurant:${restId}`).emit("play_notification_sound", payload);
     }
 
-    await notifyOwnersSafely(
-      [{ ownerType: "RESTAURANT", ownerId: orderDoc.restaurantId }],
-      {
-        title: "New order received! 🔔",
-        body: `Order #${orderDoc.order_id || orderDoc._id} is waiting for review.`,
-        sound: "alert.mp3",
-        priority: "high",
-        data: {
-          type: "new_order",
-          orderId: orderDoc._id.toString(),
-          orderMongoId: orderDoc._id?.toString?.() || "",
-          link: `/food/restaurant/orders/${orderDoc._id?.toString?.() || ""}`,
-          targetUrl: `/food/restaurant/orders/${orderDoc._id?.toString?.() || ""}`,
-          click_action: `/food/restaurant/orders/${orderDoc._id?.toString?.() || ""}`,
+    if (restId) {
+      await notifyOwnersSafely(
+        [{ ownerType: "RESTAURANT", ownerId: restId }],
+        {
+          title: "New order received! 🔔",
+          body: `Order #${orderDoc.order_id || orderDoc._id} is waiting for review.`,
+          sound: "alert.mp3",
+          priority: "high",
+          data: {
+            type: "new_order",
+            orderId: String(orderDoc._id || ''),
+            orderMongoId: String(orderDoc._id || ''),
+            link: `/food/restaurant/orders/${String(orderDoc._id || '')}`,
+            targetUrl: `/food/restaurant/orders/${String(orderDoc._id || '')}`,
+            click_action: `/food/restaurant/orders/${String(orderDoc._id || '')}`,
+          },
         },
-      },
-    );
+      );
+    }
   } catch (err) {
     logger.warn(`Failed to send new order notification to restaurant: ${err?.message}`);
   }

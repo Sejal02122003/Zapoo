@@ -148,13 +148,22 @@ async function loadFirebaseWebConfig() {
     // For delivery order alerts, ALWAYS show notification even if app is open.
     // Riders need the system alert even when app is in the foreground/locked screen.
     const isDeliveryOrderAlert = 
-      payload?.data?.type === 'new_order' ||
-      String(payload?.data?.targetUrl || '').includes('/food/delivery') ||
-      String(payload?.data?.link || '').includes('/food/delivery');
+      payload?.data?.type === 'new_order' &&
+      (String(payload?.data?.targetUrl || '').includes('/food/delivery') || String(payload?.data?.link || '').includes('/food/delivery'));
 
-    if (!payload.notification && (isDeliveryOrderAlert || !visibleClient)) {
-      const title = payload?.data?.title || (isDeliveryOrderAlert ? "🚴 New Order!" : "New Notification");
-      const body = payload?.data?.body || (isDeliveryOrderAlert ? "A new delivery order is waiting for you!" : "");
+    const isRestaurantOrderAlert =
+      payload?.data?.type === 'new_order' ||
+      String(payload?.data?.targetUrl || '').includes('/food/restaurant') ||
+      String(payload?.data?.link || '').includes('/food/restaurant') ||
+      String(payload?.data?.click_action || '').includes('/food/restaurant');
+
+    const isUrgentOrderAlert = isDeliveryOrderAlert || isRestaurantOrderAlert;
+
+    if (!payload.notification && (isUrgentOrderAlert || !visibleClient)) {
+      const defaultTitle = isRestaurantOrderAlert ? "🔔 New Order Received!" : (isDeliveryOrderAlert ? "🚴 New Order Available!" : "New Notification");
+      const defaultBody = isRestaurantOrderAlert ? "You have received a new order waiting for review." : (isDeliveryOrderAlert ? "A new delivery order is waiting for you!" : "");
+      const title = payload?.data?.title || defaultTitle;
+      const body = payload?.data?.body || defaultBody;
       const image =
         payload?.data?.image ||
         payload?.data?.imageUrl ||
@@ -168,8 +177,8 @@ async function loadFirebaseWebConfig() {
         tag: notificationKey,
         renotify: true,
         silent: false,
-        requireInteraction: isDeliveryOrderAlert ? true : true,
-        vibrate: [200, 100, 200, 100, 300],
+        requireInteraction: true,
+        vibrate: [300, 100, 300, 100, 300],
         data: payload?.data || {},
       });
     }
