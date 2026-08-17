@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { config } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
+import { connectDB, disconnectDB } from '../../config/db.js';
 import { getBullMQConnection } from '../connection.js';
 import { PAYMENT_QUEUE } from '../queue.constants.js';
 import { processPaymentJob } from '../processors/payment.processor.js';
@@ -11,11 +12,12 @@ const defaultJobOptions = {
     backoff: { type: 'exponential', delay: 1000 }
 };
 
-const startPaymentWorker = () => {
+const startPaymentWorker = async () => {
     if (!config.bullmqEnabled) {
         logger.info('BullMQ is disabled. Payment worker not started.');
         return null;
     }
+    await connectDB();
     const connection = getBullMQConnection();
     if (!connection) {
         logger.error('Payment worker: Redis connection unavailable. Exiting.');
@@ -33,12 +35,17 @@ const startPaymentWorker = () => {
     return worker;
 };
 
-const worker = startPaymentWorker();
-if (worker) {
-    const shutdown = async () => {
-        await worker.close();
-        process.exit(0);
-    };
-    process.on('SIGTERM', shutdown);
-    process.on('SIGINT', shutdown);
-}
+const init = async () => {
+    const worker = await startPaymentWorker();
+    if (worker) {
+        const shutdown = async () => {
+            await worker.close();
+            await disconnectDB();
+            process.exit(0);
+        };
+        process.on('SIGTERM', shutdown);
+        process.on('SIGINT', shutdown);
+    }
+};
+
+init();

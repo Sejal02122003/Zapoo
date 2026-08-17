@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { config } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
+import { connectDB, disconnectDB } from '../../config/db.js';
 import { getBullMQConnection } from '../connection.js';
 import { MENU_IMAGE_QUEUE } from '../queue.constants.js';
 import { processMenuImageJob } from '../processors/menuImage.processor.js';
@@ -12,11 +13,12 @@ const defaultJobOptions = {
     backoff: { type: 'exponential', delay: 5000 }
 };
 
-const startMenuImageWorker = () => {
+const startMenuImageWorker = async () => {
     if (!config.bullmqEnabled) {
         logger.info('BullMQ is disabled. Menu Image worker not started.');
         return null;
     }
+    await connectDB();
     const connection = getBullMQConnection();
     if (!connection) {
         logger.error('Menu Image worker: Redis connection unavailable. Exiting.');
@@ -72,12 +74,17 @@ const startMenuImageWorker = () => {
     return worker;
 };
 
-const worker = startMenuImageWorker();
-if (worker) {
-    const shutdown = async () => {
-        await worker.close();
-        process.exit(0);
-    };
-    process.on('SIGTERM', shutdown);
-    process.on('SIGINT', shutdown);
-}
+const init = async () => {
+    const worker = await startMenuImageWorker();
+    if (worker) {
+        const shutdown = async () => {
+            await worker.close();
+            await disconnectDB();
+            process.exit(0);
+        };
+        process.on('SIGTERM', shutdown);
+        process.on('SIGINT', shutdown);
+    }
+};
+
+init();

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { config } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
+import { connectDB, disconnectDB } from '../../config/db.js';
 import { getBullMQConnection } from '../connection.js';
 import { NOTIFICATION_QUEUE } from '../queue.constants.js';
 import { processNotificationJob } from '../processors/notification.processor.js';
@@ -11,11 +12,12 @@ const defaultJobOptions = {
     backoff: { type: 'exponential', delay: 1000 }
 };
 
-const startNotificationWorker = () => {
+const startNotificationWorker = async () => {
     if (!config.bullmqEnabled) {
         logger.info('BullMQ is disabled. Notification worker not started.');
         return null;
     }
+    await connectDB();
     const connection = getBullMQConnection();
     if (!connection) {
         logger.error('Notification worker: Redis connection unavailable. Exiting.');
@@ -33,12 +35,17 @@ const startNotificationWorker = () => {
     return worker;
 };
 
-const worker = startNotificationWorker();
-if (worker) {
-    const shutdown = async () => {
-        await worker.close();
-        process.exit(0);
-    };
-    process.on('SIGTERM', shutdown);
-    process.on('SIGINT', shutdown);
-}
+const init = async () => {
+    const worker = await startNotificationWorker();
+    if (worker) {
+        const shutdown = async () => {
+            await worker.close();
+            await disconnectDB();
+            process.exit(0);
+        };
+        process.on('SIGTERM', shutdown);
+        process.on('SIGINT', shutdown);
+    }
+};
+
+init();
