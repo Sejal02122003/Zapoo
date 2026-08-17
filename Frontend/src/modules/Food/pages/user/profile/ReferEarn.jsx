@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Share2, Users, CircleCheck, Clock3, CircleX } from "lucide-react";
+import { ArrowLeft, Share2, Users, CircleCheck, Clock3, CircleX, Copy, Check } from "lucide-react";
 import WalletIcon from "@food/components/ui/WalletIcon";
 import AnimatedPage from "@food/components/user/AnimatedPage";
 import { Button } from "@food/components/ui/button";
@@ -9,6 +9,8 @@ import { useCompanyName } from "@food/hooks/useCompanyName";
 import { useProfile } from "@food/context/ProfileContext";
 import { toast } from "sonner";
 import { userAPI } from "@food/api";
+
+const PLAY_STORE_URL = "https://play.google.com/store/search?q=zapoo&c=apps&hl=en_IN";
 
 const statusMeta = {
   credited: {
@@ -28,6 +30,7 @@ export default function ReferEarn() {
   const { userProfile } = useProfile();
   const companyName = useCompanyName();
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState({
     referralCount: 0,
     totalReferralEarnings: 0,
@@ -35,17 +38,17 @@ export default function ReferEarn() {
     totalInvited: 0,
     creditedCount: 0,
     pendingCount: 0,
-    rejectedCount: 0 });
-  const [invitedFriends, setInvitedFriends] = useState([]);
+    rejectedCount: 0,
+    invitedFriends: [] });
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
         const res = await userAPI.getReferralDetails();
-        const nextStats = res?.data?.data?.stats || {};
-        const nextInvited = res?.data?.data?.invitedFriends || [];
+        const data = res?.data?.data || res?.data || {};
+        const nextStats = data?.stats || {};
         if (!cancelled) {
           setStats({
             referralCount: Number(nextStats.referralCount) || 0,
@@ -54,13 +57,11 @@ export default function ReferEarn() {
             totalInvited: Number(nextStats.totalInvited) || 0,
             creditedCount: Number(nextStats.creditedCount) || 0,
             pendingCount: Number(nextStats.pendingCount) || 0,
-            rejectedCount: Number(nextStats.rejectedCount) || 0 });
-          setInvitedFriends(Array.isArray(nextInvited) ? nextInvited : []);
+            rejectedCount: Number(nextStats.rejectedCount) || 0,
+            invitedFriends: Array.isArray(data?.invitedFriends) ? data.invitedFriends : [] });
         }
       } catch (error) {
         if (!cancelled) {
-          setStats((prev) => ({ ...prev }));
-          setInvitedFriends([]);
           toast.error("Failed to load referral details");
         }
       } finally {
@@ -73,36 +74,45 @@ export default function ReferEarn() {
     };
   }, []);
 
-  const refId = userProfile?._id || userProfile?.id || userProfile?.referralCode || "";
-  const referralLink = refId
-    ? `${window.location.origin}/food/user/auth/login?ref=${encodeURIComponent(String(refId))}`
-    : "";
+  const refCode = userProfile?.referralCode || userProfile?._id || userProfile?.id || "";
+  const referralLink = PLAY_STORE_URL;
 
   const shareText = useMemo(() => {
-    const rewardText = stats.rewardAmount > 0 ? `\u20B9${stats.rewardAmount}` : "rewards";
-    return `Join ${companyName} and earn ${rewardText}.`;
-  }, [companyName, stats.rewardAmount]);
+    const rewardText = stats.rewardAmount > 0 ? `₹${stats.rewardAmount}` : "exciting bonus";
+    return `🎁 Use my Referral Code *${refCode}* to get ${rewardText} on ${companyName}! Download the app here:\n${PLAY_STORE_URL}`;
+  }, [companyName, refCode, stats.rewardAmount]);
+
+  const handleCopyCode = async () => {
+    if (!refCode) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(refCode);
+      }
+      setCopied(true);
+      toast.success("Referral code copied!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (_) {
+      toast.success(`Referral code: ${refCode}`);
+    }
+  };
 
   const handleShare = async () => {
-    if (!referralLink) {
-      toast.error("Referral link unavailable");
-      return;
-    }
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${companyName} referral`,
+          title: `${companyName} Referral`,
           text: shareText,
-          url: referralLink });
+          url: PLAY_STORE_URL,
+        });
         return;
       }
 
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(`${shareText} ${referralLink}`);
-        toast.success("Referral link copied");
+        await navigator.clipboard.writeText(shareText);
+        toast.success("Invite message copied to clipboard!");
       }
 
-      const fallbackUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${referralLink}`)}`;
+      const fallbackUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
       window.open(fallbackUrl, "_blank", "noopener,noreferrer");
     } catch (error) {
       if (error?.name !== "AbortError") {
@@ -126,7 +136,7 @@ export default function ReferEarn() {
         <Card className="bg-white dark:bg-[#1a1a1a] rounded-2xl border-0 dark:border-gray-800 shadow-sm mb-3">
           <CardContent className="p-4">
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Invite friends and earn when they sign up.
+              Invite friends and earn when they sign up on {companyName}.
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-3">
@@ -140,14 +150,34 @@ export default function ReferEarn() {
                 </p>
               </div>
             </div>
+
+            {/* Referral Code Box */}
+            {refCode && (
+              <div className="mt-3 p-3 bg-primary/5 dark:bg-primary/10 border border-dashed border-primary/30 rounded-xl flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] uppercase font-semibold text-gray-500 dark:text-gray-400">Your Referral Code</p>
+                  <p className="text-base font-mono font-bold tracking-wider text-primary">{refCode}</p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCopyCode}
+                  className="h-8 px-3 rounded-lg border-primary/40 text-primary hover:bg-primary/10"
+                >
+                  {copied ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+              </div>
+            )}
+
             <Button
               type="button"
               onClick={handleShare}
-              disabled={!referralLink}
               className="w-full mt-3 h-11 rounded-xl bg-primary hover:bg-[#d84f0a]"
             >
               <Share2 className="h-4 w-4 mr-2" />
-              Share Invite
+              Share Invite via WhatsApp
             </Button>
           </CardContent>
         </Card>

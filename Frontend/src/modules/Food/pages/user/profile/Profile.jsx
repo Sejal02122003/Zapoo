@@ -284,24 +284,22 @@ export default function Profile() {
     };
   }, []);
 
-  const refId =
-    userProfile?._id || userProfile?.id || userProfile?.referralCode || "";
-  const referralLink = refId
-    ? `${window.location.origin}/food/user/auth/login?ref=${encodeURIComponent(String(refId))}`
-    : "";
+  const PLAY_STORE_URL = "https://play.google.com/store/search?q=zapoo&c=apps&hl=en_IN";
+  const refCode = userProfile?.referralCode || userProfile?._id || userProfile?.id || "";
+  const referralLink = PLAY_STORE_URL;
 
   const handleShareReferral = async () => {
-    if (!referralLink) return;
-    const rewardText = referralReward > 0 ? `\u20B9${referralReward}` : "rewards";
-    const shareText = `Join ${companyName} and earn ${rewardText}.`;
+    const rewardText = referralReward > 0 ? `₹${referralReward}` : "exciting bonus";
+    const shareText = `🎁 Use my Referral Code *${refCode}* to get ${rewardText} on ${companyName}! Download the app here:\n${PLAY_STORE_URL}`;
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${companyName} referral`,
+          title: `${companyName} Referral`,
           text: shareText,
-          url: referralLink });
+          url: PLAY_STORE_URL,
+        });
       } else {
-        const fallbackUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${referralLink}`)}`;
+        const fallbackUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
         window.open(fallbackUrl, "_blank", "noopener,noreferrer");
       }
     } catch (error) {
