@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { normalizeImageUrl } from "@food/utils/common";
+import { ShopPlaceholder } from "@food/components/OptimizedImage";
 
 const WEBVIEW_SESSION_CACHE_BUSTER = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -85,7 +87,7 @@ const RestaurantImageCarousel = React.memo(
     const images = useMemo(() => {
       const validImages = imagesRaw
         .filter((img) => typeof img === "string")
-        .map((img) => img.trim())
+        .map((img) => normalizeImageUrl(img.trim()))
         .filter(Boolean);
 
       const seen = new Set();
@@ -95,7 +97,7 @@ const RestaurantImageCarousel = React.memo(
         let sig = img;
         try {
           let pathParts = new URL(img).pathname.split('/');
-          sig = pathParts[pathParts.length - 1]; // Use just the filename
+          sig = pathParts[pathParts.length - 1];
         } catch (e) {
           sig = img;
         }
@@ -106,8 +108,8 @@ const RestaurantImageCarousel = React.memo(
         }
       });
 
-      return uniqueImages.map((img) => withCacheBuster(img));
-    }, [imagesKey, withCacheBuster]);
+      return uniqueImages;
+    }, [imagesKey]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [currentItemIndex, setCurrentItemIndex] = useState(0);
 
@@ -345,6 +347,7 @@ const RestaurantImageCarousel = React.memo(
               loading={priority ? "eager" : "lazy"}
               fetchPriority={priority ? "high" : "low"}
               decoding="async"
+              referrerPolicy="no-referrer"
               onLoad={() => {
                 setLoadedBySrc((prev) => ({ ...prev, [renderSrc]: true }));
                 setLastGoodSrc(renderSrc);
@@ -355,7 +358,7 @@ const RestaurantImageCarousel = React.memo(
                   const attemptedCount = Object.keys(next).length;
 
                   if (attemptedCount >= images.length) {
-                    setIsImageUnavailable(true);
+                     setIsImageUnavailable(true);
                   } else if (images.length > 1) {
                     setCurrentIndex(
                       (prevIndex) => (prevIndex + 1) % images.length,
@@ -364,7 +367,7 @@ const RestaurantImageCarousel = React.memo(
 
                   return next;
                 });
-                if (images.length === 1) {
+                if (images.length <= 1) {
                   setIsImageUnavailable(true);
                 }
               }}
@@ -379,13 +382,14 @@ const RestaurantImageCarousel = React.memo(
               alt="preload next" 
               aria-hidden="true"
               decoding="async"
+              referrerPolicy="no-referrer"
             />
           )}
         </div>
 
         {isImageUnavailable && (
-          <div className="absolute inset-0 z-[2] flex items-center justify-center bg-gray-100">
-            <span className="text-xs text-gray-500">Image unavailable</span>
+          <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center bg-[#f7f5f2] dark:bg-zinc-800">
+            <ShopPlaceholder />
           </div>
         )}
 

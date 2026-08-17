@@ -14,6 +14,7 @@ import {
   X } from "lucide-react"
 import { adminAPI, uploadAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
+import { normalizeImageUrl } from "@food/utils/common"
 import { toast } from "sonner"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
@@ -469,7 +470,16 @@ export default function Category() {
                         <div className="flex items-start gap-3">
                           <div className="h-11 w-11 overflow-hidden rounded-2xl bg-slate-100">
                             {category?.image ? (
-                              <img src={category.image} alt={category.name} className="h-full w-full object-cover" />
+                              <img
+                                src={normalizeImageUrl(category.image)}
+                                alt={category.name}
+                                className="h-full w-full object-cover"
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%23ccc'%3E%3Crect width='100' height='100' fill='%23f1f5f9'/%3E%3C/svg%3E";
+                                }}
+                              />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center text-sm font-bold text-slate-500">
                                 {String(category?.name || "C").slice(0, 1).toUpperCase()}
@@ -749,14 +759,34 @@ export default function Category() {
                           <label className="mb-2 block text-sm font-medium text-slate-700">Category Image</label>
                           <div className="space-y-3">
                             {(imagePreview || formData.image) && (
-                              <div className="relative h-32 w-32 overflow-hidden rounded-2xl border border-slate-300">
+                              <div className="relative h-32 w-32 overflow-hidden rounded-2xl border border-slate-300 bg-slate-50">
                                 <img
-                                  src={imagePreview || formData.image}
+                                  src={normalizeImageUrl(imagePreview || formData.image)}
                                   alt="Category preview"
                                   className="h-full w-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%23ccc'%3E%3Crect width='100' height='100' fill='%23f1f5f9'/%3E%3C/svg%3E";
+                                  }}
                                 />
                               </div>
                             )}
+                            <div>
+                              <input
+                                type="url"
+                                placeholder="Paste Image URL (e.g. Google image link, web URL)"
+                                value={formData.image || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const normalized = normalizeImageUrl(val);
+                                  setFormData((prev) => ({ ...prev, image: val }));
+                                  setImagePreview(normalized || null);
+                                  setSelectedImageFile(null);
+                                }}
+                                className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-xs outline-none focus:border-slate-900 mb-2"
+                              />
+                            </div>
                             <div className="flex items-center gap-3">
                               <input
                                 ref={fileInputRef}
@@ -768,10 +798,10 @@ export default function Category() {
                               />
                               <label
                                 htmlFor="category-image-upload"
-                                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700"
+                                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                               >
                                 <Upload className="h-4 w-4" />
-                                {imagePreview ? "Change Image" : "Upload Image"}
+                                {imagePreview || formData.image ? "Or Upload Image File" : "Upload Image File"}
                               </label>
                               {uploadingImage && <Loader2 className="h-5 w-5 animate-spin text-blue-600" />}
                             </div>

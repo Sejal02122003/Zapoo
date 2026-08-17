@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { Search, Download, ChevronDown, Eye, Settings, ArrowUpDown, Loader2, X, MapPin, Phone, Mail, Clock, Star, Building2, User, FileText, CreditCard, Calendar, Image as ImageIcon, ExternalLink, ShieldX, AlertTriangle, Trash2, Plus, Map } from "lucide-react"
 import { adminAPI, restaurantAPI, uploadAPI } from "@food/api"
 import { clearModuleAuth } from "@food/utils/auth"
+import { normalizeImageUrl as commonNormalizeImageUrl } from "@food/utils/common"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { exportRestaurantsToPDF } from "@food/components/admin/restaurants/restaurantsExportUtils"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
@@ -86,8 +87,8 @@ const formatTime12Hour = (value) => {
 
 const normalizeImageUrl = (image) => {
   if (!image) return ""
-  if (typeof image === "string") return image
-  if (typeof image === "object") return image.url || image.secure_url || ""
+  if (typeof image === "string") return commonNormalizeImageUrl(image)
+  if (typeof image === "object") return commonNormalizeImageUrl(image.url || image.secure_url || "")
   return ""
 }
 

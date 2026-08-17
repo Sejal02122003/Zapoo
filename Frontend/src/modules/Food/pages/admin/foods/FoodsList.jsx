@@ -61,7 +61,7 @@ export default function FoodsList() {
     if (direct) return direct
 
     const rawId = String(item.id || "")
-    const match = rawId.match(/\d{10 }/)
+    const match = rawId.match(/\d{10}/)
     if (match) {
       const fromId = Number(match[0])
       if (Number.isFinite(fromId) && fromId > 0) return fromId
@@ -71,8 +71,8 @@ export default function FoodsList() {
 
   const toArray = (value) => (Array.isArray(value) ? value : [])
   const withImageVersion = (url) => {
-    if (!url || typeof url !== "string") return "https://via.placeholder.com/40"
-    return `${url}${url.includes("?") ? "&" : "?"}v=${imageVersion}`
+    if (!url || typeof url !== "string") return ""
+    return normalizeImageUrl(url)
   }
 
   const fetchAllFoods = useCallback(async () => {
@@ -375,8 +375,7 @@ export default function FoodsList() {
 
     try {
       setSubmittingFood(true)
-      let imageUrl = foodForm.image.trim()
-
+      let imageUrl = normalizeImageUrl(String(foodForm.image || "").trim())
       if (selectedImageFile) {
         const uploadResponse = await uploadAPI.uploadMedia(selectedImageFile, {
           folder: "foods" })
@@ -385,6 +384,7 @@ export default function FoodsList() {
           uploadResponse?.data?.url ||
           imageUrl
       }
+      imageUrl = normalizeImageUrl(imageUrl)
 
       const payload = {
         restaurantId: foodForm.restaurantId,
@@ -902,22 +902,40 @@ export default function FoodsList() {
                   <option value="Non-Veg">Non-Veg</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Upload Image</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null
-                    setSelectedImageFile(file)
-                    if (file) {
-                      setImagePreviewUrl(URL.createObjectURL(file))
-                    } else {
-                      setImagePreviewUrl(foodForm.image.trim())
-                    }
-                  }}
-                  className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm"
-                />
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Food Image</label>
+                <div className="space-y-2">
+                  <input
+                    type="url"
+                    placeholder="Paste Image URL (e.g. Google image link, web link)"
+                    value={foodForm.image}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const normalized = normalizeImageUrl(val);
+                      setFoodForm((prev) => ({ ...prev, image: val }));
+                      setImagePreviewUrl(normalized);
+                      setSelectedImageFile(null);
+                    }}
+                    className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">or</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setSelectedImageFile(file);
+                        if (file) {
+                          setImagePreviewUrl(URL.createObjectURL(file));
+                        } else {
+                          setImagePreviewUrl(normalizeImageUrl(foodForm.image.trim()));
+                        }
+                      }}
+                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs"
+                    />
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Timing</label>
@@ -944,6 +962,11 @@ export default function FoodsList() {
                       src={imagePreviewUrl}
                       alt="Food preview"
                       className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%23ccc'%3E%3Crect width='100' height='100' fill='%23f1f5f9'/%3E%3C/svg%3E";
+                      }}
                     />
                   </div>
                 </div>

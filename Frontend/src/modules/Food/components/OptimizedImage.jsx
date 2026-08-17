@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { ConciergeBell } from 'lucide-react'
+import { normalizeImageUrl } from '@food/utils/common'
 
 export const ShopPlaceholder = () => (
   <svg viewBox="0 0 100 100" className="w-[40%] h-[40%] max-w-[80px] max-h-[80px] text-[#cfcac2] dark:text-zinc-600" fill="currentColor">
@@ -56,19 +56,17 @@ export const FoodPlaceholder = () => (
  * OptimizedImage Component
  * 
  * Features:
+ * - Direct Google and third-party image resolution (with no-referrer bypass)
+ * - Cloudinary image optimizations
+ * - Resilient direct image fallback if any proxy fails
  * - Lazy loading with Intersection Observer
- * - Responsive srcset for different screen sizes
- * - WebP/AVIF format support with fallback
- * - Blur placeholder (LQIP) for smooth loading
- * - Preloading for critical images
- * - Proper decoding and fetchpriority
- * - Error handling with fallback
+ * - Fallback placeholders
  */
 const OptimizedImage = React.memo(({
   src,
   alt,
   className = '',
-  priority = false, // For above-the-fold images
+  priority = false,
   sizes = '100vw',
   objectFit = 'cover',
   placeholder = 'blur',
@@ -79,77 +77,48 @@ const OptimizedImage = React.memo(({
   onError,
   ...props
 }) => {
+  const cleanSrc = useMemo(() => normalizeImageUrl(src || ''), [src])
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
-  const [isInView, setIsInView] = useState(priority) // Start visible if priority
+  const [useRawFallback, setUseRawFallback] = useState(false)
+  const [isInView, setIsInView] = useState(priority)
   const imgRef = useRef(null)
   const observerRef = useRef(null)
 
-  // Check if image URL supports optimization (external URLs)
-  const supportsOptimization = (imageSrc) => {
-    if (!imageSrc || typeof imageSrc !== 'string' || imageSrc === '') return false
-    if (imageSrc.startsWith('data:') || imageSrc.startsWith('/')) return false
-    // Don't proxy localhost
-    if (/localhost|127\.0\.0\.1/i.test(imageSrc)) return false;
-    // Native Cloudinary URLs can be optimized natively instead of via proxy
-    if (/res\.cloudinary\.com/i.test(imageSrc)) return true;
-    // Don't proxy signed URLs (Firebase, AWS, etc) as they break
-    if (/[?&](X-Amz-|Signature=|Expires=|AWSAccessKeyId=|GoogleAccessId=|token=|sig=|se=|sp=|sv=|alt=)/i.test(imageSrc)) return false;
-    // Don't proxy Zomato URLs as they block wsrv.nl
-    if (/zmtcdn\.com/i.test(imageSrc)) return false;
-    // Check if it's an external URL (http/https)
-    return /^https?:\/\//.test(imageSrc)
-  }
+  // Reset state when src changes
+  useEffect(() => {
+    setIsLoaded(false)
+    setHasError(false)
+    setUseRawFallback(false)
+  }, [cleanSrc])
 
-  const getOptimizedUrl = (imageSrc, params) => {
+  // Native Cloudinary transforms
+  const isCloudinary = useMemo(() => {
+    return typeof cleanSrc === 'string' && /res\.cloudinary\.com/i.test(cleanSrc) && /\/image\/upload\//i.test(cleanSrc);
+  }, [cleanSrc]);
+
+  const getCloudinaryUrl = (imageSrc, params = {}) => {
     if (!imageSrc) return imageSrc;
     const { w, format, q = 80 } = params;
+    const transforms = [];
+    if (format === 'webp') transforms.push('f_webp');
+    else if (format) transforms.push(`f_${format}`);
+    else transforms.push('f_auto');
+    transforms.push(`q_${q}`);
+    if (w) transforms.push(`w_${w}`);
 
-    // Native Cloudinary optimization (bypasses wsrv proxy for faster loading)
-    if (/res\.cloudinary\.com/i.test(imageSrc) && /\/image\/upload\//i.test(imageSrc)) {
-      const transforms = [];
-      if (format === 'webp') transforms.push('f_webp');
-      else if (format) transforms.push(`f_${format}`);
-      else transforms.push('f_auto');
-      transforms.push(`q_${q}`);
-      if (w) transforms.push(`w_${w}`);
-
-      const hasTransform = /\/image\/upload\/(?:f_|q_|w_|h_|c_|dpr_|g_)/i.test(imageSrc);
-      if (!hasTransform) {
-        return imageSrc.replace('/image/upload/', `/image/upload/${transforms.join(',')}/`);
-      }
-      return imageSrc; // Return as-is if already transformed
+    const hasTransform = /\/image\/upload\/(?:f_|q_|w_|h_|c_|dpr_|g_)/i.test(imageSrc);
+    if (!hasTransform) {
+      return imageSrc.replace('/image/upload/', `/image/upload/${transforms.join(',')}/`);
     }
+    return imageSrc;
+  };
 
-    // Use wsrv.nl as a fallback for other generic URLs
-    let proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(imageSrc)}&q=${q}&we=1`;
-    if (w) proxyUrl += `&w=${w}`;
-    if (format) proxyUrl += `&output=${format}`;
-    return proxyUrl;
-  }
-
-  // Generate responsive srcset
-  const srcSet = useMemo(() => {
-    if (!supportsOptimization(src)) return undefined
-    const sizesArr = [200, 400, 600, 800, 1200]
-    return sizesArr
-      .map(size => `${getOptimizedUrl(src, { w: size, q: 80 })} ${size}w`)
-      .join(', ')
-  }, [src])
-
-  // Generate WebP srcset
-  const webPSrcSet = useMemo(() => {
-    if (!supportsOptimization(src)) return undefined
-
-    // If the source URL explicitly forces a non-webp format (e.g. Cloudinary f_jpg),
-    // we must NOT generate a webp source tag, otherwise Chrome will reject the mismatched MIME type.
-    if (/f_(jpg|png|gif)/i.test(src)) return undefined;
-
-    const sizesArr = [200, 400, 600, 800, 1200]
-    return sizesArr
-      .map(size => `${getOptimizedUrl(src, { w: size, q: 80, format: 'webp' })} ${size}w`)
-      .join(', ')
-  }, [src])
+  const currentDisplaySrc = useMemo(() => {
+    if (!cleanSrc) return '';
+    if (useRawFallback || !isCloudinary) return cleanSrc;
+    return getCloudinaryUrl(cleanSrc, { w: 800, q: 80 });
+  }, [cleanSrc, useRawFallback, isCloudinary]);
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -169,7 +138,7 @@ const OptimizedImage = React.memo(({
         })
       },
       {
-        rootMargin: '50px', // Start loading 50px before entering viewport
+        rootMargin: '100px',
         threshold: 0.01
       }
     )
@@ -189,30 +158,30 @@ const OptimizedImage = React.memo(({
   }
 
   const handleError = (e) => {
+    if (!useRawFallback && isCloudinary) {
+      // First retry with raw un-transformed direct URL
+      setUseRawFallback(true);
+      return;
+    }
+    if (fallbackSrc && !hasError) {
+      setHasError(true);
+      return;
+    }
     setHasError(true)
     if (onError) onError(e)
   }
 
-  // Default blur placeholder (tiny gray square)
   const defaultBlurDataURL = blurDataURL || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2U1ZTdlYiIvPjwvc3ZnPg=='
 
-  // Don't render if src is empty or null
-  if (!src || src === '') {
+  if (!cleanSrc) {
     return (
       <div className={`relative overflow-hidden ${className}`}>
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-          <span className="text-xs text-gray-400 dark:text-gray-600">Image unavailable</span>
+        <div className="absolute inset-0 bg-[#f7f5f2] dark:bg-zinc-800 flex flex-col items-center justify-center">
+          {placeholderType === 'shop' ? <ShopPlaceholder /> : <FoodPlaceholder />}
         </div>
       </div>
     )
   }
-
-  const imageSrc = hasError ? 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23e5e7eb" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="14" x="50%25" y="50%25" text-anchor="middle"%3EImage not found%3C/text%3E%3C/svg%3E' : src
-
-  // Use optimized version for default src as well
-  const optimizedSrc = supportsOptimization(src) && !hasError
-    ? getOptimizedUrl(src, { w: 800, q: 80, format: 'webp' })
-    : imageSrc;
 
   return (
     <div className={`relative overflow-hidden ${className}`} ref={imgRef}>
@@ -240,38 +209,34 @@ const OptimizedImage = React.memo(({
       )}
 
       {/* Actual Image */}
-      {isInView && (
-        <picture className="absolute inset-0 w-full h-full">
-          {/* WebP source for modern browsers */}
-          {webPSrcSet && (
-            <source
-              srcSet={webPSrcSet}
-              sizes={sizes}
-              type="image/webp"
-            />
-          )}
-
-          {/* Fallback to original format */}
-          <motion.img
-            src={optimizedSrc}
-            srcSet={srcSet}
-            sizes={supportsOptimization(src) ? sizes : undefined}
-            alt={alt}
-            className={`w-full h-full ${objectFit === 'cover' ? 'object-cover' : objectFit === 'contain' ? 'object-contain' : ''} ${priority || isLoaded ? 'opacity-100' : 'opacity-0'} ${!priority && 'transition-opacity duration-300'}`}
-            loading={priority ? 'eager' : 'lazy'}
-            decoding="async"
-            fetchPriority={priority ? 'high' : 'auto'}
-            onLoad={handleLoad}
-            onError={handleError}
-            {...props}
-          />
-        </picture>
+      {isInView && !hasError && (
+        <motion.img
+          src={currentDisplaySrc}
+          alt={alt || ''}
+          className={`w-full h-full ${objectFit === 'cover' ? 'object-cover' : objectFit === 'contain' ? 'object-contain' : ''} ${priority || isLoaded ? 'opacity-100' : 'opacity-0'} ${!priority && 'transition-opacity duration-300'}`}
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+          referrerPolicy="no-referrer"
+          fetchPriority={priority ? 'high' : 'auto'}
+          onLoad={handleLoad}
+          onError={handleError}
+          {...props}
+        />
       )}
 
-      {/* Error State */}
+      {/* Fallback image or Error State */}
       {hasError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-          <span className="text-xs text-gray-400 dark:text-gray-600">Image unavailable</span>
+        <div className="absolute inset-0 bg-[#f7f5f2] dark:bg-zinc-800 flex flex-col items-center justify-center">
+          {fallbackSrc ? (
+            <img
+              src={fallbackSrc}
+              alt={alt || ''}
+              className={`w-full h-full ${objectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            placeholderType === 'shop' ? <ShopPlaceholder /> : <FoodPlaceholder />
+          )}
         </div>
       )}
     </div>
