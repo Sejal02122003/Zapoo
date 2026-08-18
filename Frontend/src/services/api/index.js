@@ -1140,6 +1140,9 @@ export const restaurantAPI = {
   getOrderById: async (orderId) => {
     return await restaurantClient.get(`/food/restaurant/orders/${String(orderId)}`);
   },
+  /** POST /food/calls/bridge - Initiate secure masked call via Exotel */
+  initiateCall: (orderId, targetRole = "customer", callerPhoneOverride = null) =>
+    restaurantClient.post("/food/calls/bridge", { orderId, targetRole, callerPhoneOverride }),
   /** Add-ons (restaurant) - approval handled by admin */
   getAddons: (params = {}) =>
     restaurantClient.get("/food/restaurant/addons", {
@@ -1583,6 +1586,9 @@ export const deliveryAPI = {
   /** POST /food/delivery/profile/phone/verify-otp - Verify OTP and update phone number */
   verifyPhoneChangeOtp: (newPhone, otp) =>
     deliveryClient.post("/food/delivery/profile/phone/verify-otp", { newPhone, otp }),
+  /** POST /food/calls/bridge - Initiate secure masked call via Exotel */
+  initiateCall: (orderId, targetRole = "customer", callerPhoneOverride = null) =>
+    deliveryClient.post("/food/calls/bridge", { orderId, targetRole, callerPhoneOverride }),
   /** PATCH /food/delivery/profile/bank-details - update bank details + PAN (JSON, Bearer required). */
   updateProfile: (payload) =>
     deliveryClient.patch("/food/delivery/profile/bank-details", payload ?? {}),
@@ -2178,6 +2184,9 @@ export const orderAPI = {
     userClient.patch(`/food/orders/${String(orderId)}/instructions`, { instructions }),
   submitOrderRatings: (orderId, body = {}) =>
     userClient.patch(`/food/orders/${String(orderId)}/ratings`, body ?? {}),
+  /** POST /food/calls/bridge - Initiate secure masked call via Exotel */
+  initiateCall: (orderId, targetRole = "rider", callerPhoneOverride = null) =>
+    userClient.post("/food/calls/bridge", { orderId, targetRole, callerPhoneOverride }),
   /** Submit a complaint for an order (user). */
   submitComplaint: (payload) =>
     userClient.post(
@@ -2231,4 +2240,24 @@ export const publicAPI = {
   getPrivacy: (key = "privacy") => userClient.get(`/food/pages/${key}`),
   getTerms: (key = "terms") => userClient.get(`/food/pages/${key}`),
   getBusinessSettings: () => apiClient.get("/food/admin/business-settings/public"),
+};
+
+/**
+ * Exotel Call Masking API
+ * Initiates dual-leg bridged phone calls so parties never see each other's real numbers.
+ */
+export const callsAPI = {
+  initiateCall: (orderId, targetRole = "rider", callerPhoneOverride = null) => {
+    const deliveryToken = localStorage.getItem("delivery_accessToken") || localStorage.getItem("deliveryToken");
+    const restaurantToken = localStorage.getItem("restaurant_accessToken") || localStorage.getItem("restaurantToken");
+
+    if (deliveryToken) {
+      return deliveryClient.post("/food/calls/bridge", { orderId, targetRole, callerPhoneOverride });
+    }
+    if (restaurantToken) {
+      return restaurantClient.post("/food/calls/bridge", { orderId, targetRole, callerPhoneOverride });
+    }
+    return userClient.post("/food/calls/bridge", { orderId, targetRole, callerPhoneOverride });
+  },
+  getCallConfig: () => apiClient.get("/food/calls/config"),
 };

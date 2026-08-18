@@ -14,7 +14,7 @@ import {
   RotateCcw,
   FileText,
   XCircle } from "lucide-react"
-import { orderAPI, restaurantAPI } from "@food/api"
+import { orderAPI, restaurantAPI, callsAPI } from "@food/api"
 import { useCart } from "@food/context/CartContext"
 import { toast } from "sonner"
 import { jsPDF } from "jspdf"
@@ -257,13 +257,39 @@ export default function UserOrderDetails() {
     order.restaurantPhone ||
     ""
 
-  const handleCallRestaurant = () => {
-    if (!restaurantPhone) {
-      toast.error("Restaurant phone number not available")
-      return
+  const handleCallRestaurant = async () => {
+    const orderIdentifier = order?._id || order?.id || order?.orderId || orderId;
+    const cleanPhone = String(restaurantPhone || "").replace(/[^\d+]/g, "");
+
+    const toastId = toast.loading("Connecting secure call via Zapoo Masking...");
+    try {
+      const res = await (callsAPI?.initiateCall || orderAPI?.initiateCall)(orderIdentifier, "restaurant");
+      const data = res?.data || {};
+
+      if (data?.success) {
+        toast.success(
+          data.message || "Zapoo Masked Call connecting. Please answer the incoming call on your registered phone.",
+          { id: toastId, duration: 6000 }
+        );
+        return;
+      } else if (data?.fallbackToDirect && (data?.directPhone || cleanPhone)) {
+        const dialNum = (data?.directPhone || cleanPhone).replace(/[^\d+]/g, "");
+        toast.info("Connecting call directly...", { id: toastId });
+        window.location.href = `tel:${dialNum}`;
+        return;
+      } else {
+        toast.error(data?.message || "Could not initiate secure call", { id: toastId });
+      }
+    } catch (err) {
+      debugError("Call bridge failed:", err);
+      if (cleanPhone && cleanPhone.length >= 5) {
+        toast.info("Connecting call directly...", { id: toastId });
+        window.location.href = `tel:${cleanPhone}`;
+      } else {
+        toast.error(err?.response?.data?.message || "Failed to connect call", { id: toastId });
+      }
     }
-    window.location.href = `tel:${restaurantPhone}`
-  }
+  };
 
   const handleDownloadSummary = async () => {
     try {

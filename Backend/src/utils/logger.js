@@ -3,3 +3,5 @@ export const logger = {
     error: (msg) => console.error(`❌ [ERROR] ${new Date().toLocaleTimeString()}: ${msg}`),
     warn: (msg) => console.warn(`⚠️ [WARN] ${new Date().toLocaleTimeString()}: ${msg}`)
 };
+
+export default logger;

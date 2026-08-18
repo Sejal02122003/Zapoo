@@ -25,6 +25,7 @@ import { requireZone } from '../middlewares/zone.middleware.js';
 import envSettingRoutes from './admin/envSettingRoutes.js';
 import { weatherPricingRoutes } from '../modules/food/weatherPricing/routes/weatherPricing.routes.js';
 import { shiftRoutes } from '../modules/food/shifts/routes/shift.routes.js';
+import callRoutes from '../modules/food/calls/routes/call.routes.js';
 
 const router = express.Router();
 
@@ -102,6 +103,10 @@ router.use('/v1/food/payments', authMiddleware, privateRateLimiter, paymentRoute
 router.use('/v1/payments/webhook', webhookRoutes);
 router.use('/v1/fcm-tokens', fcmRoutes);
 router.use('/fcm-tokens', fcmRoutes);
+
+// Exotel Call Masking routes
+router.use('/v1/food/calls', callRoutes);
+router.use('/v1/calls', callRoutes);
 
 router.get('/v1/admin/queues', authMiddleware, privateRateLimiter, requireRoles('ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'), getQueuesController);
 

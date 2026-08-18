@@ -36,7 +36,7 @@ import { useOrders } from "@food/context/OrdersContext"
 import { useProfile } from "@food/context/ProfileContext"
 import { useLocation as useUserLocation } from "@food/hooks/useLocation"
 import DeliveryTrackingMap from "@food/components/user/DeliveryTrackingMap"
-import { orderAPI, restaurantAPI } from "@food/api"
+import { orderAPI, restaurantAPI, callsAPI } from "@food/api"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { isModuleAuthenticated } from "@food/utils/auth"
 import { useUserNotifications } from "@food/hooks/useUserNotifications"
@@ -933,10 +933,10 @@ export default function OrderTracking() {
     return `${minutes}:${String(seconds).padStart(2, '0')}`
   }, [editWindowRemainingMs])
 
-  const handleCallRestaurant = (e) => {
-    // Prevent event bubbling if necessary
+  const handleCallRestaurant = async (e) => {
     if (e && e.stopPropagation) e.stopPropagation();
 
+    const orderIdentifier = order?._id || order?.id || order?.orderId || id;
     const rawPhone =
       order?.restaurantPhone ||
       order?.restaurantId?.phone ||
@@ -948,53 +948,71 @@ export default function OrderTracking() {
       '';
 
     const cleanPhone = String(rawPhone).replace(/[^\d+]/g, '');
-    
-    if (!cleanPhone || cleanPhone.length < 5) {
-      toast.error('Restaurant phone number not available');
-      return;
-    }
 
-    debugLog('?? Attempting to call restaurant:', cleanPhone);
-    
-    // Most compatible way to trigger dialer on overall mobile/web environments:
-    // Create a temporary hidden anchor and programmatically click it.
+    const toastId = toast.loading('Connecting secure call via Zapoo Masking...');
     try {
-      const link = document.createElement('a');
-      link.href = `tel:${cleanPhone}`;
-      link.setAttribute('target', '_self');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const res = await (callsAPI?.initiateCall || orderAPI?.initiateCall)(orderIdentifier, 'restaurant');
+      const data = res?.data || {};
+
+      if (data?.success) {
+        toast.success(
+          data.message || `Zapoo Masked Call connecting. Please answer the incoming call on your registered phone.`,
+          { id: toastId, duration: 6000 }
+        );
+        return;
+      } else if (data?.fallbackToDirect && (data?.directPhone || cleanPhone)) {
+        const dialNum = (data?.directPhone || cleanPhone).replace(/[^\d+]/g, '');
+        toast.info('Connecting call directly...', { id: toastId });
+        window.location.href = `tel:${dialNum}`;
+        return;
+      } else {
+        toast.error(data?.message || 'Could not initiate secure call', { id: toastId });
+      }
     } catch (err) {
-      debugError('Call failed via link click:', err);
-      // Last-ditch fallback
-      window.location.assign(`tel:${cleanPhone}`);
+      debugError('Call bridge failed:', err);
+      if (cleanPhone && cleanPhone.length >= 5) {
+        toast.info('Connecting call directly...', { id: toastId });
+        window.location.href = `tel:${cleanPhone}`;
+      } else {
+        toast.error(err?.response?.data?.message || 'Failed to connect call', { id: toastId });
+      }
     }
   };
 
-  const handleCallRider = (e) => {
+  const handleCallRider = async (e) => {
     if (e && e.stopPropagation) e.stopPropagation();
-    
+
+    const orderIdentifier = order?._id || order?.id || order?.orderId || id;
     const rawPhone = order?.deliveryPartner?.phone || '';
     const cleanPhone = String(rawPhone).replace(/[^\d+]/g, '');
 
-    if (!cleanPhone || cleanPhone.length < 5) {
-      toast.error('Rider phone number not available');
-      return;
-    }
-
-    debugLog('?? Attempting to call rider:', cleanPhone);
-    
+    const toastId = toast.loading('Connecting secure call to delivery partner...');
     try {
-      const link = document.createElement('a');
-      link.href = `tel:${cleanPhone}`;
-      link.setAttribute('target', '_self');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const res = await (callsAPI?.initiateCall || orderAPI?.initiateCall)(orderIdentifier, 'rider');
+      const data = res?.data || {};
+
+      if (data?.success) {
+        toast.success(
+          data.message || `Zapoo Masked Call connecting. Please answer the incoming call on your registered phone.`,
+          { id: toastId, duration: 6000 }
+        );
+        return;
+      } else if (data?.fallbackToDirect && (data?.directPhone || cleanPhone)) {
+        const dialNum = (data?.directPhone || cleanPhone).replace(/[^\d+]/g, '');
+        toast.info('Connecting call directly...', { id: toastId });
+        window.location.href = `tel:${dialNum}`;
+        return;
+      } else {
+        toast.error(data?.message || 'Could not initiate secure call', { id: toastId });
+      }
     } catch (err) {
-      debugError('Call failed via link click:', err);
-      window.location.assign(`tel:${cleanPhone}`);
+      debugError('Call bridge failed:', err);
+      if (cleanPhone && cleanPhone.length >= 5) {
+        toast.info('Connecting call directly...', { id: toastId });
+        window.location.href = `tel:${cleanPhone}`;
+      } else {
+        toast.error(err?.response?.data?.message || 'Failed to connect call', { id: toastId });
+      }
     }
   };
 

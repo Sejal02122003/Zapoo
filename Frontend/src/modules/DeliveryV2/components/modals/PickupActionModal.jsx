@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { ActionSlider } from '@/modules/DeliveryV2/components/ui/ActionSlider';
 import { toast } from 'sonner';
+import { deliveryAPI } from '@food/api';
 
 /**
  * PickupActionModal - Unified White/Green Theme with Slider Actions.
@@ -83,8 +84,39 @@ export const PickupActionModal = ({
           <div className="flex gap-2">
             {restaurantPhone && (
               <button
-                onClick={() => window.location.href = `tel:${restaurantPhone}`}
-                className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 border border-green-100"
+                onClick={async (e) => {
+                  if (e && e.stopPropagation) e.stopPropagation();
+                  const cleanPhone = String(restaurantPhone || '').replace(/[^\d+]/g, '');
+                  const orderId = order?._id || order?.id || order?.orderId;
+                  
+                  const toastId = toast.loading('Connecting secure masked call to restaurant...');
+                  try {
+                    const res = await deliveryAPI.initiateCall(orderId, 'restaurant');
+                    const data = res?.data || {};
+
+                    if (data?.success) {
+                      toast.success(
+                        data.message || 'Connecting via Zapoo Masking. Exotel will call your phone shortly. Please answer to connect.',
+                        { id: toastId, duration: 6000 }
+                      );
+                      return;
+                    } else if (data?.fallbackToDirect && (data?.directPhone || cleanPhone)) {
+                      const dialNum = (data?.directPhone || cleanPhone).replace(/[^\d+]/g, '');
+                      toast.info('Connecting call directly...', { id: toastId });
+                      window.location.href = `tel:${dialNum}`;
+                    } else {
+                      toast.error(data?.message || 'Could not initiate secure call', { id: toastId });
+                    }
+                  } catch (err) {
+                    if (cleanPhone && cleanPhone.length >= 5) {
+                      toast.info('Connecting call directly...', { id: toastId });
+                      window.location.href = `tel:${cleanPhone}`;
+                    } else {
+                      toast.error(err?.response?.data?.message || 'Failed to connect call', { id: toastId });
+                    }
+                  }
+                }}
+                className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 border border-green-100 active:scale-95 transition-all shadow-sm"
               >
                 <Phone className="w-5 h-5" />
               </button>

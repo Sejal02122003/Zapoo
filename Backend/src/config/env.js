@@ -96,7 +96,18 @@ export const config = {
 
 
     // Google Maps
-    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY
+    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY,
+
+    // Exotel Call Masking
+    callMaskingEnabled: process.env.CALL_MASKING_ENABLED === 'true',
+    exotelSid: process.env.EXOTEL_SID,
+    exotelSubdomain: process.env.EXOTEL_SUBDOMAIN || 'api',
+    exotelVirtualNumbers: process.env.EXOTEL_VIRTUAL_NUMBERS
+        ? process.env.EXOTEL_VIRTUAL_NUMBERS.split(',').map((n) => n.trim()).filter(Boolean)
+        : [],
+    exotelApiKey: process.env.EXOTEL_API_KEY,
+    exotelApiToken: process.env.EXOTEL_API_TOKEN,
+    exotelStatusCallbackBaseUrl: process.env.EXOTEL_STATUS_CALLBACK_BASE_URL || 'https://zapoo.co.in'
 };
 
 export const updateConfig = () => {
@@ -157,4 +168,14 @@ export const updateConfig = () => {
     config.emailFrom = process.env.EMAIL_FROM || process.env.EMAIL_USER || config.emailFrom;
 
     config.googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || config.googleMapsApiKey;
+
+    config.callMaskingEnabled = process.env.CALL_MASKING_ENABLED === 'true';
+    config.exotelSid = process.env.EXOTEL_SID || config.exotelSid;
+    config.exotelSubdomain = process.env.EXOTEL_SUBDOMAIN || config.exotelSubdomain;
+    config.exotelVirtualNumbers = process.env.EXOTEL_VIRTUAL_NUMBERS
+        ? process.env.EXOTEL_VIRTUAL_NUMBERS.split(',').map((n) => n.trim()).filter(Boolean)
+        : config.exotelVirtualNumbers;
+    config.exotelApiKey = process.env.EXOTEL_API_KEY || config.exotelApiKey;
+    config.exotelApiToken = process.env.EXOTEL_API_TOKEN || config.exotelApiToken;
+    config.exotelStatusCallbackBaseUrl = process.env.EXOTEL_STATUS_CALLBACK_BASE_URL || config.exotelStatusCallbackBaseUrl;
 };
