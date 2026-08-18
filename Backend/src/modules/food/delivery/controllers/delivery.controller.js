@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
-import { registerDeliveryPartner, updateDeliveryPartnerProfile, updateDeliveryPartnerBankDetails, getDeliveryPartnerBankDetails, listSupportTicketsByPartner, createSupportTicket, getSupportTicketByIdAndPartner, updateDeliveryPartnerDetails, updateDeliveryPartnerProfilePhotoBase64, updateDeliveryAvailability, getDeliveryPartnerWallet, getDeliveryPartnerEarnings, getDeliveryPartnerTripHistory, getDeliveryPocketDetails, getActiveEarningAddonsForPartner } from '../services/delivery.service.js';
+import { registerDeliveryPartner, updateDeliveryPartnerProfile, updateDeliveryPartnerBankDetails, getDeliveryPartnerBankDetails, listSupportTicketsByPartner, createSupportTicket, getSupportTicketByIdAndPartner, updateDeliveryPartnerDetails, updateDeliveryPartnerProfilePhotoBase64, requestDeliveryPhoneChangeOtp, verifyDeliveryPhoneChangeOtp, updateDeliveryAvailability, getDeliveryPartnerWallet, getDeliveryPartnerEarnings, getDeliveryPartnerTripHistory, getDeliveryPocketDetails, getActiveEarningAddonsForPartner } from '../services/delivery.service.js';
 import { createDeliveryCashDepositOrder, getDeliveryPartnerWalletEnhanced, requestDeliveryWithdrawal, verifyDeliveryCashDepositPayment } from '../services/deliveryFinance.service.js';
 import { getDeliveryCashLimitSettings, getDeliveryEmergencyHelp } from '../../admin/services/admin.service.js';
 import { DeliveryBonusTransaction } from '../../admin/models/deliveryBonusTransaction.model.js';
-import { validateDeliveryRegisterDto, validateDeliveryProfileUpdateDto, validateDeliveryBankDetailsDto } from '../validators/delivery.validator.js';
+import { validateDeliveryRegisterDto, validateDeliveryProfileUpdateDto, validateDeliveryBankDetailsDto, validateDeliveryPhoneChangeRequestDto, validateDeliveryPhoneChangeVerifyDto } from '../validators/delivery.validator.js';
 import { sendResponse } from '../../../../utils/response.js';
 import { getDeliveryReferralStats } from '../services/deliveryReferral.service.js';
 
@@ -53,6 +53,29 @@ export const updateDeliveryPartnerProfilePhotoBase64Controller = async (req, res
         next(error);
     }
 };
+
+export const requestDeliveryPhoneChangeOtpController = async (req, res, next) => {
+    try {
+        const userId = req.user?.userId;
+        const { newPhone } = validateDeliveryPhoneChangeRequestDto(req.body);
+        const result = await requestDeliveryPhoneChangeOtp(userId, newPhone);
+        return sendResponse(res, 200, `OTP sent successfully to +91 ${result.phone}`, result);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const verifyDeliveryPhoneChangeOtpController = async (req, res, next) => {
+    try {
+        const userId = req.user?.userId;
+        const { newPhone, otp } = validateDeliveryPhoneChangeVerifyDto(req.body);
+        const result = await verifyDeliveryPhoneChangeOtp(userId, newPhone, otp);
+        return sendResponse(res, 200, 'Contact number updated successfully', result);
+    } catch (error) {
+        next(error);
+    }
+};
+
 
 export const updateDeliveryPartnerBankDetailsController = async (req, res, next) => {
     try {

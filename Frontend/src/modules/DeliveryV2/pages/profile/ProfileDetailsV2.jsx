@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { 
   ArrowLeft, Plus, Edit2, Eye, X, Loader2, User, Camera, 
@@ -60,11 +60,211 @@ export const ProfileDetailsV2 = () => {
   const drivingLicenseInputRef = useRef(null)
   const upiQrCameraInputRef = useRef(null)
 
+  const parseWalletBalance = (response) => {
+    const data = response?.data
+    const wallet = (data?.success && data?.data?.wallet) || data?.wallet || data?.data || data
+    const possibleBalance = wallet?.totalBalance || wallet?.balance || wallet?.pocketBalance || 0
+    return Number(possibleBalance) || 0
+  }
+
+  const fetchWalletBalance = useCallback(async () => {
+    try {
+      const walletResponse = await deliveryAPI.getWallet()
+      setWalletBalance(parseWalletBalance(walletResponse))
+    } catch (error) {
+      debugError("Error fetching wallet balance:", error)
+    }
+  }, [])
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      setLoading(true)
+      const [profileResponse] = await Promise.allSettled([
+        deliveryAPI.getProfile(),
+        fetchWalletBalance()
+      ])
+
+      if (
+        profileResponse?.status === "fulfilled" &&
+        profileResponse?.value?.data?.success &&
+        profileResponse?.value?.data?.data?.profile
+      ) {
+        const profileData = profileResponse.value.data.data.profile
+        setProfile(profileData)
+        const vNum = profileData?.vehicle?.number || ""
+        const vBrand = profileData?.vehicle?.brand || ""
+        const vType = profileData?.vehicle?.type || ""
+        setVehicleNumber(vNum)
+        setVehicleBrand(vBrand)
+        setVehicleType(vType)
+        setVehicleInput({ number: vNum, brand: vBrand, type: vType })
+        // Set bank details
+        setBankDetails({
+          accountHolderName: profileData?.documents?.bankDetails?.accountHolderName || "",
+          accountNumber: profileData?.documents?.bankDetails?.accountNumber || "",
+          ifscCode: profileData?.documents?.bankDetails?.ifscCode || "",
+          bankName: profileData?.documents?.bankDetails?.bankName || "",
+          panNumber: profileData?.documents?.pan?.number || "",
+          upiId: profileData?.documents?.bankDetails?.upiId || "",
+          upiQrCode: profileData?.documents?.bankDetails?.upiQrCode || null
+        })
+      } else {
+        throw new Error("Profile fetch failed")
+      }
+    } catch (error) {
+      debugError("Error fetching profile:", error)
+      if (error.response?.status === 401) {
+        toast.error("Session expired. Please login again.")
+        setTimeout(() => {
+          navigate("/food/delivery/login", { replace: true })
+        }, 2000)
+      } else {
+        toast.error(error?.response?.data?.message || "Failed to load profile data")
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchWalletBalance, navigate])
+
+  useEffect(() => {
+    fetchProfile()
+  }, [fetchProfile])
+
+  // Phone number update states
+  const [showPhonePopup, setShowPhonePopup] = useState(false)
+  const [phoneStep, setPhoneStep] = useState(1) // 1: enter phone, 2: verify otp
+  const [newPhoneNumber, setNewPhoneNumber] = useState("")
+  const [phoneOtp, setPhoneOtp] = useState(["", "", "", "", "", ""])
+  const [phoneOtpTimer, setPhoneOtpTimer] = useState(30)
+  const [isPhoneOtpSending, setIsPhoneOtpSending] = useState(false)
+  const [isPhoneOtpVerifying, setIsPhoneOtpVerifying] = useState(false)
+  const [phoneError, setPhoneError] = useState("")
+  const otpInputRefs = useRef([])
+
+  useEffect(() => {
+    let interval = null
+    if (showPhonePopup && phoneStep === 2 && phoneOtpTimer > 0) {
+      interval = setInterval(() => {
+        setPhoneOtpTimer((prev) => prev - 1)
+      }, 1000)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [showPhonePopup, phoneStep, phoneOtpTimer])
+
+  const handleOpenPhonePopup = () => {
+    setNewPhoneNumber("")
+    setPhoneOtp(["", "", "", "", "", ""])
+    setPhoneStep(1)
+    setPhoneError("")
+    setPhoneOtpTimer(30)
+    setShowPhonePopup(true)
+  }
+
+  const handleSendPhoneOtp = async () => {
+    const cleanPhone = newPhoneNumber.replace(/\D/g, "")
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setPhoneError("Please enter a valid 10-digit mobile number")
+      return
+    }
+    const currentPhone = (profile?.phone || "").replace(/\D/g, "").slice(-10)
+    if (cleanPhone === currentPhone) {
+      setPhoneError("New number cannot be the same as current number")
+      return
+    }
+    try {
+      setIsPhoneOtpSending(true)
+      setPhoneError("")
+      const res = await deliveryAPI.requestPhoneChangeOtp(cleanPhone)
+      if (res?.data?.success) {
+        toast.success(res.data.message || "OTP sent successfully!")
+        setPhoneStep(2)
+        setPhoneOtpTimer(30)
+        setPhoneOtp(["", "", "", "", "", ""])
+        setTimeout(() => {
+          otpInputRefs.current[0]?.focus()
+        }, 100)
+      } else {
+        setPhoneError(res?.data?.message || "Failed to send OTP")
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || "Failed to send OTP"
+      setPhoneError(msg)
+      toast.error(msg)
+    } finally {
+      setIsPhoneOtpSending(false)
+    }
+  }
+
+  const handleResendPhoneOtp = async () => {
+    if (phoneOtpTimer > 0 || isPhoneOtpSending) return
+    await handleSendPhoneOtp()
+  }
+
+  const handleOtpChange = (index, value) => {
+    if (value.length > 1) {
+      const pasted = value.replace(/\D/g, "").slice(0, 6)
+      if (pasted) {
+        const nextOtp = [...phoneOtp]
+        for (let i = 0; i < 6; i++) {
+          nextOtp[i] = pasted[i] || ""
+        }
+        setPhoneOtp(nextOtp)
+        const nextFocus = Math.min(pasted.length, 5)
+        otpInputRefs.current[nextFocus]?.focus()
+      }
+      return
+    }
+    const cleanVal = value.replace(/\D/g, "")
+    const nextOtp = [...phoneOtp]
+    nextOtp[index] = cleanVal
+    setPhoneOtp(nextOtp)
+
+    if (cleanVal && index < 5) {
+      otpInputRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !phoneOtp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus()
+    }
+  }
+
+  const handleVerifyPhoneOtp = async () => {
+    const otpCode = phoneOtp.join("").trim()
+    if (otpCode.length < 4) {
+      setPhoneError("Please enter the complete OTP")
+      return
+    }
+    const cleanPhone = newPhoneNumber.replace(/\D/g, "")
+    try {
+      setIsPhoneOtpVerifying(true)
+      setPhoneError("")
+      const res = await deliveryAPI.verifyPhoneChangeOtp(cleanPhone, otpCode)
+      if (res?.data?.success) {
+        toast.success("Contact number updated successfully!")
+        setShowPhonePopup(false)
+        setProfile((prev) => ({ ...prev, phone: cleanPhone }))
+        fetchProfile()
+      } else {
+        setPhoneError(res?.data?.message || "Verification failed")
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || "Verification failed"
+      setPhoneError(msg)
+      toast.error(msg)
+    } finally {
+      setIsPhoneOtpVerifying(false)
+    }
+  }
+
   // Fetch profile data
   const popupStatePushed = useRef(false);
 
   useEffect(() => {
-    const isAnyModalOpen = !!(showVehiclePopup || showBankDetailsPopup || showDocumentModal || showDeletePopup || activePicker);
+    const isAnyModalOpen = !!(showVehiclePopup || showBankDetailsPopup || showDocumentModal || showDeletePopup || activePicker || showPhonePopup);
     
     if (isAnyModalOpen && !popupStatePushed.current) {
       window.history.pushState({ popupOpen: true }, '');
@@ -75,7 +275,7 @@ export const ProfileDetailsV2 = () => {
         window.history.back();
       }
     }
-  }, [showVehiclePopup, showBankDetailsPopup, showDocumentModal, showDeletePopup, activePicker]);
+  }, [showVehiclePopup, showBankDetailsPopup, showDocumentModal, showDeletePopup, activePicker, showPhonePopup]);
 
   useEffect(() => {
     const handlePopState = (e) => {
@@ -86,81 +286,12 @@ export const ProfileDetailsV2 = () => {
         setShowDocumentModal(false);
         setShowDeletePopup(false);
         setActivePicker(null);
+        setShowPhonePopup(false);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
-
-  useEffect(() => {
-    const parseWalletBalance = (response) => {
-      const data = response?.data
-      const wallet = (data?.success && data?.data?.wallet) || data?.wallet || data?.data || data
-      const possibleBalance = wallet?.totalBalance || wallet?.balance || wallet?.pocketBalance || 0
-      return Number(possibleBalance) || 0
-    }
-
-    const fetchWalletBalance = async () => {
-      try {
-        const walletResponse = await deliveryAPI.getWallet()
-        setWalletBalance(parseWalletBalance(walletResponse))
-      } catch (error) {
-        debugError("Error fetching wallet balance:", error)
-      }
-    }
-
-    const fetchProfile = async () => {
-      try {
-        setLoading(true)
-        const [profileResponse] = await Promise.allSettled([
-          deliveryAPI.getProfile(),
-          fetchWalletBalance()
-        ])
-
-        if (
-          profileResponse?.status === "fulfilled" &&
-          profileResponse?.value?.data?.success &&
-          profileResponse?.value?.data?.data?.profile
-        ) {
-          const profileData = profileResponse.value.data.data.profile
-          setProfile(profileData)
-          const vNum = profileData?.vehicle?.number || ""
-          const vBrand = profileData?.vehicle?.brand || ""
-          const vType = profileData?.vehicle?.type || ""
-          setVehicleNumber(vNum)
-          setVehicleBrand(vBrand)
-          setVehicleType(vType)
-          setVehicleInput({ number: vNum, brand: vBrand, type: vType })
-          // Set bank details
-          setBankDetails({
-            accountHolderName: profileData?.documents?.bankDetails?.accountHolderName || "",
-            accountNumber: profileData?.documents?.bankDetails?.accountNumber || "",
-            ifscCode: profileData?.documents?.bankDetails?.ifscCode || "",
-            bankName: profileData?.documents?.bankDetails?.bankName || "",
-            panNumber: profileData?.documents?.pan?.number || "",
-            upiId: profileData?.documents?.bankDetails?.upiId || "",
-            upiQrCode: profileData?.documents?.bankDetails?.upiQrCode || null
-          })
-        } else {
-          throw new Error("Profile fetch failed")
-        }
-      } catch (error) {
-        debugError("Error fetching profile:", error)
-        if (error.response?.status === 401) {
-          toast.error("Session expired. Please login again.")
-          setTimeout(() => {
-            navigate("/food/delivery/login", { replace: true })
-          }, 2000)
-        } else {
-          toast.error(error?.response?.data?.message || "Failed to load profile data")
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchProfile()
-  }, [navigate])
 
   const isAdminApproved = ["approved", "active"].includes(String(profile?.status || "").toLowerCase())
 
@@ -523,9 +654,15 @@ export const ProfileDetailsV2 = () => {
               <div className={`${isAdminApproved ? 'bg-blue-600 text-white' : 'bg-orange-500/10 text-orange-500'} px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest border ${isAdminApproved ? 'border-blue-700 shadow-lg' : 'border-orange-500/20'} flex items-center gap-2`}>
                  <CheckCircle className="w-4 h-4" /> {isAdminApproved ? "Approved" : (profile?.status || "Pending")}
               </div>
-              <div className="bg-blue-50 text-blue-600 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest border border-blue-100 flex items-center gap-2">
-                 <Smartphone className="w-4 h-4" /> {profile?.phone}
-              </div>
+              <button 
+                onClick={handleOpenPhonePopup}
+                className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest border border-blue-200 flex items-center gap-2 transition-all active:scale-95 group shadow-sm hover:shadow"
+                title="Click to update contact number"
+              >
+                 <Smartphone className="w-4 h-4" /> 
+                 <span>{profile?.phone || "No phone"}</span>
+                 <Edit2 className="w-3.5 h-3.5 text-blue-500 group-hover:scale-110 transition-transform ml-0.5" />
+              </button>
            </div>
         </div>
 
@@ -900,6 +1037,162 @@ export const ProfileDetailsV2 = () => {
           >
             {isUpdatingBankDetails ? <><Loader2 className="w-5 h-5 animate-spin" /> saving...</> : "Update Systems"}
           </button>
+        </div>
+      </BottomPopup>
+
+      {/* Edit Contact Number Modal with OTP Verification */}
+      <BottomPopup 
+        isOpen={showPhonePopup} 
+        onClose={() => setShowPhonePopup(false)} 
+        title={phoneStep === 1 ? "Update Contact Number" : "Verify Phone Number"}
+        maxHeight="85vh"
+        showHandle={false}
+      >
+        <div className="space-y-6 pb-8">
+          {phoneStep === 1 ? (
+            <>
+              <div className="text-center px-2">
+                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-3xl mx-auto flex items-center justify-center mb-3 shadow-inner">
+                  <Smartphone className="w-7 h-7" />
+                </div>
+                <h3 className="text-lg font-black text-gray-900">Change Contact Number</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  We will send a 6-digit OTP to verify your new mobile number.
+                </p>
+              </div>
+
+              {/* Current Number Display */}
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Current Number</p>
+                  <p className="text-sm font-bold text-gray-800 mt-0.5">{profile?.phone || "Not set"}</p>
+                </div>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-gray-200/70 text-gray-600 uppercase tracking-wider">
+                  Active
+                </span>
+              </div>
+
+              {/* New Number Input */}
+              <div>
+                <label className="text-[11px] font-black text-gray-700 uppercase tracking-widest block mb-2">
+                  New Mobile Number
+                </label>
+                <div className="flex items-center gap-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-200 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
+                  <span className="text-sm font-black text-gray-600 border-r border-gray-300 pr-3 select-none">
+                    +91
+                  </span>
+                  <input 
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="Enter 10-digit number"
+                    value={newPhoneNumber}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setNewPhoneNumber(val);
+                      if (phoneError) setPhoneError("");
+                    }}
+                    className="w-full bg-transparent text-base font-bold text-gray-900 outline-none placeholder:text-gray-400 placeholder:font-medium"
+                    autoFocus
+                  />
+                </div>
+                {phoneError && (
+                  <p className="text-xs text-red-500 font-semibold mt-2 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {phoneError}
+                  </p>
+                )}
+              </div>
+
+              <button 
+                onClick={handleSendPhoneOtp}
+                disabled={isPhoneOtpSending || !newPhoneNumber || newPhoneNumber.length < 10}
+                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isPhoneOtpSending ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Sending OTP...</span>
+                  </>
+                ) : (
+                  "Send OTP Verification"
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="text-center px-2">
+                <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-3xl mx-auto flex items-center justify-center mb-3 shadow-inner">
+                  <Shield className="w-7 h-7" />
+                </div>
+                <h3 className="text-lg font-black text-gray-900">Enter Verification Code</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the 6-digit OTP sent to <span className="font-bold text-gray-900">+91 {newPhoneNumber}</span>
+                </p>
+                <button 
+                  onClick={() => { setPhoneStep(1); setPhoneError(""); }}
+                  className="text-xs text-blue-600 font-black uppercase tracking-wider hover:underline mt-1.5 inline-block"
+                >
+                  Change Number
+                </button>
+              </div>
+
+              {/* 6-Digit PIN Boxes */}
+              <div className="space-y-3">
+                <div className="flex justify-center gap-2 sm:gap-3">
+                  {phoneOtp.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={(el) => (otpInputRefs.current[idx] = el)}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={digit}
+                      onChange={(e) => handleOtpChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(idx, e.key)}
+                      className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-black rounded-2xl bg-gray-50 border-2 border-gray-200 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                    />
+                  ))}
+                </div>
+                {phoneError && (
+                  <p className="text-xs text-red-500 font-semibold text-center flex items-center justify-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {phoneError}
+                  </p>
+                )}
+              </div>
+
+              {/* Resend Timer */}
+              <div className="text-center">
+                {phoneOtpTimer > 0 ? (
+                  <p className="text-xs text-gray-400 font-medium">
+                    Resend code in <span className="font-bold text-gray-700">{phoneOtpTimer}s</span>
+                  </p>
+                ) : (
+                  <button 
+                    onClick={handleResendPhoneOtp}
+                    disabled={isPhoneOtpSending}
+                    className="text-xs font-black text-blue-600 uppercase tracking-widest hover:underline disabled:opacity-50"
+                  >
+                    {isPhoneOtpSending ? "Sending..." : "Resend OTP Code"}
+                  </button>
+                )}
+              </div>
+
+              <button 
+                onClick={handleVerifyPhoneOtp}
+                disabled={isPhoneOtpVerifying || phoneOtp.join("").trim().length < 4}
+                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isPhoneOtpVerifying ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Verifying OTP...</span>
+                  </>
+                ) : (
+                  "Verify & Update Number"
+                )}
+              </button>
+            </>
+          )}
         </div>
       </BottomPopup>
 

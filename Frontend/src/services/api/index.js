@@ -1577,6 +1577,12 @@ export const deliveryAPI = {
   /** POST /food/delivery/profile/photo-base64 - Flutter in-app camera base64 upload. */
   updateProfilePhotoBase64: (payload) =>
     deliveryClient.post("/food/delivery/profile/photo-base64", payload ?? {}),
+  /** POST /food/delivery/profile/phone/request-otp - Request OTP to change phone number */
+  requestPhoneChangeOtp: (newPhone) =>
+    deliveryClient.post("/food/delivery/profile/phone/request-otp", { newPhone }),
+  /** POST /food/delivery/profile/phone/verify-otp - Verify OTP and update phone number */
+  verifyPhoneChangeOtp: (newPhone, otp) =>
+    deliveryClient.post("/food/delivery/profile/phone/verify-otp", { newPhone, otp }),
   /** PATCH /food/delivery/profile/bank-details - update bank details + PAN (JSON, Bearer required). */
   updateProfile: (payload) =>
     deliveryClient.patch("/food/delivery/profile/bank-details", payload ?? {}),

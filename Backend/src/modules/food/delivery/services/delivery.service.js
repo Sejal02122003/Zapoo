@@ -8,6 +8,9 @@ import { uploadImageBuffer } from '../../../../services/cloudinary.service.js';
 import { RiderBankDetailsAuditLog } from '../models/bankDetailsAudit.model.js';
 import { encrypt, decrypt } from '../../../../utils/encryption.js';
 import { getDeliveryCashLimitSettings } from '../../admin/services/admin.service.js';
+import { ValidationError } from '../../../../core/auth/errors.js';
+import { createOrUpdateOtp, verifyOtp } from '../../../../core/otp/otp.service.js';
+import { config } from '../../../../config/env.js';
 
 export const registerDeliveryPartner = async (payload, files) => {
     const {
@@ -212,6 +215,90 @@ export const updateDeliveryPartnerProfilePhotoBase64 = async (userId, payload) =
     partner.profilePhoto = await uploadImageBuffer(buffer, 'food/delivery/profile');
     await partner.save();
     return partner.toObject();
+};
+
+const normalizeDeliveryPhone = (phone) => {
+    const digits = String(phone || '').replace(/\D/g, '');
+    return digits.slice(-10) || '';
+};
+
+export const requestDeliveryPhoneChangeOtp = async (userId, newPhone) => {
+    const partner = await FoodDeliveryPartner.findById(userId);
+    if (!partner) {
+        throw new ValidationError('Delivery partner not found');
+    }
+
+    const cleanNewPhone = normalizeDeliveryPhone(newPhone);
+    if (!cleanNewPhone || cleanNewPhone.length !== 10) {
+        throw new ValidationError('Please provide a valid 10-digit mobile number');
+    }
+
+    const cleanCurrentPhone = normalizeDeliveryPhone(partner.phone);
+    if (cleanNewPhone === cleanCurrentPhone) {
+        throw new ValidationError('New mobile number must be different from current mobile number');
+    }
+
+    const existingOther = await FoodDeliveryPartner.findOne({
+        _id: { $ne: partner._id },
+        $or: [
+            { phone: cleanNewPhone },
+            { phone: { $regex: new RegExp(cleanNewPhone + '$') } }
+        ]
+    });
+
+    if (existingOther && existingOther.status !== 'rejected') {
+        throw new ValidationError('This mobile number is already registered with another delivery partner account');
+    }
+
+    const otp = await createOrUpdateOtp(cleanNewPhone);
+    const shouldExposeOtp = config.nodeEnv !== 'production' || config.useDefaultOtp;
+
+    return {
+        phone: cleanNewPhone,
+        ...(shouldExposeOtp ? { otp } : {})
+    };
+};
+
+export const verifyDeliveryPhoneChangeOtp = async (userId, newPhone, otp) => {
+    const partner = await FoodDeliveryPartner.findById(userId);
+    if (!partner) {
+        throw new ValidationError('Delivery partner not found');
+    }
+
+    const cleanNewPhone = normalizeDeliveryPhone(newPhone);
+    if (!cleanNewPhone || cleanNewPhone.length !== 10) {
+        throw new ValidationError('Please provide a valid 10-digit mobile number');
+    }
+
+    const cleanCurrentPhone = normalizeDeliveryPhone(partner.phone);
+    if (cleanNewPhone === cleanCurrentPhone) {
+        throw new ValidationError('New mobile number must be different from current mobile number');
+    }
+
+    const result = await verifyOtp(cleanNewPhone, String(otp || '').trim());
+    if (!result.valid) {
+        throw new ValidationError(result.reason || 'Invalid or expired OTP');
+    }
+
+    const existingOther = await FoodDeliveryPartner.findOne({
+        _id: { $ne: partner._id },
+        $or: [
+            { phone: cleanNewPhone },
+            { phone: { $regex: new RegExp(cleanNewPhone + '$') } }
+        ]
+    });
+
+    if (existingOther && existingOther.status !== 'rejected') {
+        throw new ValidationError('This mobile number is already registered with another delivery partner account');
+    }
+
+    partner.phone = cleanNewPhone;
+    await partner.save();
+
+    return {
+        partner: partner.toObject(),
+        phone: partner.phone
+    };
 };
 
 export const updateDeliveryPartnerBankDetails = async (userId, payload, files) => {

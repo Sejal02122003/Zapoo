@@ -3,7 +3,7 @@ import { upload } from '../../../../middleware/upload.js';
 import { authMiddleware } from '../../../../core/auth/auth.middleware.js';
 import { requireRoles } from '../../../../core/roles/role.middleware.js';
 import * as orderController from '../../orders/controllers/order.controller.js';
-import { registerDeliveryPartnerController, updateDeliveryPartnerProfileController, updateDeliveryPartnerBankDetailsController, getDeliveryPartnerBankDetailsController, listSupportTicketsController, createSupportTicketController, getSupportTicketByIdController, updateDeliveryPartnerDetailsController, updateDeliveryPartnerProfilePhotoBase64Controller, updateAvailabilityController, getWalletController, createWithdrawalRequestController, createCashDepositOrderController, verifyCashDepositPaymentController, getEarningsController, getTripHistoryController, getPocketDetailsController, getEmergencyHelpController, getCashLimitController, getDeliveryReferralStatsController, getActiveEarningAddonsController, getPenaltiesHistoryRiderController, appealPenaltyController, triggerSOSAlertController, acceptReassignmentController, rejectReassignmentController, getDeliveryVehicleConfigController, updateDeliveryVehicleController } from '../controllers/delivery.controller.js';
+import { registerDeliveryPartnerController, updateDeliveryPartnerProfileController, updateDeliveryPartnerBankDetailsController, getDeliveryPartnerBankDetailsController, listSupportTicketsController, createSupportTicketController, getSupportTicketByIdController, updateDeliveryPartnerDetailsController, updateDeliveryPartnerProfilePhotoBase64Controller, requestDeliveryPhoneChangeOtpController, verifyDeliveryPhoneChangeOtpController, updateAvailabilityController, getWalletController, createWithdrawalRequestController, createCashDepositOrderController, verifyCashDepositPaymentController, getEarningsController, getTripHistoryController, getPocketDetailsController, getEmergencyHelpController, getCashLimitController, getDeliveryReferralStatsController, getActiveEarningAddonsController, getPenaltiesHistoryRiderController, appealPenaltyController, triggerSOSAlertController, acceptReassignmentController, rejectReassignmentController, getDeliveryVehicleConfigController, updateDeliveryVehicleController } from '../controllers/delivery.controller.js';
 import { deleteDeliveryAccountController } from '../controllers/deleteAccount.controller.js';
 
 const router = express.Router();
@@ -39,6 +39,11 @@ router.patch('/profile/details', authMiddleware, requireRoles('DELIVERY_PARTNER'
 
 // Base64 profile photo update – designed for Flutter in-app WebView camera handler.
 router.post('/profile/photo-base64', authMiddleware, requireRoles('DELIVERY_PARTNER'), updateDeliveryPartnerProfilePhotoBase64Controller);
+
+// Phone / Contact Number update with OTP verification
+router.post('/profile/phone/request-otp', authMiddleware, requireRoles('DELIVERY_PARTNER'), requestDeliveryPhoneChangeOtpController);
+router.post('/profile/phone/verify-otp', authMiddleware, requireRoles('DELIVERY_PARTNER'), verifyDeliveryPhoneChangeOtpController);
+
 
 router.get('/profile/bank-details', authMiddleware, requireRoles('DELIVERY_PARTNER'), getDeliveryPartnerBankDetailsController);
 router.patch('/profile/bank-details', authMiddleware, requireRoles('DELIVERY_PARTNER'), uploadFields, updateDeliveryPartnerBankDetailsController);

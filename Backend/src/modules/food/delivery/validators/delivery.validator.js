@@ -115,3 +115,29 @@ export const validateDeliveryBankDetailsDto = (body) => {
     return result.data;
 };
 
+const deliveryPhoneChangeRequestSchema = z.object({
+    newPhone: phoneSchema
+});
+
+export const validateDeliveryPhoneChangeRequestDto = (body) => {
+    const result = deliveryPhoneChangeRequestSchema.safeParse(body);
+    if (!result.success) {
+        throw new ValidationError(result.error.errors[0].message);
+    }
+    return result.data;
+};
+
+const deliveryPhoneChangeVerifySchema = z.object({
+    newPhone: phoneSchema,
+    otp: z.string().min(4, 'OTP must be at least 4 digits').max(8, 'OTP must be at most 8 digits')
+});
+
+export const validateDeliveryPhoneChangeVerifyDto = (body) => {
+    const result = deliveryPhoneChangeVerifySchema.safeParse(body);
+    if (!result.success) {
+        throw new ValidationError(result.error.errors[0].message);
+    }
+    return result.data;
+};
+
+
