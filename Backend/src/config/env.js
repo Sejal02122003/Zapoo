@@ -102,9 +102,10 @@ export const config = {
     callMaskingEnabled: process.env.CALL_MASKING_ENABLED === 'true',
     exotelSid: process.env.EXOTEL_SID,
     exotelSubdomain: process.env.EXOTEL_SUBDOMAIN || 'api',
+    exotelCallerId: process.env.EXOTEL_CALLER_ID || process.env.EXOTEL_VIRTUAL_NUMBER || '03348052382',
     exotelVirtualNumbers: process.env.EXOTEL_VIRTUAL_NUMBERS
         ? process.env.EXOTEL_VIRTUAL_NUMBERS.split(',').map((n) => n.trim()).filter(Boolean)
-        : [],
+        : ['03348052382'],
     exotelApiKey: process.env.EXOTEL_API_KEY,
     exotelApiToken: process.env.EXOTEL_API_TOKEN,
     exotelStatusCallbackBaseUrl: process.env.EXOTEL_STATUS_CALLBACK_BASE_URL || 'https://zapoo.co.in'
@@ -172,6 +173,7 @@ export const updateConfig = () => {
     config.callMaskingEnabled = process.env.CALL_MASKING_ENABLED === 'true';
     config.exotelSid = process.env.EXOTEL_SID || config.exotelSid;
     config.exotelSubdomain = process.env.EXOTEL_SUBDOMAIN || config.exotelSubdomain;
+    config.exotelCallerId = process.env.EXOTEL_CALLER_ID || process.env.EXOTEL_VIRTUAL_NUMBER || config.exotelCallerId;
     config.exotelVirtualNumbers = process.env.EXOTEL_VIRTUAL_NUMBERS
         ? process.env.EXOTEL_VIRTUAL_NUMBERS.split(',').map((n) => n.trim()).filter(Boolean)
         : config.exotelVirtualNumbers;

@@ -1526,18 +1526,24 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                     )}
 
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                          if (window.confirm("Are you sure you want to cancel this delivery? You will need to provide a reason.")) {
                              const reason = window.prompt("Reason for cancellation / Issue:");
                              if (reason !== null && reason.trim() !== "") {
-                                import('@food/api').then(({ deliveryAPI }) => {
-                                   deliveryAPI.rejectOrder(activeOrder.orderId || activeOrder._id, { reason })
-                                     .then(() => {
-                                        toast.success("Delivery cancelled successfully.");
-                                        setIsModalMinimized(true);
-                                     })
-                                     .catch(() => toast.error("Failed to cancel delivery."));
-                                });
+                                const orderId = activeOrder?.orderId || activeOrder?._id || activeOrder?.id;
+                                const toastId = toast.loading("Cancelling delivery...");
+                                try {
+                                   const res = await deliveryAPI.cancelOrder(orderId, { reason });
+                                   if (res?.data?.success || res?.status === 200) {
+                                      toast.success("Delivery cancelled successfully.", { id: toastId });
+                                      clearActiveOrder();
+                                      setIsModalMinimized(false);
+                                   } else {
+                                      toast.error(res?.data?.message || "Failed to cancel delivery.", { id: toastId });
+                                   }
+                                } catch (err) {
+                                   toast.error(err?.response?.data?.message || err?.response?.data?.error || "Failed to cancel delivery.", { id: toastId });
+                                }
                              } else if (reason !== null) {
                                 toast.error("Reason is required to cancel delivery.");
                              }

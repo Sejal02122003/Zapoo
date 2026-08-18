@@ -94,7 +94,7 @@ export async function getCallConfigController(_req, res) {
         success: true,
         data: {
             enabled: configured,
-            virtualNumber: config.exotelVirtualNumbers?.[0] || null,
+            virtualNumber: config.exotelCallerId || config.exotelVirtualNumbers?.[0] || '03348052382',
             allVirtualNumbers: config.exotelVirtualNumbers || []
         }
     });

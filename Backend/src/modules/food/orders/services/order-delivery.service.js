@@ -665,19 +665,31 @@ export async function rejectOrderDelivery(orderId, deliveryPartnerId, reason = '
 
   const order = await FoodOrder.findOne(identity).select('+deliveryOtp');
   if (!order) throw new NotFoundError('Order not found');
-  if (order.dispatch.deliveryPartnerId?.toString() !== deliveryPartnerId.toString()) {
-    throw new ForbiddenError('Not your order');
+
+  const dpIdStr = deliveryPartnerId?.toString?.() || String(deliveryPartnerId || '');
+  const assignedPartnerId = (
+    order.dispatch?.deliveryPartnerId?._id ||
+    order.dispatch?.deliveryPartnerId ||
+    order.deliveryPartner?._id ||
+    order.deliveryPartner ||
+    order.deliveryPartnerId
+  )?.toString?.();
+
+  // If partner is already actively assigned, route to cancel flow
+  if (assignedPartnerId && assignedPartnerId === dpIdStr) {
+    return cancelOrderDelivery(orderId, deliveryPartnerId, reason);
   }
 
-  const offer = order.dispatch.offeredTo.find(
-    (item) =>
-      String(item.partnerId) === String(deliveryPartnerId) &&
-      item.action === 'offered',
-  );
-  if (offer) offer.action = 'rejected';
+  if (Array.isArray(order.dispatch?.offeredTo)) {
+    const offer = order.dispatch.offeredTo.find(
+      (item) =>
+        String(item.partnerId?._id || item.partnerId) === dpIdStr &&
+        (item.action === 'offered' || !item.action),
+    );
+    if (offer) offer.action = 'rejected';
+  }
 
-  // If the order is dead, we don't need to put it back in the unassigned pool. 
-  // We just want to record the rider's reason.
+  // If the order is dead, record the rider's reason
   if (order.orderStatus === 'dead') {
     pushStatusHistory(order, {
       byRole: 'DELIVERY_PARTNER',
@@ -691,22 +703,24 @@ export async function rejectOrderDelivery(orderId, deliveryPartnerId, reason = '
     return order.toObject();
   }
 
+  if (!order.dispatch) order.dispatch = {};
   order.dispatch.status = 'unassigned';
   order.dispatch.deliveryPartnerId = undefined;
   order.dispatch.assignedAt = undefined;
   order.dispatch.acceptedAt = undefined;
-  
+  order.deliveryPartner = undefined;
+  order.deliveryPartnerId = undefined;
+
   // Cancel Incentive if exists and pending
   if (order.deliveryAssignment && order.deliveryAssignment.incentiveStatus === 'PENDING') {
     const previousIncentiveAmount = order.deliveryAssignment.incentive;
     order.deliveryAssignment.incentiveStatus = 'CANCELLED';
     
-    // AuditLog for cancellation
     try {
       const { FoodAuditLog } = await import('../../admin/models/auditLog.model.js');
       await FoodAuditLog.create({
         action: "INCENTIVE_CANCELLED",
-        performedBy: order.deliveryAssignment.assignedBy, // The admin who assigned it
+        performedBy: order.deliveryAssignment.assignedBy || deliveryPartnerId,
         orderId: order._id,
         riderId: deliveryPartnerId,
         incentiveAmount: previousIncentiveAmount,
@@ -749,6 +763,33 @@ export async function rejectOrderDelivery(orderId, deliveryPartnerId, reason = '
 
   await order.save();
 
+  try {
+    const { FoodDeliveryPartner } = await import('../../delivery/models/deliveryPartner.model.js');
+    await FoodDeliveryPartner.findByIdAndUpdate(deliveryPartnerId, {
+      $set: { isBusy: false, currentOrderId: null }
+    });
+  } catch (err) {
+    logger.warn(`[DeliveryReject] Could not clear rider busy state: ${err?.message}`);
+  }
+
+  try {
+    const io = getIO();
+    if (io) {
+      const payload = {
+        orderMongoId: order._id?.toString?.(),
+        orderId: order._id.toString(),
+        order_id: order.order_id || order.orderId || order._id.toString(),
+        orderStatus: order.orderStatus,
+        dispatchStatus: order.dispatch?.status,
+        deliveryPartnerId: null,
+      };
+      io.to(rooms.delivery(deliveryPartnerId)).emit('order_status_update', payload);
+      io.to(rooms.delivery(deliveryPartnerId)).emit('active_order_cleared', payload);
+    }
+  } catch (err) {
+    logger.error(`[DeliveryReject] Socket emission error: ${err?.message}`);
+  }
+
   enqueueOrderEvent('delivery_rejected', {
     orderMongoId: order._id?.toString?.(),
     orderId: order._id.toString(),
@@ -764,25 +805,47 @@ export async function cancelOrderDelivery(orderId, deliveryPartnerId, reason = '
 
   const order = await FoodOrder.findOne(identity).select('+deliveryOtp');
   if (!order) throw new NotFoundError('Order not found');
-  if (order.dispatch.deliveryPartnerId?.toString() !== deliveryPartnerId.toString()) {
+
+  const dpIdStr = deliveryPartnerId?.toString?.() || String(deliveryPartnerId || '');
+  const assignedPartnerId = (
+    order.dispatch?.deliveryPartnerId?._id ||
+    order.dispatch?.deliveryPartnerId ||
+    order.deliveryPartner?._id ||
+    order.deliveryPartner ||
+    order.deliveryPartnerId
+  )?.toString?.();
+
+  if (assignedPartnerId && assignedPartnerId !== dpIdStr) {
     throw new ForbiddenError('Not your assigned order');
   }
 
-  const cancellableStatuses = ['confirmed', 'preparing', 'ready_for_pickup', 'reached_pickup', 'picked_up', 'reached_drop'];
-  if (!cancellableStatuses.includes(order.orderStatus)) {
-    throw new ValidationError(`Order cannot be cancelled by rider in status: ${order.orderStatus}`);
+  if (['delivered', 'completed'].includes(order.orderStatus)) {
+    throw new ValidationError(`Delivered order cannot be cancelled (current status: ${order.orderStatus})`);
   }
 
-  // If rider cancels mid-delivery, it's an exception requiring admin intervention
-  order.dispatch.status = 'needs_manual_assignment';
+  if (String(order.orderStatus).startsWith('cancelled')) {
+    return order.toObject();
+  }
+
+  const previousStatus = order.orderStatus;
+
+  // Unassign rider and put order into needs_manual_assignment
   order.orderStatus = 'needs_manual_assignment';
-  
+  if (!order.dispatch) order.dispatch = {};
+  order.dispatch.status = 'needs_manual_assignment';
   order.dispatch.deliveryPartnerId = undefined;
+  order.deliveryPartner = undefined;
+  order.deliveryPartnerId = undefined;
+
+  if (!order.deliveryState) order.deliveryState = {};
+  order.deliveryState.status = 'cancelled';
+  order.deliveryState.currentPhase = 'cancelled';
+  order.cancellationReason = reason || order.cancellationReason || 'Delivery cancelled by rider';
   
   pushStatusHistory(order, {
     byRole: 'DELIVERY_PARTNER',
     byId: deliveryPartnerId,
-    from: order.orderStatus,
+    from: previousStatus,
     to: 'needs_manual_assignment',
     note: `Delivery Partner cancelled mid-delivery. Reason: ${reason || 'Not provided'}`,
   });
@@ -796,7 +859,7 @@ export async function cancelOrderDelivery(orderId, deliveryPartnerId, reason = '
       const { FoodAuditLog } = await import('../../admin/models/auditLog.model.js');
       await FoodAuditLog.create({
         action: "INCENTIVE_CANCELLED",
-        performedBy: order.deliveryAssignment.assignedBy,
+        performedBy: order.deliveryAssignment.assignedBy || deliveryPartnerId,
         orderId: order._id,
         riderId: deliveryPartnerId,
         incentiveAmount: previousIncentiveAmount,
@@ -809,6 +872,53 @@ export async function cancelOrderDelivery(orderId, deliveryPartnerId, reason = '
   }
 
   await order.save();
+
+  // Reset rider's active state in database
+  try {
+    const { FoodDeliveryPartner } = await import('../../delivery/models/deliveryPartner.model.js');
+    await FoodDeliveryPartner.findByIdAndUpdate(deliveryPartnerId, {
+      $set: { isBusy: false, currentOrderId: null }
+    });
+  } catch (err) {
+    logger.warn(`[DeliveryCancel] Could not clear rider busy state: ${err?.message}`);
+  }
+
+  // Real-time Socket.IO emission to Rider, Restaurant, User, and Admin
+  try {
+    const io = getIO();
+    if (io) {
+      const payload = {
+        orderMongoId: order._id?.toString?.(),
+        orderId: order._id.toString(),
+        order_id: order.order_id || order.orderId || order._id.toString(),
+        orderStatus: 'needs_manual_assignment',
+        dispatchStatus: 'needs_manual_assignment',
+        deliveryPartnerId: null,
+        deliveryState: order.deliveryState,
+        cancelledByRider: true,
+        reason: reason || 'Delivery partner cancelled'
+      };
+
+      // Notify the rider so active trip screen dismisses immediately
+      io.to(rooms.delivery(deliveryPartnerId)).emit('order_status_update', payload);
+      io.to(rooms.delivery(deliveryPartnerId)).emit('order_cancelled', payload);
+      io.to(rooms.delivery(deliveryPartnerId)).emit('active_order_cleared', payload);
+
+      // Notify Restaurant and User
+      if (order.restaurantId) {
+        io.to(rooms.restaurant(order.restaurantId)).emit('order_status_update', payload);
+      }
+      if (order.userId) {
+        io.to(rooms.user(order.userId)).emit('order_status_update', payload);
+      }
+
+      // Notify Admin
+      io.to('admin').emit('order_status_update', payload);
+      io.to('admin').emit('order_needs_manual_assignment', payload);
+    }
+  } catch (err) {
+    logger.error(`[DeliveryCancel] Socket emission error: ${err?.message}`);
+  }
 
   // Alert admins/socket
   enqueueOrderEvent('order_needs_manual_assignment', {

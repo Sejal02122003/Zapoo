@@ -213,9 +213,10 @@ export async function acceptOrderDeliveryController(req, res, next) {
 
 export async function rejectOrderDeliveryController(req, res, next) {
     try {
-        const deliveryPartnerId = req.user?.userId;
+        const deliveryPartnerId = req.user?.userId || req.user?._id || req.user?.id;
         const orderId = req.params.orderId;
-        const order = await orderService.rejectOrderDelivery(orderId, deliveryPartnerId);
+        const reason = req.body?.reason || req.body?.cancelReason || "";
+        const order = await orderService.rejectOrderDelivery(orderId, deliveryPartnerId, reason);
         return sendResponse(res, 200, 'Order rejected', { order });
     } catch (err) {
         next(err);

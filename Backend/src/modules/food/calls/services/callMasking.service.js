@@ -194,8 +194,8 @@ export async function initiateMaskedCall({ orderId, callerUser, targetRole, cust
         };
     }
 
-    // Pick virtual number
-    const virtualNumber = config.exotelVirtualNumbers[0];
+    // Pick virtual number (defaults to 03348052382)
+    const virtualNumber = config.exotelCallerId || config.exotelVirtualNumbers?.[0] || '03348052382';
     const fromFormatted = formatExotelPhone(callerPhone);
     const toFormatted = formatExotelPhone(calleePhone);
 

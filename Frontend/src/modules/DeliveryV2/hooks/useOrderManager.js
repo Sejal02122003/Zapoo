@@ -228,6 +228,27 @@ export const useOrderManager = () => {
     }
   };
 
+  const cancelDelivery = async (reason = 'Cancelled by Rider') => {
+    const orderId = resolveOrderId();
+    if (!orderId) {
+      clearActiveOrder();
+      return;
+    }
+    try {
+      const response = await deliveryAPI.cancelOrder(orderId, { reason });
+      if (response?.data?.success || response?.status === 200) {
+        toast.success('Delivery cancelled successfully.');
+        clearActiveOrder();
+      } else {
+        throw new Error(response?.data?.message || 'Failed to cancel delivery');
+      }
+    } catch (error) {
+      console.error('Cancel Delivery Error:', error);
+      toast.error(error?.response?.data?.message || error?.response?.data?.error || 'Failed to cancel delivery.');
+      throw error;
+    }
+  };
+
   const resetTrip = () => {
     clearActiveOrder();
   };
@@ -238,6 +259,7 @@ export const useOrderManager = () => {
     pickUpOrder,
     reachDrop,
     completeDelivery,
+    cancelDelivery,
     resetTrip,
   };
 };
