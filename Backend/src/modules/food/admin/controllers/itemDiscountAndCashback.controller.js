@@ -114,3 +114,13 @@ export async function getCashbackExpiryReport(req, res, next) {
         next(err);
     }
 }
+
+// --- Cashback Distribution Ledger ---
+export async function getCashbackLedgers(req, res, next) {
+    try {
+        const result = await cashbackService.getCashbackLedgers(req.query);
+        return sendResponse(res, 200, 'Cashback distribution ledger retrieved', result);
+    } catch (err) {
+        next(err);
+    }
+}

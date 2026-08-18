@@ -81,6 +81,8 @@ router.get('/cashback-rules', offerExtraController.getCashbackRules);
 router.patch('/cashback-rules/:id', offerExtraController.updateCashbackRule);
 router.delete('/cashback-rules/:id', offerExtraController.deleteCashbackRule);
 router.get('/wallet/expiry-report', offerExtraController.getCashbackExpiryReport);
+router.get('/cashback/ledgers', offerExtraController.getCashbackLedgers);
+router.get('/cashback-ledgers', offerExtraController.getCashbackLedgers);
 
 // ----- Unified Coupons -----
 import * as couponAdminController from '../controllers/couponAdmin.controller.js';

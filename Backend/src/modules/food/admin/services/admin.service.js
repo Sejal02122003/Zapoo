@@ -36,6 +36,9 @@ import { FoodDeliveryWithdrawal } from '../../delivery/models/foodDeliveryWithdr
 import { FoodDeliveryWallet } from '../../delivery/models/deliveryWallet.model.js';
 import { deleteRestaurantAccount } from '../../restaurant/services/deleteAccount.service.js';
 import { FoodDeliveryCashDeposit } from '../../delivery/models/foodDeliveryCashDeposit.model.js';
+import { CashbackLedger } from '../models/cashbackLedger.model.js';
+import { FoodUserWallet } from '../../user/models/userWallet.model.js';
+import { WalletLedgerEntry } from '../../user/models/walletLedgerEntry.model.js';
 import {
     backfillLegacyCategoryWorkflow,
     categoryAllowsFoodType,
@@ -484,7 +487,10 @@ export async function getDashboardStats(query = {}) {
         recentPendingOrders,
         recentDeliveredOrders,
         recentCancelledOrders,
-        recentCustomers
+        recentCustomers,
+        cashbackCreditedAgg,
+        userWalletCashbackAgg,
+        expiredCashbackAgg
     ] = await Promise.all([
         FoodOrder.aggregate([
             { $match: orderMatch },
@@ -655,7 +661,18 @@ export async function getDashboardStats(query = {}) {
                     }
                 }
             ])
-            : FoodUser.find({}).sort({ createdAt: -1 }).limit(5).select('name createdAt').lean()
+            : FoodUser.find({}).sort({ createdAt: -1 }).limit(5).select('name createdAt').lean(),
+        CashbackLedger.aggregate([
+            { $match: { status: 'CREDITED' } },
+            { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
+        ]),
+        FoodUserWallet.aggregate([
+            { $group: { _id: null, totalCashbackBalance: { $sum: '$cashbackBalance' } } }
+        ]),
+        WalletLedgerEntry.aggregate([
+            { $match: { entryType: 'EXPIRY_DEDUCTION' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ])
     ]);
 
     const liveSignals = [];
@@ -780,6 +797,12 @@ export async function getDashboardStats(query = {}) {
             pending: Number(totals.dashboardPending || 0),
             processing: Number(totals.dashboardProcessing || 0),
             completed: Number(totals.delivered || 0)
+        },
+        cashback: {
+            totalCredited: Number(cashbackCreditedAgg?.[0]?.total || 0),
+            totalCount: Number(cashbackCreditedAgg?.[0]?.count || 0),
+            activeInWallets: Number(userWalletCashbackAgg?.[0]?.totalCashbackBalance || 0),
+            totalExpiredRecovered: Math.abs(Number(expiredCashbackAgg?.[0]?.total || 0))
         },
         monthlyData,
         liveSignals: finalLiveSignals
@@ -1408,16 +1431,32 @@ export async function getCustomers(query = {}) {
         ])
     );
 
-    // Fetch wallet balances for these users
+    // Fetch wallet balances and cashback earned for these users
     let walletMap = new Map();
+    let cashbackMap = new Map();
     try {
-        const { FoodUserWallet } = await import('../../user/models/userWallet.model.js');
         if (userIds.length > 0) {
-            const wallets = await FoodUserWallet.find({ userId: { $in: userIds } })
-                .select('userId balance')
-                .lean();
+            const [wallets, userCashbacks] = await Promise.all([
+                FoodUserWallet.find({ userId: { $in: userIds } })
+                    .select('userId balance cashBalance cashbackBalance')
+                    .lean(),
+                CashbackLedger.aggregate([
+                    { $match: { userId: { $in: userIds }, status: 'CREDITED' } },
+                    { $group: { _id: '$userId', totalEarned: { $sum: '$amount' } } }
+                ])
+            ]);
             walletMap = new Map(
-                wallets.map(w => [String(w.userId), Number(w.balance || 0)])
+                wallets.map(w => [
+                    String(w.userId),
+                    {
+                        balance: Number(w.balance || 0),
+                        cashBalance: Number(w.cashBalance || 0),
+                        cashbackBalance: Number(w.cashbackBalance || 0)
+                    }
+                ])
+            );
+            cashbackMap = new Map(
+                userCashbacks.map(c => [String(c._id), Number(c.totalEarned || 0)])
             );
         }
     } catch (err) {
@@ -1426,6 +1465,7 @@ export async function getCustomers(query = {}) {
 
     let customers = docs.map((u) => {
         const stats = orderStatsMap.get(String(u._id)) || { totalOrder: 0, totalOrderAmount: 0 };
+        const wInfo = walletMap.get(String(u._id)) || { balance: 0, cashBalance: 0, cashbackBalance: 0 };
         return ({
         id: u._id,
         _id: u._id,
@@ -1439,7 +1479,10 @@ export async function getCustomers(query = {}) {
         isVerified: u.isVerified === true,
         totalOrder: stats.totalOrder,
         totalOrderAmount: stats.totalOrderAmount,
-        walletBalance: walletMap.get(String(u._id)) || 0,
+        walletBalance: wInfo.balance,
+        cashBalance: wInfo.cashBalance,
+        cashbackBalance: wInfo.cashbackBalance,
+        totalCashbackEarned: cashbackMap.get(String(u._id)) || 0,
         joiningDate: u.createdAt,
         createdAt: u.createdAt,
         addresses: u.addresses || []
@@ -1459,23 +1502,38 @@ export async function getCustomerById(id) {
     const u = await FoodUser.findById(id).select('-__v').lean();
     if (!u) return null;
     const customerObjectId = new mongoose.Types.ObjectId(id);
-    const orderStats = await FoodOrder.aggregate([
-        { $match: { userId: customerObjectId, orderStatus: { $nin: ['created', 'cancelled_by_user', 'cancelled_by_restaurant', 'cancelled_by_admin', 'dead'] } } },
-        {
-            $group: {
-                _id: '$orderId',
-                userId: { $first: '$userId' },
-                totalAmount: { $first: { $ifNull: ['$pricing.total', 0] } }
+    const [orderStats, userWallet, userCashbacksAgg, userCashbackHistory] = await Promise.all([
+        FoodOrder.aggregate([
+            { $match: { userId: customerObjectId, orderStatus: { $nin: ['created', 'cancelled_by_user', 'cancelled_by_restaurant', 'cancelled_by_admin', 'dead'] } } },
+            {
+                $group: {
+                    _id: '$orderId',
+                    userId: { $first: '$userId' },
+                    totalAmount: { $first: { $ifNull: ['$pricing.total', 0] } }
+                }
+            },
+            {
+                $group: {
+                    _id: '$userId',
+                    totalOrders: { $sum: 1 },
+                    totalOrderAmount: { $sum: '$totalAmount' }
+                }
             }
-        },
-        {
-            $group: {
-                _id: '$userId',
-                totalOrders: { $sum: 1 },
-                totalOrderAmount: { $sum: '$totalAmount' }
-            }
-        }
+        ]),
+        FoodUserWallet.findOne({ userId: customerObjectId }).lean(),
+        CashbackLedger.aggregate([
+            { $match: { userId: customerObjectId, status: 'CREDITED' } },
+            { $group: { _id: null, totalEarned: { $sum: '$amount' }, count: { $sum: 1 } } }
+        ]),
+        CashbackLedger.find({ userId: customerObjectId })
+            .populate('orderId', 'orderId pricing createdAt')
+            .populate('cashbackRuleId', 'name cashbackValue')
+            .populate('couponId', 'code')
+            .sort({ createdAt: -1 })
+            .limit(20)
+            .lean()
     ]);
+
     const stats = orderStats?.[0] || {};
     const sanitizeUrl = (s) => {
         if (!s) return '';
@@ -1496,6 +1554,19 @@ export async function getCustomerById(id) {
         totalOrders: Number(stats.totalOrders || 0),
         totalOrder: Number(stats.totalOrders || 0),
         totalOrderAmount: Number(stats.totalOrderAmount || 0),
+        walletBalance: Number(userWallet?.balance || 0),
+        cashBalance: Number(userWallet?.cashBalance || 0),
+        cashbackBalance: Number(userWallet?.cashbackBalance || 0),
+        totalCashbackEarned: Number(userCashbacksAgg?.[0]?.totalEarned || 0),
+        cashbackHistory: (userCashbackHistory || []).map(h => ({
+            id: h._id,
+            orderId: h.orderId?.orderId || 'N/A',
+            amount: h.amount,
+            status: h.status,
+            sourceType: h.sourceType,
+            title: h.cashbackRuleId?.name || h.couponId?.code || (h.sourceType === 'COUPON' ? 'Cashback Coupon' : 'Cashback Offer'),
+            date: h.createdAt
+        })),
         joiningDate: u.createdAt,
         createdAt: u.createdAt,
         updatedAt: u.updatedAt,

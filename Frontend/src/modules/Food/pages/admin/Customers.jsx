@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
-import { Search, Download, ChevronDown, Eye, FileDown, FileSpreadsheet, FileText, X, Mail, Phone, MapPin, Package, IndianRupee, Calendar as CalendarIcon, User, CheckCircle, XCircle } from "lucide-react";
+import { Search, Download, ChevronDown, Eye, FileDown, FileSpreadsheet, FileText, X, Mail, Phone, MapPin, Package, IndianRupee, Calendar as CalendarIcon, User, CheckCircle, XCircle, Zap } from "lucide-react";
 import WalletIcon from "@food/components/ui/WalletIcon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { exportCustomersToCSV, exportCustomersToExcel, exportCustomersToPDF } from "@food/components/admin/customers/customersExportUtils"
@@ -564,7 +564,14 @@ export default function Customers() {
                         <span className="text-sm font-medium text-slate-900">{"\u20B9"} {(customer.totalOrderAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-green-600">{"\u20B9"} {(customer.walletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-green-600">{"\u20B9"} {(customer.walletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          {customer.totalCashbackEarned > 0 && (
+                            <span className="text-[11px] text-purple-600 font-semibold flex items-center gap-0.5 mt-0.5">
+                              <Zap className="w-3 h-3 inline-block" /> Cashback: ₹{customer.totalCashbackEarned}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-slate-700">{formatDateTime(customer.joiningDate)}</span>
@@ -717,7 +724,7 @@ export default function Customers() {
               </div>
 
               {/* Statistics Section */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-blue-50 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <Package className="w-4 h-4 text-blue-600" />
@@ -734,14 +741,56 @@ export default function Customers() {
                     {"\u20B9"}{(userDetails.totalOrderAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
+                <div className="bg-emerald-50 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <WalletIcon className="w-4 h-4 text-emerald-600" />
+                    <span className="text-xs font-semibold text-slate-700">Wallet Balance</span>
+                  </div>
+                  <p className="text-xl font-bold text-emerald-600">
+                    {"\u20B9"}{(userDetails.walletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  {userDetails.cashbackBalance > 0 && (
+                    <p className="text-[10px] text-purple-700 font-bold mt-0.5">
+                      (Cashback: ₹{userDetails.cashbackBalance})
+                    </p>
+                  )}
+                </div>
                 <div className="bg-purple-50 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <CalendarIcon className="w-4 h-4 text-purple-600" />
-                    <span className="text-xs font-semibold text-slate-700">Member Since</span>
+                    <Zap className="w-4 h-4 text-purple-600" />
+                    <span className="text-xs font-semibold text-slate-700">Cashback Earned</span>
                   </div>
-                  <p className="text-base font-bold text-purple-600">{formatDateTime(userDetails.joiningDate)}</p>
+                  <p className="text-xl font-bold text-purple-600">
+                    {"\u20B9"}{(userDetails.totalCashbackEarned || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
                 </div>
               </div>
+
+              {/* Cashback History Section */}
+              {userDetails.cashbackHistory && userDetails.cashbackHistory.length > 0 && (
+                <div>
+                  <h4 className="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-purple-600" />
+                    Cashback Rewards Earned ({userDetails.cashbackHistory.length})
+                  </h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {userDetails.cashbackHistory.map((item, index) => (
+                      <div key={index} className="bg-purple-50/50 rounded-lg p-3 border border-purple-100 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">{item.title}</p>
+                          <p className="text-xs text-slate-500">Order #{item.orderId} • {formatDateTime(item.date)}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-black text-purple-700">+₹{item.amount}</span>
+                          <span className={`block text-[10px] font-bold uppercase tracking-wider ${item.status === 'CREDITED' ? 'text-emerald-600' : item.status === 'PENDING' ? 'text-amber-600' : 'text-red-600'}`}>
+                            {item.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Addresses Section */}
               {userDetails.addresses && userDetails.addresses.length > 0 && (

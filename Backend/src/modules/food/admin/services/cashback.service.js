@@ -390,6 +390,98 @@ export async function deleteCashbackRule(ruleId) {
     return { success: true };
 }
 
+/**
+ * Fetch all cashback ledgers with user & order details and aggregated stats for admin
+ */
+export async function getCashbackLedgers(query = {}) {
+    const page = Math.max(1, parseInt(query.page, 10) || 1);
+    const limit = Math.min(Math.max(1, parseInt(query.limit, 10) || 25), 500);
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (query.status && query.status !== 'ALL') {
+        filter.status = query.status.toUpperCase();
+    }
+    if (query.userId && mongoose.Types.ObjectId.isValid(query.userId)) {
+        filter.userId = new mongoose.Types.ObjectId(query.userId);
+    }
+    if (query.sourceType && query.sourceType !== 'ALL') {
+        filter.sourceType = query.sourceType.toUpperCase();
+    }
+
+    if (query.search && String(query.search).trim()) {
+        const raw = String(query.search).trim();
+        const { FoodUser } = await import('../../../../core/users/user.model.js');
+        const matchedUsers = await FoodUser.find({
+            $or: [
+                { name: { $regex: raw, $options: 'i' } },
+                { email: { $regex: raw, $options: 'i' } },
+                { phone: { $regex: raw, $options: 'i' } }
+            ]
+        }).select('_id').lean();
+
+        const userIds = matchedUsers.map(u => u._id);
+        const { FoodOrder } = await import('../../orders/models/order.model.js');
+        const matchedOrders = await FoodOrder.find({
+            orderId: { $regex: raw, $options: 'i' }
+        }).select('_id').lean();
+        const orderIds = matchedOrders.map(o => o._id);
+
+        filter.$or = [
+            { userId: { $in: userIds } },
+            { orderId: { $in: orderIds } }
+        ];
+    }
+
+    const [ledgers, total, statsAgg] = await Promise.all([
+        CashbackLedger.find(filter)
+            .populate('userId', 'name email phone profileImage')
+            .populate('orderId', 'orderId pricing orderStatus createdAt')
+            .populate('cashbackRuleId', 'name cashbackType cashbackValue')
+            .populate('couponId', 'code rewardType')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+        CashbackLedger.countDocuments(filter),
+        CashbackLedger.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    totalCredited: {
+                        $sum: { $cond: [{ $eq: ['$status', 'CREDITED'] }, '$amount', 0] }
+                    },
+                    totalPending: {
+                        $sum: { $cond: [{ $eq: ['$status', 'PENDING'] }, '$amount', 0] }
+                    },
+                    totalReversed: {
+                        $sum: { $cond: [{ $eq: ['$status', 'REVERSED'] }, '$amount', 0] }
+                    },
+                    totalTransactions: { $sum: 1 }
+                }
+            }
+        ])
+    ]);
+
+    const stats = statsAgg?.[0] || {
+        totalCredited: 0,
+        totalPending: 0,
+        totalReversed: 0,
+        totalTransactions: 0
+    };
+
+    return {
+        ledgers,
+        pagination: {
+            page,
+            limit,
+            total,
+            pages: Math.ceil(total / limit)
+        },
+        stats
+    };
+}
+
 // Auto-register order completion hook to credit cashback
 appEvents.on(EVENTS.ORDER_COMPLETED, async (order) => {
     try {

@@ -23,7 +23,7 @@ import {
   Tooltip,
   XAxis,
   YAxis } from "recharts"
-import { Activity, ArrowUpRight, ShoppingBag, CreditCard, Truck, Receipt, DollarSign, Store, UserCheck, Package, UserCircle, Clock, CheckCircle, Plus, XCircle } from "lucide-react"
+import { Activity, ArrowUpRight, ShoppingBag, CreditCard, Truck, Receipt, DollarSign, Store, UserCheck, Package, UserCircle, Clock, CheckCircle, Plus, XCircle, Zap } from "lucide-react"
 import { adminAPI } from "@food/api"
 const debugLog = () => {}
 const debugError = () => {}
@@ -136,6 +136,8 @@ export default function AdminHome() {
   const deliveryFeeTotal = dashboardData?.deliveryFee?.total || 0
   const gstTotal = dashboardData?.gst?.total || 0
   const totalAdminEarnings = dashboardData?.totalAdminEarnings || 0
+  const cashbackTotal = dashboardData?.cashback?.totalCredited || 0
+  const cashbackActiveInWallets = dashboardData?.cashback?.activeInWallets || 0
 
   // Additional stats
   const totalRestaurants = dashboardData?.restaurants?.total || 0
@@ -265,6 +267,14 @@ export default function AdminHome() {
               icon={<Receipt className="h-5 w-5 text-orange-600" />}
               accent="bg-orange-200/40"
               path="/admin/food/tax-report"
+            />
+            <MetricCard
+              title="Cashback distributed"
+              value={formatCurrency(cashbackTotal)}
+              helper={`Active in Wallets: ${formatCurrency(cashbackActiveInWallets)}`}
+              icon={<Zap className="h-5 w-5 text-purple-600" />}
+              accent="bg-purple-200/40"
+              path="/admin/food/cashback"
             />
             <MetricCard
               title="Total restaurants"

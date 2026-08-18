@@ -6,6 +6,12 @@ export default function Cashback() {
   const [cashbacks, setCashbacks] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [expiryReport, setExpiryReport] = useState(null);
+  const [ledgers, setLedgers] = useState([]);
+  const [ledgerStats, setLedgerStats] = useState({ totalCredited: 0, totalPending: 0, totalReversed: 0, totalTransactions: 0 });
+  const [ledgerPagination, setLedgerPagination] = useState({ page: 1, limit: 15, total: 0, pages: 1 });
+  const [searchLedger, setSearchLedger] = useState("");
+  const [statusLedger, setStatusLedger] = useState("ALL");
+  const [ledgerLoading, setLedgerLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +35,29 @@ export default function Cashback() {
     validUntil: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
   });
 
+  const fetchLedgers = useCallback(async (page = 1, search = searchLedger, status = statusLedger) => {
+    setLedgerLoading(true);
+    try {
+      const res = await adminClient.get("/food/admin/cashback/ledgers", {
+        params: {
+          page,
+          limit: 15,
+          search: search || undefined,
+          status: status !== "ALL" ? status : undefined
+        }
+      });
+      if (res.data?.success && res.data?.data) {
+        setLedgers(res.data.data.ledgers || []);
+        if (res.data.data.stats) setLedgerStats(res.data.data.stats);
+        if (res.data.data.pagination) setLedgerPagination(res.data.data.pagination);
+      }
+    } catch (err) {
+      console.error("Failed to load cashback ledgers:", err);
+    } finally {
+      setLedgerLoading(false);
+    }
+  }, [searchLedger, statusLedger]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -49,12 +78,14 @@ export default function Cashback() {
       if (reportRes.status === "fulfilled") {
         setExpiryReport(reportRes.value.data?.data || null);
       }
+
+      fetchLedgers(1);
     } catch (err) {
       console.error("Failed to load cashback data:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchLedgers]);
 
   useEffect(() => {
     fetchData();
@@ -110,40 +141,52 @@ export default function Cashback() {
           </button>
         </div>
 
-        {/* Expiry Overview Cards */}
-        {expiryReport && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
-                <DollarSign className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Admin Wallet Balance</p>
-                <h3 className="text-2xl font-black text-slate-900">₹{expiryReport.adminPlatformBalance}</h3>
-              </div>
+        {/* Overview Stat Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+              <Zap className="w-6 h-6" />
             </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
-                <Calendar className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Expired Recovered</p>
-                <h3 className="text-2xl font-black text-slate-900">₹{expiryReport.totalExpiredAmount}</h3>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
-                <RefreshCw className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Batches Processed</p>
-                <h3 className="text-2xl font-black text-slate-900">{expiryReport.totalExpiredCount}</h3>
-              </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Cashback Distributed</p>
+              <h3 className="text-2xl font-black text-slate-900">₹{(ledgerStats.totalCredited || 0).toLocaleString('en-IN')}</h3>
+              <p className="text-[11px] text-purple-600 font-semibold mt-0.5">{ledgerStats.totalTransactions || 0} total payouts</p>
             </div>
           </div>
-        )}
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending on Orders</p>
+              <h3 className="text-2xl font-black text-slate-900">₹{(ledgerStats.totalPending || 0).toLocaleString('en-IN')}</h3>
+              <p className="text-[11px] text-amber-600 font-semibold mt-0.5">Credited upon delivery</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Expired Recovered</p>
+              <h3 className="text-2xl font-black text-slate-900">₹{(expiryReport?.totalExpiredAmount || 0).toLocaleString('en-IN')}</h3>
+              <p className="text-[11px] text-rose-600 font-semibold mt-0.5">Returned to platform</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+              <DollarSign className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Admin Wallet Balance</p>
+              <h3 className="text-2xl font-black text-slate-900">₹{(expiryReport?.adminPlatformBalance || 0).toLocaleString('en-IN')}</h3>
+              <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Platform reserve funds</p>
+            </div>
+          </div>
+        </div>
 
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl flex items-center gap-3">
@@ -389,6 +432,174 @@ export default function Cashback() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* User-Wise Cashback Distribution Ledger Table */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-purple-600" />
+                User-Wise Cashback Distributed History
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Complete record of cashback amounts awarded to each individual user across all orders
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Search */}
+              <div className="relative min-w-[240px]">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search user, phone, order #..."
+                  value={searchLedger}
+                  onChange={(e) => {
+                    setSearchLedger(e.target.value);
+                    fetchLedgers(1, e.target.value, statusLedger);
+                  }}
+                  className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Status Filter */}
+              <select
+                value={statusLedger}
+                onChange={(e) => {
+                  setStatusLedger(e.target.value);
+                  fetchLedgers(1, searchLedger, e.target.value);
+                }}
+                className="px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="CREDITED">Credited</option>
+                <option value="PENDING">Pending</option>
+                <option value="REVERSED">Reversed</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                <tr>
+                  <th className="px-6 py-3.5">User</th>
+                  <th className="px-6 py-3.5">Order ID</th>
+                  <th className="px-6 py-3.5">Offer / Source</th>
+                  <th className="px-6 py-3.5">Cashback Given</th>
+                  <th className="px-6 py-3.5">Status</th>
+                  <th className="px-6 py-3.5">Date & Time</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {ledgerLoading ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                      <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-600" />
+                      Loading user cashback records...
+                    </td>
+                  </tr>
+                ) : ledgers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                      No cashback distribution records found matching your filters.
+                    </td>
+                  </tr>
+                ) : (
+                  ledgers.map((row) => (
+                    <tr key={row._id} className="hover:bg-slate-50/80 transition">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center">
+                            {(row.userId?.name || "U").charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <span className="font-bold text-slate-900 block">{row.userId?.name || "User"}</span>
+                            <span className="text-xs text-slate-400">{row.userId?.phone || row.userId?.email || "N/A"}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <span className="font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg text-xs">
+                          #{row.orderId?.orderId || "N/A"}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div>
+                          <span className="font-semibold text-slate-900 block text-xs">
+                            {row.cashbackRuleId?.name || (row.couponId?.code ? `Coupon: ${row.couponId.code}` : "Cashback Offer")}
+                          </span>
+                          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                            Source: {row.sourceType}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <span className="text-base font-black text-purple-700">
+                          +₹{row.amount}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <span
+                          className={`text-xs px-2.5 py-1 rounded-full font-extrabold tracking-wider ${
+                            row.status === "CREDITED"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : row.status === "PENDING"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-rose-100 text-rose-700"
+                          }`}
+                        >
+                          {row.status}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4 text-xs text-slate-500 font-medium">
+                        {new Date(row.creditedAt || row.createdAt).toLocaleString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {ledgerPagination.pages > 1 && (
+            <div className="p-4 border-t border-slate-200 flex items-center justify-between">
+              <span className="text-xs text-slate-500">
+                Showing page <strong className="text-slate-800">{ledgerPagination.page}</strong> of <strong className="text-slate-800">{ledgerPagination.pages}</strong> ({ledgerPagination.total} records)
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={ledgerPagination.page <= 1 || ledgerLoading}
+                  onClick={() => fetchLedgers(ledgerPagination.page - 1)}
+                  className="px-3 py-1.5 text-xs font-bold border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={ledgerPagination.page >= ledgerPagination.pages || ledgerLoading}
+                  onClick={() => fetchLedgers(ledgerPagination.page + 1)}
+                  className="px-3 py-1.5 text-xs font-bold border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
