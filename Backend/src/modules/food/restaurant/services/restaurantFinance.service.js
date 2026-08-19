@@ -63,6 +63,12 @@ function parseISODateParamEnd(v) {
     return d;
 }
 
+const isOrderDeliveredOrCompleted = (order) => {
+    if (!order) return false;
+    const s = String(order.orderStatus || order.deliveryState?.status || order.deliveryState?.currentPhase || '').toLowerCase();
+    return s === 'delivered' || s === 'completed';
+};
+
 export async function getRestaurantFinance(restaurantId, query = {}) {
     if (!restaurantId || !mongoose.Types.ObjectId.isValid(restaurantId)) return null;
     const rid = new mongoose.Types.ObjectId(restaurantId);
@@ -90,7 +96,7 @@ export async function getRestaurantFinance(restaurantId, query = {}) {
         .sort({ createdAt: -1 })
         .lean();
 
-    const deliveredCurrentTransactions = currentTransactions.filter(tx => tx.orderId && tx.orderId.orderStatus === 'delivered');
+    const deliveredCurrentTransactions = currentTransactions.filter(tx => isOrderDeliveredOrCompleted(tx.orderId));
 
     const currentCycleOrders = deliveredCurrentTransactions.map((tx) => {
         const order = tx.orderId || {};
@@ -126,24 +132,18 @@ export async function getRestaurantFinance(restaurantId, query = {}) {
         status: { $in: ['captured', 'authorized'] },
         'settlement.isRestaurantSettled': { $ne: true }
     })
-        .populate('orderId', 'orderStatus')
-        .select('amounts.restaurantShare orderId updatedAt')
+        .populate('orderId', 'orderStatus deliveryState orderId')
+        .select('amounts.restaurantShare orderId updatedAt createdAt')
         .lean();
 
-    const deliveredUnsettledTransactions = allUnsettledTransactions.filter(tx => tx.orderId && tx.orderId.orderStatus === 'delivered');
+    const deliveredUnsettledTransactions = allUnsettledTransactions.filter(tx => isOrderDeliveredOrCompleted(tx.orderId));
 
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     let globalEstimatedPayout = 0;
     let pendingClearancePayout = 0;
 
     deliveredUnsettledTransactions.forEach(tx => {
         const share = Number(tx.amounts?.restaurantShare) || 0;
-        // tx.updatedAt represents when it was last updated (likely when delivered)
-        if (new Date(tx.updatedAt) <= twentyFourHoursAgo) {
-            globalEstimatedPayout += share;
-        } else {
-            pendingClearancePayout += share;
-        }
+        globalEstimatedPayout += share;
     });
 
     // Deduct all effective withdrawals from available balance.
@@ -165,8 +165,8 @@ export async function getRestaurantFinance(restaurantId, query = {}) {
         end: { ...nowWindow.endMeta },
         totalEarnings: currentCycleEstimatedPayout, // We still show current cycle earnings label
         totalWithdrawn: totalEffectiveWithdrawals,
-        estimatedPayout: availableBalance, // This is what UI shows as "Estimated Payout" (Available Balance)
-        pendingClearance: pendingClearancePayout, // Earnings on 24h hold
+        estimatedPayout: availableBalance, // This is what UI shows as "Estimated Payout" (Available Balance to withdraw)
+        pendingClearance: pendingClearancePayout,
         totalOrders: currentCycleOrders.length,
         payoutDate: null,
         orders: currentCycleOrders
@@ -202,7 +202,7 @@ export async function getRestaurantFinance(restaurantId, query = {}) {
             .sort({ createdAt: -1 })
             .lean();
 
-        const deliveredPastTransactions = pastTransactions.filter(tx => tx.orderId && tx.orderId.orderStatus === 'delivered');
+        const deliveredPastTransactions = pastTransactions.filter(tx => isOrderDeliveredOrCompleted(tx.orderId));
 
         const pastCycleOrders = deliveredPastTransactions.map((tx) => {
             const order = tx.orderId || {};

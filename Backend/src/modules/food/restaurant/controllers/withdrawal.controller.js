@@ -19,11 +19,21 @@ export const createWithdrawalRequestController = async (req, res, next) => {
             return sendError(res, 400, `Insufficient balance. Available: ₹${availableBalance}`);
         }
 
+        const restaurant = await FoodRestaurant.findById(restaurantId).lean();
+        const effectiveBankDetails = bankDetails && Object.keys(bankDetails).length > 0 ? bankDetails : {
+            accountHolderName: restaurant?.accountHolderName || '',
+            accountNumber: restaurant?.accountNumber || '',
+            ifscCode: restaurant?.ifscCode || '',
+            accountType: restaurant?.accountType || '',
+            upiId: restaurant?.upiId || '',
+            upiQrImage: restaurant?.upiQrImage || ''
+        };
+
         // Create the withdrawal request
         const withdrawal = new FoodRestaurantWithdrawal({
             restaurantId,
-            amount,
-            bankDetails,
+            amount: Number(amount),
+            bankDetails: effectiveBankDetails,
             status: 'pending'
         });
 
