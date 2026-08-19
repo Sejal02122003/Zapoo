@@ -1122,7 +1122,7 @@ export default function Home() {
               (typeof b.banner === "string" && b.banner) ||
               ""
             );
-            return rawUrl ? formatImageUrl(rawUrl) : "";
+            return rawUrl ? normalizeImageUrl(rawUrl) : "";
           })
           .filter(Boolean);
         setAdsBannerImages(images);

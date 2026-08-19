@@ -1,17 +1,19 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { Search, Download, ChevronDown, Plus, MoreVertical, Building2, Settings, Filter, FileDown, FileSpreadsheet, FileText, Code, Eye, Edit, Trash2 } from "lucide-react"
+import { Search, Download, ChevronDown, Plus, MoreVertical, Building2, Settings, Filter, FileDown, FileSpreadsheet, FileText, Code, Eye, Edit, Trash2, RefreshCw } from "lucide-react"
 import { emptyAds } from "@food/utils/adminFallbackData"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@food/components/ui/dialog"
 import SettingsDialog from "@food/components/admin/orders/SettingsDialog"
 import { exportAdvertisementsToCSV, exportAdvertisementsToExcel, exportAdvertisementsToPDF, exportAdvertisementsToJSON } from "@food/components/admin/advertisements/advertisementsExportUtils"
+import { adminAPI } from "@food/api"
 
 export default function AdsList() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
   const [adsType, setAdsType] = useState("all")
   const [ads, setAds] = useState(emptyAds)
+  const [loading, setLoading] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isViewOpen, setIsViewOpen] = useState(false)
@@ -21,6 +23,40 @@ export default function AdsList() {
     status: "",
     restaurant: "",
     priority: "" })
+
+  useEffect(() => {
+    fetchAds()
+  }, [])
+
+  const fetchAds = async () => {
+    setLoading(true)
+    try {
+      const res = await adminAPI.getAdRequests()
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        const mapped = res.data.data.map((item, index) => ({
+          sl: index + 1,
+          adsId: item._id ? `#AD-${String(item._id).slice(-6).toUpperCase()}` : `#AD-${index + 1}`,
+          adsTitle: item.title || "Sponsored Campaign",
+          restaurantName: item.restaurantName || "Restaurant",
+          restaurantAddress: item.restaurantAddress || "",
+          adsType: item.mediaType === "video" ? "Video Promotion" : "Banner Promotion",
+          duration: item.startDate && item.endDate 
+            ? `${new Date(item.startDate).toLocaleDateString()} - ${new Date(item.endDate).toLocaleDateString()}`
+            : "Ongoing",
+          status: item.status === "live" ? "Running" : item.status === "pending_pricing" ? "Pending" : item.status === "paid" ? "Approved" : item.status === "rejected" ? "Expired" : item.status,
+          rawStatus: item.status,
+          priority: item.price ? `₹${item.price}` : "Standard",
+          mediaUrl: item.mediaUrl,
+          rawItem: item
+        }))
+        setAds(mapped)
+      }
+    } catch (err) {
+      console.error("Failed to load ads list", err)
+    } finally {
+      setLoading(false)
+    }
+  }
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     adsId: true,

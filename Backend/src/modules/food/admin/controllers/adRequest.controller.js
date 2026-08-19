@@ -21,13 +21,32 @@ export const createAdRequest = async (req, res) => {
         const restaurantName = restaurant?.restaurantName || 'Restaurant';
         const restaurantAddress = [restaurant?.addressLine1, restaurant?.addressLine2, restaurant?.area, restaurant?.city].filter(Boolean).join(', ') || '';
 
+        let mediaUrl = req.body.mediaUrl || '';
+        if (req.files && req.files.media && req.files.media[0]) {
+            const file = req.files.media[0];
+            if (file.mimetype?.startsWith('video/')) {
+                mediaUrl = await uploadVideoBuffer(file.buffer, 'app_intro_ads');
+            } else {
+                const sharpRes = await processAndSaveImage(file.buffer, STORAGE_CATEGORIES.BANNERS);
+                mediaUrl = sharpRes.fullUrl;
+            }
+        } else if (req.file) {
+            const file = req.file;
+            if (file.mimetype?.startsWith('video/')) {
+                mediaUrl = await uploadVideoBuffer(file.buffer, 'app_intro_ads');
+            } else {
+                const sharpRes = await processAndSaveImage(file.buffer, STORAGE_CATEGORIES.BANNERS);
+                mediaUrl = sharpRes.fullUrl;
+            }
+        }
+
         const adReq = new AdRequest({
             restaurantId,
             restaurantName,
             restaurantAddress,
             title,
             description,
-            mediaUrl: '',
+            mediaUrl,
             mediaType: mediaType || 'image',
             scope: scope || 'global',
             zoneId: zoneId || null,
@@ -97,7 +116,9 @@ export const getAdminAdRequests = async (req, res) => {
                         imageUrl: adReq.mediaUrl,
                         publicId,
                         title: `${adReq.restaurantName} - ${adReq.title}`,
-                        targetScope: adReq.scope,
+                        ctaText: 'Order Now',
+                        ctaLink: adReq.restaurantId ? `/food/user/restaurants/${adReq.restaurantId}` : '',
+                        targetScope: adReq.scope || 'global',
                         zoneId: adReq.zoneId || null,
                         isActive: true
                     });
@@ -142,10 +163,10 @@ export const approveAdRequest = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Ad request not found' });
         }
 
-        let mediaUrl = req.body.mediaUrl;
+        let mediaUrl = req.body.mediaUrl || adReq.mediaUrl || '';
 
         // Handle uploaded file if present
-        if (req.files && req.files.media) {
+        if (req.files && req.files.media && req.files.media[0]) {
             const file = req.files.media[0];
             if (file.mimetype.startsWith('video/')) {
                 mediaUrl = await uploadVideoBuffer(file.buffer, 'app_intro_ads');
@@ -181,17 +202,22 @@ export const approveAdRequest = async (req, res) => {
 
         await newLiveAd.save();
 
-        // Create the actual live dining banner so it shows up in Landing Page / Dining Banners (Ads) Management
-        const newDiningBanner = new FoodDiningBanner({
-            imageUrl: mediaUrl,
-            publicId: `ad_${adReq._id}`, // unique publicId
-            title: `${adReq.restaurantName} - ${adReq.title}`,
-            targetScope: adReq.scope,
-            zoneId: adReq.zoneId || null,
-            isActive: true
-        });
-
-        await newDiningBanner.save();
+        // Create or update the actual live dining banner so it shows up in Landing Page / Sponsored Ads Section
+        const publicId = `ad_${adReq._id}`;
+        await FoodDiningBanner.findOneAndUpdate(
+            { publicId },
+            {
+                imageUrl: mediaUrl,
+                publicId,
+                title: `${adReq.restaurantName} - ${adReq.title}`,
+                ctaText: 'Order Now',
+                ctaLink: adReq.restaurantId ? `/food/user/restaurants/${adReq.restaurantId}` : '',
+                targetScope: adReq.scope || 'global',
+                zoneId: adReq.zoneId || null,
+                isActive: true
+            },
+            { upsert: true, new: true }
+        );
 
         adReq.mediaUrl = mediaUrl;
         adReq.status = 'live';
