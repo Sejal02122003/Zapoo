@@ -1133,7 +1133,7 @@ export async function getRestaurantReport(query = {}) {
     const orderCreatedAtFilter = parseTimeRange(query.time);
     const orderMatch = {
         restaurantId: { $in: restaurantIds },
-        orderStatus: 'delivered',
+        orderStatus: { $in: ['delivered', 'completed'] },
         $or: [
             { "payment.method": { $in: ["cash", "wallet"] } },
             { "payment.status": { $in: ["paid", "authorized", "captured", "settled", "refunded"] } },
@@ -1225,7 +1225,7 @@ export async function getRestaurantReport(query = {}) {
 export async function getTaxReport(query = {}) {
     const { fromDate, toDate, search } = query;
     const match = {
-        orderStatus: 'delivered' // Typically tax is reported on delivered/completed orders
+        orderStatus: { $in: ['delivered', 'completed'] } // Typically tax is reported on delivered/completed orders
     };
 
     if (fromDate && toDate) {
@@ -1316,7 +1316,7 @@ export async function getTaxReportDetail(restaurantId, query = {}) {
     const { fromDate, toDate } = query;
     const match = {
         restaurantId: new mongoose.Types.ObjectId(restaurantId),
-        orderStatus: 'delivered'
+        orderStatus: { $in: ['delivered', 'completed'] }
     };
 
     if (fromDate && toDate) {

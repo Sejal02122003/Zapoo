@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Menu,
   Search,
@@ -13,6 +13,7 @@ import {
   Users,
   AlertCircle,
   ArrowRight,
+  ArrowLeft,
   Building2,
   Utensils,
   Grid,
@@ -48,6 +49,12 @@ const debugError = (...args) => {}
 
 export default function AdminNavbar({ onMenuClick }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isDashboard =
+    location.pathname === "/admin/food" ||
+    location.pathname === "/admin/food/" ||
+    location.pathname === "/admin" ||
+    location.pathname === "/admin/";
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -265,8 +272,8 @@ export default function AdminNavbar({ onMenuClick }) {
     <>
       <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
         <div className="flex items-center justify-between px-6 py-3">
-          {/* Left: Logo and Mobile Menu */}
-          <div className="flex items-center gap-3">
+          {/* Left: Mobile Menu & Back to Dashboard */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onMenuClick}
               className="lg:hidden p-2 rounded-md text-neutral-700 hover:bg-neutral-100 hover:text-black transition-colors"
@@ -275,6 +282,17 @@ export default function AdminNavbar({ onMenuClick }) {
               <Menu className="w-5 h-5" />
             </button>
 
+            {!isDashboard && (
+              <button
+                type="button"
+                onClick={() => navigate("/admin/food")}
+                className="flex items-center justify-center h-9 w-9 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-800 transition-all border border-neutral-300 hover:border-neutral-400 shadow-2xs group cursor-pointer"
+                title="Back to Dashboard"
+                aria-label="Back to Dashboard"
+              >
+                <ArrowLeft className="w-5 h-5 text-neutral-700 group-hover:-translate-x-0.5 transition-transform" />
+              </button>
+            )}
           </div>
 
           {/* Center: Search Bar */}
