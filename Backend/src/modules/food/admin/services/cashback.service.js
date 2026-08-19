@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import { CashbackRule } from '../models/cashbackRule.model.js';
 import { CashbackLedger } from '../models/cashbackLedger.model.js';
+import { Coupon } from '../models/coupon.model.js';
+import { FoodUser } from '../../../../core/users/user.model.js';
+import { FoodOrder } from '../../orders/models/order.model.js';
 import { creditCashbackToWallet } from '../../user/services/userWallet.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { logger } from '../../../../utils/logger.js';
@@ -449,7 +452,16 @@ export async function getCashbackLedgers(query = {}) {
                 $group: {
                     _id: null,
                     totalCredited: {
+                        $sum: { $cond: [{ $in: ['$status', ['CREDITED', 'EXPIRED']] }, '$amount', 0] }
+                    },
+                    totalCreditedCount: {
+                        $sum: { $cond: [{ $in: ['$status', ['CREDITED', 'EXPIRED']] }, 1, 0] }
+                    },
+                    totalActiveCredited: {
                         $sum: { $cond: [{ $eq: ['$status', 'CREDITED'] }, '$amount', 0] }
+                    },
+                    totalExpired: {
+                        $sum: { $cond: [{ $eq: ['$status', 'EXPIRED'] }, '$amount', 0] }
                     },
                     totalPending: {
                         $sum: { $cond: [{ $eq: ['$status', 'PENDING'] }, '$amount', 0] }
@@ -465,6 +477,9 @@ export async function getCashbackLedgers(query = {}) {
 
     const stats = statsAgg?.[0] || {
         totalCredited: 0,
+        totalCreditedCount: 0,
+        totalActiveCredited: 0,
+        totalExpired: 0,
         totalPending: 0,
         totalReversed: 0,
         totalTransactions: 0

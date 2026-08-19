@@ -215,6 +215,18 @@ export const creditCashbackToWallet = async (userId, amountInr, expiryDays = 30,
     const oid = new mongoose.Types.ObjectId(userId);
     const wallet = await ensureWallet(userId);
 
+    // Prevent duplicate wallet crediting for the same order
+    if (relatedOrderId && mongoose.Types.ObjectId.isValid(relatedOrderId)) {
+        const existingEntry = await WalletLedgerEntry.findOne({
+            userId: oid,
+            entryType: 'CASHBACK',
+            relatedOrderId: new mongoose.Types.ObjectId(relatedOrderId)
+        });
+        if (existingEntry) {
+            return { wallet: await getUserWallet(userId) };
+        }
+    }
+
     const validDays = Number(expiryDays) > 0 ? Number(expiryDays) : 30;
     const now = new Date();
     const expiryDate = new Date(now.getTime() + validDays * 24 * 60 * 60 * 1000);

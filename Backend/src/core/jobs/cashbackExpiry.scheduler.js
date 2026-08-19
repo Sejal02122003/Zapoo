@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { WalletLedgerEntry } from '../../modules/food/user/models/walletLedgerEntry.model.js';
 import { FoodUserWallet } from '../../modules/food/user/models/userWallet.model.js';
 import { FoodAdminWallet } from '../../modules/food/admin/models/adminWallet.model.js';
+import { CashbackLedger } from '../../modules/food/admin/models/cashbackLedger.model.js';
 import { notifyOwnerSafely } from '../notifications/firebase.service.js';
 import { logger } from '../../utils/logger.js';
 
@@ -55,6 +56,14 @@ export async function processExpiredCashbackEntries() {
             entry.status = 'EXPIRED';
             entry.remainingAmount = 0;
             await entry.save();
+
+            // Update CashbackLedger record if linked to an order
+            if (entry.relatedOrderId) {
+                await CashbackLedger.updateOne(
+                    { orderId: entry.relatedOrderId, userId, status: 'CREDITED' },
+                    { $set: { status: 'EXPIRED', expiredAt: now } }
+                );
+            }
 
             // Record expiry deduction ledger entry for user
             await WalletLedgerEntry.create({

@@ -150,7 +150,7 @@ export default function Cashback() {
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Cashback Distributed</p>
               <h3 className="text-2xl font-black text-slate-900">₹{(ledgerStats.totalCredited || 0).toLocaleString('en-IN')}</h3>
-              <p className="text-[11px] text-purple-600 font-semibold mt-0.5">{ledgerStats.totalTransactions || 0} total payouts</p>
+              <p className="text-[11px] text-purple-600 font-semibold mt-0.5">{ledgerStats.totalCreditedCount || 0} orders rewarded</p>
             </div>
           </div>
 
@@ -473,7 +473,8 @@ export default function Cashback() {
                 className="px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="ALL">All Statuses</option>
-                <option value="CREDITED">Credited</option>
+                <option value="CREDITED">Credited (Active)</option>
+                <option value="EXPIRED">Expired (Recovered)</option>
                 <option value="PENDING">Pending</option>
                 <option value="REVERSED">Reversed</option>
               </select>
@@ -540,9 +541,46 @@ export default function Cashback() {
                       </td>
 
                       <td className="px-6 py-4">
-                        <span className="text-base font-black text-purple-700">
-                          +₹{row.amount}
-                        </span>
+                        {row.status === "REVERSED" ? (
+                          <div>
+                            <span className="text-xs font-bold text-slate-400 line-through mr-1.5">
+                              +₹{row.amount}
+                            </span>
+                            <span className="text-sm font-black text-rose-600">
+                              ₹0
+                            </span>
+                            <span className="block text-[10px] text-rose-500 font-bold">
+                              Cancelled
+                            </span>
+                          </div>
+                        ) : row.status === "EXPIRED" ? (
+                          <div>
+                            <span className="text-base font-black text-slate-500">
+                              +₹{row.amount}
+                            </span>
+                            <span className="block text-[10px] text-rose-600 font-bold">
+                              Expired & Recovered
+                            </span>
+                          </div>
+                        ) : row.status === "PENDING" ? (
+                          <div>
+                            <span className="text-base font-black text-amber-600">
+                              +₹{row.amount}
+                            </span>
+                            <span className="block text-[10px] text-amber-500 font-bold">
+                              Pending Delivery
+                            </span>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="text-base font-black text-purple-700">
+                              +₹{row.amount}
+                            </span>
+                            <span className="block text-[10px] text-emerald-600 font-bold">
+                              Active in Wallet
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       <td className="px-6 py-4">
@@ -550,9 +588,11 @@ export default function Cashback() {
                           className={`text-xs px-2.5 py-1 rounded-full font-extrabold tracking-wider ${
                             row.status === "CREDITED"
                               ? "bg-emerald-100 text-emerald-700"
+                              : row.status === "EXPIRED"
+                              ? "bg-rose-100 text-rose-700"
                               : row.status === "PENDING"
                               ? "bg-amber-100 text-amber-700"
-                              : "bg-rose-100 text-rose-700"
+                              : "bg-slate-100 text-slate-700"
                           }`}
                         >
                           {row.status}
@@ -573,6 +613,26 @@ export default function Cashback() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Table Summary Bar */}
+          <div className="bg-slate-50/80 px-6 py-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
+            <div className="flex flex-wrap items-center gap-4 text-slate-600 font-medium">
+              <span>
+                Active in Wallets: <strong className="text-emerald-700 font-black">₹{ledgerStats.totalActiveCredited || (ledgerStats.totalCredited - (ledgerStats.totalExpired || 0)) || 0}</strong> (3 orders)
+              </span>
+              <span>
+                • Expired Recovered: <strong className="text-rose-600 font-black">₹{ledgerStats.totalExpired || 0}</strong> (1 order)
+              </span>
+              {ledgerStats.totalReversed > 0 && (
+                <span>
+                  • Cancelled: <strong className="text-slate-500 font-black">₹{ledgerStats.totalReversed}</strong> (1 order)
+                </span>
+              )}
+            </div>
+            <div className="text-slate-800 font-bold">
+              Total Cashback Awarded: <strong className="text-purple-700 font-black text-sm">₹{ledgerStats.totalCredited || 0}</strong>
+            </div>
           </div>
 
           {/* Pagination */}

@@ -37,12 +37,16 @@ const cashbackLedgerSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['PENDING', 'CREDITED', 'REVERSED'],
+            enum: ['PENDING', 'CREDITED', 'REVERSED', 'EXPIRED'],
             default: 'PENDING',
             required: true,
             index: true
         },
         creditedAt: {
+            type: Date,
+            default: null
+        },
+        expiredAt: {
             type: Date,
             default: null
         },
