@@ -89,8 +89,17 @@ export const shiftController = {
 
     updateShift: async (req, res) => {
         try {
-            const shift = await shiftRepository.updateShift(req.params.id, req.body);
-            res.status(200).json({ success: true, data: shift });
+            const shift = await shiftService.updateShift(req.params.id, req.body);
+            res.status(200).json({ success: true, message: 'Shift updated successfully', data: shift });
+        } catch (error) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    deleteShift: async (req, res) => {
+        try {
+            await shiftService.deleteShift(req.params.id);
+            res.status(200).json({ success: true, message: 'Shift slot deleted successfully' });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
         }

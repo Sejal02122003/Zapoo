@@ -22,6 +22,7 @@ shiftRoutes.post('/payouts/:id/hold', payoutController.holdPayout);
 shiftRoutes.post('/', shiftController.createShift);
 shiftRoutes.get('/', shiftController.getShiftsAdmin);
 shiftRoutes.patch('/:id', shiftController.updateShift);
+shiftRoutes.delete('/:id', shiftController.deleteShift);
 shiftRoutes.get('/:id/report', shiftController.getShiftReport);
 shiftRoutes.get('/:id/riders-detail', shiftController.getShiftRidersDetail);
 shiftRoutes.post('/:id/riders/:riderId/pay', shiftController.payRiderForShift);

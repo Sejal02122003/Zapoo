@@ -19,6 +19,11 @@ export const shiftRepository = {
     createShift: async (data) => FoodShift.create(data),
     getShiftById: async (id) => FoodShift.findById(id),
     updateShift: async (id, data) => FoodShift.findByIdAndUpdate(id, data, { new: true }),
+    deleteShift: async (id) => {
+        await FoodShiftBooking.deleteMany({ shiftId: id });
+        await FoodShiftAttendance.deleteMany({ shiftId: id });
+        return FoodShift.findByIdAndDelete(id);
+    },
     getShifts: async (filter, options = {}) => FoodShift.find(filter, null, options),
 
     // --- Bookings ---

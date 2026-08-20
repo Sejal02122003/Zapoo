@@ -177,6 +177,30 @@ export const shiftService = {
         });
     },
 
+    updateShift: async (id, data) => {
+        const updatePayload = { ...data };
+        if (data.startTime) {
+            updatePayload.startTime = new Date(data.startTime);
+            if (!data.bookingOpensAt) {
+                const bOpens = new Date(updatePayload.startTime);
+                bOpens.setDate(bOpens.getDate() - 1);
+                bOpens.setHours(0, 0, 0, 0);
+                updatePayload.bookingOpensAt = bOpens;
+            }
+        }
+        if (data.endTime) {
+            updatePayload.endTime = new Date(data.endTime);
+        }
+        if (data.guaranteeAmount !== undefined) {
+            updatePayload.bonusEnabled = Number(data.guaranteeAmount) > 0;
+        }
+        return shiftRepository.updateShift(id, updatePayload);
+    },
+
+    deleteShift: async (id) => {
+        return shiftRepository.deleteShift(id);
+    },
+
     getShiftsAdmin: async (filterOptions = {}) => {
         let filter = {};
         if (typeof filterOptions === 'string') {
@@ -212,10 +236,6 @@ export const shiftService = {
 
     getAvailableShifts: async (filterOptions = {}) => {
         const now = new Date();
-        const filter = {
-            isActive: true,
-            endTime: { $gt: now }
-        };
 
         let targetCity = null;
         let targetZoneId = null;
@@ -227,13 +247,37 @@ export const shiftService = {
             targetZoneId = filterOptions.zoneId;
         }
 
+        // Check if we have active future shifts
+        const countFuture = await FoodShift.countDocuments({
+            isActive: true,
+            endTime: { $gt: now }
+        });
+
+        // If zero upcoming shifts, auto-generate today and tomorrow from templates so delivery partner always has shifts
+        if (countFuture === 0) {
+            try {
+                await shiftService.generateShiftsFromTemplates(new Date(), null, targetZoneId);
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                await shiftService.generateShiftsFromTemplates(tomorrow, null, targetZoneId);
+            } catch (genErr) {
+                console.warn('[Shifts] Auto-generate on available request caught error:', genErr.message);
+            }
+        }
+
+        const filter = {
+            isActive: true,
+            endTime: { $gt: now }
+        };
+
         if (targetZoneId && targetZoneId !== 'All') {
             const zoneObjId = mongoose.Types.ObjectId.isValid(targetZoneId) ? new mongoose.Types.ObjectId(targetZoneId) : targetZoneId;
             filter.$or = [
                 { zoneId: targetZoneId },
                 { zoneId: zoneObjId },
                 { zoneId: null },
-                { zoneId: { $exists: false } }
+                { zoneId: { $exists: false } },
+                { city: 'All' }
             ];
         } else if (targetCity && targetCity !== 'All') {
             filter.$or = [
@@ -247,7 +291,7 @@ export const shiftService = {
         
         // Enrich shifts with booking status flags for riders
         return Promise.all(shifts.map(async (shift) => {
-            const shiftObj = shift.toObject();
+            const shiftObj = shift.toObject ? shift.toObject() : shift;
             const bookedCount = await shiftRepository.getBookingCountForShift(shift._id);
             const opensAt = shift.bookingOpensAt ? new Date(shift.bookingOpensAt) : new Date(shift.startTime);
             

@@ -5,7 +5,8 @@ import PendingPayouts from './PendingPayouts';
 import { 
   Calendar, Layers, DollarSign, Plus, RefreshCw, X, 
   User, Phone, CreditCard, QrCode, CheckCircle2, Clock, 
-  AlertCircle, ShieldCheck, Copy, ExternalLink, ChevronRight
+  AlertCircle, ShieldCheck, Copy, ExternalLink, ChevronRight,
+  Edit2, Trash2, Check, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,7 +23,27 @@ export default function ShiftSlots() {
     const [editingTemplate, setEditingTemplate] = useState(null);
     const [showTemplateEditor, setShowTemplateEditor] = useState(false);
 
-    // Shift Card Modal state
+    // Shift instance create / edit state
+    const [editingShift, setEditingShift] = useState(null); // null when not open, object or { isNew: true }
+    const [showShiftEditor, setShowShiftEditor] = useState(false);
+    const [savingShift, setSavingShift] = useState(false);
+
+    // Shift form fields
+    const [shiftForm, setShiftForm] = useState({
+        name: '',
+        startTime: '',
+        endTime: '',
+        guaranteeAmount: 350,
+        minimumOrders: 6,
+        minimumLoginPercentage: 80,
+        maxPartners: 50,
+        zoneId: '',
+        zoneName: 'All',
+        city: 'All',
+        isActive: true
+    });
+
+    // Shift Card Modal state (Rider details)
     const [selectedShiftId, setSelectedShiftId] = useState(null);
     const [shiftModalData, setShiftModalData] = useState(null);
     const [modalLoading, setModalLoading] = useState(false);
@@ -115,6 +136,134 @@ export default function ShiftSlots() {
         }
     };
 
+    // Delete Template
+    const handleDeleteTemplate = async (templateId, templateName) => {
+        if (!window.confirm(`Are you sure you want to delete template "${templateName}"?`)) return;
+        try {
+            const res = await apiClient.delete(`/food/admin/shifts/templates/${templateId}`);
+            if (res.data?.success) {
+                toast.success('Template deleted successfully');
+                fetchTemplates();
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error(error.response?.data?.message || 'Failed to delete template');
+        }
+    };
+
+    // Open Shift Editor (Create or Edit)
+    const handleOpenShiftEditor = (shift = null) => {
+        if (shift) {
+            // Edit existing shift
+            const formatForInput = (dateStr) => {
+                if (!dateStr) return '';
+                const d = new Date(dateStr);
+                const pad = (n) => String(n).padStart(2, '0');
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+
+            setEditingShift(shift);
+            setShiftForm({
+                name: shift.name || '',
+                startTime: formatForInput(shift.startTime),
+                endTime: formatForInput(shift.endTime),
+                guaranteeAmount: shift.guaranteeAmount ?? 350,
+                minimumOrders: shift.minimumOrders ?? 6,
+                minimumLoginPercentage: shift.minimumLoginPercentage ?? 80,
+                maxPartners: shift.maxPartners ?? 50,
+                zoneId: shift.zoneId || '',
+                zoneName: shift.zoneName || shift.city || 'All',
+                city: shift.city || 'All',
+                isActive: shift.isActive !== false
+            });
+        } else {
+            // Create new shift
+            const now = new Date();
+            const start = new Date(now);
+            start.setHours(11, 0, 0, 0);
+            const end = new Date(now);
+            end.setHours(13, 0, 0, 0);
+
+            const formatForInput = (d) => {
+                const pad = (n) => String(n).padStart(2, '0');
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+
+            setEditingShift({ isNew: true });
+            setShiftForm({
+                name: 'Custom Peak Shift Slot',
+                startTime: formatForInput(start),
+                endTime: formatForInput(end),
+                guaranteeAmount: 350,
+                minimumOrders: 6,
+                minimumLoginPercentage: 80,
+                maxPartners: 50,
+                zoneId: selectedZoneId && selectedZoneId !== 'All' ? selectedZoneId : '',
+                zoneName: selectedZoneId && selectedZoneId !== 'All' ? (zones.find(z => z._id === selectedZoneId)?.name || 'Zone') : 'All',
+                city: 'All',
+                isActive: true
+            });
+        }
+        setShowShiftEditor(true);
+    };
+
+    // Save Shift (Create or Update)
+    const handleSaveShift = async (e) => {
+        e.preventDefault();
+        if (!shiftForm.name.trim()) return toast.error('Shift name is required');
+        if (!shiftForm.startTime) return toast.error('Start time is required');
+        if (!shiftForm.endTime) return toast.error('End time is required');
+
+        setSavingShift(true);
+        try {
+            const payload = {
+                ...shiftForm,
+                guaranteeAmount: Number(shiftForm.guaranteeAmount || 0),
+                minimumOrders: Number(shiftForm.minimumOrders || 0),
+                minimumLoginPercentage: Number(shiftForm.minimumLoginPercentage || 0),
+                maxPartners: Number(shiftForm.maxPartners || 1),
+                startTime: new Date(shiftForm.startTime),
+                endTime: new Date(shiftForm.endTime)
+            };
+
+            if (editingShift?.isNew) {
+                const res = await apiClient.post('/food/admin/shifts', payload);
+                if (res.data?.success) {
+                    toast.success('Shift slot created successfully!');
+                    setShowShiftEditor(false);
+                    fetchShifts();
+                }
+            } else {
+                const res = await apiClient.patch(`/food/admin/shifts/${editingShift._id}`, payload);
+                if (res.data?.success) {
+                    toast.success('Shift slot updated successfully!');
+                    setShowShiftEditor(false);
+                    fetchShifts();
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error(error.response?.data?.message || 'Failed to save shift');
+        } finally {
+            setSavingShift(false);
+        }
+    };
+
+    // Delete Shift
+    const handleDeleteShift = async (shiftId, shiftName) => {
+        if (!window.confirm(`Are you sure you want to delete shift "${shiftName}"? This will also remove any existing rider bookings for this slot.`)) return;
+        try {
+            const res = await apiClient.delete(`/food/admin/shifts/${shiftId}`);
+            if (res.data?.success) {
+                toast.success('Shift slot deleted successfully!');
+                fetchShifts();
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error(error.response?.data?.message || 'Failed to delete shift');
+        }
+    };
+
     // Open Shift Card Modal & fetch rider data
     const handleOpenShiftModal = async (shiftId) => {
         setSelectedShiftId(shiftId);
@@ -182,7 +331,7 @@ export default function ShiftSlots() {
                 <div>
                     <h1 className="text-2xl font-black text-gray-900 tracking-tight">Shift Operations & Rider Payouts</h1>
                     <p className="text-xs text-gray-500 mt-0.5 font-medium">
-                        Manage 11 AM - 11 PM templates, click shift cards to view working riders, bank accounts & issue instant payouts.
+                        Create and edit shift templates, manage active shift slots, view working riders & issue instant payouts.
                     </p>
                 </div>
 
@@ -209,7 +358,7 @@ export default function ShiftSlots() {
                         className="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition flex items-center gap-2 disabled:opacity-50"
                     >
                         <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
-                        Auto-Generate Today's Shifts
+                        Auto-Generate Shifts
                     </button>
                 </div>
             </div>
@@ -217,7 +366,7 @@ export default function ShiftSlots() {
             {/* Tab Navigation */}
             <div className="flex border-b border-gray-200 gap-6 text-sm font-bold">
                 <button
-                    onClick={() => { setActiveTab('templates'); setShowTemplateEditor(false); }}
+                    onClick={() => { setActiveTab('templates'); setShowTemplateEditor(false); setShowShiftEditor(false); }}
                     className={`pb-3 transition flex items-center gap-2 border-b-2 ${
                         activeTab === 'templates'
                             ? 'border-orange-600 text-orange-600 font-black'
@@ -228,18 +377,18 @@ export default function ShiftSlots() {
                 </button>
 
                 <button
-                    onClick={() => { setActiveTab('shifts'); setShowTemplateEditor(false); }}
+                    onClick={() => { setActiveTab('shifts'); setShowTemplateEditor(false); setShowShiftEditor(false); }}
                     className={`pb-3 transition flex items-center gap-2 border-b-2 ${
                         activeTab === 'shifts'
                             ? 'border-orange-600 text-orange-600 font-black'
                             : 'border-transparent text-gray-400 hover:text-gray-600'
                     }`}
                 >
-                    <Calendar className="w-4 h-4" /> Generated Shift Cards
+                    <Calendar className="w-4 h-4" /> Active Shift Slots ({shifts.length})
                 </button>
 
                 <button
-                    onClick={() => { setActiveTab('payouts'); setShowTemplateEditor(false); }}
+                    onClick={() => { setActiveTab('payouts'); setShowTemplateEditor(false); setShowShiftEditor(false); }}
                     className={`pb-3 transition flex items-center gap-2 border-b-2 ${
                         activeTab === 'payouts'
                             ? 'border-orange-600 text-orange-600 font-black'
@@ -269,7 +418,7 @@ export default function ShiftSlots() {
                     ) : (
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
-                                <h3 className="text-sm font-bold text-gray-800">Active Shift Templates</h3>
+                                <h3 className="text-sm font-bold text-gray-800">Configured Shift Templates</h3>
                                 <button
                                     onClick={() => { setEditingTemplate(null); setShowTemplateEditor(true); }}
                                     className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1"
@@ -282,28 +431,37 @@ export default function ShiftSlots() {
                                 {loading ? (
                                     <div className="p-8 text-center text-gray-400 col-span-2 text-sm">Loading templates...</div>
                                 ) : templates.length === 0 ? (
-                                    <div className="p-8 text-center text-gray-400 border border-dashed rounded-2xl col-span-2">
+                                    <div className="p-8 text-center text-gray-400 border border-dashed rounded-2xl col-span-2 bg-white">
                                         No templates found. Click "Create New Template" to get started!
                                     </div>
                                 ) : (
                                     templates.map((tpl) => (
-                                        <div key={tpl._id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+                                        <div key={tpl._id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4 hover:shadow-md transition">
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <h4 className="font-bold text-base text-gray-900">{tpl.name}</h4>
-                                                    <p className="text-xs text-gray-400">Zone: {tpl.city} • {tpl.slots?.length || 0} Time Slots</p>
+                                                    <p className="text-xs text-gray-400">Zone: {tpl.city || 'All'} • {tpl.slots?.length || 0} Time Slots</p>
                                                 </div>
-                                                <button
-                                                    onClick={() => { setEditingTemplate(tpl); setShowTemplateEditor(true); }}
-                                                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-xs"
-                                                >
-                                                    Edit Slots
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => { setEditingTemplate(tpl); setShowTemplateEditor(true); }}
+                                                        className="px-3 py-1.5 bg-gray-100 hover:bg-orange-50 hover:text-orange-600 text-gray-700 font-bold rounded-xl text-xs transition flex items-center gap-1"
+                                                    >
+                                                        <Edit2 className="w-3.5 h-3.5" /> Edit Slots
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteTemplate(tpl._id, tpl.name)}
+                                                        className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs transition"
+                                                        title="Delete Template"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             <div className="space-y-2">
                                                 {tpl.slots?.map((s, idx) => (
-                                                    <div key={idx} className="flex justify-between items-center p-2.5 bg-gray-50/60 rounded-xl text-xs">
+                                                    <div key={idx} className="flex justify-between items-center p-2.5 bg-gray-50/70 rounded-xl text-xs border border-gray-100">
                                                         <div>
                                                             <span className="font-bold text-gray-900">Slot {s.slotOrder}:</span> {s.startTime} - {s.endTime}
                                                             {s.isNightSlot && <span className="ml-2 text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">Night</span>}
@@ -324,20 +482,48 @@ export default function ShiftSlots() {
             {/* Tab 2: Shift Operations Cards */}
             {activeTab === 'shifts' && (
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                            Click any shift card to view working delivery partners, bank accounts & issue payments
-                        </p>
-                        <span className="text-xs font-bold bg-orange-50 text-orange-600 px-3 py-1 rounded-full border border-orange-100">
-                            {shifts.length} Active Shift Slots
-                        </span>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-gray-100">
+                        <div>
+                            <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                                Live Shift Slot Instances
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Edit or delete individual slots below, or click any card to view active working riders.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => handleOpenShiftEditor(null)}
+                                className="px-3.5 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5"
+                            >
+                                <Plus className="w-4 h-4" /> Create Single Shift
+                            </button>
+                            <span className="text-xs font-bold bg-orange-50 text-orange-600 px-3 py-1.5 rounded-xl border border-orange-100">
+                                {shifts.length} Active Slots
+                            </span>
+                        </div>
                     </div>
 
                     {loading ? (
                         <div className="p-12 text-center text-gray-400 text-sm">Loading shift cards...</div>
                     ) : shifts.length === 0 ? (
-                        <div className="p-12 text-center text-gray-400 border border-dashed rounded-2xl bg-white">
-                            No shift instances found for today. Click "Auto-Generate Today's Shifts" above!
+                        <div className="p-12 text-center text-gray-400 border border-dashed rounded-2xl bg-white space-y-3">
+                            <div className="text-3xl">📅</div>
+                            <p className="font-medium text-sm text-gray-600">No shift instances found. Create a single shift slot or auto-generate from templates!</p>
+                            <div className="flex justify-center gap-3">
+                                <button
+                                    onClick={() => handleOpenShiftEditor(null)}
+                                    className="px-4 py-2 bg-orange-600 text-white rounded-xl text-xs font-bold shadow-sm hover:bg-orange-700 transition"
+                                >
+                                    + Create Single Shift
+                                </button>
+                                <button
+                                    onClick={handleGenerateShifts}
+                                    className="px-4 py-2 bg-gray-100 text-gray-800 rounded-xl text-xs font-bold hover:bg-gray-200 transition"
+                                >
+                                    Auto-Generate Today's Shifts
+                                </button>
+                            </div>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -350,14 +536,34 @@ export default function ShiftSlots() {
                                         className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md hover:border-orange-200 transition-all cursor-pointer relative flex flex-col justify-between space-y-4 group"
                                     >
                                         <div className="space-y-3">
-                                            {/* Top badges */}
+                                            {/* Top badges + Action buttons */}
                                             <div className="flex items-center justify-between gap-2">
-                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${activityStatus.color}`}>
-                                                    {activityStatus.label}
-                                                </span>
-                                                <span className="text-xs font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full border">
-                                                    📍 {shift.city || 'All'}
-                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${activityStatus.color}`}>
+                                                        {activityStatus.label}
+                                                    </span>
+                                                    <span className="text-xs font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full border">
+                                                        📍 {shift.zoneName || shift.city || 'All'}
+                                                    </span>
+                                                </div>
+
+                                                {/* Edit & Delete Action Buttons */}
+                                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                                    <button
+                                                        onClick={() => handleOpenShiftEditor(shift)}
+                                                        className="p-1.5 bg-gray-50 hover:bg-orange-100 text-gray-600 hover:text-orange-600 rounded-lg transition"
+                                                        title="Edit Shift Details"
+                                                    >
+                                                        <Edit2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteShift(shift._id, shift.name)}
+                                                        className="p-1.5 bg-gray-50 hover:bg-red-100 text-gray-600 hover:text-red-600 rounded-lg transition"
+                                                        title="Delete Shift Slot"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Shift Title & Time */}
@@ -402,6 +608,177 @@ export default function ShiftSlots() {
                             })}
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Tab 3: Pending Bank Payouts */}
+            {activeTab === 'payouts' && <PendingPayouts selectedZoneId={selectedZoneId} />}
+
+            {/* CREATE / EDIT SHIFT INSTANCE MODAL */}
+            {showShiftEditor && (
+                <div className="fixed inset-0 bg-black/60 z-[1100] flex items-center justify-center p-4 overflow-y-auto">
+                    <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-6 space-y-5 my-8">
+                        <div className="flex justify-between items-center border-b pb-3">
+                            <div>
+                                <h3 className="font-extrabold text-lg text-gray-900">
+                                    {editingShift?.isNew ? 'Create New Shift Slot' : 'Edit Shift Slot'}
+                                </h3>
+                                <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                    Configure shift schedule, minimum guarantee, and quota.
+                                </p>
+                            </div>
+                            <button onClick={() => setShowShiftEditor(false)} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSaveShift} className="space-y-4">
+                            {/* Shift Name */}
+                            <div>
+                                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-1">
+                                    Shift Name <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={shiftForm.name}
+                                    onChange={(e) => setShiftForm({ ...shiftForm, name: e.target.value })}
+                                    placeholder="e.g. Lunch Peak Slot (11:00 AM - 01:00 PM)"
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-orange-500/20"
+                                />
+                            </div>
+
+                            {/* Zone Selector */}
+                            <div>
+                                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-1">
+                                    Operating Zone
+                                </label>
+                                <select
+                                    value={shiftForm.zoneId}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        const found = zones.find(z => z._id === val);
+                                        setShiftForm({
+                                            ...shiftForm,
+                                            zoneId: val,
+                                            zoneName: found ? (found.name || found.zoneName) : 'All Zones',
+                                            city: found ? (found.serviceLocation || found.name) : 'All'
+                                        });
+                                    }}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-900"
+                                >
+                                    <option value="">All Active Zones (Universal)</option>
+                                    {zones.map((z) => (
+                                        <option key={z._id} value={z._id}>
+                                            📍 {z.name || z.zoneName}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Start Time & End Time */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-1">
+                                        Start Date & Time <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        value={shiftForm.startTime}
+                                        onChange={(e) => setShiftForm({ ...shiftForm, startTime: e.target.value })}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-900"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-1">
+                                        End Date & Time <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        value={shiftForm.endTime}
+                                        onChange={(e) => setShiftForm({ ...shiftForm, endTime: e.target.value })}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-900"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Guarantee Amount & Max Partners */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-1">
+                                        Guarantee Pay (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={shiftForm.guaranteeAmount}
+                                        onChange={(e) => setShiftForm({ ...shiftForm, guaranteeAmount: e.target.value })}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-900"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-1">
+                                        Max Rider Capacity
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={shiftForm.maxPartners}
+                                        onChange={(e) => setShiftForm({ ...shiftForm, maxPartners: e.target.value })}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-900"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Min Orders & Required Online % */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-1">
+                                        Min Orders Required
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={shiftForm.minimumOrders}
+                                        onChange={(e) => setShiftForm({ ...shiftForm, minimumOrders: e.target.value })}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-900"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-1">
+                                        Required Online %
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={shiftForm.minimumLoginPercentage}
+                                        onChange={(e) => setShiftForm({ ...shiftForm, minimumLoginPercentage: e.target.value })}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-900"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-3 border-t">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowShiftEditor(false)}
+                                    className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-bold text-xs"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={savingShift}
+                                    className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg flex items-center gap-1.5 disabled:opacity-50"
+                                >
+                                    {savingShift ? 'Saving...' : editingShift?.isNew ? 'Create Shift' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
 

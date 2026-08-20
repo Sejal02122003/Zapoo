@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/api/axios';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export default function RiderShiftsV2() {
     const navigate = useNavigate();
@@ -16,13 +17,14 @@ export default function RiderShiftsV2() {
             setLoading(true);
             const response = await apiClient.get('/food/delivery/shifts/rider');
             if (response.data?.success) {
-                setShifts(response.data.data);
+                setShifts(response.data.data || []);
                 if (response.data.riderZone) {
                     setRiderZone(response.data.riderZone);
                 }
             }
         } catch (error) {
             console.error("Error fetching available shifts", error);
+            toast.error("Failed to load shifts");
         } finally {
             setLoading(false);
         }
@@ -37,6 +39,7 @@ export default function RiderShiftsV2() {
             }
         } catch (error) {
             console.error("Error fetching my booked shifts", error);
+            toast.error("Failed to load booked shifts");
         } finally {
             setLoading(false);
         }
@@ -47,10 +50,11 @@ export default function RiderShiftsV2() {
             setLoading(true);
             const response = await apiClient.get('/food/delivery/shifts/rider/payouts');
             if (response.data?.success) {
-                setPayouts(response.data.data);
+                setPayouts(response.data.data || []);
             }
         } catch (error) {
             console.error("Error fetching payouts", error);
+            toast.error("Failed to load payouts");
         } finally {
             setLoading(false);
         }
@@ -68,14 +72,14 @@ export default function RiderShiftsV2() {
             
             const response = await apiClient.post(`/food/delivery/shifts/rider/${shiftId}/book`);
             if (response.data?.success) {
-                alert("Shift booked successfully!");
+                toast.success("Shift booked successfully!");
                 fetchShifts();
             } else {
-                alert(response.data?.message || "Failed to book shift");
+                toast.error(response.data?.message || "Failed to book shift");
             }
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || "Error booking shift");
+            toast.error(error.response?.data?.message || "Error booking shift");
         }
     };
 
@@ -84,14 +88,14 @@ export default function RiderShiftsV2() {
             if (!window.confirm("Are you sure you want to cancel this shift booking?")) return;
             const response = await apiClient.post(`/food/delivery/shifts/rider/${bookingId}/cancel`);
             if (response.data?.success) {
-                alert("Shift booking cancelled successfully!");
+                toast.success("Shift booking cancelled successfully!");
                 fetchMyShifts();
             } else {
-                alert(response.data?.message || "Failed to cancel shift booking");
+                toast.error(response.data?.message || "Failed to cancel shift booking");
             }
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || "Error cancelling shift booking");
+            toast.error(error.response?.data?.message || "Error cancelling shift booking");
         }
     };
 
