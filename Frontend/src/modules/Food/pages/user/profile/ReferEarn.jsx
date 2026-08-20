@@ -76,6 +76,7 @@ export default function ReferEarn() {
 
   const refCode = userProfile?.referralCode || userProfile?._id || userProfile?.id || "";
   const referralLink = PLAY_STORE_URL;
+  const invitedFriends = Array.isArray(stats?.invitedFriends) ? stats.invitedFriends : [];
 
   const shareText = useMemo(() => {
     const rewardText = stats.rewardAmount > 0 ? `₹${stats.rewardAmount}` : "exciting bonus";
@@ -136,7 +137,7 @@ export default function ReferEarn() {
         <Card className="bg-white dark:bg-[#1a1a1a] rounded-2xl border-0 dark:border-gray-800 shadow-sm mb-3">
           <CardContent className="p-4">
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Invite friends and earn when they sign up on {companyName}.
+              Invite friends and earn on their first order on {companyName}.
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-3">

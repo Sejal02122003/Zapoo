@@ -656,8 +656,8 @@ export default function Profile() {
                 </div>
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Invite a friend. Reward is added to your wallet when they
-                    sign up.
+                    Invite a friend. Reward is added to your wallet on their
+                    first order.
                   </p>
                   <button
                     type="button"
