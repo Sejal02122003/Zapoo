@@ -56,13 +56,16 @@ function cleanPhone10(phone) {
  * Check if Exotel call masking is configured and ready.
  */
 export function isCallMaskingConfigured() {
+    const hasVirtualNumber = Boolean(
+        config.exotelCallerId ||
+        (Array.isArray(config.exotelVirtualNumbers) && config.exotelVirtualNumbers.length > 0)
+    );
     return Boolean(
         config.callMaskingEnabled &&
         config.exotelApiKey &&
         config.exotelApiToken &&
         config.exotelSid &&
-        config.exotelVirtualNumbers &&
-        config.exotelVirtualNumbers.length > 0
+        hasVirtualNumber
     );
 }
 
@@ -91,20 +94,20 @@ export async function initiateMaskedCall({ orderId, callerUser, targetRole, cust
         normalizedTarget = 'customer';
     }
 
-    // Find the order
+    // Find the order with proper populated paths
     let order = null;
     if (orderId.match(/^[0-9a-fA-F]{24}$/)) {
         order = await FoodOrder.findById(orderId)
-            .populate('userId', 'name phone')
-            .populate('deliveryPartner', 'fullName name phone')
-            .populate('restaurantId', 'restaurantName phone ownerPhone location')
+            .populate('userId', 'name phone fullName')
+            .populate('dispatch.deliveryPartnerId', 'fullName name phone')
+            .populate('restaurantId', 'restaurantName phone ownerPhone primaryContactNumber location')
             .lean();
     }
     if (!order) {
-        order = await FoodOrder.findOne({ orderId })
-            .populate('userId', 'name phone')
-            .populate('deliveryPartner', 'fullName name phone')
-            .populate('restaurantId', 'restaurantName phone ownerPhone location')
+        order = await FoodOrder.findOne({ $or: [{ orderId }, { order_id: orderId }] })
+            .populate('userId', 'name phone fullName')
+            .populate('dispatch.deliveryPartnerId', 'fullName name phone')
+            .populate('restaurantId', 'restaurantName phone ownerPhone primaryContactNumber location')
             .lean();
     }
 
@@ -112,38 +115,50 @@ export async function initiateMaskedCall({ orderId, callerUser, targetRole, cust
         throw new Error(`Order #${orderId} not found`);
     }
 
-    // Determine Caller and Callee details
+    // Determine Caller details
     let callerPhone = customCallerPhone || callerUser.phone;
     let callerRole = callerUser.role || 'USER';
     let callerModel = 'FoodUser';
-    let callerId = callerUser._id;
+    let callerId = callerUser._id || callerUser.userId || callerUser.id;
 
     if (callerRole === 'DELIVERY_PARTNER') callerModel = 'FoodDeliveryPartner';
     else if (callerRole === 'RESTAURANT') callerModel = 'FoodRestaurant';
     else if (['ADMIN', 'SUPER_ADMIN', 'SUB_ADMIN'].includes(callerRole)) callerModel = 'FoodAdmin';
+
+    // If caller didn't have phone attached in req.user, resolve from DB / order
+    if (!callerPhone) {
+        if (callerRole === 'USER') {
+            callerPhone = order.customerPhone || order.deliveryAddress?.phone || order.userId?.phone;
+            if (!callerPhone && callerId) {
+                const u = await FoodUser.findById(callerId).select('phone').lean();
+                callerPhone = u?.phone;
+            }
+        } else if (callerRole === 'DELIVERY_PARTNER') {
+            callerPhone = order.dispatch?.deliveryPartnerId?.phone || order.deliveryPartner?.phone;
+            if (!callerPhone && callerId) {
+                const dp = await FoodDeliveryPartner.findById(callerId).select('phone').lean();
+                callerPhone = dp?.phone;
+            }
+        } else if (callerRole === 'RESTAURANT') {
+            callerPhone = order.restaurantId?.primaryContactNumber || order.restaurantId?.ownerPhone || order.restaurantId?.phone;
+            if (!callerPhone && callerId) {
+                const r = await FoodRestaurant.findById(callerId).select('phone ownerPhone primaryContactNumber').lean();
+                callerPhone = r?.primaryContactNumber || r?.ownerPhone || r?.phone;
+            }
+        }
+    }
 
     let calleePhone = '';
     let calleeRole = '';
     let calleeModel = '';
     let calleeId = null;
 
-    // If caller didn't have phone attached in req.user, resolve from order
-    if (!callerPhone) {
-        if (callerRole === 'USER') {
-            callerPhone = order.customerPhone || order.deliveryAddress?.phone || order.userId?.phone;
-        } else if (callerRole === 'DELIVERY_PARTNER') {
-            callerPhone = order.deliveryPartner?.phone;
-        } else if (callerRole === 'RESTAURANT') {
-            callerPhone = order.restaurantId?.phone || order.restaurantId?.ownerPhone;
-        }
-    }
-
     // Resolve Callee based on normalizedTarget
     if (normalizedTarget === 'rider') {
         calleeRole = 'DELIVERY_PARTNER';
         calleeModel = 'FoodDeliveryPartner';
-        calleeId = order.deliveryPartner?._id || order.deliveryPartnerId;
-        calleePhone = order.deliveryPartner?.phone;
+        calleeId = order.dispatch?.deliveryPartnerId?._id || order.dispatch?.deliveryPartnerId || order.deliveryPartnerId || order.deliveryPartner?._id || order.deliveryPartner;
+        calleePhone = order.dispatch?.deliveryPartnerId?.phone || order.deliveryPartner?.phone;
 
         // If not populated, lookup delivery partner directly
         if (!calleePhone && calleeId) {
@@ -154,11 +169,11 @@ export async function initiateMaskedCall({ orderId, callerUser, targetRole, cust
         calleeRole = 'RESTAURANT';
         calleeModel = 'FoodRestaurant';
         calleeId = order.restaurantId?._id || order.restaurantId;
-        calleePhone = order.restaurantId?.phone || order.restaurantId?.ownerPhone;
+        calleePhone = order.restaurantId?.primaryContactNumber || order.restaurantId?.ownerPhone || order.restaurantId?.phone;
 
         if (!calleePhone && calleeId) {
-            const rest = await FoodRestaurant.findById(calleeId).select('phone ownerPhone').lean();
-            calleePhone = rest?.phone || rest?.ownerPhone;
+            const rest = await FoodRestaurant.findById(calleeId).select('phone ownerPhone primaryContactNumber').lean();
+            calleePhone = rest?.primaryContactNumber || rest?.ownerPhone || rest?.phone;
         }
     } else if (normalizedTarget === 'customer') {
         calleeRole = 'USER';
@@ -194,8 +209,9 @@ export async function initiateMaskedCall({ orderId, callerUser, targetRole, cust
         };
     }
 
-    // Pick virtual number (defaults to 03348052382)
-    const virtualNumber = config.exotelCallerId || config.exotelVirtualNumbers?.[0] || '03348052382';
+    // Pick virtual number
+    let rawVn = config.exotelCallerId || config.exotelVirtualNumbers?.[0] || '03348052382';
+    const virtualNumber = formatExotelPhone(rawVn) || rawVn;
     const fromFormatted = formatExotelPhone(callerPhone);
     const toFormatted = formatExotelPhone(calleePhone);
 
@@ -206,8 +222,6 @@ export async function initiateMaskedCall({ orderId, callerUser, targetRole, cust
     const exotelSubdomain = config.exotelSubdomain || 'api';
     const exotelUrl = `https://${exotelSubdomain}.exotel.com/v1/Accounts/${config.exotelSid}/Calls/connect.json`;
 
-    const statusCallbackUrl = `${config.exotelStatusCallbackBaseUrl}/api/v1/food/calls/callback`;
-
     const formParams = new URLSearchParams();
     formParams.append('From', fromFormatted);
     formParams.append('To', toFormatted);
@@ -215,8 +229,14 @@ export async function initiateMaskedCall({ orderId, callerUser, targetRole, cust
     formParams.append('CallType', 'trans');
     formParams.append('TimeLimit', '1800'); // 30 minutes max call duration
     formParams.append('TimeOut', '45'); // 45s ringing timeout for caller leg
-    formParams.append('StatusCallback', statusCallbackUrl);
-    formParams.append('StatusCallbackEvents[0]', 'terminal');
+
+    const cbBase = config.exotelStatusCallbackBaseUrl;
+    if (cbBase && typeof cbBase === 'string' && (cbBase.startsWith('http://') || cbBase.startsWith('https://')) && !cbBase.includes('localhost')) {
+        const statusCallbackUrl = `${cbBase.replace(/\/+$/, '')}/api/v1/food/calls/callback`;
+        formParams.append('StatusCallback', statusCallbackUrl);
+        formParams.append('StatusCallbackEvents[0]', 'terminal');
+    }
+
     formParams.append('CustomField', JSON.stringify({ orderId: String(order._id), targetRole: normalizedTarget }));
 
     try {
@@ -355,16 +375,16 @@ export async function handleExotelPassthru(query) {
             { customerPhone: { $regex: callerClean } },
             { 'deliveryAddress.phone': { $regex: callerClean } }
         ],
-        orderStatus: { $in: ['created', 'pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'picked_up', 'arrived'] }
+        orderStatus: { $in: ['created', 'pending', 'confirmed', 'preparing', 'ready', 'ready_for_pickup', 'out_for_delivery', 'picked_up', 'arrived', 'reached_drop'] }
     })
-        .populate('deliveryPartner', 'phone')
-        .populate('restaurantId', 'phone ownerPhone')
+        .populate('dispatch.deliveryPartnerId', 'phone')
+        .populate('restaurantId', 'phone ownerPhone primaryContactNumber')
         .sort({ createdAt: -1 })
         .lean();
 
     if (activeOrder) {
         // Customer called -> route to Delivery Partner or Restaurant
-        const destination = activeOrder.deliveryPartner?.phone || activeOrder.restaurantId?.phone || activeOrder.restaurantId?.ownerPhone;
+        const destination = activeOrder.dispatch?.deliveryPartnerId?.phone || activeOrder.restaurantId?.primaryContactNumber || activeOrder.restaurantId?.phone || activeOrder.restaurantId?.ownerPhone;
         if (destination) {
             return {
                 action: 'dial',
@@ -378,8 +398,12 @@ export async function handleExotelPassthru(query) {
     const dp = await FoodDeliveryPartner.findOne({ phone: { $regex: callerClean } }).lean();
     if (dp) {
         const dpActiveOrder = await FoodOrder.findOne({
-            deliveryPartner: dp._id,
-            orderStatus: { $in: ['accepted', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'picked_up', 'arrived'] }
+            $or: [
+                { 'dispatch.deliveryPartnerId': dp._id },
+                { deliveryPartner: dp._id },
+                { deliveryPartnerId: dp._id }
+            ],
+            orderStatus: { $in: ['accepted', 'confirmed', 'preparing', 'ready', 'ready_for_pickup', 'out_for_delivery', 'picked_up', 'arrived', 'reached_drop'] }
         })
             .sort({ createdAt: -1 })
             .lean();

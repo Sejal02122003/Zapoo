@@ -983,7 +983,11 @@ export default function OrderTracking() {
     if (e && e.stopPropagation) e.stopPropagation();
 
     const orderIdentifier = order?._id || order?.id || order?.orderId || id;
-    const rawPhone = order?.deliveryPartner?.phone || '';
+    const rawPhone =
+      order?.deliveryPartner?.phone ||
+      order?.dispatch?.deliveryPartnerId?.phone ||
+      order?.deliveryPartnerId?.phone ||
+      '';
     const cleanPhone = String(rawPhone).replace(/[^\d+]/g, '');
 
     const toastId = toast.loading('Connecting secure call to delivery partner...');
