@@ -199,10 +199,10 @@ export default function AdminEarningReport() {
                     const deliveryGstAdmin = Number(breakdown.deliveryGstToAdmin) || 0
                     const platformDiscount = Number(breakdown.platformDiscount) || 0
                     
-                    const restaurantCommission = Number(breakdown.restaurantCommission) || 0
-                    const gstOnCommission = Number(breakdown.gstOnCommission) || 0
-                    const tcs = Number(breakdown.tcs) || 0
-                    const gstOnItem = Number(breakdown.gstOnItem) || 0
+                    const restaurantCommission = Number(breakdown.restaurantCommission) || Number(tx.amounts?.restaurantCommission) || 0
+                    const gstOnCommission = Number(breakdown.gstOnCommission) || Number(tx.amounts?.gstOnCommission) || (restaurantCommission > 0 ? Math.round(restaurantCommission * 0.18 * 100) / 100 : 0)
+                    const tcs = Number(breakdown.tcs) || Number(tx.amounts?.tcs) || (itemSubtotal > 0 ? Math.round(itemSubtotal * 0.01 * 100) / 100 : 0)
+                    const gstOnItem = Number(breakdown.gstOnItem) || Number(tx.amounts?.gstOnItem) || 0
 
                     const totalAdminProfit = breakdown.totalAdminReceivable !== undefined
                       ? Number(breakdown.totalAdminReceivable)
@@ -213,8 +213,10 @@ export default function AdminEarningReport() {
 
                     const restaurantCouponDiscount = Math.max(0, discount - platformDiscount)
                     const totalDeductions = restaurantCommission + gstOnCommission + tcs + restaurantCouponDiscount
-                    const restaurantGets = Math.max(0, itemSubtotal + packagingFee - totalDeductions)
-                    const isExpanded = !!expandedCards[tx.id]
+                    const restaurantGets = tx.amounts?.restaurantShare !== undefined
+                      ? Number(tx.amounts.restaurantShare)
+                      : Math.max(0, itemSubtotal + packagingFee - totalDeductions)
+                    const isExpanded = !expandedCards[tx.id]
 
                     return (
                       <React.Fragment key={tx.id}>
@@ -354,41 +356,41 @@ export default function AdminEarningReport() {
                                       </div>
                                     )}
                                     
-                                    <div className="flex items-center gap-1.5 py-1">
-                                      <span className="text-[13px] text-gray-600 font-medium">GST & Fees Deducted:</span>
-                                      <span className="text-[13px] text-red-600">-{formatMoney(totalDeductions)}</span>
-                                    </div>
+                                     <div className="flex items-center justify-between py-1 border-t border-blue-100 mt-1">
+                                       <span className="text-[13px] text-gray-700 font-medium">GST & Fees Deducted:</span>
+                                       <span className="text-[13px] text-red-600 font-semibold">-{formatMoney(totalDeductions)}</span>
+                                     </div>
 
-                                    <div className="pl-3 border-l-2 border-blue-100 space-y-2 mt-1 mb-1">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-[12px] text-gray-500 font-medium">Restaurant commission</span>
-                                        <span className="text-[12px] text-red-500/80">-{formatMoney(restaurantCommission)}</span>
-                                      </div>
-                                      {gstOnCommission > 0 && (
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-[12px] text-gray-500 font-medium">GST on commission</span>
-                                          <span className="text-[12px] text-red-500/80">-{formatMoney(gstOnCommission)}</span>
-                                        </div>
-                                      )}
+                                     <div className="pl-3 border-l-2 border-blue-200 space-y-2 mt-1 mb-1">
+                                       <div className="flex items-center justify-between">
+                                         <span className="text-[12px] text-gray-600 font-medium">Restaurant commission</span>
+                                         <span className="text-[12px] text-red-500/80">-{formatMoney(restaurantCommission)}</span>
+                                       </div>
+                                       {gstOnCommission > 0 && (
+                                         <div className="flex items-center justify-between">
+                                           <span className="text-[12px] text-gray-600 font-medium">GST on commission (18%)</span>
+                                           <span className="text-[12px] text-red-500/80">-{formatMoney(gstOnCommission)}</span>
+                                         </div>
+                                       )}
 
-                                      {tcs > 0 && (
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-[12px] text-gray-500 font-medium">TCS</span>
-                                          <span className="text-[12px] text-red-500/80">-{formatMoney(tcs)}</span>
-                                        </div>
-                                      )}
-                                      {restaurantCouponDiscount > 0 && (
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-[12px] text-gray-500 font-medium">Restaurant coupon discount</span>
-                                          <span className="text-[12px] text-red-500/80">-{formatMoney(restaurantCouponDiscount)}</span>
-                                        </div>
-                                      )}
-                                    </div>
+                                       {tcs > 0 && (
+                                         <div className="flex items-center justify-between">
+                                           <span className="text-[12px] text-gray-600 font-medium">TCS (1%)</span>
+                                           <span className="text-[12px] text-red-500/80">-{formatMoney(tcs)}</span>
+                                         </div>
+                                       )}
+                                       {restaurantCouponDiscount > 0 && (
+                                         <div className="flex items-center justify-between">
+                                           <span className="text-[12px] text-gray-600 font-medium">Restaurant coupon discount</span>
+                                           <span className="text-[12px] text-red-500/80">-{formatMoney(restaurantCouponDiscount)}</span>
+                                         </div>
+                                       )}
+                                     </div>
 
-                                    <div className="pt-2 mt-2 border-t border-blue-200 flex items-center justify-between">
-                                      <span className="text-sm font-bold text-blue-900">Restaurant gets</span>
-                                      <span className="text-sm font-bold text-blue-900">{formatMoney(restaurantGets)}</span>
-                                    </div>
+                                     <div className="pt-2 mt-2 border-t border-blue-200 flex items-center justify-between">
+                                       <span className="text-sm font-bold text-blue-900">Restaurant gets (Net Payout)</span>
+                                       <span className="text-sm font-bold text-blue-900">{formatMoney(restaurantGets)}</span>
+                                     </div>
                                   </div>
                                 </div>
                               </motion.div>

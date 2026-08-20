@@ -120,7 +120,7 @@ const dispatchSchema = new mongoose.Schema(
         modeAtCreation: { type: String, enum: ['auto'], default: 'auto' },
         status: {
             type: String,
-            enum: ['unassigned', 'assigned', 'accepted', 'rejected', 'cancelled'],
+            enum: ['unassigned', 'assigned', 'accepted', 'rejected', 'cancelled', 'needs_manual_assignment'],
             default: 'unassigned'
         },
         deliveryPartnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodDeliveryPartner', default: null },
@@ -149,7 +149,11 @@ const deliveryStateSchema = new mongoose.Schema(
                 'en_route_to_delivery',
                 'at_drop',
                 'delivered',
-                'completed'
+                'completed',
+                'cancelled',
+                'cancelled_by_user',
+                'cancelled_by_restaurant',
+                'cancelled_by_admin'
             ],
             default: 'en_route_to_pickup'
         },

@@ -898,11 +898,22 @@ export async function getTransactionReport(query = {}) {
         const deliveryCostAdmin = isTakeaway ? 0 : Number(tx.amounts?.riderShare ?? order.riderEarning ?? 0);
         const deliveryGstAdmin = isTakeaway ? 0 : (deliveryCostAdmin * 0.18);
         const platformDiscount = Math.max(0, Number(pricing.couponDiscount || (Number(pricing.discount || 0) - Number(pricing.restaurantCouponDiscount || 0))));
+        
+        const restaurantCommission = Number(pricing.restaurantCommission ?? tx.amounts?.restaurantCommission ?? 0);
+        const gstOnItem = Number(pricing.taxBreakdown?.itemTax ?? pricing.gstOnItem ?? tx.amounts?.gstOnItem ?? 0);
+        const gstOnCommission = Number(
+            pricing.gstOnCommission ??
+            tx.amounts?.gstOnCommission ??
+            (restaurantCommission > 0 ? Math.round(restaurantCommission * 0.18 * 100) / 100 : 0)
+        );
+        const paymentGatewayFee = Number(pricing.paymentGatewayFee ?? tx.amounts?.paymentGatewayFee ?? 0);
+        const tcs = Number(pricing.tcs ?? tx.amounts?.tcs ?? (subtotal > 0 ? Math.round(subtotal * 0.01 * 100) / 100 : 0));
+
         const platformNetProfit = tx.amounts?.platformNetProfit !== undefined
             ? tx.amounts.platformNetProfit
             : isTakeaway
-                ? (platformFee + Number(pricing.restaurantCommission || 0) - platformDiscount)
-                : (platformFee + deliveryFeeUser + Number(pricing.weatherFee || 0) + Number(pricing.restaurantCommission || 0) - deliveryCostAdmin - platformDiscount);
+                ? (platformFee + restaurantCommission - platformDiscount)
+                : (platformFee + deliveryFeeUser + Number(pricing.weatherFee || 0) + restaurantCommission - deliveryCostAdmin - platformDiscount);
 
         return {
             id: tx._id,
@@ -921,15 +932,16 @@ export async function getTransactionReport(query = {}) {
             orderAmount: tx.amounts?.totalCustomerPaid || pricing.total || 0,
             status: tx.status,
             orderStatus: order.orderStatus || 'unknown',
+            amounts: tx.amounts,
             adminEarningBreakdown: {
                 deliveryProfit: isTakeaway ? 0 : (deliveryFeeUser - deliveryCostAdmin),
                 platformFee: platformFee,
                 packagingFee: packagingFee,
-                restaurantCommission: Number(pricing.restaurantCommission || 0),
-                gstOnItem: Number(pricing.gstOnItem || 0),
-                gstOnCommission: Number(pricing.gstOnCommission || 0),
-                paymentGatewayFee: Number(pricing.paymentGatewayFee || 0),
-                tcs: Number(pricing.tcs || 0),
+                restaurantCommission: restaurantCommission,
+                gstOnItem: gstOnItem,
+                gstOnCommission: gstOnCommission,
+                paymentGatewayFee: paymentGatewayFee,
+                tcs: tcs,
                 totalAdminReceivable: platformNetProfit,
                 deliveryCostToAdmin: deliveryCostAdmin,
                 deliveryGstToAdmin: deliveryGstAdmin,
@@ -976,7 +988,10 @@ export async function getTransactionReport(query = {}) {
             const deliveryGstAdmin = isTakeaway ? 0 : (deliveryCostAdmin * 0.18);
             
             const platformFee = Number(pricing.platformFee || 0);
-            const restaurantCommission = Number(pricing.restaurantCommission || 0);
+            const restaurantCommission = Number(pricing.restaurantCommission ?? tx.amounts?.restaurantCommission ?? 0);
+            const gstOnCommission = Number(pricing.gstOnCommission ?? tx.amounts?.gstOnCommission ?? (restaurantCommission > 0 ? Math.round(restaurantCommission * 0.18 * 100) / 100 : 0));
+            const pgFee = Number(pricing.paymentGatewayFee ?? tx.amounts?.paymentGatewayFee ?? 0);
+            const tcsVal = Number(pricing.tcs ?? tx.amounts?.tcs ?? (Number(pricing.subtotal || 0) > 0 ? Math.round(Number(pricing.subtotal || 0) * 0.01 * 100) / 100 : 0));
             const platformDiscount = Math.max(0, Number(pricing.couponDiscount || (Number(pricing.discount || 0) - Number(pricing.restaurantCouponDiscount || 0))));
             const netProfit = tx.amounts?.platformNetProfit !== undefined
                 ? tx.amounts.platformNetProfit
@@ -991,9 +1006,9 @@ export async function getTransactionReport(query = {}) {
             adminEarningBreakdown.platformFee += platformFee;
             adminEarningBreakdown.packagingFee += Number(pricing.packagingFee || 0);
             adminEarningBreakdown.restaurantCommission += restaurantCommission;
-            adminEarningBreakdown.gstOnCommission += Number(pricing.gstOnCommission || 0);
-            adminEarningBreakdown.paymentGatewayFee += Number(pricing.paymentGatewayFee || 0);
-            adminEarningBreakdown.tcs += Number(pricing.tcs || 0);
+            adminEarningBreakdown.gstOnCommission += gstOnCommission;
+            adminEarningBreakdown.paymentGatewayFee += pgFee;
+            adminEarningBreakdown.tcs += tcsVal;
         }
         if (tx.status === 'refunded' || (tx.orderId && (tx.orderId.orderStatus === 'cancelled_by_admin' || tx.orderId.orderStatus === 'dead'))) {
             // Count number of refunded transactions according to old logic or sum them
@@ -1246,8 +1261,8 @@ export async function getTaxReport(query = {}) {
                 _id: '$restaurantId',
                 totalIncome: { $sum: { $ifNull: ['$pricing.total', 0] } },
                 totalTax: { $sum: { $ifNull: ['$pricing.tax', 0] } },
-                totalTax5: { $sum: { $ifNull: ['$pricing.gstOnItem', 0] } },
-                totalTax18: { $sum: { $ifNull: ['$pricing.gstOnCommission', 0] } },
+                totalTax5: { $sum: { $ifNull: ['$pricing.taxBreakdown.itemTax', { $ifNull: ['$pricing.gstOnItem', 0] }] } },
+                totalTax18: { $sum: { $ifNull: ['$pricing.gstOnCommission', { $multiply: [{ $ifNull: ['$pricing.restaurantCommission', 0] }, 0.18] }] } },
                 orderCount: { $sum: 1 }
             }
         },
@@ -1332,15 +1347,20 @@ export async function getTaxReportDetail(restaurantId, query = {}) {
 
     return {
         restaurantName: restaurant?.restaurantName || 'Unknown Restaurant',
-        orders: orders.map(o => ({
-            id: o._id,
-            orderId: o.orderId,
-            totalAmount: `\u20B9${(o.pricing?.total || 0).toFixed(2)}`,
-            taxAmount: `\u20B9${(o.pricing?.tax || 0).toFixed(2)}`,
-            tax5Amount: `\u20B9${(o.pricing?.gstOnItem || 0).toFixed(2)}`,
-            tax18Amount: `\u20B9${(o.pricing?.gstOnCommission || 0).toFixed(2)}`,
-            date: o.createdAt
-        }))
+        orders: orders.map(o => {
+            const tax5 = Number(o.pricing?.taxBreakdown?.itemTax ?? o.pricing?.gstOnItem ?? 0);
+            const restComm = Number(o.pricing?.restaurantCommission || 0);
+            const tax18 = Number(o.pricing?.gstOnCommission ?? (restComm > 0 ? (restComm * 0.18) : 0));
+            return {
+                id: o._id,
+                orderId: o.orderId,
+                totalAmount: `\u20B9${(o.pricing?.total || 0).toFixed(2)}`,
+                taxAmount: `\u20B9${(o.pricing?.tax || 0).toFixed(2)}`,
+                tax5Amount: `\u20B9${tax5.toFixed(2)}`,
+                tax18Amount: `\u20B9${tax18.toFixed(2)}`,
+                date: o.createdAt
+            };
+        })
     };
 }
 
