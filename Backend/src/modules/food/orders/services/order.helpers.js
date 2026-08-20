@@ -236,8 +236,11 @@ export function buildDeliverySocketPayload(orderDoc, restaurantDoc = null) {
       "",
     restaurantPhone: restaurant?.phone || "",
     restaurantLocation: {
-      latitude: restaurantLocation?.latitude,
-      longitude: restaurantLocation?.longitude,
+      latitude: restaurantLocation?.latitude ?? (Array.isArray(restaurantLocation?.coordinates) ? restaurantLocation.coordinates[1] : undefined),
+      longitude: restaurantLocation?.longitude ?? (Array.isArray(restaurantLocation?.coordinates) ? restaurantLocation.coordinates[0] : undefined),
+      lat: restaurantLocation?.latitude ?? restaurantLocation?.lat ?? (Array.isArray(restaurantLocation?.coordinates) ? restaurantLocation.coordinates[1] : undefined),
+      lng: restaurantLocation?.longitude ?? restaurantLocation?.lng ?? (Array.isArray(restaurantLocation?.coordinates) ? restaurantLocation.coordinates[0] : undefined),
+      coordinates: Array.isArray(restaurantLocation?.coordinates) ? restaurantLocation.coordinates : undefined,
       address:
         restaurantLocation?.address ||
         restaurantLocation?.formattedAddress ||

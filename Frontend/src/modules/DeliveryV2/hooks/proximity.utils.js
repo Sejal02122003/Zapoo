@@ -9,13 +9,20 @@
  * @returns {number} Distance in meters
  */
 export const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+  const pLat1 = parseFloat(lat1);
+  const pLon1 = parseFloat(lon1);
+  const pLat2 = parseFloat(lat2);
+  const pLon2 = parseFloat(lon2);
+
+  if (!Number.isFinite(pLat1) || !Number.isFinite(pLon1) || !Number.isFinite(pLat2) || !Number.isFinite(pLon2)) {
+    return Infinity;
+  }
   
   const R = 6371e3; // Earth radius in meters
-  const φ1 = (lat1 * Math.PI) / 180;
-  const φ2 = (lat2 * Math.PI) / 180;
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+  const φ1 = (pLat1 * Math.PI) / 180;
+  const φ2 = (pLat2 * Math.PI) / 180;
+  const Δφ = ((pLat2 - pLat1) * Math.PI) / 180;
+  const Δλ = ((pLon2 - pLon1) * Math.PI) / 180;
 
   const a =
     Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +

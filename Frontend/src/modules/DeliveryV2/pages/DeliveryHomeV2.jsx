@@ -1493,7 +1493,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                                <MapPin className="w-5 h-5 text-gray-400" />
                                <div className="flex flex-col">
                                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Distance</span>
-                                  <span className={`text-sm font-bold ${isWithinRange ? 'text-green-600' : 'text-gray-900'}`}>{isWithinRange ? '0 KM' : `${(distanceToTarget / 1000).toFixed(1)} KM`}</span>
+                                  <span className={`text-sm font-bold ${isWithinRange ? 'text-green-600' : 'text-gray-900'}`}>{isWithinRange ? '0 KM' : (Number.isFinite(distanceToTarget) && distanceToTarget !== Infinity ? `${(distanceToTarget / 1000).toFixed(1)} KM` : '-- KM')}</span>
                                </div>
                              </div>
                            </div>
