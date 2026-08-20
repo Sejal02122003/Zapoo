@@ -201,7 +201,8 @@ export default function AdminEarningReport() {
                     
                     const restaurantCommission = Number(breakdown.restaurantCommission) || Number(tx.amounts?.restaurantCommission) || 0
                     const gstOnCommission = Number(breakdown.gstOnCommission) || Number(tx.amounts?.gstOnCommission) || (restaurantCommission > 0 ? Math.round(restaurantCommission * 0.18 * 100) / 100 : 0)
-                    const tcs = Number(breakdown.tcs) || Number(tx.amounts?.tcs) || (itemSubtotal > 0 ? Math.round(itemSubtotal * 0.01 * 100) / 100 : 0)
+                    const paymentGatewayFee = Number(breakdown.paymentGatewayFee) || Number(tx.amounts?.paymentGatewayFee) || Number(tx.pricing?.paymentGatewayFee) || 0
+                    const tcs = Number(breakdown.tcs) || Number(tx.amounts?.tcs) || Number(tx.pricing?.tcs) || 0
                     const gstOnItem = Number(breakdown.gstOnItem) || Number(tx.amounts?.gstOnItem) || 0
 
                     const totalAdminProfit = breakdown.totalAdminReceivable !== undefined
@@ -212,7 +213,7 @@ export default function AdminEarningReport() {
                         )
 
                     const restaurantCouponDiscount = Math.max(0, discount - platformDiscount)
-                    const totalDeductions = restaurantCommission + gstOnCommission + tcs + restaurantCouponDiscount
+                    const totalDeductions = restaurantCommission + gstOnCommission + paymentGatewayFee + tcs + restaurantCouponDiscount
                     const restaurantGets = tx.amounts?.restaurantShare !== undefined
                       ? Number(tx.amounts.restaurantShare)
                       : Math.max(0, itemSubtotal + packagingFee - totalDeductions)
@@ -372,10 +373,15 @@ export default function AdminEarningReport() {
                                            <span className="text-[12px] text-red-500/80">-{formatMoney(gstOnCommission)}</span>
                                          </div>
                                        )}
-
+                                       {paymentGatewayFee > 0 && (
+                                         <div className="flex items-center justify-between">
+                                           <span className="text-[12px] text-gray-600 font-medium">Payment gateway fee</span>
+                                           <span className="text-[12px] text-red-500/80">-{formatMoney(paymentGatewayFee)}</span>
+                                         </div>
+                                       )}
                                        {tcs > 0 && (
                                          <div className="flex items-center justify-between">
-                                           <span className="text-[12px] text-gray-600 font-medium">TCS (1%)</span>
+                                           <span className="text-[12px] text-gray-600 font-medium">TCS</span>
                                            <span className="text-[12px] text-red-500/80">-{formatMoney(tcs)}</span>
                                          </div>
                                        )}

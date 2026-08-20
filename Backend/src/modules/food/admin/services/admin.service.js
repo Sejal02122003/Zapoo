@@ -907,7 +907,7 @@ export async function getTransactionReport(query = {}) {
             (restaurantCommission > 0 ? Math.round(restaurantCommission * 0.18 * 100) / 100 : 0)
         );
         const paymentGatewayFee = Number(pricing.paymentGatewayFee ?? tx.amounts?.paymentGatewayFee ?? 0);
-        const tcs = Number(pricing.tcs ?? tx.amounts?.tcs ?? (subtotal > 0 ? Math.round(subtotal * 0.01 * 100) / 100 : 0));
+        const tcs = Number(pricing.tcs ?? tx.amounts?.tcs ?? 0);
 
         const platformNetProfit = tx.amounts?.platformNetProfit !== undefined
             ? tx.amounts.platformNetProfit
@@ -991,7 +991,7 @@ export async function getTransactionReport(query = {}) {
             const restaurantCommission = Number(pricing.restaurantCommission ?? tx.amounts?.restaurantCommission ?? 0);
             const gstOnCommission = Number(pricing.gstOnCommission ?? tx.amounts?.gstOnCommission ?? (restaurantCommission > 0 ? Math.round(restaurantCommission * 0.18 * 100) / 100 : 0));
             const pgFee = Number(pricing.paymentGatewayFee ?? tx.amounts?.paymentGatewayFee ?? 0);
-            const tcsVal = Number(pricing.tcs ?? tx.amounts?.tcs ?? (Number(pricing.subtotal || 0) > 0 ? Math.round(Number(pricing.subtotal || 0) * 0.01 * 100) / 100 : 0));
+            const tcsVal = Number(pricing.tcs ?? tx.amounts?.tcs ?? 0);
             const platformDiscount = Math.max(0, Number(pricing.couponDiscount || (Number(pricing.discount || 0) - Number(pricing.restaurantCouponDiscount || 0))));
             const netProfit = tx.amounts?.platformNetProfit !== undefined
                 ? tx.amounts.platformNetProfit
