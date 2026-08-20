@@ -1526,6 +1526,16 @@ export async function completeDelivery(orderId, deliveryPartnerId, body = {}) {
     logger.error(`[CASHBACK] Error crediting pending cashback on order delivery: ${cbErr?.message}`);
   }
 
+  // Credit referral reward on first order completion
+  try {
+    const { processReferralRewardOnFirstOrder } = await import('../../user/services/userReferral.service.js');
+    await processReferralRewardOnFirstOrder(order);
+  } catch (refErr) {
+    logger.error(`[REFERRAL] Error processing referral reward on order delivery: ${refErr?.message}`);
+  }
+
+  appEvents.emit(EVENTS.ORDER_COMPLETED, order);
+
   enqueueOrderEvent('delivery_completed', {
     orderMongoId: order._id?.toString?.(),
     orderId: order.orderId || order._id.toString(),
@@ -1577,6 +1587,12 @@ export async function updateOrderStatusDelivery(orderId, deliveryPartnerId, orde
         await creditPendingCashbackForOrder(order._id);
       } catch (cbErr) {
         logger.error(`[CASHBACK] Error crediting pending cashback in updateOrderStatusDelivery: ${cbErr?.message}`);
+      }
+      try {
+        const { processReferralRewardOnFirstOrder } = await import('../../user/services/userReferral.service.js');
+        await processReferralRewardOnFirstOrder(order);
+      } catch (refErr) {
+        logger.error(`[REFERRAL] Error processing referral reward in updateOrderStatusDelivery: ${refErr?.message}`);
       }
   }
 

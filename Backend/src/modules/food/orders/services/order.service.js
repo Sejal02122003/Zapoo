@@ -1920,6 +1920,12 @@ export async function updateOrderStatusRestaurant(
         } catch (cbErr) {
             logger.error(`[CASHBACK] Error crediting pending cashback in updateOrderStatusRestaurant: ${cbErr?.message}`);
         }
+        try {
+            const { processReferralRewardOnFirstOrder } = await import('../../user/services/userReferral.service.js');
+            await processReferralRewardOnFirstOrder(order);
+        } catch (refErr) {
+            logger.error(`[REFERRAL] Error processing referral reward in updateOrderStatusRestaurant: ${refErr?.message}`);
+        }
     }
 
     // ✅ NEW: Automated Razorpay Refund on Restaurant Cancel
@@ -2461,6 +2467,12 @@ export async function updateOrderStatusAdmin(orderId, adminId, orderStatus, note
           await creditPendingCashbackForOrder(order._id);
       } catch (cbErr) {
           logger.error(`[CASHBACK] Error crediting pending cashback in updateOrderStatusAdmin: ${cbErr?.message}`);
+      }
+      try {
+          const { processReferralRewardOnFirstOrder } = await import('../../user/services/userReferral.service.js');
+          await processReferralRewardOnFirstOrder(order);
+      } catch (refErr) {
+          logger.error(`[REFERRAL] Error processing referral reward in updateOrderStatusAdmin: ${refErr?.message}`);
       }
   }
 

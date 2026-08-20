@@ -16,7 +16,6 @@ import { config } from "../../config/env.js";
 import { logger } from "../../utils/logger.js";
 import { sendAdminResetOtpEmail } from "../../utils/email.js";
 import mongoose from "mongoose";
-import { creditReferralReward } from "../../modules/food/user/services/userWallet.service.js";
 
 const ROLES = {
   USER: "USER",
@@ -216,89 +215,25 @@ export const verifyUserOtpAndLogin = async (
       if (referrer && String(referrer._id) !== String(userDoc._id)) {
         const referrerId = referrer._id;
         const reward = Math.max(0, Number(settingsDoc?.referralRewardUser) || 0);
-        const limit = Math.max(0, Number(settingsDoc?.referralLimitUser) || 0);
-        // limit 0 means unlimited
-        const isLimitOk = limit === 0 || Number(referrer.referralCount || 0) < limit;
 
-        if (reward > 0 && isLimitOk) {
-          if (!userDoc.referredBy) {
-            userDoc.referredBy = referrerId;
-            await userDoc.save();
-          }
+        if (!userDoc.referredBy) {
+          userDoc.referredBy = referrerId;
+          await userDoc.save();
+        }
 
-          const existingLog = await FoodReferralLog.findOne({
-            refereeId: userDoc._id,
-            role: "USER",
-            status: "credited",
-          }).lean();
+        const existingLog = await FoodReferralLog.findOne({
+          refereeId: userDoc._id,
+          role: "USER",
+        }).lean();
 
-          if (!existingLog) {
-            const log = await FoodReferralLog.create({
-              referrerId,
-              refereeId: userDoc._id,
-              role: "USER",
-              rewardAmount: reward,
-              status: "credited",
-            });
-
-            await Promise.all([
-              FoodUser.updateOne(
-                { _id: referrerId },
-                { $inc: { referralCount: 1 } },
-              ),
-              creditReferralReward(referrerId, reward, {
-                role: "USER",
-                refereeId: String(userDoc._id),
-                referralLogId: String(log._id),
-                note: "Referral bonus for inviting a friend",
-              }),
-              creditReferralReward(userDoc._id, reward, {
-                role: "USER",
-                referrerId: String(referrerId),
-                referralLogId: String(log._id),
-                note: "Signup via referral bonus",
-              }),
-            ]);
-
-            // Notify Referrer
-            void notifyOwnersSafely(
-              [{ ownerType: "USER", ownerId: referrerId }],
-              {
-                title: "Referral Bonus Credited! 🎁",
-                body: `₹${reward} has been credited to your wallet for referring a new user!`,
-                data: {
-                  type: "wallet_update",
-                  link: "/food/user/wallet",
-                },
-              },
-            );
-
-            // Notify Referee
-            void notifyOwnersSafely(
-              [{ ownerType: "USER", ownerId: userDoc._id }],
-              {
-                title: "Welcome Referral Bonus! 🎁",
-                body: `₹${reward} has been added to your wallet from referral bonus!`,
-                data: {
-                  type: "wallet_update",
-                  link: "/food/user/wallet",
-                },
-              },
-            );
-          }
-        } else {
+        if (!existingLog) {
           await FoodReferralLog.create({
             referrerId,
             refereeId: userDoc._id,
             role: "USER",
             rewardAmount: reward,
-            status: "rejected",
-            reason:
-              reward <= 0
-                ? "reward_disabled"
-                : !isLimitOk
-                  ? "limit_reached"
-                  : "unknown",
+            status: "pending",
+            reason: "awaiting_first_order",
           });
         }
       }
