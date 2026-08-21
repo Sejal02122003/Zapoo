@@ -93,7 +93,14 @@ export default function MasterLandingPage() {
     }
   };
 
-  const scrollToDownloadApp = openAppStore;
+  const scrollToDownloadApp = () => {
+    const appSection = document.getElementById('download-app-section') || document.getElementById('zapoo-app-section');
+    if (appSection) {
+      appSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      openAppStore();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans overflow-x-hidden selection:bg-[#E23744] selection:text-white">
@@ -112,7 +119,7 @@ export default function MasterLandingPage() {
 
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => navigate('/food')}
+            onClick={scrollToDownloadApp}
             className="text-white/80 hover:text-white px-3 py-2 text-xs font-bold tracking-wider uppercase transition-colors hidden sm:block cursor-pointer"
           >
             ORDER ONLINE
@@ -181,7 +188,7 @@ export default function MasterLandingPage() {
                 <ArrowRight className="w-4 h-4" />
               </button>
               <button 
-                onClick={() => navigate('/food')}
+                onClick={scrollToDownloadApp}
                 className="flex items-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white px-6 py-4 rounded-xl font-bold text-sm tracking-wide backdrop-blur-md transition-all cursor-pointer"
               >
                 <span>ORDER ON WEB</span>
