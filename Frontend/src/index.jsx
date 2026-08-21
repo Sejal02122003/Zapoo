@@ -111,6 +111,8 @@ function resolveNativeInitialRoute() {
   if (isModuleAuthenticated('restaurant')) return '/food/restaurant'
   if (isModuleAuthenticated('delivery')) return '/food/delivery'
   if (isModuleAuthenticated('admin')) return '/admin'
+  if (isModuleAuthenticated('user')) return '/food'
+  if (isNativeLikeShell()) return '/food'
 
   return '/'
 }

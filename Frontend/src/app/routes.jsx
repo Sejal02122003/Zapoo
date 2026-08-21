@@ -106,6 +106,81 @@ export const detectAppModule = () => {
   return 'user';
 };
 
+export const isUserAppOrShell = () => {
+  if (typeof window === 'undefined') return false;
+
+  const userAgent = String(window.navigator?.userAgent || '').toLowerCase();
+  const search = String(window.location?.search || '').toLowerCase();
+  const protocol = String(window.location?.protocol || '').toLowerCase();
+  const hash = String(window.location?.hash || '').toLowerCase();
+
+  // 1. If user is already authenticated in the Food module, show the user app directly
+  if (isModuleAuthenticated('user')) {
+    return true;
+  }
+
+  // 2. Query param or hash flags for user app
+  if (
+    search.includes('app=user') ||
+    search.includes('module=user') ||
+    search.includes('native=true') ||
+    search.includes('type=user') ||
+    search.includes('is_app=true') ||
+    hash.includes('app=user')
+  ) {
+    return true;
+  }
+
+  // 3. Stored app flag from mobile wrapper
+  const storedAppModule = (localStorage.getItem('native_app_module') || '').toLowerCase();
+  if (storedAppModule === 'user' || localStorage.getItem('is_native_app') === 'true') {
+    return true;
+  }
+
+  // 4. Injected native bridges (Flutter, React Native, Capacitor, Android JavaScriptInterface)
+  if (
+    Boolean(window.flutter_inappwebview) ||
+    Boolean(window.ReactNativeWebView) ||
+    Boolean(window.Android) ||
+    Boolean(window.AndroidBridge) ||
+    Boolean(window.Capacitor) ||
+    Boolean(window.webkit?.messageHandlers) ||
+    window.APP_MODULE === 'user' ||
+    window.NATIVE_APP_TYPE === 'user' ||
+    window.NATIVE_MODULE === 'user'
+  ) {
+    return true;
+  }
+
+  // 5. Standalone PWA / Installed Web App
+  if (
+    window.matchMedia?.('(display-mode: standalone)')?.matches ||
+    window.navigator?.standalone === true
+  ) {
+    return true;
+  }
+
+  // 6. Native App WebView User Agent patterns
+  const isWebView =
+    protocol === 'file:' ||
+    protocol === 'capacitor:' ||
+    protocol === 'ionic:' ||
+    userAgent.includes(' wv') ||
+    userAgent.includes('; wv') ||
+    userAgent.includes('webview') ||
+    userAgent.includes('zapoo_user') ||
+    userAgent.includes('zapoouser') ||
+    userAgent.includes('zapooapp') ||
+    userAgent.includes('zapoo') ||
+    (/Version\/[0-9.]+\s+(?:Mobile\s+)?Safari/i.test(window.navigator?.userAgent || '') && /Android/i.test(window.navigator?.userAgent || ''));
+
+  if (isWebView) {
+    return true;
+  }
+
+  return false;
+};
+
 const RootRouteHandler = () => {
   const targetModule = detectAppModule();
 
@@ -127,23 +202,12 @@ const RootRouteHandler = () => {
       : <Navigate to="/admin/login" replace />;
   }
 
-  // Check if this is the native mobile app WebView
-  const isNativeApp = typeof window !== 'undefined' && (
-    window.APP_MODULE === 'user' ||
-    window.NATIVE_APP_TYPE === 'user' ||
-    window.NATIVE_MODULE === 'user' ||
-    window.location.search.includes('native=true') ||
-    window.location.search.includes('app=user') ||
-    window.navigator?.userAgent?.toLowerCase().includes('zapoo_user') ||
-    window.navigator?.userAgent?.toLowerCase().includes('zapoouser') ||
-    window.navigator?.userAgent?.toLowerCase().includes('zapooapp')
-  );
-
-  if (isNativeApp) {
+  // If in user mobile app shell, PWA, or authenticated user -> directly open User Food App
+  if (isUserAppOrShell()) {
     return <FoodAppWrapper />;
   }
 
-  // Master landing page for web search visitors on zapoo.co.in
+  // When searching or visiting zapoo.co.in in regular web browser -> show Master Landing Page
   return <MasterLandingPage />;
 };
 
