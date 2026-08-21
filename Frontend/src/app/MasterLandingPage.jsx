@@ -112,6 +112,12 @@ export default function MasterLandingPage() {
 
         <div className="flex items-center gap-3">
           <button 
+            onClick={() => navigate('/food')}
+            className="text-white/80 hover:text-white px-3 py-2 text-xs font-bold tracking-wider uppercase transition-colors hidden sm:block cursor-pointer"
+          >
+            ORDER ONLINE
+          </button>
+          <button 
             onClick={scrollToDownloadApp}
             className="bg-[#E23744] text-white px-5 py-2.5 rounded-lg font-bold text-xs tracking-wider uppercase shadow-lg shadow-[#E23744]/30 hover:bg-[#c92f3b] hover:scale-[1.02] transition-all cursor-pointer"
           >
@@ -175,10 +181,10 @@ export default function MasterLandingPage() {
                 <ArrowRight className="w-4 h-4" />
               </button>
               <button 
-                onClick={scrollToDownloadApp}
+                onClick={() => navigate('/food')}
                 className="flex items-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white px-6 py-4 rounded-xl font-bold text-sm tracking-wide backdrop-blur-md transition-all cursor-pointer"
               >
-                <span>ORDER ON MOBILE</span>
+                <span>ORDER ON WEB</span>
                 <ShoppingBag className="w-4 h-4 text-emerald-400" />
               </button>
             </div>

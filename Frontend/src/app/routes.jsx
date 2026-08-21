@@ -127,7 +127,24 @@ const RootRouteHandler = () => {
       : <Navigate to="/admin/login" replace />;
   }
 
-  return <FoodAppWrapper />;
+  // Check if this is the native mobile app WebView
+  const isNativeApp = typeof window !== 'undefined' && (
+    window.APP_MODULE === 'user' ||
+    window.NATIVE_APP_TYPE === 'user' ||
+    window.NATIVE_MODULE === 'user' ||
+    window.location.search.includes('native=true') ||
+    window.location.search.includes('app=user') ||
+    window.navigator?.userAgent?.toLowerCase().includes('zapoo_user') ||
+    window.navigator?.userAgent?.toLowerCase().includes('zapoouser') ||
+    window.navigator?.userAgent?.toLowerCase().includes('zapooapp')
+  );
+
+  if (isNativeApp) {
+    return <FoodAppWrapper />;
+  }
+
+  // Master landing page for web search visitors on zapoo.co.in
+  return <MasterLandingPage />;
 };
 
 const AppRoutes = () => {
