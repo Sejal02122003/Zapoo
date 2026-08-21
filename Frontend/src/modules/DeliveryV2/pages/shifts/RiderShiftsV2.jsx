@@ -10,12 +10,17 @@ export default function RiderShiftsV2() {
     const [myShifts, setMyShifts] = useState([]);
     const [payouts, setPayouts] = useState([]);
     const [riderZone, setRiderZone] = useState({ zoneId: null, zoneName: '' });
+    const [selectedZone, setSelectedZone] = useState(null); // null = use rider's default assigned zone
+    const [availableZones, setAvailableZones] = useState([]);
+    const [showZoneModal, setShowZoneModal] = useState(false);
+    const [loadingZones, setLoadingZones] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    const fetchShifts = async () => {
+    const fetchShifts = async (overrideZoneId = selectedZone?._id) => {
         try {
             setLoading(true);
-            const response = await apiClient.get('/food/delivery/shifts/rider');
+            const params = overrideZoneId ? { zoneId: overrideZoneId } : {};
+            const response = await apiClient.get('/food/delivery/shifts/rider', { params });
             if (response.data?.success) {
                 setShifts(response.data.data || []);
                 if (response.data.riderZone) {
@@ -27,6 +32,19 @@ export default function RiderShiftsV2() {
             toast.error("Failed to load shifts");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadZones = async () => {
+        try {
+            setLoadingZones(true);
+            const res = await apiClient.get('/food/zones/public');
+            const list = res.data?.data?.zones || res.data?.zones || (Array.isArray(res.data) ? res.data : []);
+            setAvailableZones(Array.isArray(list) ? list : []);
+        } catch (err) {
+            console.error("Failed to load zones", err);
+        } finally {
+            setLoadingZones(false);
         }
     };
 
@@ -111,11 +129,17 @@ export default function RiderShiftsV2() {
                         <h1 className="text-lg font-bold text-gray-800">Shift Operations</h1>
                     </div>
                     <div className="flex items-center gap-2">
-                        {riderZone?.zoneName && (
-                            <span className="px-2.5 py-1 bg-orange-50 text-orange-700 border border-orange-200 rounded-full text-[11px] font-bold flex items-center gap-1">
-                                📍 {riderZone.zoneName}
-                            </span>
-                        )}
+                        <button 
+                            onClick={() => {
+                                setShowZoneModal(true);
+                                loadZones();
+                            }}
+                            className="px-2.5 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-full text-[11px] font-bold flex items-center gap-1 transition active:scale-95 cursor-pointer shadow-xs"
+                            title="Click to switch operating zone"
+                        >
+                            <span>📍 {selectedZone?.name || selectedZone?.zoneName || riderZone?.zoneName || 'Select Zone'}</span>
+                            <svg className="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </button>
                         <button 
                             onClick={() => {
                                 if (activeTab === 'available') fetchShifts();
@@ -363,6 +387,91 @@ export default function RiderShiftsV2() {
                     </>
                 )}
             </div>
+
+            {/* Zone Switcher Modal */}
+            {showZoneModal && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-150">
+                    <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 max-h-[80vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-200">
+                        <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
+                            <div>
+                                <h3 className="text-base font-bold text-gray-900 flex items-center gap-1.5">
+                                    <span>📍</span> Select Operating Zone
+                                </h3>
+                                <p className="text-xs text-gray-500">Choose a location to view available shifts</p>
+                            </div>
+                            <button 
+                                onClick={() => setShowZoneModal(false)}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto space-y-2 py-1 flex-1">
+                            {/* Default Assigned Zone Option */}
+                            {riderZone?.zoneName && (
+                                <button
+                                    onClick={() => {
+                                        setSelectedZone(null);
+                                        setShowZoneModal(false);
+                                        fetchShifts(riderZone.zoneId);
+                                    }}
+                                    className={`w-full text-left p-3 rounded-xl border transition flex items-center justify-between ${
+                                        !selectedZone ? 'bg-orange-50/70 border-orange-300 ring-1 ring-orange-400' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <div>
+                                        <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5">
+                                            {riderZone.zoneName}
+                                            <span className="px-2 py-0.5 bg-orange-100 text-orange-800 text-[10px] rounded-full font-semibold">My Assigned Zone</span>
+                                        </div>
+                                        <div className="text-[11px] text-gray-500 mt-0.5">Your primary registered shift zone</div>
+                                    </div>
+                                    {!selectedZone && (
+                                        <span className="text-orange-600 font-bold text-sm">✓</span>
+                                    )}
+                                </button>
+                            )}
+
+                            {/* Other Available Zones */}
+                            {loadingZones ? (
+                                <div className="text-center py-6 text-xs text-gray-400">Loading available zones...</div>
+                            ) : availableZones.length === 0 ? (
+                                <div className="text-center py-6 text-xs text-gray-400">No other zones found</div>
+                            ) : (
+                                availableZones
+                                    .filter(z => !riderZone?.zoneId || String(z._id) !== String(riderZone.zoneId))
+                                    .map((zone) => {
+                                        const isSelected = selectedZone?._id === zone._id;
+                                        return (
+                                            <button
+                                                key={zone._id}
+                                                onClick={() => {
+                                                    setSelectedZone(zone);
+                                                    setShowZoneModal(false);
+                                                    fetchShifts(zone._id);
+                                                }}
+                                                className={`w-full text-left p-3 rounded-xl border transition flex items-center justify-between ${
+                                                    isSelected ? 'bg-orange-50/70 border-orange-300 ring-1 ring-orange-400' : 'bg-white border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                <div>
+                                                    <div className="font-bold text-sm text-gray-900">{zone.name || zone.zoneName}</div>
+                                                    {zone.serviceLocation && (
+                                                        <div className="text-[11px] text-gray-500 mt-0.5">{zone.serviceLocation}</div>
+                                                    )}
+                                                </div>
+                                                {isSelected && (
+                                                    <span className="text-orange-600 font-bold text-sm">✓</span>
+                                                )}
+                                            </button>
+                                        );
+                                    })
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

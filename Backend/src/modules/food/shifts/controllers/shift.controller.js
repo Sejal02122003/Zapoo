@@ -162,12 +162,12 @@ export const shiftController = {
                 }
 
                 if (partner) {
-                    if (partner.zoneId) zoneId = partner.zoneId;
-                    if (partner.zoneName) riderZoneName = partner.zoneName;
+                    if (!zoneId && partner.zoneId) zoneId = partner.zoneId;
+                    if (!req.query.zoneId && partner.zoneName) riderZoneName = partner.zoneName;
                     if (partner.city && !city) city = partner.city;
 
                     // If zoneId is set but zoneName is missing, fetch from FoodZone
-                    if (zoneId && !riderZoneName) {
+                    if (zoneId && (!riderZoneName || req.query.zoneId)) {
                         const foundZone = await FoodZone.findById(zoneId).lean();
                         if (foundZone) {
                             riderZoneName = foundZone.name || foundZone.zoneName || foundZone.serviceLocation || '';
