@@ -32,13 +32,22 @@ function isNativeLikeShell() {
 
   const protocol = String(window.location?.protocol || '').toLowerCase()
   const userAgent = String(window.navigator?.userAgent || '').toLowerCase()
+  const search = String(window.location?.search || '').toLowerCase()
 
   return (
     Boolean(window.flutter_inappwebview) ||
     Boolean(window.ReactNativeWebView) ||
+    Boolean(window.AndroidBridge) ||
+    Boolean(window.Capacitor) ||
     protocol === 'file:' ||
-    userAgent.includes(' wv') ||
-    userAgent.includes('; wv')
+    protocol === 'capacitor:' ||
+    protocol === 'ionic:' ||
+    search.includes('app=user') ||
+    search.includes('module=user') ||
+    search.includes('native=true') ||
+    userAgent.includes('zapoo_user_app') ||
+    userAgent.includes('zapoo_native_app') ||
+    localStorage.getItem('is_native_app') === 'true'
   )
 }
 
@@ -108,10 +117,6 @@ function resolveNativeInitialRoute() {
     return storedRoute
   }
 
-  if (isModuleAuthenticated('restaurant')) return '/food/restaurant'
-  if (isModuleAuthenticated('delivery')) return '/food/delivery'
-  if (isModuleAuthenticated('admin')) return '/admin'
-  if (isModuleAuthenticated('user')) return '/food'
   if (isNativeLikeShell()) return '/food'
 
   return '/'

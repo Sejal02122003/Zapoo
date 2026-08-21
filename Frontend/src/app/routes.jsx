@@ -114,37 +114,30 @@ export const isUserAppOrShell = () => {
   const protocol = String(window.location?.protocol || '').toLowerCase();
   const hash = String(window.location?.hash || '').toLowerCase();
 
-  // 1. If user is already authenticated in the Food module, show the user app directly
-  if (isModuleAuthenticated('user')) {
-    return true;
-  }
-
-  // 2. Query param or hash flags for user app
+  // 1. Explicit Query param or hash flags passed by native mobile app wrapper
   if (
     search.includes('app=user') ||
     search.includes('module=user') ||
     search.includes('native=true') ||
     search.includes('type=user') ||
     search.includes('is_app=true') ||
-    hash.includes('app=user')
+    hash.includes('app=user') ||
+    hash.includes('native_app')
   ) {
     return true;
   }
 
-  // 3. Stored app flag from mobile wrapper
-  const storedAppModule = (localStorage.getItem('native_app_module') || '').toLowerCase();
-  if (storedAppModule === 'user' || localStorage.getItem('is_native_app') === 'true') {
+  // 2. Explicit stored native app flag (saved by native app wrapper)
+  if (localStorage.getItem('is_native_app') === 'true') {
     return true;
   }
 
-  // 4. Injected native bridges (Flutter, React Native, Capacitor, Android JavaScriptInterface)
+  // 3. Injected native app bridges (Flutter, React Native, Capacitor, Android JavaScriptInterface)
   if (
     Boolean(window.flutter_inappwebview) ||
     Boolean(window.ReactNativeWebView) ||
-    Boolean(window.Android) ||
     Boolean(window.AndroidBridge) ||
     Boolean(window.Capacitor) ||
-    Boolean(window.webkit?.messageHandlers) ||
     window.APP_MODULE === 'user' ||
     window.NATIVE_APP_TYPE === 'user' ||
     window.NATIVE_MODULE === 'user'
@@ -152,29 +145,17 @@ export const isUserAppOrShell = () => {
     return true;
   }
 
-  // 5. Standalone PWA / Installed Web App
-  if (
-    window.matchMedia?.('(display-mode: standalone)')?.matches ||
-    window.navigator?.standalone === true
-  ) {
+  // 4. File or Capacitor/Ionic protocol (Cordova/Capacitor native APKs)
+  if (protocol === 'file:' || protocol === 'capacitor:' || protocol === 'ionic:') {
     return true;
   }
 
-  // 6. Native App WebView User Agent patterns
-  const isWebView =
-    protocol === 'file:' ||
-    protocol === 'capacitor:' ||
-    protocol === 'ionic:' ||
-    userAgent.includes(' wv') ||
-    userAgent.includes('; wv') ||
-    userAgent.includes('webview') ||
-    userAgent.includes('zapoo_user') ||
-    userAgent.includes('zapoouser') ||
-    userAgent.includes('zapooapp') ||
-    userAgent.includes('zapoo') ||
-    (/Version\/[0-9.]+\s+(?:Mobile\s+)?Safari/i.test(window.navigator?.userAgent || '') && /Android/i.test(window.navigator?.userAgent || ''));
-
-  if (isWebView) {
+  // 5. Explicit native app User Agent signature (e.g. customized app user agent)
+  if (
+    userAgent.includes('zapoo_user_app') ||
+    userAgent.includes('zapoo_native_app') ||
+    userAgent.includes('zapoouserapp')
+  ) {
     return true;
   }
 
