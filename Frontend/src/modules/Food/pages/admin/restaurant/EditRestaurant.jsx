@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { adminAPI } from "@food/api"
+import { adminAPI, uploadAPI } from "@food/api"
 import { Input } from "@food/components/ui/input"
 import { Button } from "@food/components/ui/button"
 import { Label } from "@food/components/ui/label"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2, Image as ImageIcon } from "lucide-react"
 
 const debugError = (..._args) => {}
 
@@ -136,6 +136,8 @@ export default function EditRestaurant() {
   const [detailsForm, setDetailsForm] = useState(() => normalizeDetailsFormFromRestaurant(null))
   const [locationForm, setLocationForm] = useState(() => normalizeLocationFormFromRestaurant(null))
   const [locationError, setLocationError] = useState("")
+  const [profileImageFile, setProfileImageFile] = useState(null)
+  const [profileImagePreview, setProfileImagePreview] = useState("")
 
   const locationSearchInputRef = useRef(null)
   const placesAutocompleteRef = useRef(null)
@@ -165,6 +167,15 @@ export default function EditRestaurant() {
         setRestaurant(data)
         setDetailsForm(normalizeDetailsFormFromRestaurant(data))
         setLocationForm(normalizeLocationFormFromRestaurant(data))
+        const pImg =
+          data?.profileImage?.url ||
+          (typeof data?.profileImage === "string" ? data.profileImage : "") ||
+          data?.logo?.url ||
+          (typeof data?.logo === "string" ? data.logo : "") ||
+          data?.coverImages?.[0]?.url ||
+          (typeof data?.coverImages?.[0] === "string" ? data.coverImages[0] : "") ||
+          ""
+        setProfileImagePreview(pImg)
       } catch (e) {
         debugError(e)
         if (!mounted) return
@@ -290,6 +301,17 @@ export default function EditRestaurant() {
     try {
       setSavingDetails(true)
 
+      let profileImage = undefined
+      if (profileImageFile) {
+        const uploadRes = await uploadAPI.uploadMedia(profileImageFile, {
+          folder: "zapoo/restaurant/profile"
+        })
+        const media = uploadRes?.data?.data?.file || uploadRes?.data?.data || uploadRes?.data?.file || uploadRes?.data
+        if (media?.url || (typeof media === "string" && media)) {
+          profileImage = typeof media === "string" ? media : media.url
+        }
+      }
+
       const cuisines = String(detailsForm.cuisinesText || "")
         .split(",")
         .map((c) => c.trim())
@@ -297,6 +319,7 @@ export default function EditRestaurant() {
 
       const payload = {
         name: detailsForm.name,
+        restaurantName: detailsForm.name,
         pureVegRestaurant: detailsForm.pureVegRestaurant === true,
         ownerName: detailsForm.ownerName,
         ownerEmail: detailsForm.ownerEmail,
@@ -309,18 +332,28 @@ export default function EditRestaurant() {
             ? undefined
             : Number(detailsForm.estimatedDeliveryTimeMinutes),
         offer: detailsForm.offer,
-        openingTime: detailsForm.openingTime,
-        closingTime: detailsForm.closingTime,
-        isActive: detailsForm.isActive !== false }
+        openingTime: detailsForm.openingTime || undefined,
+        closingTime: detailsForm.closingTime || undefined,
+        isActive: detailsForm.isActive !== false
+      }
+
+      if (profileImage) {
+        payload.profileImage = profileImage
+        payload.logo = profileImage
+      }
 
       const res = await adminAPI.updateRestaurant(restaurantId, payload)
       const updated = res?.data?.data?.restaurant || res?.data?.data || null
       if (updated) {
-        setRestaurant((prev) => ({ ...(prev || {}), ...updated }))
+        setRestaurant((prev) => ({ ...(prev || {}), ...updated, ...(profileImage ? { profileImage } : {}) }))
+        if (profileImage) {
+          setProfileImagePreview(profileImage)
+        }
       }
+      setProfileImageFile(null)
       alert("Restaurant details updated successfully")
     } catch (e) {
-      alert(e?.response?.data?.message || "Failed to update restaurant details")
+      alert(e?.response?.data?.message || e?.message || "Failed to update restaurant details")
     } finally {
       setSavingDetails(false)
     }
@@ -421,6 +454,34 @@ export default function EditRestaurant() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <Label className="block text-xs text-slate-500 mb-2">Profile Image / Logo</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                      {profileImagePreview ? (
+                        <img src={profileImagePreview} alt="Profile preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                          <ImageIcon className="w-6 h-6" />
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        setProfileImageFile(file || null)
+                        if (file) {
+                          const localUrl = URL.createObjectURL(file)
+                          setProfileImagePreview(localUrl)
+                        }
+                      }}
+                      className="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <Label>Restaurant Name</Label>
                   <Input value={detailsForm.name} onChange={(e) => setDetailsForm((p) => ({ ...p, name: e.target.value }))} />

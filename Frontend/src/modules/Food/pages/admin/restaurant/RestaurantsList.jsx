@@ -817,39 +817,49 @@ export default function RestaurantsList() {
       let profileImage = undefined
       if (profileImageFile) {
         const uploadRes = await uploadAPI.uploadMedia(profileImageFile, {
-          folder: "zapoo/restaurant/profile" })
-        const media = uploadRes?.data?.data?.file || uploadRes?.data?.data || uploadRes?.data?.file
-        if (media?.url) {
-          profileImage = { url: media.url, publicId: media.publicId || media.public_id }
+          folder: "zapoo/restaurant/profile"
+        })
+        const media = uploadRes?.data?.data?.file || uploadRes?.data?.data || uploadRes?.data?.file || uploadRes?.data
+        if (media?.url || (typeof media === "string" && media)) {
+          profileImage = typeof media === "string" ? media : media.url
         }
       }
 
-      const normalizedOpeningTime = normalizeTimeValue(detailsForm.openingTime.trim())
-      const normalizedClosingTime = normalizeTimeValue(detailsForm.closingTime.trim())
+      const rawOpening = String(detailsForm.openingTime || "").trim()
+      const rawClosing = String(detailsForm.closingTime || "").trim()
+      const normalizedOpeningTime = rawOpening ? normalizeTimeValue(rawOpening) : undefined
+      const normalizedClosingTime = rawClosing ? normalizeTimeValue(rawClosing) : undefined
 
       const payload = {
-        name: detailsForm.name.trim(),
+        name: String(detailsForm.name || "").trim(),
+        restaurantName: String(detailsForm.name || "").trim(),
         pureVegRestaurant: detailsForm.pureVegRestaurant === true,
-        ownerName: detailsForm.ownerName.trim(),
-        ownerEmail: detailsForm.ownerEmail.trim(),
-        ownerPhone: detailsForm.ownerPhone.trim(),
-        primaryContactNumber: detailsForm.primaryContactNumber.trim(),
-        email: detailsForm.email.trim(),
-        estimatedDeliveryTime: detailsForm.estimatedDeliveryTime.trim(),
+        ownerName: String(detailsForm.ownerName || "").trim(),
+        ownerEmail: String(detailsForm.ownerEmail || "").trim(),
+        ownerPhone: String(detailsForm.ownerPhone || "").trim(),
+        primaryContactNumber: String(detailsForm.primaryContactNumber || "").trim(),
+        email: String(detailsForm.email || "").trim(),
+        estimatedDeliveryTime: String(detailsForm.estimatedDeliveryTime || "").trim(),
         openingTime: normalizedOpeningTime,
         closingTime: normalizedClosingTime,
-        isActive: detailsForm.isActive }
+        isActive: detailsForm.isActive !== false
+      }
 
       if (profileImage) {
         payload.profileImage = profileImage
+        payload.logo = profileImage
       }
 
       const response = await adminAPI.updateRestaurant(restaurantId, payload)
-      const updatedRestaurant = response?.data?.data?.restaurant
+      const updatedRestaurant = response?.data?.data?.restaurant || response?.data?.data
 
       // Update outlet timings
       if (detailsForm.outletTimings) {
-        await adminAPI.updateRestaurantOutletTimings(restaurantId, detailsForm.outletTimings)
+        try {
+          await adminAPI.updateRestaurantOutletTimings(restaurantId, detailsForm.outletTimings)
+        } catch (timingErr) {
+          console.warn("Failed to update outlet timings", timingErr)
+        }
       }
 
       if (updatedRestaurant) {
@@ -859,16 +869,20 @@ export default function RestaurantsList() {
             (item._id === restaurantId || item.id === restaurantId)
               ? {
                 ...item,
-                name: updatedRestaurant.name || item.name,
+                name: updatedRestaurant.restaurantName || updatedRestaurant.name || item.name,
                 ownerName: updatedRestaurant.ownerName || item.ownerName,
                 ownerPhone: updatedRestaurant.ownerPhone || updatedRestaurant.phone || item.ownerPhone,
                 zone: updatedRestaurant.location?.area || updatedRestaurant.location?.city || item.zone,
                 isActive: updatedRestaurant.isActive !== false,
                 approvalStatus: normalizeApprovalStatus(updatedRestaurant),
                 logo: getPrimaryRestaurantImage(updatedRestaurant, item.logo),
+                profileImage: updatedRestaurant.profileImage || profileImage || item.profileImage,
                 originalData: {
                   ...(item.originalData || {}),
-                  ...updatedRestaurant } }
+                  ...updatedRestaurant,
+                  ...(profileImage ? { profileImage } : {})
+                }
+              }
               : item,
           ),
         )
@@ -879,7 +893,7 @@ export default function RestaurantsList() {
       alert("Restaurant details updated successfully")
     } catch (err) {
       debugError("Error updating restaurant details:", err)
-      alert(err?.response?.data?.message || "Failed to update restaurant details")
+      alert(err?.response?.data?.message || err?.message || "Failed to update restaurant details")
     } finally {
       setSavingDetails(false)
     }

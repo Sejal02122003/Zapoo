@@ -817,19 +817,26 @@ export default function DosaPage() {
                 .map((item) => {
                   const foodType = String(item?.foodType || "").toLowerCase()
                   const isVeg = foodType.includes("veg") && !foodType.includes("non")
+                  const restaurantProfile =
+                    restaurant?.profileImage?.url ||
+                    (typeof restaurant?.profileImage === "string" ? restaurant.profileImage : "") ||
+                    restaurant?.logo?.url ||
+                    (typeof restaurant?.logo === "string" ? restaurant.logo : "") ||
+                    restaurant?.coverImages?.[0]?.url ||
+                    (typeof restaurant?.coverImages?.[0] === "string" ? restaurant.coverImages[0] : "") ||
+                    ""
+                  const dishImage =
+                    item?.image ||
+                    restaurantProfile ||
+                    restaurant?.menuImages?.[0]?.url ||
+                    (typeof restaurant?.menuImages?.[0] === "string" ? restaurant.menuImages[0] : "") ||
+                    ""
                   return {
                     ...item,
                     id: String(item?.id || item?._id || `${restaurantId}-${item?.name || "dish"}`),
                     price: Number(item?.price || 0),
                     isVeg,
-                    image:
-                      item?.image ||
-                      restaurant?.coverImages?.[0]?.url ||
-                      restaurant?.coverImages?.[0] ||
-                      restaurant?.menuImages?.[0]?.url ||
-                      restaurant?.menuImages?.[0] ||
-                      restaurant?.profileImage?.url ||
-                      "" }
+                    image: dishImage }
                 })
 
               if (menuItems.length === 0) return null

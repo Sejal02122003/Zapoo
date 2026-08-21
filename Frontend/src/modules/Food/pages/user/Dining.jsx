@@ -275,10 +275,12 @@ export default function Dining() {
             restaurant?.coverImages?.[0]?.url ||
             restaurant?.coverImages?.[0] ||
             restaurant?.coverImage ||
-            restaurant?.menuImages?.[0]?.url ||
-            restaurant?.menuImages?.[0] ||
             restaurant?.profileImage?.url ||
             restaurant?.profileImage ||
+            restaurant?.logo?.url ||
+            restaurant?.logo ||
+            restaurant?.menuImages?.[0]?.url ||
+            restaurant?.menuImages?.[0] ||
             ""
           ).trim(),
           offer: String(restaurant?.offer || "Pre-book table").trim(),

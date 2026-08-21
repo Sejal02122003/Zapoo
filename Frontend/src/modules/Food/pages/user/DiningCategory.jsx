@@ -79,9 +79,14 @@ export default function DiningCategory() {
               name: restaurant.restaurantName || restaurant.name || "Restaurant",
               image:
                 restaurant.coverImage ||
-                restaurant.menuImages?.[0] ||
+                restaurant.coverImages?.[0]?.url ||
+                restaurant.coverImages?.[0] ||
                 restaurant.profileImage?.url ||
                 restaurant.profileImage ||
+                restaurant.logo?.url ||
+                restaurant.logo ||
+                restaurant.menuImages?.[0]?.url ||
+                restaurant.menuImages?.[0] ||
                 "",
               address: formatAddress(restaurant),
               cuisine:

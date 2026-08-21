@@ -2699,15 +2699,31 @@ export async function updateRestaurantById(id, body = {}) {
         const name = toStr(body.name !== undefined ? body.name : body.restaurantName);
         if (!name) throw new ValidationError('Restaurant name cannot be empty');
         doc.restaurantName = name;
+        doc.restaurantNameNormalized = name.toLowerCase();
     }
 
     if (body.ownerName !== undefined) doc.ownerName = toStr(body.ownerName);
     if (body.ownerEmail !== undefined) doc.ownerEmail = toStr(body.ownerEmail).toLowerCase();
-    if (body.ownerPhone !== undefined) doc.ownerPhone = toStr(body.ownerPhone);
+    if (body.ownerPhone !== undefined) {
+        doc.ownerPhone = toStr(body.ownerPhone);
+        const digits = doc.ownerPhone.replace(/\D/g, '');
+        doc.ownerPhoneDigits = digits;
+        doc.ownerPhoneLast10 = digits.slice(-10);
+    }
     if (body.primaryContactNumber !== undefined) doc.primaryContactNumber = toStr(body.primaryContactNumber);
+    if (body.email !== undefined) doc.email = toStr(body.email).toLowerCase();
+    if (body.phone !== undefined) doc.phone = toStr(body.phone);
 
     if (body.pureVegRestaurant !== undefined) {
         doc.pureVegRestaurant = parseBooleanLike(body.pureVegRestaurant, 'pureVegRestaurant');
+    }
+
+    if (body.isActive !== undefined) {
+        doc.isActive = parseBooleanLike(body.isActive, 'isActive');
+        doc.status = doc.isActive ? 'approved' : 'rejected';
+    }
+    if (body.status !== undefined) {
+        doc.status = toStr(body.status);
     }
 
     if (body.isAcceptingOrders !== undefined) {
@@ -2743,7 +2759,11 @@ export async function updateRestaurantById(id, body = {}) {
         const normClosing = normalizeRestaurantTime(body.closingTime);
         if (normClosing) doc.closingTime = normClosing;
     }
-    validateOpeningClosingTimes(doc.openingTime, doc.closingTime);
+    if (doc.openingTime && doc.closingTime) {
+        try {
+            validateOpeningClosingTimes(doc.openingTime, doc.closingTime);
+        } catch (_) {}
+    }
 
     if (body.openingTime !== undefined || body.closingTime !== undefined) {
         try {
@@ -2857,17 +2877,44 @@ export async function updateRestaurantById(id, body = {}) {
     if (body.featuredPrice !== undefined) doc.featuredPrice = toFinite(body.featuredPrice);
 
     // Images
-    const getUrl = (v) => (v && typeof v === 'object' ? v.url : v);
-    if (body.profileImage !== undefined) doc.profileImage = toStr(getUrl(body.profileImage)) || undefined;
-    if (body.panImage !== undefined) doc.panImage = toStr(getUrl(body.panImage)) || undefined;
-    if (body.gstImage !== undefined) doc.gstImage = toStr(getUrl(body.gstImage)) || undefined;
-    if (body.fssaiImage !== undefined) doc.fssaiImage = toStr(getUrl(body.fssaiImage)) || undefined;
+    const getUrl = (v) => {
+        if (!v) return '';
+        if (typeof v === 'string') return v.trim();
+        if (typeof v === 'object' && v.url) return String(v.url).trim();
+        return '';
+    };
+
+    if (body.profileImage !== undefined || body.logo !== undefined || body.image !== undefined) {
+        const pUrl = getUrl(body.profileImage || body.logo || body.image);
+        if (pUrl) {
+            doc.profileImage = pUrl;
+            if (!Array.isArray(doc.coverImages) || doc.coverImages.length === 0) {
+                doc.coverImages = [pUrl];
+            } else {
+                doc.coverImages[0] = pUrl;
+            }
+        }
+    }
+
+    if (body.coverImages !== undefined) {
+        if (Array.isArray(body.coverImages)) {
+            doc.coverImages = body.coverImages.map(m => getUrl(m)).filter(Boolean);
+        } else {
+            const cUrl = getUrl(body.coverImages);
+            if (cUrl) doc.coverImages = [cUrl];
+        }
+    }
+
+    if (body.panImage !== undefined) doc.panImage = getUrl(body.panImage) || undefined;
+    if (body.gstImage !== undefined) doc.gstImage = getUrl(body.gstImage) || undefined;
+    if (body.fssaiImage !== undefined) doc.fssaiImage = getUrl(body.fssaiImage) || undefined;
 
     if (body.menuImages !== undefined) {
         if (Array.isArray(body.menuImages)) {
-            doc.menuImages = body.menuImages.map(m => toStr(getUrl(m))).filter(Boolean);
+            doc.menuImages = body.menuImages.map(m => getUrl(m)).filter(Boolean);
         } else {
-            doc.menuImages = [toStr(getUrl(body.menuImages))].filter(Boolean);
+            const mUrl = getUrl(body.menuImages);
+            doc.menuImages = mUrl ? [mUrl] : [];
         }
     }
 
