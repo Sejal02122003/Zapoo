@@ -5569,6 +5569,7 @@ export async function getDeliveryWallets(query = {}) {
             phone: p.phone || '',
             deliveryIdString: partnerIdstr,
             pocketBalance,
+            totalCashLimit: globalLimit,
             remainingCashLimit: Math.max(0, globalLimit - cashInHand),
             cashCollected: grossCashCollected,
             totalEarning: totalEarned,
@@ -5578,8 +5579,18 @@ export async function getDeliveryWallets(query = {}) {
         };
     }));
 
+    const summary = {
+        totalRemainingCashLimit: wallets.reduce((acc, w) => acc + (w.remainingCashLimit || 0), 0),
+        totalCashCollected: wallets.reduce((acc, w) => acc + (w.cashCollected || 0), 0),
+        totalEarning: wallets.reduce((acc, w) => acc + (w.totalEarning || 0), 0),
+        totalBonus: wallets.reduce((acc, w) => acc + (w.bonus || 0), 0),
+        totalWithdrawn: wallets.reduce((acc, w) => acc + (w.totalWithdrawn || 0), 0),
+        totalCashInHand: wallets.reduce((acc, w) => acc + (w.cashInHand || 0), 0),
+    };
+
     return { 
         wallets, 
+        summary,
         pagination: { 
             total, 
             page, 

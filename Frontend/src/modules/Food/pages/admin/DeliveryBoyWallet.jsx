@@ -104,47 +104,37 @@ export default function DeliveryBoyWallet() {
           {[
             { 
               label: "Remaining Cash Limit", 
-              value: summary?.totalRemainingCashLimit ?? wallets.reduce((acc, w) => {
-                const totalLimit = Number(w.totalCashLimit || w.overallCashLimit || w.total_limit || 1500);
-                const remaining = Number(w.remainingCashLimit ?? w.availableCashLimit ?? w.available_cash_limit ?? w.remaining_limit ?? totalLimit);
-                return acc + remaining;
-              }, 0), 
+              value: summary?.totalRemainingCashLimit ?? wallets.reduce((acc, w) => acc + Number(w.remainingCashLimit || 0), 0), 
               color: "text-emerald-600", 
               bg: "bg-emerald-50" 
             },
             { 
               label: "Cash Collected", 
-              value: summary?.totalCashCollected ?? wallets.reduce((acc, w) => acc + Number(w.cashCollected ?? w.cashInHand ?? w.cash_collected ?? w.cash_in_hand ?? 0), 0), 
+              value: summary?.totalCashCollected ?? wallets.reduce((acc, w) => acc + Number(w.cashCollected || 0), 0), 
               color: "text-blue-600", 
               bg: "bg-blue-50" 
             },
             { 
               label: "Total Earning", 
-              value: summary?.totalEarning ?? wallets.reduce((acc, w) => acc + Number(w.totalEarning ?? w.earnings ?? w.total_earning ?? 0), 0), 
+              value: summary?.totalEarning ?? wallets.reduce((acc, w) => acc + Number(w.totalEarning || 0), 0), 
               color: "text-slate-900", 
               bg: "bg-slate-100" 
             },
             { 
               label: "Bonus", 
-              value: summary?.totalBonus ?? wallets.reduce((acc, w) => acc + Number(w.bonus ?? w.total_bonus ?? 0), 0), 
+              value: summary?.totalBonus ?? wallets.reduce((acc, w) => acc + Number(w.bonus || 0), 0), 
               color: "text-violet-600", 
               bg: "bg-violet-50" 
             },
             { 
               label: "Total Withdrawn", 
-              value: summary?.totalWithdrawn ?? wallets.reduce((acc, w) => acc + Number(w.totalWithdrawn ?? w.payoutAmount ?? w.total_withdrawn ?? 0), 0), 
+              value: summary?.totalWithdrawn ?? wallets.reduce((acc, w) => acc + Number(w.totalWithdrawn || 0), 0), 
               color: "text-orange-600", 
               bg: "bg-orange-50" 
             },
             { 
               label: "Cash In Hand", 
-              value: summary?.totalCashInHand ?? wallets.reduce((acc, w) => {
-                const totalLimit = Number(w.totalCashLimit || w.overallCashLimit || w.total_limit || 1500);
-                const remaining = Number(w.remainingCashLimit ?? w.availableCashLimit ?? w.available_cash_limit ?? w.remaining_limit ?? totalLimit);
-                const collected = Number(w.cashCollected ?? w.cashInHand ?? w.cash_collected ?? w.cash_in_hand ?? 0);
-                const cih = collected > 0 ? collected : (w.usedLimit || w.used_limit || (totalLimit - remaining));
-                return acc + cih;
-              }, 0), 
+              value: summary?.totalCashInHand ?? wallets.reduce((acc, w) => acc + Number(w.cashInHand || 0), 0), 
               color: "text-rose-600", 
               bg: "bg-rose-50" 
             },
@@ -216,17 +206,13 @@ export default function DeliveryBoyWallet() {
                     </tr>
                   ) : (
                     wallets.map((w, i) => {
-                      const totalLimit = Number(w.totalCashLimit || w.overallCashLimit || w.total_limit || 1500);
-                      const remaining = Number(w.remainingCashLimit ?? w.availableCashLimit ?? w.available_cash_limit ?? w.remaining_limit ?? totalLimit);
-                      const pocket = Number(w.pocketBalance ?? w.totalBalance ?? w.pocket_balance ?? w.balance ?? 0);
-                      const collected = Number(w.cashCollected ?? w.cashInHand ?? w.cash_collected ?? w.cash_in_hand ?? 0);
-                      const earning = Number(w.totalEarning ?? w.earnings ?? w.total_earning ?? 0);
+                      const remaining = Number(w.remainingCashLimit ?? 0);
+                      const pocket = Number(w.pocketBalance ?? 0);
+                      const collected = Number(w.cashCollected ?? 0);
+                      const earning = Number(w.totalEarning ?? 0);
                       const bonus = Number(w.bonus || w.total_bonus || 0);
-                      const withdrawn = Number(w.totalWithdrawn ?? w.payoutAmount ?? w.total_withdrawn ?? 0);
-                      
-                      // User requirement: Cash In Hand should be the amount subtracted from 1500 (or total limit)
-                      // If collected is 0 but remaining is less than total, we use the difference.
-                      const cashInHand = collected > 0 ? collected : (w.usedLimit || w.used_limit || (totalLimit - remaining));
+                      const withdrawn = Number(w.totalWithdrawn ?? 0);
+                      const cashInHand = Math.max(0, Number(w.cashInHand ?? 0));
 
                       return (
                         <tr key={w.walletId || w.deliveryId || i} className="hover:bg-slate-50 transition-colors">
