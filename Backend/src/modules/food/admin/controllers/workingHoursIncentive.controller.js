@@ -7,24 +7,9 @@ import { get7DayActiveHours } from '../../delivery/services/dutyLog.service.js';
 import { sendResponse } from '../../../../utils/response.js';
 import { ValidationError, NotFoundError } from '../../../../core/auth/errors.js';
 
-// Seed default tiers if collection is empty
-const DEFAULT_TIERS = [
-    { tierName: 'Bronze Tier', minHours: 15, incentiveAmount: 250, description: 'Complete 15 order delivery hours in 7 days' },
-    { tierName: 'Silver Tier', minHours: 30, incentiveAmount: 600, description: 'Complete 30 order delivery hours in 7 days' },
-    { tierName: 'Gold Tier', minHours: 50, incentiveAmount: 1200, description: 'Complete 50 order delivery hours in 7 days' }
-];
-
-async function ensureDefaultTiers() {
-    const count = await FoodWorkingHoursIncentiveConfig.countDocuments();
-    if (count === 0) {
-        await FoodWorkingHoursIncentiveConfig.insertMany(DEFAULT_TIERS);
-    }
-}
-
 export async function getWorkingHoursIncentivesController(req, res, next) {
     try {
-        await ensureDefaultTiers();
-        const configs = await FoodWorkingHoursIncentiveConfig.find().sort({ minHours: 1 }).lean();
+        const configs = await FoodWorkingHoursIncentiveConfig.find({ isDeleted: { $ne: true } }).sort({ minHours: 1 }).lean();
         return sendResponse(res, 200, 'Working hours incentive rules retrieved', configs);
     } catch (err) {
         next(err);
@@ -42,7 +27,8 @@ export async function createWorkingHoursIncentiveController(req, res, next) {
             tierName: String(tierName).trim(),
             minHours: Number(minHours),
             incentiveAmount: Number(incentiveAmount),
-            description: String(description || '').trim()
+            description: String(description || '').trim(),
+            isDeleted: false
         });
 
         return sendResponse(res, 201, 'Working hours incentive rule created', config);
@@ -59,7 +45,7 @@ export async function updateWorkingHoursIncentiveController(req, res, next) {
         }
 
         const { tierName, minHours, incentiveAmount, isEnabled, description } = req.body || {};
-        const config = await FoodWorkingHoursIncentiveConfig.findById(id);
+        const config = await FoodWorkingHoursIncentiveConfig.findOne({ _id: id, isDeleted: { $ne: true } });
         if (!config) {
             throw new NotFoundError('Incentive rule not found');
         }
@@ -84,7 +70,11 @@ export async function deleteWorkingHoursIncentiveController(req, res, next) {
             throw new ValidationError('Invalid rule ID parameter');
         }
 
-        const deleted = await FoodWorkingHoursIncentiveConfig.findByIdAndDelete(id);
+        const deleted = await FoodWorkingHoursIncentiveConfig.findByIdAndUpdate(
+            id,
+            { $set: { isDeleted: true } },
+            { new: true }
+        );
         if (!deleted) {
             throw new NotFoundError('Incentive rule not found');
         }
@@ -97,8 +87,6 @@ export async function deleteWorkingHoursIncentiveController(req, res, next) {
 
 export async function getRiderIncentivesProgressController(req, res, next) {
     try {
-        await ensureDefaultTiers();
-
         const uId = req.user?.userId || req.user?._id || req.user?.id;
         const phone = req.user?.phone;
 
@@ -118,7 +106,7 @@ export async function getRiderIncentivesProgressController(req, res, next) {
         const hoursData = await get7DayActiveHours(partnerId);
         const currentHours = hoursData.totalHours;
 
-        const activeConfigs = await FoodWorkingHoursIncentiveConfig.find({ isEnabled: true }).sort({ minHours: 1 }).lean();
+        const activeConfigs = await FoodWorkingHoursIncentiveConfig.find({ isEnabled: true, isDeleted: { $ne: true } }).sort({ minHours: 1 }).lean();
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
 
         const claimedLogs = await FoodWorkingHoursIncentiveLog.find({
@@ -167,7 +155,7 @@ export async function claimIncentiveController(req, res, next) {
             throw new NotFoundError('Delivery partner not found');
         }
 
-        const tier = await FoodWorkingHoursIncentiveConfig.findById(tierId);
+        const tier = await FoodWorkingHoursIncentiveConfig.findOne({ _id: tierId, isDeleted: { $ne: true } });
         if (!tier || !tier.isEnabled) {
             throw new ValidationError('Incentive tier rule is invalid or disabled');
         }

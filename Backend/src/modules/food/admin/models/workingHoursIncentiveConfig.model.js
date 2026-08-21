@@ -25,6 +25,11 @@ const workingHoursIncentiveConfigSchema = new mongoose.Schema(
             type: String,
             default: '',
             trim: true
+        },
+        isDeleted: {
+            type: Boolean,
+            default: false,
+            index: true
         }
     },
     { collection: 'food_working_hours_incentive_configs', timestamps: true }
@@ -32,6 +37,7 @@ const workingHoursIncentiveConfigSchema = new mongoose.Schema(
 
 workingHoursIncentiveConfigSchema.index({ minHours: 1 });
 workingHoursIncentiveConfigSchema.index({ isEnabled: 1 });
+workingHoursIncentiveConfigSchema.index({ isDeleted: 1 });
 
 export const FoodWorkingHoursIncentiveConfig = mongoose.model(
     'FoodWorkingHoursIncentiveConfig',

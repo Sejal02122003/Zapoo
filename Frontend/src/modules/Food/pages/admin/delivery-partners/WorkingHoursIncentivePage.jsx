@@ -94,11 +94,12 @@ export default function WorkingHoursIncentivePage() {
         try {
             const res = await adminAPI.deleteWorkingHoursIncentiveConfig(id);
             if (res?.data?.success) {
-                toast.success('Incentive tier deleted');
+                toast.success('Incentive tier deleted successfully');
+                setConfigs((prev) => prev.filter((item) => item._id !== id));
                 fetchConfigs();
             }
         } catch (err) {
-            toast.error('Failed to delete incentive tier');
+            toast.error(err.response?.data?.message || 'Failed to delete incentive tier');
         }
     };
 
@@ -129,6 +130,25 @@ export default function WorkingHoursIncentivePage() {
             {loading ? (
                 <div className="p-12 bg-white rounded-2xl border border-gray-200 flex items-center justify-center">
                     <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+                </div>
+            ) : configs.length === 0 ? (
+                <div className="p-12 bg-white rounded-2xl border border-gray-200 text-center space-y-4 shadow-sm">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto text-amber-500">
+                        <Award className="w-7 h-7" />
+                    </div>
+                    <div className="space-y-1">
+                        <h3 className="font-bold text-lg text-gray-900">No Incentive Rules Configured</h3>
+                        <p className="text-sm text-gray-500 max-w-md mx-auto">
+                            There are currently no working hours incentive tiers for delivery partners. Click the button below to add a new tier rule.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl inline-flex items-center gap-2 shadow-sm"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Incentive Tier
+                    </button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
