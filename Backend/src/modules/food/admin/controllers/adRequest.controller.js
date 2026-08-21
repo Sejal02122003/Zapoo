@@ -40,6 +40,9 @@ export const createAdRequest = async (req, res) => {
             }
         }
 
+        const resolvedScope = (scope === 'zone' || zoneId) ? 'zone' : (scope || 'global');
+        const resolvedZoneId = (resolvedScope === 'zone' && zoneId) ? zoneId : (resolvedScope === 'zone' && restaurant?.zoneId ? restaurant.zoneId : (zoneId || null));
+
         const adReq = new AdRequest({
             restaurantId,
             restaurantName,
@@ -48,8 +51,8 @@ export const createAdRequest = async (req, res) => {
             description,
             mediaUrl,
             mediaType: mediaType || 'image',
-            scope: scope || 'global',
-            zoneId: zoneId || null,
+            scope: resolvedScope,
+            zoneId: resolvedZoneId,
             zoneName: zoneName || '',
             startDate: new Date(startDate),
             endDate: new Date(endDate),
@@ -118,7 +121,7 @@ export const getAdminAdRequests = async (req, res) => {
                         title: `${adReq.restaurantName} - ${adReq.title}`,
                         ctaText: 'Order Now',
                         ctaLink: adReq.restaurantId ? `/food/user/restaurants/${adReq.restaurantId}` : '',
-                        targetScope: adReq.scope || 'global',
+                        targetScope: (adReq.scope === 'zone' || adReq.zoneId) ? 'zone' : (adReq.scope || 'global'),
                         zoneId: adReq.zoneId || null,
                         isActive: true
                     });
@@ -212,7 +215,7 @@ export const approveAdRequest = async (req, res) => {
                 title: `${adReq.restaurantName} - ${adReq.title}`,
                 ctaText: 'Order Now',
                 ctaLink: adReq.restaurantId ? `/food/user/restaurants/${adReq.restaurantId}` : '',
-                targetScope: adReq.scope || 'global',
+                targetScope: (adReq.scope === 'zone' || adReq.zoneId) ? 'zone' : (adReq.scope || 'global'),
                 zoneId: adReq.zoneId || null,
                 isActive: true
             },

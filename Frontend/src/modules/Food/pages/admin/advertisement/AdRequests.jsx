@@ -533,7 +533,9 @@ export default function AdRequests() {
                                   onClick={() => {
                                     setCreateBannerData({
                                       title: request.title,
-                                      scope: request.scope,
+                                      scope: request.scope || (request.zoneId ? "zone" : "global"),
+                                      zoneId: request.zoneId || "",
+                                      zoneName: request.zoneName || "",
                                       restaurantId: request.restaurantId,
                                       restaurantName: request.restaurantName,
                                       adRequestId: request._id

@@ -33,6 +33,9 @@ export const createPromoBanner = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Image is required for Promo Banner' });
         }
 
+        const targetScope = (scope === 'zone' || zoneId) ? 'zone' : (scope || 'global');
+        const resolvedZoneId = targetScope === 'zone' && zoneId ? zoneId : null;
+
         const newBanner = new PromoBanner({
             idSlug,
             title,
@@ -41,8 +44,8 @@ export const createPromoBanner = async (req, res) => {
             category,
             imageUrl,
             restaurantId: restaurantId || null,
-            scope: scope || 'global',
-            zoneId: scope === 'zone' ? zoneId : null,
+            scope: targetScope,
+            zoneId: resolvedZoneId,
             adRequestId,
             isActive: isActive === 'true' || isActive === true
         });
@@ -55,8 +58,8 @@ export const createPromoBanner = async (req, res) => {
             subtitle,
             ctaText,
             ctaLink: restaurantId ? `/food/user/restaurants/${restaurantId}` : '',
-            targetScope: scope || 'global',
-            zoneId: scope === 'zone' ? zoneId : null,
+            targetScope,
+            zoneId: resolvedZoneId,
             isActive: isActive === 'true' || isActive === true
         });
         await newDiningBanner.save();

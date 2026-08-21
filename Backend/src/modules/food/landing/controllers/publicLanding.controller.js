@@ -67,18 +67,70 @@ export const getPublicUnder99BannersController = async (req, res, next) => {
 
 export const getPublicDiningBannersController = async (req, res, next) => {
     try {
-        const { zoneId } = req.query;
+        let { zoneId, lat, lng, latitude, longitude } = req.query;
+
+        // If zoneId is not provided, but lat/lng is available, attempt to detect zone
+        if (!zoneId && ((lat && lng) || (latitude && longitude))) {
+            const userLat = parseFloat(lat || latitude);
+            const userLng = parseFloat(lng || longitude);
+            if (Number.isFinite(userLat) && Number.isFinite(userLng)) {
+                try {
+                    const { FoodZone } = await import('../../admin/models/zone.model.js');
+                    const zones = await FoodZone.find({ isActive: true }).lean();
+                    for (const zone of zones) {
+                        const coords = Array.isArray(zone.coordinates) ? zone.coordinates : [];
+                        if (coords.length >= 3) {
+                            let inside = false;
+                            for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
+                                const xi = coords[i].longitude;
+                                const yi = coords[i].latitude;
+                                const xj = coords[j].longitude;
+                                const yj = coords[j].latitude;
+                                const intersect =
+                                    yi > userLat !== yj > userLat &&
+                                    userLng < ((xj - xi) * (userLat - yi)) / (yj - yi + 0.0) + xi;
+                                if (intersect) inside = !inside;
+                            }
+                            if (inside) {
+                                zoneId = String(zone._id);
+                                break;
+                            }
+                        }
+                    }
+                } catch (zErr) {
+                    console.warn('[getPublicDiningBannersController] Zone detection error:', zErr.message);
+                }
+            }
+        }
+
         const query = { isActive: true };
         if (zoneId && mongoose.Types.ObjectId.isValid(zoneId)) {
+            const zId = new mongoose.Types.ObjectId(zoneId);
             query.$or = [
                 { targetScope: 'global' },
-                { zoneId: new mongoose.Types.ObjectId(zoneId) },
-                { zoneId: String(zoneId) },
+                { targetScope: { $in: [null, ''] }, zoneId: null },
+                { targetScope: { $in: [null, ''] }, zoneId: { $exists: false } },
+                { targetScope: 'zone', zoneId: zId },
+                { targetScope: 'zone', zoneId: String(zoneId) },
+                { zoneId: zId },
+                { zoneId: String(zoneId) }
+            ];
+        } else {
+            // When no specific zone is requested, only return global or unzoned banners
+            query.$or = [
+                { targetScope: 'global' },
+                { targetScope: { $in: [null, ''] }, zoneId: null },
+                { targetScope: { $in: [null, ''] }, zoneId: { $exists: false } },
                 { zoneId: null },
                 { zoneId: { $exists: false } }
             ];
         }
-        const docs = await FoodDiningBanner.find(query).sort({ sortOrder: 1, createdAt: -1 }).lean();
+
+        const docs = await FoodDiningBanner.find(query)
+            .populate('zoneId', 'name city')
+            .sort({ sortOrder: 1, createdAt: -1 })
+            .lean();
+
         return sendResponse(res, 200, 'Dining banners fetched', { banners: docs });
     } catch (error) {
         next(error);

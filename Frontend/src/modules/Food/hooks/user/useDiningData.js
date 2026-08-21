@@ -14,13 +14,14 @@ export const useDiningData = (location) => {
   const fetchDiningData = useCallback(async () => {
     try {
       setLoading(true);
+      const zoneId = location?.zoneId || location?.zone?._id || location?.effectiveZoneId || null;
       const [cats, limes, tries, rests, offers, hero] = await Promise.all([
         diningAPI.getCategories(),
         diningAPI.getOfferBanners(),
         diningAPI.getStories(),
         diningAPI.getRestaurants(location?.city ? { city: location.city } : {}),
         diningAPI.getBankOffers(),
-        api.get('/food/hero-banners/ads/public').catch(() => ({ data: { success: false } }))
+        api.get('/food/hero-banners/ads/public', { params: zoneId ? { zoneId } : {} }).catch(() => ({ data: { success: false } }))
       ]);
 
       if (cats.data?.success) setCategories(cats.data.data);

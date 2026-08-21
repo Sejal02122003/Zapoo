@@ -12,11 +12,13 @@ export default function CreatePromoBannerModal({ isOpen, onClose, onSuccess, ini
     ctaText: "",
     category: "",
     scope: "global",
+    zoneId: "",
     restaurantId: "",
     restaurantName: "",
     isActive: true,
   });
 
+  const [zones, setZones] = useState([]);
   const [mediaFile, setMediaFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
@@ -27,11 +29,23 @@ export default function CreatePromoBannerModal({ isOpen, onClose, onSuccess, ini
   const [showResDropdown, setShowResDropdown] = useState(false);
 
   useEffect(() => {
+    if (isOpen) {
+      adminAPI.getZones({ limit: 1000 })
+        .then((res) => {
+          const list = res.data?.data?.zones || res.data?.data || (Array.isArray(res.data) ? res.data : []);
+          setZones(Array.isArray(list) ? list : []);
+        })
+        .catch((err) => console.warn("Failed to fetch zones for banner modal:", err));
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen && initialData) {
       setFormData((prev) => ({
         ...prev,
         title: initialData.title || "",
-        scope: initialData.scope || "global",
+        scope: initialData.scope || (initialData.zoneId ? "zone" : "global"),
+        zoneId: initialData.zoneId || "",
         restaurantId: initialData.restaurantId || "",
         restaurantName: initialData.restaurantName || "",
       }));
@@ -45,6 +59,7 @@ export default function CreatePromoBannerModal({ isOpen, onClose, onSuccess, ini
         ctaText: "",
         category: "",
         scope: "global",
+        zoneId: "",
         restaurantId: "",
         restaurantName: "",
         isActive: true,
@@ -76,7 +91,12 @@ export default function CreatePromoBannerModal({ isOpen, onClose, onSuccess, ini
   };
 
   const handleSelectRestaurant = (res) => {
-    setFormData({ ...formData, restaurantId: res._id, restaurantName: res.restaurantName });
+    setFormData((prev) => ({
+      ...prev,
+      restaurantId: res._id,
+      restaurantName: res.restaurantName,
+      zoneId: prev.zoneId || res.zoneId || ""
+    }));
     setSearchResQuery(res.restaurantName);
     setShowResDropdown(false);
   };
@@ -265,6 +285,27 @@ export default function CreatePromoBannerModal({ isOpen, onClose, onSuccess, ini
                 </select>
               </div>
             </div>
+
+            {/* Target Zone Selection when scope is zone */}
+            {formData.scope === "zone" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Target Zone</label>
+                <select
+                  name="zoneId"
+                  value={formData.zoneId}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all bg-white"
+                  required
+                >
+                  <option value="">Select a zone</option>
+                  {zones.map((zone) => (
+                    <option key={zone._id} value={zone._id}>
+                      {zone.name || "Zone"} {zone.city ? `(${zone.city})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Image Upload */}
             <div>
