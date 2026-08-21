@@ -15,7 +15,30 @@ import { decrypt } from '../../../../utils/encryption.js';
 export const shiftService = {
     // --- TEMPLATES ---
     createTemplate: async (data, adminId) => {
-        return shiftRepository.createTemplate({ ...data, createdBy: adminId });
+        let zoneId = data.zoneId;
+        if (zoneId === 'All' || zoneId === '' || zoneId === 'null' || !zoneId) {
+            zoneId = null;
+        } else if (mongoose.Types.ObjectId.isValid(zoneId)) {
+            zoneId = new mongoose.Types.ObjectId(zoneId);
+        } else {
+            zoneId = null;
+        }
+
+        let zoneName = data.zoneName;
+        if (zoneId && (!zoneName || zoneName === 'All' || zoneName === 'Zone')) {
+            const foundZone = await FoodZone.findById(zoneId).lean();
+            if (foundZone) {
+                zoneName = foundZone.name || foundZone.zoneName || foundZone.serviceLocation || 'Zone';
+            }
+        }
+
+        return shiftRepository.createTemplate({
+            ...data,
+            zoneId,
+            zoneName: zoneName || data.city || 'All',
+            city: data.city || zoneName || 'All',
+            createdBy: adminId
+        });
     },
 
     getTemplates: async (filterOptions = {}) => {
@@ -47,7 +70,15 @@ export const shiftService = {
     },
 
     updateTemplate: async (id, data) => {
-        return shiftRepository.updateTemplate(id, data);
+        const updatePayload = { ...data };
+        if (data.zoneId !== undefined) {
+            if (data.zoneId === 'All' || data.zoneId === '' || data.zoneId === 'null' || !data.zoneId) {
+                updatePayload.zoneId = null;
+            } else if (mongoose.Types.ObjectId.isValid(data.zoneId)) {
+                updatePayload.zoneId = new mongoose.Types.ObjectId(data.zoneId);
+            }
+        }
+        return shiftRepository.updateTemplate(id, updatePayload);
     },
 
     deleteTemplate: async (id) => {
@@ -60,14 +91,18 @@ export const shiftService = {
         const month = String(targetDate.getMonth() + 1).padStart(2, '0');
         const day = String(targetDate.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${day}`;
+
+        let zoneObjId = null;
+        if (targetZoneId && targetZoneId !== 'All' && mongoose.Types.ObjectId.isValid(targetZoneId)) {
+            zoneObjId = new mongoose.Types.ObjectId(targetZoneId);
+        }
         
         let templateFilter = { isActive: true };
-        if (targetZoneId && targetZoneId !== 'All') {
-            const zoneObjId = mongoose.Types.ObjectId.isValid(targetZoneId) ? new mongoose.Types.ObjectId(targetZoneId) : targetZoneId;
+        if (zoneObjId) {
             templateFilter = {
                 $or: [
-                    { zoneId: targetZoneId },
                     { zoneId: zoneObjId },
+                    { zoneId: String(targetZoneId) },
                     { zoneId: null },
                     { zoneId: { $exists: false } },
                     { city: 'All' }
@@ -77,6 +112,11 @@ export const shiftService = {
         }
 
         let activeTemplates = await shiftRepository.getTemplates(templateFilter);
+
+        // If no zone-specific templates, fall back to any active template
+        if (activeTemplates.length === 0) {
+            activeTemplates = await shiftRepository.getTemplates({ isActive: true });
+        }
 
         // Auto-seed standard 11AM-11PM template if no template exists in database
         if (activeTemplates.length === 0) {
@@ -98,8 +138,8 @@ export const shiftService = {
 
         // Fetch Zone Name if targetZoneId is passed
         let targetZoneName = '';
-        if (targetZoneId && targetZoneId !== 'All') {
-            const foundZone = await FoodZone.findById(targetZoneId).lean();
+        if (zoneObjId) {
+            const foundZone = await FoodZone.findById(zoneObjId).lean();
             if (foundZone) {
                 targetZoneName = foundZone.name || foundZone.zoneName || foundZone.serviceLocation || '';
             }
@@ -108,8 +148,8 @@ export const shiftService = {
         const createdShifts = [];
 
         for (const template of activeTemplates) {
-            const effectiveZoneId = (targetZoneId && targetZoneId !== 'All') ? targetZoneId : (template.zoneId || null);
-            const effectiveZoneName = targetZoneName || template.zoneName || template.city || 'All';
+            const effectiveZoneId = template.zoneId || zoneObjId || null;
+            const effectiveZoneName = template.zoneName || targetZoneName || template.city || 'All';
 
             for (const slot of template.slots || []) {
                 const shiftStart = new Date(`${dateStr}T${slot.startTime}:00`);
@@ -161,6 +201,23 @@ export const shiftService = {
 
     // --- SHIFTS ---
     createShift: async (data, adminId) => {
+        let zoneId = data.zoneId;
+        if (zoneId === 'All' || zoneId === '' || zoneId === 'null' || !zoneId) {
+            zoneId = null;
+        } else if (mongoose.Types.ObjectId.isValid(zoneId)) {
+            zoneId = new mongoose.Types.ObjectId(zoneId);
+        } else {
+            zoneId = null;
+        }
+
+        let zoneName = data.zoneName;
+        if (zoneId && (!zoneName || zoneName === 'All' || zoneName === 'Zone')) {
+            const foundZone = await FoodZone.findById(zoneId).lean();
+            if (foundZone) {
+                zoneName = foundZone.name || foundZone.zoneName || foundZone.serviceLocation || 'Zone';
+            }
+        }
+
         const startTime = new Date(data.startTime);
         
         // Compute bookingOpensAt = startTime - 1 day at 00:00:00 if not provided
@@ -172,6 +229,10 @@ export const shiftService = {
 
         return shiftRepository.createShift({
             ...data,
+            zoneId,
+            zoneName: zoneName || data.city || 'All',
+            city: data.city || zoneName || 'All',
+            bonusEnabled: Number(data.guaranteeAmount || 0) > 0,
             bookingOpensAt,
             createdBy: adminId
         });
@@ -179,6 +240,13 @@ export const shiftService = {
 
     updateShift: async (id, data) => {
         const updatePayload = { ...data };
+        if (data.zoneId !== undefined) {
+            if (data.zoneId === 'All' || data.zoneId === '' || data.zoneId === 'null' || !data.zoneId) {
+                updatePayload.zoneId = null;
+            } else if (mongoose.Types.ObjectId.isValid(data.zoneId)) {
+                updatePayload.zoneId = new mongoose.Types.ObjectId(data.zoneId);
+            }
+        }
         if (data.startTime) {
             updatePayload.startTime = new Date(data.startTime);
             if (!data.bookingOpensAt) {
@@ -225,7 +293,7 @@ export const shiftService = {
         const shifts = await shiftRepository.getShifts(filter, { sort: { startTime: -1 } });
         
         return Promise.all(shifts.map(async (shift) => {
-            const shiftObj = shift.toObject();
+            const shiftObj = shift.toObject ? shift.toObject() : shift;
             const bookedCount = await shiftRepository.getBookingCountForShift(shift._id);
             return {
                 ...shiftObj,
@@ -239,22 +307,53 @@ export const shiftService = {
 
         let targetCity = null;
         let targetZoneId = null;
+        let targetZoneName = null;
 
         if (typeof filterOptions === 'string') {
             targetCity = filterOptions;
         } else if (filterOptions && typeof filterOptions === 'object') {
             targetCity = filterOptions.city;
             targetZoneId = filterOptions.zoneId;
+            targetZoneName = filterOptions.zoneName;
         }
 
-        // Check if we have active future shifts
-        const countFuture = await FoodShift.countDocuments({
+        if (targetZoneId === 'All' || targetZoneId === 'null' || targetZoneId === '' || targetZoneId === undefined) {
+            targetZoneId = null;
+        }
+
+        let zoneObjId = null;
+        if (targetZoneId && mongoose.Types.ObjectId.isValid(targetZoneId)) {
+            zoneObjId = new mongoose.Types.ObjectId(targetZoneId);
+        }
+
+        // Build zone query conditions
+        const zoneQueryConditions = [];
+        if (zoneObjId) {
+            zoneQueryConditions.push({ zoneId: zoneObjId }, { zoneId: String(targetZoneId) });
+        }
+        if (targetZoneName && targetZoneName !== 'All') {
+            zoneQueryConditions.push({ zoneName: new RegExp(`^${targetZoneName}$`, 'i') });
+        }
+        if (targetCity && targetCity !== 'All') {
+            zoneQueryConditions.push({ city: new RegExp(`^${targetCity}$`, 'i') });
+        }
+        // Universal shifts for all zones
+        zoneQueryConditions.push(
+            { zoneId: null },
+            { zoneId: { $exists: false } },
+            { city: 'All' },
+            { zoneName: 'All' }
+        );
+
+        // 1. Check if upcoming shifts exist specifically for this rider's zone or universally
+        const existingForZone = await FoodShift.countDocuments({
             isActive: true,
-            endTime: { $gt: now }
+            endTime: { $gt: now },
+            $or: zoneQueryConditions
         });
 
-        // If zero upcoming shifts, auto-generate today and tomorrow from templates so delivery partner always has shifts
-        if (countFuture === 0) {
+        // 2. If NO upcoming shifts exist for this zone, auto-generate today and tomorrow from templates
+        if (existingForZone === 0) {
             try {
                 await shiftService.generateShiftsFromTemplates(new Date(), null, targetZoneId);
                 const tomorrow = new Date();
@@ -267,25 +366,9 @@ export const shiftService = {
 
         const filter = {
             isActive: true,
-            endTime: { $gt: now }
+            endTime: { $gt: now },
+            $or: zoneQueryConditions
         };
-
-        if (targetZoneId && targetZoneId !== 'All') {
-            const zoneObjId = mongoose.Types.ObjectId.isValid(targetZoneId) ? new mongoose.Types.ObjectId(targetZoneId) : targetZoneId;
-            filter.$or = [
-                { zoneId: targetZoneId },
-                { zoneId: zoneObjId },
-                { zoneId: null },
-                { zoneId: { $exists: false } },
-                { city: 'All' }
-            ];
-        } else if (targetCity && targetCity !== 'All') {
-            filter.$or = [
-                { city: targetCity },
-                { city: 'All' },
-                { city: { $exists: false } }
-            ];
-        }
 
         const shifts = await shiftRepository.getShifts(filter, { sort: { startTime: 1 } });
         
@@ -300,7 +383,7 @@ export const shiftService = {
                 bookedCount,
                 bookingOpensAt: opensAt,
                 isOpenForBooking: now >= opensAt,
-                isFullyBooked: bookedCount >= shift.maxPartners
+                isFullyBooked: bookedCount >= (shift.maxPartners || 50)
             };
         }));
     },

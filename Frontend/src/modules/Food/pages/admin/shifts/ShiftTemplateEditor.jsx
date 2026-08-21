@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/api/axios';
 import { Plus, Trash2, AlertTriangle, CheckCircle2, Moon, Clock, ShieldCheck } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ShiftTemplateEditor({ template = null, onSaved, onCancel }) {
     const [name, setName] = useState(template?.name || 'Standard 11AM-11PM Daily Template');
@@ -137,7 +138,7 @@ export default function ShiftTemplateEditor({ template = null, onSaved, onCancel
             const payload = { 
                 name, 
                 city, 
-                zoneId: zoneId || null, 
+                zoneId: (zoneId && zoneId !== 'All') ? zoneId : null, 
                 zoneName: zoneName || city || 'Zone', 
                 slots 
             };
@@ -149,12 +150,12 @@ export default function ShiftTemplateEditor({ template = null, onSaved, onCancel
             }
 
             if (response.data?.success) {
-                alert('Shift template saved successfully!');
+                toast.success('Shift template saved successfully!');
                 onSaved?.();
             }
         } catch (error) {
             console.error('Error saving template', error);
-            alert(error.response?.data?.message || 'Failed to save shift template');
+            toast.error(error.response?.data?.message || 'Failed to save shift template');
         } finally {
             setSaving(false);
         }

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { shiftService } from '../services/shift.service.js';
 import { shiftRepository } from '../repositories/shift.repository.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
+import { FoodZone } from '../../admin/models/zone.model.js';
 
 export const shiftController = {
     // --- TEMPLATE APIs ---
@@ -164,10 +165,29 @@ export const shiftController = {
                     if (partner.zoneId) zoneId = partner.zoneId;
                     if (partner.zoneName) riderZoneName = partner.zoneName;
                     if (partner.city && !city) city = partner.city;
+
+                    // If zoneId is set but zoneName is missing, fetch from FoodZone
+                    if (zoneId && !riderZoneName) {
+                        const foundZone = await FoodZone.findById(zoneId).lean();
+                        if (foundZone) {
+                            riderZoneName = foundZone.name || foundZone.zoneName || foundZone.serviceLocation || '';
+                        }
+                    }
                 }
             }
-            const shifts = await shiftService.getAvailableShifts({ city: city || 'All', zoneId });
-            res.status(200).json({ success: true, data: shifts, riderZone: { zoneId, zoneName: riderZoneName || city || 'Default Zone' } });
+            const shifts = await shiftService.getAvailableShifts({ 
+                city: city || 'All', 
+                zoneId: zoneId || null,
+                zoneName: riderZoneName || null
+            });
+            res.status(200).json({ 
+                success: true, 
+                data: shifts, 
+                riderZone: { 
+                    zoneId: zoneId || null, 
+                    zoneName: riderZoneName || partner?.city || city || 'All Active Zones' 
+                } 
+            });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
         }
@@ -175,7 +195,17 @@ export const shiftController = {
 
     bookShift: async (req, res) => {
         try {
-            const riderId = req.user?.userId || req.user?._id || req.user?.id;
+            const userId = req.user?.userId || req.user?._id || req.user?.id;
+            const phone = req.user?.phone;
+            let riderId = userId;
+            if (userId) {
+                const partner = (mongoose.Types.ObjectId.isValid(userId) ? await FoodDeliveryPartner.findById(userId) : null) || 
+                                await FoodDeliveryPartner.findOne({ userId: String(userId) }) || 
+                                (phone ? await FoodDeliveryPartner.findOne({ phone: String(phone) }) : null);
+                if (partner) {
+                    riderId = partner._id;
+                }
+            }
             const booking = await shiftService.bookShift(riderId, req.params.id);
             res.status(200).json({ success: true, data: booking, message: "Shift booked successfully" });
         } catch (error) {
@@ -185,7 +215,17 @@ export const shiftController = {
 
     cancelBooking: async (req, res) => {
         try {
-            const riderId = req.user?.userId || req.user?._id || req.user?.id;
+            const userId = req.user?.userId || req.user?._id || req.user?.id;
+            const phone = req.user?.phone;
+            let riderId = userId;
+            if (userId) {
+                const partner = (mongoose.Types.ObjectId.isValid(userId) ? await FoodDeliveryPartner.findById(userId) : null) || 
+                                await FoodDeliveryPartner.findOne({ userId: String(userId) }) || 
+                                (phone ? await FoodDeliveryPartner.findOne({ phone: String(phone) }) : null);
+                if (partner) {
+                    riderId = partner._id;
+                }
+            }
             await shiftService.cancelBooking(riderId, req.params.id);
             res.status(200).json({ success: true, message: "Booking cancelled" });
         } catch (error) {
@@ -195,8 +235,18 @@ export const shiftController = {
 
     getRiderBookedShifts: async (req, res) => {
         try {
-            const riderId = req.user?.userId || req.user?._id || req.user?.id;
-            const bookedShifts = await shiftService.getRiderBookedShifts(riderId);
+            const userId = req.user?.userId || req.user?._id || req.user?.id;
+            const phone = req.user?.phone;
+            let partnerIds = [userId];
+            if (userId) {
+                const partner = (mongoose.Types.ObjectId.isValid(userId) ? await FoodDeliveryPartner.findById(userId) : null) || 
+                                await FoodDeliveryPartner.findOne({ userId: String(userId) }) || 
+                                (phone ? await FoodDeliveryPartner.findOne({ phone: String(phone) }) : null);
+                if (partner && String(partner._id) !== String(userId)) {
+                    partnerIds.push(partner._id);
+                }
+            }
+            const bookedShifts = await shiftService.getRiderBookedShifts(partnerIds);
             res.status(200).json({ success: true, data: bookedShifts });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
