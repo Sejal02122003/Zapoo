@@ -100,13 +100,13 @@ export const ProfileDetailsV2 = () => {
         setVehicleInput({ number: vNum, brand: vBrand, type: vType })
         // Set bank details
         setBankDetails({
-          accountHolderName: profileData?.documents?.bankDetails?.accountHolderName || "",
-          accountNumber: profileData?.documents?.bankDetails?.accountNumber || "",
-          ifscCode: profileData?.documents?.bankDetails?.ifscCode || "",
-          bankName: profileData?.documents?.bankDetails?.bankName || "",
-          panNumber: profileData?.documents?.pan?.number || "",
-          upiId: profileData?.documents?.bankDetails?.upiId || "",
-          upiQrCode: profileData?.documents?.bankDetails?.upiQrCode || null
+          accountHolderName: profileData?.documents?.bankDetails?.accountHolderName || profileData?.bankAccountHolderName || "",
+          accountNumber: profileData?.documents?.bankDetails?.accountNumber || profileData?.bankAccountNumber || "",
+          ifscCode: profileData?.documents?.bankDetails?.ifscCode || profileData?.bankIfscCode || "",
+          bankName: profileData?.documents?.bankDetails?.bankName || profileData?.bankName || "",
+          panNumber: profileData?.documents?.pan?.number || profileData?.panNumber || "",
+          upiId: profileData?.documents?.bankDetails?.upiId || profileData?.upiId || "",
+          upiQrCode: profileData?.documents?.bankDetails?.upiQrCode || profileData?.upiQrCode || null
         })
       } else {
         throw new Error("Profile fetch failed")
@@ -372,13 +372,13 @@ export const ProfileDetailsV2 = () => {
       setProfile(response.data.data.profile)
       const pd = response.data.data.profile
       setBankDetails({
-        accountHolderName: pd?.documents?.bankDetails?.accountHolderName || "",
-        accountNumber: pd?.documents?.bankDetails?.accountNumber || "",
-        ifscCode: pd?.documents?.bankDetails?.ifscCode || "",
-        bankName: pd?.documents?.bankDetails?.bankName || "",
-        panNumber: pd?.documents?.pan?.number || "",
-        upiId: pd?.documents?.bankDetails?.upiId || "",
-        upiQrCode: pd?.documents?.bankDetails?.upiQrCode || null
+        accountHolderName: pd?.documents?.bankDetails?.accountHolderName || pd?.bankAccountHolderName || "",
+        accountNumber: pd?.documents?.bankDetails?.accountNumber || pd?.bankAccountNumber || "",
+        ifscCode: pd?.documents?.bankDetails?.ifscCode || pd?.bankIfscCode || "",
+        bankName: pd?.documents?.bankDetails?.bankName || pd?.bankName || "",
+        panNumber: pd?.documents?.pan?.number || pd?.panNumber || "",
+        upiId: pd?.documents?.bankDetails?.upiId || pd?.upiId || "",
+        upiQrCode: pd?.documents?.bankDetails?.upiQrCode || pd?.upiQrCode || null
       })
     }
   }
@@ -539,12 +539,19 @@ export const ProfileDetailsV2 = () => {
       formData.append("documents[bankDetails][upiId]", (bankDetails.upiId || "").trim())
       formData.append("documents[pan][number]", (bankDetails.panNumber || "").trim().toUpperCase())
 
+      formData.append("accountHolderName", (bankDetails.accountHolderName || "").trim())
+      formData.append("accountNumber", (bankDetails.accountNumber || "").trim())
+      formData.append("ifscCode", (bankDetails.ifscCode || "").trim().toUpperCase())
+      formData.append("bankName", (bankDetails.bankName || "").trim())
+      formData.append("upiId", (bankDetails.upiId || "").trim())
+      formData.append("panNumber", (bankDetails.panNumber || "").trim().toUpperCase())
+
       if (upiQrFile) {
         formData.append("upiQrCode", upiQrFile)
       }
 
       await deliveryAPI.updateBankDetailsMultipart(formData)
-      toast.success("Bank details updated")
+      toast.success("Bank details updated successfully")
       setShowBankDetailsPopup(false)
       setUpiQrFile(null)
       setUpiQrPreview(null)

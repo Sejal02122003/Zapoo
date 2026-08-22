@@ -72,12 +72,32 @@ export const shiftRepository = {
         const settlement = await FoodShiftSettlement.create([settlementData], { session });
         const settlementRecord = settlement[0];
 
-        // 2. Create Payout record snapshotting bank details
+        // 2. Create or Update Payout record snapshotting bank details
         if (payoutData) {
-            await FoodShiftPayout.create([{
-                ...payoutData,
-                shiftSettlementId: settlementRecord._id
-            }], { session });
+            const existingPayout = await FoodShiftPayout.findOne({
+                shiftId: settlementData.shiftId,
+                riderId: settlementData.riderId
+            }).session(session);
+
+            if (existingPayout) {
+                existingPayout.shiftSettlementId = settlementRecord._id;
+                existingPayout.amount = payoutData.amount;
+                if (payoutData.status && existingPayout.status !== 'PAID') {
+                    existingPayout.status = payoutData.status;
+                }
+                if (payoutData.bankDetailsSnapshot) {
+                    existingPayout.bankDetailsSnapshot = payoutData.bankDetailsSnapshot;
+                }
+                if (payoutData.holdReason !== undefined) {
+                    existingPayout.holdReason = payoutData.holdReason;
+                }
+                await existingPayout.save({ session });
+            } else {
+                await FoodShiftPayout.create([{
+                    ...payoutData,
+                    shiftSettlementId: settlementRecord._id
+                }], { session });
+            }
         }
 
         // 3. If bonus > 0, credit wallet and record bonus transaction

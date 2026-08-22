@@ -18,6 +18,7 @@ import { FoodRestaurantCommission } from '../models/restaurantCommission.model.j
 import { FoodDeliveryCommissionRule } from '../models/deliveryCommissionRule.model.js';
 import { FoodFeeSettings } from '../models/feeSettings.model.js';
 import { FeedbackExperience } from '../models/feedbackExperience.model.js';
+import { decrypt } from '../../../../utils/encryption.js';
 import { FoodUser } from '../../../../core/users/user.model.js';
 import { FoodAdmin } from '../../../../core/admin/admin.model.js';
 import { FoodRefreshToken } from '../../../../core/refreshTokens/refreshToken.model.js';
@@ -4943,12 +4944,14 @@ export async function getDeliveryPartnerById(id) {
                 : null,
             vehicleRC: partner.rcPhoto ? { document: partner.rcPhoto } : null,
             bankDetails:
-                partner.bankAccountHolderName || partner.bankAccountNumber || partner.bankIfscCode || partner.bankName
+                partner.bankAccountHolderName || partner.bankAccountNumber || partner.bankIfscCode || partner.bankName || partner.upiId || partner.upiQrCode
                     ? {
                         accountHolderName: partner.bankAccountHolderName || null,
-                        accountNumber: partner.bankAccountNumber || null,
+                        accountNumber: partner.bankAccountNumber ? (decrypt(partner.bankAccountNumber) || null) : null,
                         ifscCode: partner.bankIfscCode || null,
-                        bankName: partner.bankName || null
+                        bankName: partner.bankName || null,
+                        upiId: partner.upiId || null,
+                        upiQrCode: partner.upiQrCode || null
                     }
                     : null
         },

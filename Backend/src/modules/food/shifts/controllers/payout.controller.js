@@ -1,6 +1,8 @@
+import mongoose from 'mongoose';
 import { shiftRepository } from '../repositories/shift.repository.js';
 import { shiftService } from '../services/shift.service.js';
 import { FoodShiftPayout } from '../models/payout.model.js';
+import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
 
 export const payoutController = {
     // GET /api/v1/food/admin/payouts
@@ -98,8 +100,28 @@ export const payoutController = {
     // GET /api/v1/food/delivery/payouts (Rider view)
     getRiderPayouts: async (req, res) => {
         try {
-            const riderId = req.user?._id || req.user?.id;
-            const filter = { riderId };
+            await shiftService.syncPendingPayoutsForBookings();
+
+            const userId = req.user?.userId || req.user?._id || req.user?.id;
+            const phone = req.user?.phone;
+            let partnerIds = [];
+            if (userId) {
+                partnerIds.push(userId);
+                const partner = (mongoose.Types.ObjectId.isValid(userId) ? await FoodDeliveryPartner.findById(userId) : null) || 
+                                await FoodDeliveryPartner.findOne({ userId: String(userId) }) || 
+                                (phone ? await FoodDeliveryPartner.findOne({ phone: String(phone) }) : null);
+                if (partner) {
+                    if (String(partner._id) !== String(userId)) partnerIds.push(partner._id);
+                    if (partner.userId && !partnerIds.includes(partner.userId)) partnerIds.push(partner.userId);
+                }
+            }
+
+            const filter = {
+                $or: [
+                    { riderId: { $in: partnerIds } },
+                    { riderId: { $in: partnerIds.map(id => String(id)) } }
+                ]
+            };
             const payouts = await shiftRepository.getPayouts(filter, { sort: { createdAt: -1 } });
             res.status(200).json({ success: true, data: payouts });
         } catch (error) {

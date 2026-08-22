@@ -304,7 +304,7 @@ export const verifyDeliveryPhoneChangeOtp = async (userId, newPhone, otp) => {
 export const updateDeliveryPartnerBankDetails = async (userId, payload, files) => {
     const partner = await FoodDeliveryPartner.findById(userId);
     if (!partner) {
-        throw new Error('Delivery partner not found');
+        throw new ValidationError('Delivery partner not found');
     }
 
     // Capture previous values for audit logging
@@ -317,62 +317,65 @@ export const updateDeliveryPartnerBankDetails = async (userId, payload, files) =
         upiQrCode: partner.upiQrCode || ''
     };
 
-    // Handle both nested JSON and flat FormData from multer
-    let bankDetails = payload?.documents?.bankDetails;
-    let panDetails = payload?.documents?.pan;
+    // Extract bank details supporting flat, bracketed FormData, and nested JSON shapes
+    const accountHolderName = payload?.accountHolderName ?? payload?.documents?.bankDetails?.accountHolderName ?? payload?.['documents[bankDetails][accountHolderName]'];
+    const accountNumber = payload?.accountNumber ?? payload?.documents?.bankDetails?.accountNumber ?? payload?.['documents[bankDetails][accountNumber]'];
+    const ifscCode = payload?.ifscCode ?? payload?.documents?.bankDetails?.ifscCode ?? payload?.['documents[bankDetails][ifscCode]'];
+    const bankName = payload?.bankName ?? payload?.documents?.bankDetails?.bankName ?? payload?.['documents[bankDetails][bankName]'];
+    const upiId = payload?.upiId ?? payload?.documents?.bankDetails?.upiId ?? payload?.['documents[bankDetails][upiId]'];
+    const panNumber = payload?.panNumber ?? payload?.documents?.pan?.number ?? payload?.['documents[pan][number]'];
 
-    if (!bankDetails && payload) {
-        const b = {};
-        if (payload['documents[bankDetails][accountHolderName]'] !== undefined) b.accountHolderName = payload['documents[bankDetails][accountHolderName]'];
-        if (payload['documents[bankDetails][accountNumber]'] !== undefined) b.accountNumber = payload['documents[bankDetails][accountNumber]'];
-        if (payload['documents[bankDetails][ifscCode]'] !== undefined) b.ifscCode = payload['documents[bankDetails][ifscCode]'];
-        if (payload['documents[bankDetails][bankName]'] !== undefined) b.bankName = payload['documents[bankDetails][bankName]'];
-        if (payload['documents[bankDetails][upiId]'] !== undefined) b.upiId = payload['documents[bankDetails][upiId]'];
-        
-        // Also support flat top-level payload keys
-        if (payload.accountHolderName !== undefined) b.accountHolderName = payload.accountHolderName;
-        if (payload.accountNumber !== undefined) b.accountNumber = payload.accountNumber;
-        if (payload.ifscCode !== undefined) b.ifscCode = payload.ifscCode;
-        if (payload.bankName !== undefined) b.bankName = payload.bankName;
-        if (payload.upiId !== undefined) b.upiId = payload.upiId;
-
-        if (Object.keys(b).length > 0) bankDetails = b;
+    if (accountHolderName !== undefined) {
+        partner.bankAccountHolderName = accountHolderName ? String(accountHolderName).trim() : '';
     }
 
-    if (!panDetails && payload?.['documents[pan][number]'] !== undefined) {
-        panDetails = { number: payload['documents[pan][number]'] };
-    }
-
-    if (bankDetails) {
-        const b = bankDetails;
-        if (b.accountHolderName !== undefined) {
-            partner.bankAccountHolderName = b.accountHolderName ? String(b.accountHolderName).trim() : '';
-        }
-
-        if (b.accountNumber !== undefined && b.accountNumber !== '') {
-            const rawAcc = String(b.accountNumber).trim();
-            const ACCOUNT_NUMBER_REGEX = /^\d{9,18}$/;
-            if (!ACCOUNT_NUMBER_REGEX.test(rawAcc)) {
-                throw new Error('Invalid Bank Account Number (must be 9 to 18 digits)');
+    if (accountNumber !== undefined) {
+        const rawAcc = String(accountNumber || '').trim();
+        if (rawAcc) {
+            // Check if it's already an encrypted string (e.g. from existing profile)
+            if (rawAcc.includes(':')) {
+                const dec = decrypt(rawAcc);
+                const ACCOUNT_NUMBER_REGEX = /^\d{9,18}$/;
+                if (dec && ACCOUNT_NUMBER_REGEX.test(dec.trim())) {
+                    partner.bankAccountNumber = encrypt(dec.trim());
+                } else {
+                    throw new ValidationError('Invalid Bank Account Number (must be 9 to 18 digits)');
+                }
+            } else {
+                const ACCOUNT_NUMBER_REGEX = /^\d{9,18}$/;
+                if (!ACCOUNT_NUMBER_REGEX.test(rawAcc)) {
+                    throw new ValidationError('Invalid Bank Account Number (must be 9 to 18 digits)');
+                }
+                partner.bankAccountNumber = encrypt(rawAcc);
             }
-            partner.bankAccountNumber = encrypt(rawAcc);
+        } else {
+            partner.bankAccountNumber = '';
         }
+    }
 
-        if (b.ifscCode !== undefined && b.ifscCode !== '') {
-            const rawIfsc = String(b.ifscCode).trim().toUpperCase();
+    if (ifscCode !== undefined) {
+        const rawIfsc = String(ifscCode || '').trim().toUpperCase();
+        if (rawIfsc) {
             const IFSC_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
             if (!IFSC_REGEX.test(rawIfsc)) {
-                throw new Error('Invalid IFSC Code format (e.g. SBIN0001234)');
+                throw new ValidationError('Invalid IFSC Code format (e.g. SBIN0001234)');
             }
             partner.bankIfscCode = rawIfsc;
+        } else {
+            partner.bankIfscCode = '';
         }
-
-        if (b.bankName !== undefined) partner.bankName = b.bankName ? String(b.bankName).trim() : '';
-        if (b.upiId !== undefined) partner.upiId = b.upiId ? String(b.upiId).trim() : '';
     }
 
-    if (panDetails?.number !== undefined) {
-        partner.panNumber = panDetails.number ? String(panDetails.number).trim().toUpperCase() : '';
+    if (bankName !== undefined) {
+        partner.bankName = bankName ? String(bankName).trim() : '';
+    }
+
+    if (upiId !== undefined) {
+        partner.upiId = upiId ? String(upiId).trim() : '';
+    }
+
+    if (panNumber !== undefined) {
+        partner.panNumber = panNumber ? String(panNumber).trim().toUpperCase() : '';
     }
 
     if (files?.upiQrCode?.[0]) {
@@ -391,32 +394,40 @@ export const updateDeliveryPartnerBankDetails = async (userId, payload, files) =
         upiQrCode: partner.upiQrCode || ''
     };
 
-    await RiderBankDetailsAuditLog.create({
-        riderId: partner._id,
-        changedBy: userId,
-        changedByRole: 'DELIVERY_PARTNER',
-        previousValues,
-        newValues
-    });
+    try {
+        await RiderBankDetailsAuditLog.create({
+            riderId: partner._id,
+            changedBy: userId,
+            changedByRole: 'DELIVERY_PARTNER',
+            previousValues,
+            newValues
+        });
+    } catch (auditErr) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to create bank details audit log:', auditErr);
+    }
 
     const resObj = partner.toObject();
-    resObj.bankAccountNumber = decrypt(partner.bankAccountNumber);
+    resObj.bankAccountNumber = decrypt(partner.bankAccountNumber) || '';
     return resObj;
 };
 
 export const getDeliveryPartnerBankDetails = async (userId) => {
     const partner = await FoodDeliveryPartner.findById(userId);
     if (!partner) {
-        throw new Error('Delivery partner not found');
+        throw new ValidationError('Delivery partner not found');
     }
+
+    const decryptedAcc = decrypt(partner.bankAccountNumber) || '';
 
     return {
         accountHolderName: partner.bankAccountHolderName || '',
-        accountNumber: decrypt(partner.bankAccountNumber) || '',
+        accountNumber: decryptedAcc,
         ifscCode: partner.bankIfscCode || '',
         bankName: partner.bankName || '',
         upiId: partner.upiId || '',
-        upiQrCode: partner.upiQrCode || ''
+        upiQrCode: partner.upiQrCode || '',
+        panNumber: partner.panNumber || ''
     };
 };
 

@@ -17,6 +17,7 @@ import { ValidationError, AuthError } from "./errors.js";
 import { config } from "../../config/env.js";
 import { logger } from "../../utils/logger.js";
 import { sendAdminResetOtpEmail } from "../../utils/email.js";
+import { decrypt } from "../../utils/encryption.js";
 import mongoose from "mongoose";
 
 const ROLES = {
@@ -852,8 +853,10 @@ export const getProfile = async (userId, role) => {
       const deliveryId = partner._id
         ? `DP-${partner._id.toString().slice(-8).toUpperCase()}`
         : null;
+      const decryptedAccountNumber = partner.bankAccountNumber ? (decrypt(partner.bankAccountNumber) || '') : '';
       profile = {
         ...partner,
+        bankAccountNumber: decryptedAccountNumber,
         email: partner.email || null,
         deliveryId,
         status: partner.status === "rejected" ? "blocked" : partner.status,
@@ -862,10 +865,12 @@ export const getProfile = async (userId, role) => {
           : null,
         documents: {
           aadhar:
-            partner.aadharPhoto || partner.aadharNumber
+            partner.aadharPhoto || partner.aadharFrontPhoto || partner.aadharBackPhoto || partner.aadharNumber
               ? {
                 number: partner.aadharNumber || null,
-                document: partner.aadharPhoto || null,
+                document: partner.aadharFrontPhoto || partner.aadharPhoto || null,
+                front: partner.aadharFrontPhoto || partner.aadharPhoto || null,
+                back: partner.aadharBackPhoto || null,
               }
               : null,
           pan:
@@ -875,11 +880,13 @@ export const getProfile = async (userId, role) => {
                 document: partner.panPhoto || null,
               }
               : null,
-          drivingLicense: partner.drivingLicensePhoto || partner.drivingLicenseNumber
+          drivingLicense: partner.drivingLicensePhoto || partner.drivingLicenseFrontPhoto || partner.drivingLicenseBackPhoto || partner.drivingLicenseNumber
             ? {
-              number: partner.drivingLicenseNumber || null,
-              document: partner.drivingLicensePhoto || null,
-            }
+                number: partner.drivingLicenseNumber || null,
+                document: partner.drivingLicenseFrontPhoto || partner.drivingLicensePhoto || null,
+                front: partner.drivingLicenseFrontPhoto || partner.drivingLicensePhoto || null,
+                back: partner.drivingLicenseBackPhoto || null,
+              }
             : null,
           bankDetails:
             partner.bankAccountHolderName ||
@@ -890,7 +897,7 @@ export const getProfile = async (userId, role) => {
               partner.upiQrCode
               ? {
                 accountHolderName: partner.bankAccountHolderName || null,
-                accountNumber: partner.bankAccountNumber || null,
+                accountNumber: decryptedAccountNumber || null,
                 ifscCode: partner.bankIfscCode || null,
                 bankName: partner.bankName || null,
                 upiId: partner.upiId || null,
