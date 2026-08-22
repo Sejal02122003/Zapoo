@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { adminAPI, uploadAPI } from "@food/api"
+import AdminLocationMapPicker from "@food/components/admin/restaurants/AdminLocationMapPicker"
 import { Input } from "@food/components/ui/input"
 import { Button } from "@food/components/ui/button"
 import { Label } from "@food/components/ui/label"
@@ -596,7 +597,7 @@ export default function EditRestaurant() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <Label>Service Zone</Label>
+                  <Label>Service Zone*</Label>
                   <select
                     value={locationForm.zoneId || ""}
                     onChange={(e) => setLocationForm((p) => ({ ...p, zoneId: e.target.value }))}
@@ -616,45 +617,87 @@ export default function EditRestaurant() {
                   </select>
                 </div>
 
-                <div className="md:col-span-2">
-                  <Label>Search location</Label>
-                  <Input
-                    ref={locationSearchInputRef}
-                    placeholder="Start typing your restaurant address..."
-                    className="mt-1 bg-white text-sm text-black! dark:text-white! placeholder:text-gray-500 dark:placeholder:text-gray-400 caret-black dark:caret-white"
-                    style={{ color: "#000", WebkitTextFillColor: "#000" }}
+                <div className="md:col-span-2 pt-2">
+                  <Label className="text-xs font-semibold text-slate-800 mb-2 block">
+                    Restaurant Location on Map (Pin & Search)*
+                  </Label>
+                  <AdminLocationMapPicker
+                    location={locationForm}
+                    zoneId={locationForm.zoneId}
+                    zones={zones}
+                    onChange={(newLoc, detectedZoneId) => {
+                      setLocationForm((prev) => ({
+                        ...prev,
+                        zoneId: detectedZoneId || prev.zoneId,
+                        ...newLoc
+                      }))
+                    }}
+                    onZoneSelect={(detectedZoneId) => {
+                      if (detectedZoneId) {
+                        setLocationForm((prev) => ({ ...prev, zoneId: detectedZoneId }))
+                      }
+                    }}
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Select a suggestion from the dropdown to fill address + coordinates.
-                  </p>
+                </div>
+
+                <div className="md:col-span-2 pt-3 border-t border-slate-100">
+                  <Label className="text-xs font-semibold text-slate-700 mb-2 block">
+                    Address Details (auto-filled from map, editable)
+                  </Label>
                 </div>
 
                 <div className="md:col-span-2">
                   <Label>Formatted Address</Label>
-                  <Input value={locationForm.formattedAddress} readOnly className="mt-1 bg-slate-50" />
+                  <Input
+                    value={locationForm.formattedAddress || ""}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, formattedAddress: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Full Address"
+                  />
                 </div>
                 <div>
                   <Label>Area</Label>
-                  <Input value={locationForm.area} readOnly className="mt-1 bg-slate-50" />
+                  <Input
+                    value={locationForm.area || ""}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, area: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Area / Sector"
+                  />
                 </div>
                 <div>
                   <Label>City</Label>
-                  <Input value={locationForm.city} readOnly className="mt-1 bg-slate-50" />
+                  <Input
+                    value={locationForm.city || ""}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, city: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="City"
+                  />
                 </div>
                 <div>
                   <Label>State</Label>
-                  <Input value={locationForm.state} readOnly className="mt-1 bg-slate-50" />
+                  <Input
+                    value={locationForm.state || ""}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, state: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="State"
+                  />
                 </div>
                 <div>
                   <Label>Pincode</Label>
-                  <Input value={locationForm.pincode} readOnly className="mt-1 bg-slate-50" />
+                  <Input
+                    value={locationForm.pincode || ""}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, pincode: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Pincode"
+                  />
                 </div>
                 <div className="md:col-span-2">
                   <Label>Landmark</Label>
                   <Input
-                    value={locationForm.landmark}
+                    value={locationForm.landmark || ""}
                     onChange={(e) => setLocationForm((p) => ({ ...p, landmark: e.target.value }))}
-                    className="mt-1"
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Nearby landmark"
                   />
                 </div>
               </div>

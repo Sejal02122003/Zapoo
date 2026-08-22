@@ -6,6 +6,7 @@ import { clearModuleAuth } from "@food/utils/auth"
 import { normalizeImageUrl as commonNormalizeImageUrl } from "@food/utils/common"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { exportRestaurantsToPDF } from "@food/components/admin/restaurants/restaurantsExportUtils"
+import AdminLocationMapPicker from "@food/components/admin/restaurants/AdminLocationMapPicker"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 
 // Import icons from Dashboard-icons
@@ -2495,7 +2496,7 @@ export default function RestaurantsList() {
                       <h4 className="text-lg font-semibold text-slate-900 mb-4">Location Editor</h4>
                       <div className="space-y-3 border border-indigo-100 bg-indigo-50/40 rounded-xl p-4">
                         <p className="text-xs text-indigo-700 font-semibold">
-                          Update restaurant location using dropdown (accurate) + select service zone.
+                          Update restaurant location using map pin, search, and service zone.
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div className="md:col-span-2">
@@ -2514,71 +2515,93 @@ export default function RestaurantsList() {
                             </select>
                           </div>
 
-                          <div className="md:col-span-2">
-                            <label className="block text-xs text-slate-600 mb-1 font-semibold">Search location*</label>
-                            <input
-                              ref={locationSearchInputRef}
-                              type="text"
-                              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
-                              placeholder="Start typing and choose from dropdown..."
+                          <div className="md:col-span-2 pt-2">
+                            <label className="block text-xs text-slate-800 mb-2 font-semibold">
+                              Restaurant Location & Map Pin*
+                            </label>
+                            <AdminLocationMapPicker
+                              location={locationForm}
+                              zoneId={locationForm.zoneId}
+                              zones={zones}
+                              onChange={(newLoc, detectedZoneId) => {
+                                setLocationForm((prev) => ({
+                                  ...prev,
+                                  zoneId: detectedZoneId || prev.zoneId,
+                                  ...newLoc
+                                }))
+                              }}
+                              onZoneSelect={(detectedZoneId) => {
+                                if (detectedZoneId) {
+                                  setLocationForm((prev) => ({ ...prev, zoneId: detectedZoneId }))
+                                }
+                              }}
                             />
-                            <p className="text-[11px] text-slate-500 mt-1">
-                              Select from dropdown to auto-fill address and coordinates.
-                            </p>
+                          </div>
+
+                          <div className="md:col-span-2 pt-2 border-t border-slate-200">
+                            <label className="block text-xs text-slate-700 mb-2 font-semibold">
+                              Address Details (auto-filled from map, editable)
+                            </label>
                           </div>
 
                           <div className="md:col-span-2">
                             <label className="block text-xs text-slate-500 mb-1">Formatted Address</label>
                             <input
                               type="text"
-                              value={locationForm.formattedAddress}
-                              readOnly
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm"
+                              value={locationForm.formattedAddress || ""}
+                              onChange={(e) => setLocationForm((prev) => ({ ...prev, formattedAddress: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
+                              placeholder="Full address"
                             />
                           </div>
                           <div>
                             <label className="block text-xs text-slate-500 mb-1">Area</label>
                             <input
                               type="text"
-                              value={locationForm.area}
-                              readOnly
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm"
+                              value={locationForm.area || ""}
+                              onChange={(e) => setLocationForm((prev) => ({ ...prev, area: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
+                              placeholder="Area"
                             />
                           </div>
                           <div>
                             <label className="block text-xs text-slate-500 mb-1">City</label>
                             <input
                               type="text"
-                              value={locationForm.city}
-                              readOnly
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm"
+                              value={locationForm.city || ""}
+                              onChange={(e) => setLocationForm((prev) => ({ ...prev, city: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
+                              placeholder="City"
                             />
                           </div>
                           <div>
                             <label className="block text-xs text-slate-500 mb-1">State</label>
                             <input
                               type="text"
-                              value={locationForm.state}
-                              readOnly
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm"
+                              value={locationForm.state || ""}
+                              onChange={(e) => setLocationForm((prev) => ({ ...prev, state: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
+                              placeholder="State"
                             />
                           </div>
                           <div>
                             <label className="block text-xs text-slate-500 mb-1">Pincode</label>
                             <input
                               type="text"
-                              value={locationForm.pincode}
-                              readOnly
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm"
+                              value={locationForm.pincode || ""}
+                              onChange={(e) => setLocationForm((prev) => ({ ...prev, pincode: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
+                              placeholder="Pincode"
                             />
                           </div>
                           <div className="md:col-span-2">
                             <label className="block text-xs text-slate-500 mb-1">Landmark (optional)</label>
                             <input
                               type="text"
-                              value={locationForm.landmark}
+                              value={locationForm.landmark || ""}
                               onChange={(e) => setLocationForm((prev) => ({ ...prev, landmark: e.target.value }))}
                               className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
+                              placeholder="Nearby landmark"
                             />
                           </div>
                         </div>

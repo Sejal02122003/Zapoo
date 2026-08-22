@@ -7,6 +7,7 @@ import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Button } from "@food/components/ui/button"
 import { adminAPI, uploadAPI, zoneAPI } from "@food/api"
+import AdminLocationMapPicker from "@food/components/admin/restaurants/AdminLocationMapPicker"
 import { toast } from "sonner"
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation"
 const debugLog = (...args) => {}
@@ -943,63 +944,19 @@ export default function AddRestaurant() {
 
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
         <h2 className="text-lg font-semibold text-black">Restaurant contact & location</h2>
-        <div className="relative">
-          <Label className="text-xs text-gray-700">Search location</Label>
-          <div className="relative">
-            <Input
-              ref={locationSearchInputRef}
-              value={locationSearchValue}
-              onChange={(e) => setLocationSearchValue(e.target.value)}
-              className="mt-1 bg-white text-sm"
-              placeholder="Search and select restaurant address..."
-            />
-            {isSearchingLocation && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-              </div>
-            )}
-          </div>
-
-          {locationSuggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto">
-              {locationSuggestions.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => {
-                    const { lat, lng, display, addr } = s
-                    const area = addr.suburb || addr.neighbourhood || addr.city_district || addr.locality || ""
-                    const city = addr.city || addr.town || addr.village || ""
-                    const state = addr.state || ""
-                    const pincode = addr.postcode || ""
-
-                    setStep1((prev) => ({
-                      ...prev,
-                      location: {
-                        ...prev.location,
-                        formattedAddress: display,
-                        addressLine1: display,
-                        area: area || prev.location.area,
-                        city: city || prev.location.city,
-                        state: state || prev.location.state,
-                        pincode: pincode || prev.location.pincode,
-                        latitude: lat,
-                        longitude: lng } }))
-                    setLocationSearchValue(display)
-                    setLocationSuggestions([])
-                  }}
-                  className="w-full px-4 py-2 text-left text-[13px] font-medium text-gray-700 hover:bg-orange-50 border-b border-gray-100 last:border-none"
-                >
-                  <span className="truncate">{s.display}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          
-          <p className="text-[11px] text-gray-500 mt-1">
-            Search to auto-fill Area, City, State, Pincode and coordinates.
-          </p>
+        
+        <div>
+          <Label className="text-xs text-gray-700">Primary contact number*</Label>
+          <Input
+            value={step1.primaryContactNumber || ""}
+            onChange={(e) => setStep1({ ...step1, primaryContactNumber: sanitizeDigits(e.target.value).slice(0, 10) })}
+            className="mt-1 bg-white text-sm text-black placeholder-black"
+            placeholder="Restaurant's primary contact number"
+            inputMode="numeric"
+            maxLength={10}
+          />
         </div>
+
         <div>
           <Label className="text-xs text-gray-700">Service zone*</Label>
           <select
@@ -1023,60 +980,86 @@ export default function AddRestaurant() {
             Choose the service zone where your restaurant will be available.
           </p>
         </div>
-        <div>
-          <Label className="text-xs text-gray-700">Primary contact number*</Label>
-          <Input
-            value={step1.primaryContactNumber || ""}
-            onChange={(e) => setStep1({ ...step1, primaryContactNumber: sanitizeDigits(e.target.value).slice(0, 10) })}
-            className="mt-1 bg-white text-sm text-black placeholder-black"
-            placeholder="Restaurant's primary contact number"
-            inputMode="numeric"
-            maxLength={10}
+
+        {/* Interactive Map & Draggable Pin Picker */}
+        <div className="pt-2">
+          <Label className="text-xs font-semibold text-gray-800 mb-2 block">
+            Restaurant Location & Map Pin*
+          </Label>
+          <AdminLocationMapPicker
+            location={step1.location}
+            zoneId={step1.zoneId}
+            zones={zones}
+            onChange={(newLoc, detectedZoneId) => {
+              setStep1((prev) => ({
+                ...prev,
+                zoneId: detectedZoneId || prev.zoneId,
+                location: {
+                  ...prev.location,
+                  ...newLoc
+                }
+              }))
+              if (newLoc?.formattedAddress) {
+                setLocationSearchValue(newLoc.formattedAddress)
+              }
+            }}
+            onZoneSelect={(detectedZoneId) => {
+              if (detectedZoneId) {
+                setStep1((prev) => ({ ...prev, zoneId: detectedZoneId }))
+              }
+            }}
           />
         </div>
-        <div className="space-y-3">
-          <Input
-            value={step1.location?.area || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, area: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="Area / Sector / Locality*"
-          />
-          <Input
-            value={step1.location?.city || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, city: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="City*"
-          />
-          <Input
-            value={step1.location?.addressLine1 || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, addressLine1: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="Shop no. / building no. (optional)"
-          />
-          <Input
-            value={step1.location?.addressLine2 || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, addressLine2: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="Floor / tower (optional)"
-          />
-          <Input
-            value={step1.location?.state || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, state: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="State (optional)"
-          />
-          <Input
-            value={step1.location?.pincode || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, pincode: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="Pin code (optional)"
-          />
-          <Input
-            value={step1.location?.landmark || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, landmark: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="Nearby landmark (optional)"
-          />
+
+        {/* Address Fields (auto-filled from map or editable) */}
+        <div className="pt-3 border-t border-gray-100">
+          <Label className="text-xs font-semibold text-gray-700 mb-2 block">
+            Address Details (auto-filled from map, editable)
+          </Label>
+          <div className="space-y-3">
+            <Input
+              value={step1.location?.area || ""}
+              onChange={(e) => setStep1({ ...step1, location: { ...step1.location, area: e.target.value } })}
+              className="bg-white text-sm"
+              placeholder="Area / Sector / Locality*"
+            />
+            <Input
+              value={step1.location?.city || ""}
+              onChange={(e) => setStep1({ ...step1, location: { ...step1.location, city: e.target.value } })}
+              className="bg-white text-sm"
+              placeholder="City*"
+            />
+            <Input
+              value={step1.location?.addressLine1 || ""}
+              onChange={(e) => setStep1({ ...step1, location: { ...step1.location, addressLine1: e.target.value } })}
+              className="bg-white text-sm"
+              placeholder="Shop no. / building no. (optional)"
+            />
+            <Input
+              value={step1.location?.addressLine2 || ""}
+              onChange={(e) => setStep1({ ...step1, location: { ...step1.location, addressLine2: e.target.value } })}
+              className="bg-white text-sm"
+              placeholder="Floor / tower (optional)"
+            />
+            <Input
+              value={step1.location?.state || ""}
+              onChange={(e) => setStep1({ ...step1, location: { ...step1.location, state: e.target.value } })}
+              className="bg-white text-sm"
+              placeholder="State (optional)"
+            />
+            <Input
+              value={step1.location?.pincode || ""}
+              onChange={(e) => setStep1({ ...step1, location: { ...step1.location, pincode: e.target.value } })}
+              className="bg-white text-sm"
+              placeholder="Pin code (optional)"
+            />
+            <Input
+              value={step1.location?.landmark || ""}
+              onChange={(e) => setStep1({ ...step1, location: { ...step1.location, landmark: e.target.value } })}
+              className="bg-white text-sm"
+              placeholder="Nearby landmark (optional)"
+            />
+          </div>
         </div>
       </section>
     </div>
