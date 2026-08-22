@@ -1,5 +1,6 @@
 import { sendResponse, sendError } from '../../../../utils/response.js';
 import { validateAddonCreateDto, validateAddonListQuery, validateAddonUpdateDto } from '../validators/addon.validator.js';
+import { invalidateCache } from '../../../../middleware/cache.js';
 import {
     listRestaurantAddons,
     createRestaurantAddon,
@@ -23,6 +24,7 @@ export const createAddonController = async (req, res, next) => {
         const restaurantId = req.user?.userId;
         const body = validateAddonCreateDto(req.body || {});
         const addon = await createRestaurantAddon(restaurantId, body);
+        await invalidateCache('restaurant_addons:*');
         return sendResponse(res, 201, 'Add-on created successfully', { addon });
     } catch (error) {
         next(error);
@@ -35,6 +37,7 @@ export const updateAddonController = async (req, res, next) => {
         const body = validateAddonUpdateDto(req.body || {});
         const addon = await updateRestaurantAddon(restaurantId, req.params.id, body);
         if (!addon) return sendError(res, 404, 'Add-on not found');
+        await invalidateCache('restaurant_addons:*');
         return sendResponse(res, 200, 'Add-on updated successfully', { addon });
     } catch (error) {
         next(error);
@@ -46,6 +49,7 @@ export const deleteAddonController = async (req, res, next) => {
         const restaurantId = req.user?.userId;
         const result = await deleteRestaurantAddon(restaurantId, req.params.id);
         if (!result) return sendError(res, 404, 'Add-on not found');
+        await invalidateCache('restaurant_addons:*');
         return sendResponse(res, 200, 'Add-on deleted successfully', result);
     } catch (error) {
         next(error);

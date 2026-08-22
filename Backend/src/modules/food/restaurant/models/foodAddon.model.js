@@ -36,7 +36,7 @@ const foodAddonSchema = new mongoose.Schema(
         // Operational toggle controlled by restaurant; user app filters on this.
         isAvailable: { type: Boolean, default: true, index: true },
         // Soft delete for safety + auditability.
-        isDeleted: { type: Boolean, default: false, index: true }
+        isDeleted: { type: Boolean, default: false }
     },
     { collection: 'food_addons', timestamps: true }
 );

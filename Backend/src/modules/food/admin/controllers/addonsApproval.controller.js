@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import * as adminService from '../services/admin.service.js';
 import { validateAddonAdminListQuery, validateAddonRejectDto } from '../validators/addonApproval.validator.js';
+import { invalidateCache } from '../../../../middleware/cache.js';
 
 export async function getRestaurantAddons(req, res, next) {
     try {
@@ -22,6 +23,7 @@ export async function approveRestaurantAddon(req, res, next) {
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Add-on not found' });
         }
+        await invalidateCache('restaurant_addons:*');
         res.status(200).json({ success: true, message: 'Add-on approved successfully', data: { addon: updated } });
     } catch (error) {
         next(error);
@@ -39,6 +41,7 @@ export async function rejectRestaurantAddon(req, res, next) {
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Add-on not found' });
         }
+        await invalidateCache('restaurant_addons:*');
         res.status(200).json({ success: true, message: 'Add-on rejected successfully', data: { addon: updated } });
     } catch (error) {
         next(error);
@@ -55,6 +58,7 @@ export async function updateRestaurantAddon(req, res, next) {
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Add-on not found' });
         }
+        await invalidateCache('restaurant_addons:*');
         res.status(200).json({ success: true, message: 'Add-on updated successfully', data: { addon: updated } });
     } catch (error) {
         next(error);
