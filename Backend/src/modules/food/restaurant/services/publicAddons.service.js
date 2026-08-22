@@ -28,24 +28,33 @@ export async function getPublicApprovedRestaurantAddons(restaurantIdOrSlug) {
         isDeleted: { $ne: true },
         approvalStatus: 'approved',
         isAvailable: true,
-        published: { $ne: null }
+        $or: [{ published: { $ne: null } }, { draft: { $ne: null } }]
     })
         .sort({ approvedAt: -1, updatedAt: -1 })
-        .select('_id published')
+        .select('_id published draft')
         .lean();
 
     return (addons || [])
-        .filter((a) => a && a.published)
         .map((a) => {
-            const p = a.published;
+            const p = a.published || a.draft || {};
+            const d = a.draft || {};
+            const rawImg = p.image || (Array.isArray(p.images) && p.images[0]) || d.image || (Array.isArray(d.images) && d.images[0]) || '';
+            const rawImages = (Array.isArray(p.images) && p.images.length > 0)
+                ? p.images
+                : ((Array.isArray(d.images) && d.images.length > 0) ? d.images : (rawImg ? [rawImg] : []));
+            const imageStr = typeof rawImg === 'object' ? (rawImg?.url || rawImg?.secure_url || '') : String(rawImg || '').trim();
+            const imagesArr = rawImages
+                .map((img) => (typeof img === 'object' ? (img?.url || img?.secure_url || '') : String(img || '').trim()))
+                .filter(Boolean);
+
             return {
                 id: a._id,
                 _id: a._id,
-                name: p.name || '',
-                description: p.description || '',
-                price: Number(p.price) || 0,
-                image: p.image || '',
-                images: Array.isArray(p.images) ? p.images : []
+                name: p.name || d.name || '',
+                description: p.description || d.description || '',
+                price: Number(p.price !== undefined && p.price !== null ? p.price : d.price) || 0,
+                image: imageStr || (imagesArr.length > 0 ? imagesArr[0] : ''),
+                images: imagesArr
             };
         });
 }

@@ -17,7 +17,7 @@ import { API_BASE_URL } from "@food/api/config"
 import { initRazorpayPayment } from "@food/utils/razorpay"
 import { toast } from "sonner"
 import { getCompanyNameAsync } from "@food/utils/businessSettings"
-import { calculateDistance } from "@food/utils/common"
+import { calculateDistance, normalizeImageUrl, extractImages } from "@food/utils/common"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
@@ -26,6 +26,37 @@ import { playUserOrderNotificationAlarm } from "@food/utils/soundUtils"
 const debugLog = (...args) => { }
 const debugWarn = (...args) => { }
 const debugError = (...args) => { }
+
+const getAddonDisplayImage = (addon) => {
+  const extracted = extractImages(
+    addon?.image ||
+    addon?.images ||
+    addon?.published?.image ||
+    addon?.published?.images ||
+    addon?.draft?.image ||
+    addon?.draft?.images ||
+    ""
+  );
+  if (extracted && extracted.length > 0 && extracted[0]) {
+    return extracted[0];
+  }
+  const raw =
+    addon?.image ||
+    (Array.isArray(addon?.images) && addon.images[0]) ||
+    addon?.published?.image ||
+    (Array.isArray(addon?.published?.images) && addon.published.images[0]) ||
+    addon?.draft?.image ||
+    (Array.isArray(addon?.draft?.images) && addon.draft.images[0]) ||
+    "";
+  if (typeof raw === "string" && raw.trim()) {
+    return normalizeImageUrl(raw.trim());
+  }
+  if (typeof raw === "object" && raw) {
+    const u = raw.url || raw.secure_url || raw.imageUrl || raw.image || "";
+    if (u) return normalizeImageUrl(u);
+  }
+  return "";
+};
 
 
 
@@ -2577,64 +2608,77 @@ export default function Cart() {
                     </div>
                   ) : (
                     <div className="flex gap-3 md:gap-4 overflow-x-auto pb-2 -mx-4 md:-mx-6 px-4 md:px-6 scrollbar-hide">
-                      {addons.map((addon) => (
-                        <div key={addon.id} className="flex-shrink-0 w-28 md:w-36">
-                          <div className="relative bg-gray-100 dark:bg-gray-800 rounded-lg md:rounded-xl overflow-hidden">
-                            <img
-                              src={addon.image || (addon.images && addon.images[0]) || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop"}
-                              alt={addon.name}
-                              className="w-full h-28 md:h-36 object-cover rounded-lg md:rounded-xl"
-                              onError={(e) => {
-                                e.target.onerror = null
-                                e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop"
-                              }}
-                            />
-                            <div className="absolute top-1 md:top-2 left-1 md:left-2">
-                              <div className="w-3.5 h-3.5 md:w-4 md:h-4 bg-white border border-green-600 flex items-center justify-center rounded">
-                                <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-600" />
+                      {addons.map((addon) => {
+                        const addonImgUrl = getAddonDisplayImage(addon);
+                        return (
+                          <div key={addon.id || addon._id} className="flex-shrink-0 w-28 md:w-36">
+                            <div className="relative bg-gray-100 dark:bg-gray-800 rounded-lg md:rounded-xl overflow-hidden aspect-square">
+                              {addonImgUrl ? (
+                                <img
+                                  src={addonImgUrl}
+                                  alt={addon.name}
+                                  className="w-full h-full object-cover rounded-lg md:rounded-xl"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.style.display = "none";
+                                    const fallback = e.target.parentElement?.querySelector(".addon-fallback-icon");
+                                    if (fallback) fallback.style.display = "flex";
+                                  }}
+                                />
+                              ) : null}
+                              <div
+                                className={`addon-fallback-icon w-full h-full bg-slate-100 dark:bg-slate-800 flex flex-col items-center justify-center text-slate-400 p-2 text-center ${addonImgUrl ? "hidden" : "flex"}`}
+                              >
+                                <Utensils className="w-7 h-7 mb-1 text-slate-400 opacity-60" />
+                                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 line-clamp-1">{addon.name}</span>
                               </div>
-                            </div>
-                            <button
-                              onClick={() => {
-                                // Use restaurant info from existing cart items to ensure format consistency
-                                const cartRestaurantId = cart[0]?.restaurantId || restaurantId;
-                                const cartRestaurantName = cart[0]?.restaurant || restaurantName;
+                              <div className="absolute top-1 md:top-2 left-1 md:left-2 z-10">
+                                <div className="w-3.5 h-3.5 md:w-4 md:h-4 bg-white border border-green-600 flex items-center justify-center rounded">
+                                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-600" />
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  // Use restaurant info from existing cart items to ensure format consistency
+                                  const cartRestaurantId = cart[0]?.restaurantId || restaurantId;
+                                  const cartRestaurantName = cart[0]?.restaurant || restaurantName;
 
-                                if (!cartRestaurantId || !cartRestaurantName) {
-                                  debugError('? Cannot add addon: Missing restaurant information', {
-                                    cartRestaurantId,
-                                    cartRestaurantName,
-                                    restaurantId,
-                                    restaurantName,
-                                    cartItem: cart[0]
+                                  if (!cartRestaurantId || !cartRestaurantName) {
+                                    debugError('? Cannot add addon: Missing restaurant information', {
+                                      cartRestaurantId,
+                                      cartRestaurantName,
+                                      restaurantId,
+                                      restaurantName,
+                                      cartItem: cart[0]
+                                    });
+                                    toast.error('Restaurant information is missing. Please refresh the page.');
+                                    return;
+                                  }
+
+                                  addToCart({
+                                    id: addon.id || addon._id,
+                                    name: addon.name,
+                                    price: addon.price,
+                                    image: addonImgUrl || addon.image || (addon.images && addon.images[0]) || "",
+                                    description: addon.description || "",
+                                    isVeg: true,
+                                    restaurant: cartRestaurantName,
+                                    restaurantId: cartRestaurantId
                                   });
-                                  toast.error('Restaurant information is missing. Please refresh the page.');
-                                  return;
-                                }
-
-                                addToCart({
-                                  id: addon.id,
-                                  name: addon.name,
-                                  price: addon.price,
-                                  image: addon.image || (addon.images && addon.images[0]) || "",
-                                  description: addon.description || "",
-                                  isVeg: true,
-                                  restaurant: cartRestaurantName,
-                                  restaurantId: cartRestaurantId
-                                });
-                              }}
-                               className="absolute bottom-1 md:bottom-2 right-1 md:right-2 w-6 h-6 md:w-7 md:h-7 bg-white border border-primary rounded flex items-center justify-center shadow-sm hover:bg-[#7e386605] dark:hover:bg-[#7e386610] transition-colors"
-                            >
-                               <Plus className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
-                            </button>
+                                }}
+                                className="absolute bottom-1 md:bottom-2 right-1 md:right-2 z-10 w-6 h-6 md:w-7 md:h-7 bg-white border border-primary rounded flex items-center justify-center shadow-sm hover:bg-[#7e386605] dark:hover:bg-[#7e386610] transition-colors"
+                              >
+                                <Plus className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+                              </button>
+                            </div>
+                            <p className="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200 mt-1.5 md:mt-2 line-clamp-2 leading-tight">{addon.name}</p>
+                            {addon.description && (
+                              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{addon.description}</p>
+                            )}
+                            <p className="text-xs md:text-sm text-gray-800 dark:text-gray-200 font-semibold mt-0.5">{RUPEE_SYMBOL}{addon.price}</p>
                           </div>
-                          <p className="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200 mt-1.5 md:mt-2 line-clamp-2 leading-tight">{addon.name}</p>
-                          {addon.description && (
-                            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{addon.description}</p>
-                          )}
-                          <p className="text-xs md:text-sm text-gray-800 dark:text-gray-200 font-semibold mt-0.5">{RUPEE_SYMBOL}{addon.price}</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

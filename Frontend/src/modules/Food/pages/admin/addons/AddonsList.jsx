@@ -4,6 +4,7 @@ import { Switch } from "@food/components/ui/switch"
 import { adminAPI, uploadAPI } from "@food/api"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@food/components/ui/dialog"
+import { normalizeImageUrl, extractImages } from "@food/utils/common"
 
 const debugError = (...args) => {}
 
@@ -23,13 +24,33 @@ const formatAddonId = (id) => {
   return `ADDON${lastDigits}`
 }
 
-const getAddonTitle = (addon) => addon?.draft?.name || addon?.name || "Unnamed Add-on"
-const getAddonImage = (addon) =>
-  addon?.draft?.image ||
-  addon?.draft?.images?.[0] ||
-  addon?.published?.image ||
-  addon?.published?.images?.[0] ||
-  "https://via.placeholder.com/40"
+const getAddonTitle = (addon) => addon?.draft?.name || addon?.published?.name || addon?.name || "Unnamed Add-on"
+const getAddonImage = (addon) => {
+  const extracted = extractImages(
+    addon?.published?.image ||
+    addon?.published?.images ||
+    addon?.draft?.image ||
+    addon?.draft?.images ||
+    addon?.image ||
+    addon?.images ||
+    ""
+  )
+  if (extracted && extracted.length > 0 && extracted[0]) {
+    return extracted[0]
+  }
+  const raw =
+    addon?.published?.image ||
+    (Array.isArray(addon?.published?.images) && addon.published.images[0]) ||
+    addon?.draft?.image ||
+    (Array.isArray(addon?.draft?.images) && addon.draft.images[0]) ||
+    addon?.image ||
+    (Array.isArray(addon?.images) && addon.images[0]) ||
+    ""
+  if (typeof raw === "string" && raw.trim()) {
+    return normalizeImageUrl(raw.trim())
+  }
+  return ""
+}
 
 export default function AddonsList() {
   const [searchQuery, setSearchQuery] = useState("")

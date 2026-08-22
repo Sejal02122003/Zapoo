@@ -3355,9 +3355,11 @@ export async function updateRestaurantAddonAdmin(addonId, body) {
         if (addon.published) {
             Object.assign(addon.published, updatePayload);
         } else {
-            addon.published = updatePayload;
+            addon.published = { ...addon.draft.toObject?.() || addon.draft, ...updatePayload };
         }
+        addon.markModified('published');
     }
+    addon.markModified('draft');
 
     if (body.isAvailable !== undefined) {
         addon.isAvailable = body.isAvailable === true;
