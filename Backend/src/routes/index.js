@@ -48,6 +48,8 @@ router.use('/v1/food/auth', authRoutes);
 // Backward-compatible auth routes
 router.use('/v1/auth', authRoutes);
 router.use('/v1/food/delivery', deliveryRoutes);
+import ownerRoutes from '../modules/food/owner/routes/owner.routes.js';
+router.use('/v1/food/owner', ownerRoutes);
 router.use('/v1/food/restaurant', restaurantRoutes);
 
 // Public Category B APIs (Unrestricted per SOP)

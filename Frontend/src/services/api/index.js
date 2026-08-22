@@ -781,6 +781,9 @@ export const restaurantAPI = {
       return Promise.reject(new Error("Phone and OTP are required"));
     return authService.verifyRestaurantOtp(phone, otp, fcmToken, platform);
   },
+  loginOutlet: (usernameOrPhone, password, fcmToken = null, platform = "web") => {
+    return authService.loginOutlet(usernameOrPhone, password, fcmToken, platform);
+  },
   getMe: () => authService.getMe("restaurant"),
   /** Restaurant dashboard: fetch current restaurant profile (deduped + short-cached). */
   getCurrentRestaurant: () => getRestaurantCurrentOnce(),
@@ -1219,6 +1222,32 @@ export const restaurantAPI = {
   /** DELETE /food/restaurant/account - permanently delete restaurant account */
   deleteAccount: () =>
     restaurantClient.delete("/food/restaurant/account"),
+};
+
+/** Owner API for Multi-Outlet Restaurant Management */
+export const ownerAPI = {
+  getSummary: (params = {}) =>
+    restaurantClient.get("/food/owner/summary", { params: params || {} }),
+  getOutlets: (params = {}) =>
+    restaurantClient.get("/food/owner/outlets", { params: params || {} }),
+  createOutlet: (data) =>
+    restaurantClient.post("/food/owner/outlets", data),
+  getOutletById: (id) =>
+    restaurantClient.get(`/food/owner/outlets/${String(id)}`),
+  updateOutlet: (id, data) =>
+    restaurantClient.patch(`/food/owner/outlets/${String(id)}`, data),
+  resetOutletCredentials: (id, data) =>
+    restaurantClient.post(`/food/owner/outlets/${String(id)}/reset-credentials`, data),
+  deleteOutlet: (id) =>
+    restaurantClient.delete(`/food/owner/outlets/${String(id)}`),
+  getOrders: (params = {}) =>
+    restaurantClient.get("/food/owner/orders", { params: params || {} }),
+  getInventory: (params = {}) =>
+    restaurantClient.get("/food/owner/inventory", { params: params || {} }),
+  getFinance: (params = {}) =>
+    restaurantClient.get("/food/owner/finance", { params: params || {} }),
+  loginOutlet: (credentials) =>
+    restaurantClient.post("/food/auth/restaurant/outlet-login", credentials),
 };
 
 function stableStringify(value) {

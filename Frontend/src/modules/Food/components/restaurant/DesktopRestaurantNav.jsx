@@ -174,6 +174,18 @@ export default function DesktopRestaurantNav() {
 
           {/* Right: Notifications & Quick Actions */}
           <div className="flex items-center gap-3 shrink-0">
+            {/* Switch to Owner Hub (for Owners) */}
+            {(restaurantData?.role === "OWNER" || restaurantData?.isOwner || !restaurantData?.outletId) && (
+              <Link
+                to="/food/restaurant/owner"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#22A2E3] hover:bg-[#1a85bb] text-white rounded-xl text-xs font-black shadow-sm transition-all"
+                title="Switch to Owner Dashboard"
+              >
+                <Store className="w-3.5 h-3.5" />
+                <span>Owner Hub</span>
+              </Link>
+            )}
+
             {/* Notification Inbox */}
             <Link
               to="/food/restaurant/notifications"

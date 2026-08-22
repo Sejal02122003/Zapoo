@@ -270,6 +270,18 @@ export function verifyRestaurantOtp(phone, otp, fcmToken = null, platform = "web
   });
 }
 
+export function loginOutlet(usernameOrPhone, password, fcmToken = null, platform = "web") {
+  if (!usernameOrPhone || !password) {
+    return Promise.reject(new Error("Username/Phone and Password are required"));
+  }
+  return restaurantClient.post("/food/auth/restaurant/outlet-login", {
+    username: usernameOrPhone,
+    phone: usernameOrPhone,
+    password,
+    ...(fcmToken ? { fcmToken, platform } : {}),
+  });
+}
+
 /**
  * Delivery partner OTP auth (backend: same phone + 6-digit OTP).
  */
