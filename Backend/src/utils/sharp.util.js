@@ -2,7 +2,7 @@ import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-import { STORAGE_BASE_DIR, STORAGE_CATEGORIES, IMAGE_DIMENSIONS, APP_BASE_URL, ensureStorageDirectories } from '../config/storage.config.js';
+import { STORAGE_BASE_DIR, STORAGE_CATEGORIES, IMAGE_DIMENSIONS, getAppBaseUrl, ensureStorageDirectories } from '../config/storage.config.js';
 
 /**
  * Process image buffer with Sharp: resize, compress, and convert to WebP.
@@ -10,16 +10,28 @@ import { STORAGE_BASE_DIR, STORAGE_CATEGORIES, IMAGE_DIMENSIONS, APP_BASE_URL, e
  * 
  * @param {Buffer} buffer - Raw file buffer from Multer
  * @param {string} category - Category ('menu', 'restaurants', 'users', 'banners', 'logos')
+ * @param {object} [req] - Express request object to resolve host dynamically
  * @returns {Promise<{ relativePath: string, fullUrl: string, fileName: string }>}
  */
-export const processAndSaveImage = async (buffer, category = STORAGE_CATEGORIES.RESTAURANTS) => {
+export const processAndSaveImage = async (buffer, category = STORAGE_CATEGORIES.RESTAURANTS, req = null) => {
     if (!buffer || !Buffer.isBuffer(buffer)) {
         throw new Error('Valid image buffer is required');
     }
 
-    const targetCategory = Object.values(STORAGE_CATEGORIES).includes(category)
-        ? category
-        : STORAGE_CATEGORIES.RESTAURANTS;
+    const normalizedCategory = String(category || '').toLowerCase().trim();
+    let targetCategory = STORAGE_CATEGORIES.RESTAURANTS;
+
+    if (normalizedCategory.includes('menu') || normalizedCategory.includes('food') || normalizedCategory.includes('dish') || normalizedCategory.includes('item')) {
+        targetCategory = STORAGE_CATEGORIES.MENU;
+    } else if (normalizedCategory.includes('banner')) {
+        targetCategory = STORAGE_CATEGORIES.BANNERS;
+    } else if (normalizedCategory.includes('logo') || normalizedCategory.includes('icon')) {
+        targetCategory = STORAGE_CATEGORIES.LOGOS;
+    } else if (normalizedCategory.includes('user') || normalizedCategory.includes('avatar') || normalizedCategory.includes('profile')) {
+        targetCategory = STORAGE_CATEGORIES.USERS;
+    } else if (Object.values(STORAGE_CATEGORIES).includes(normalizedCategory)) {
+        targetCategory = normalizedCategory;
+    }
 
     const now = new Date();
     const year = String(now.getFullYear());
@@ -50,7 +62,8 @@ export const processAndSaveImage = async (buffer, category = STORAGE_CATEGORIES.
 
     // Format: /images/menu/2026/06/filename.webp
     const relativeUrlPath = `/images/${targetCategory}/${year}/${month}/${fileName}`;
-    const fullUrl = `${APP_BASE_URL.replace(/\/$/, '')}${relativeUrlPath}`;
+    const baseUrl = getAppBaseUrl(req);
+    const fullUrl = `${baseUrl.replace(/\/$/, '')}${relativeUrlPath}`;
 
     return {
         relativePath: relativeUrlPath,
