@@ -14,8 +14,8 @@ export const uploadImageController = async (req, res, next) => {
             });
         }
 
-        const category = req.body?.category || req.query?.category || STORAGE_CATEGORIES.RESTAURANTS;
-        const result = await processAndSaveImage(req.file.buffer, category);
+        const category = req.body?.category || req.query?.category || req.body?.folder || req.query?.folder || STORAGE_CATEGORIES.RESTAURANTS;
+        const result = await processAndSaveImage(req.file.buffer, category, req);
 
         return res.status(200).json({
             success: true,

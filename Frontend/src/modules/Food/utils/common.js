@@ -37,6 +37,16 @@ export const normalizeImageUrl = (imageUrl, backendOrigin = "") => {
   const appProtocol = typeof window !== "undefined" ? window.location?.protocol : "";
   const appHost = typeof window !== "undefined" ? window.location?.hostname : "";
 
+  const defaultOrigin =
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL
+      ? String(import.meta.env.VITE_API_BASE_URL).replace(/\/api(\/v1)?\/?$/, "")
+      : "") ||
+    (typeof window !== "undefined" && (appHost === "localhost" || appHost === "127.0.0.1")
+      ? "http://localhost:5000"
+      : "");
+
+  const effectiveBackendOrigin = (backendOrigin || defaultOrigin || "").replace(/\/$/, "");
+
   let normalized = trimmed
     .replace(/\\/g, "/")
     .replace(/^(https?):\/(?!\/)/i, "$1://")
@@ -46,14 +56,25 @@ export const normalizeImageUrl = (imageUrl, backendOrigin = "") => {
 
   if (/^(https?:)?\/\//i.test(normalized)) {
     try {
-      const parsed = new URL(normalized, window.location.origin);
-      if (appHost && !/^(localhost|127\.0\.0\.1)$/i.test(appHost) && /^(localhost|127\.0\.0\.1)$/i.test(parsed.hostname)) {
-        const backendUrl = new URL(backendOrigin || window.location.origin);
+      const parsed = new URL(normalized, typeof window !== "undefined" ? window.location.origin : undefined);
+      const isLocalApp = appHost && /^(localhost|127\.0\.0\.1)$/i.test(appHost);
+      const isLocalImageHost = /^(localhost|127\.0\.0\.1)$/i.test(parsed.hostname);
+
+      if (!isLocalApp && isLocalImageHost && effectiveBackendOrigin) {
+        const backendUrl = new URL(effectiveBackendOrigin);
+        parsed.protocol = backendUrl.protocol;
+        parsed.hostname = backendUrl.hostname;
+        parsed.port = backendUrl.port;
+      } else if (isLocalApp && /zapoo\.co\.in/i.test(parsed.hostname) && (parsed.pathname.startsWith('/images/') || parsed.pathname.startsWith('/uploads/')) && effectiveBackendOrigin) {
+        const backendUrl = new URL(effectiveBackendOrigin);
         parsed.protocol = backendUrl.protocol;
         parsed.hostname = backendUrl.hostname;
         parsed.port = backendUrl.port;
       }
-      if (appProtocol === "https:" && parsed.protocol === "http:") parsed.protocol = "https:";
+
+      if (appProtocol === "https:" && parsed.protocol === "http:" && !isLocalImageHost && !isLocalApp) {
+        parsed.protocol = "https:";
+      }
       const finalUrl = parsed.toString();
       // Prevent double encoding of Firebase URLs which already contain %2F
       if (finalUrl.includes('firebasestorage.googleapis.com')) return finalUrl;
@@ -65,8 +86,8 @@ export const normalizeImageUrl = (imageUrl, backendOrigin = "") => {
   }
 
   const absolutePath = normalized.startsWith("/")
-    ? `${backendOrigin}${normalized}`
-    : `${backendOrigin}/${normalized.replace(/^\.?\/*/, "")}`;
+    ? `${effectiveBackendOrigin}${normalized}`
+    : `${effectiveBackendOrigin}/${normalized.replace(/^\.?\/*/, "")}`;
   return absolutePath;
 };
 

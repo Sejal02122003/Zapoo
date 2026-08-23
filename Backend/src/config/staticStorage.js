@@ -15,4 +15,9 @@ export const setupStaticImageServing = (app) => {
         etag: true,
         lastModified: true
     }));
+    app.use('/uploads', express.static(STORAGE_BASE_DIR, {
+        maxAge: '30d',
+        etag: true,
+        lastModified: true
+    }));
 };

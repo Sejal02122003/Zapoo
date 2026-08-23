@@ -15,7 +15,7 @@ import { getActiveWeatherPolicy, evaluateWeatherPricing } from '../../weatherPri
 
 export async function calculateOrderPricing(userId, dto) {
   const restaurant = await FoodRestaurant.findById(dto.restaurantId)
-    .select("status location itemDiscounts")
+    .select("status location itemDiscounts discountRules discount packagingFee zoneId isTakeawayEnabled isAcceptingOrders")
     .lean();
   if (!restaurant) throw new ValidationError("Restaurant not found");
   if (restaurant.status !== "approved")
@@ -38,34 +38,95 @@ export async function calculateOrderPricing(userId, dto) {
     const itemIdStr = String(it.id || it._id || it.foodId || it.itemId || '');
     const foodDoc = foodMap.get(itemIdStr);
     
-    const basePrice = foodDoc ? Number(foodDoc.price) || 0 : Number(it.originalPrice || it.price) || 0;
+    // Base original price of item or variant
+    let basePrice = 0;
+    if (it.variantPrice != null && Number(it.variantPrice) > 0) {
+      basePrice = Number(it.variantPrice);
+    } else if (it.originalPrice != null && Number(it.originalPrice) > 0) {
+      basePrice = Number(it.originalPrice);
+    } else if (foodDoc && foodDoc.price != null) {
+      basePrice = Number(foodDoc.price);
+    } else {
+      basePrice = Number(it.price) || 0;
+    }
     const qty = Number(it.quantity) || 1;
 
-    const rule = await resolveItemDiscountRule({
+    let bestDiscountAmount = 0;
+    let isStackable = true;
+
+    // 1. Check dedicated ItemDiscountRule table (admin dynamic smart rules)
+    const smartRule = await resolveItemDiscountRule({
       restaurantId: dto.restaurantId,
       menuItemId: itemIdStr,
       categoryId: foodDoc?.categoryId ? String(foodDoc.categoryId) : null,
       orderType: orderType.toUpperCase()
     });
 
-    let discountedUnitPrice = basePrice;
-    let itemDiscountAmountPerUnit = 0;
-    let isStackable = true;
-
-    if (rule) {
-      if (rule.discountType === 'PERCENTAGE') {
-        const rawDiscount = basePrice * (Number(rule.discountValue) / 100);
-        const cappedDiscount = rule.maxDiscountAmount ? Math.min(rawDiscount, Number(rule.maxDiscountAmount)) : rawDiscount;
-        itemDiscountAmountPerUnit = Math.max(0, Math.min(basePrice, cappedDiscount));
+    if (smartRule) {
+      let smartDisc = 0;
+      if (smartRule.discountType === 'PERCENTAGE') {
+        const rawDiscount = basePrice * (Number(smartRule.discountValue) / 100);
+        smartDisc = smartRule.maxDiscountAmount ? Math.min(rawDiscount, Number(smartRule.maxDiscountAmount)) : rawDiscount;
       } else {
-        itemDiscountAmountPerUnit = Math.max(0, Math.min(basePrice, Number(rule.discountValue) || 0));
+        smartDisc = Number(smartRule.discountValue) || 0;
       }
-      discountedUnitPrice = basePrice - itemDiscountAmountPerUnit;
-      isStackable = rule.stackable !== false;
+      smartDisc = Math.max(0, Math.min(basePrice, smartDisc));
+      if (smartDisc > bestDiscountAmount) {
+        bestDiscountAmount = smartDisc;
+        isStackable = smartRule.stackable !== false;
+      }
     }
 
+    // 2. Check Restaurant-level specific item discounts (restaurant.itemDiscounts)
+    if (Array.isArray(restaurant?.itemDiscounts) && restaurant.itemDiscounts.length > 0) {
+      const itemDisc = restaurant.itemDiscounts.find(
+        (d) => String(d.itemId || '') === itemIdStr || (foodDoc && String(d.itemId || '') === String(foodDoc._id))
+      );
+      if (itemDisc && Number(itemDisc.discountValue) > 0) {
+        const isFlat = String(itemDisc.discountType || '').toUpperCase() === 'FLAT';
+        const dVal = Number(itemDisc.discountValue);
+        const itemDiscAmount = isFlat ? dVal : (basePrice * dVal) / 100;
+        const capped = Math.max(0, Math.min(basePrice, itemDiscAmount));
+        if (capped > bestDiscountAmount) {
+          bestDiscountAmount = capped;
+        }
+      }
+    }
+
+    // 3. Check Restaurant-level price-condition rules (restaurant.discountRules)
+    if (Array.isArray(restaurant?.discountRules) && restaurant.discountRules.length > 0) {
+      const matchRule = restaurant.discountRules.find((r) => {
+        const val = Number(r.conditionValue);
+        if (r.conditionType === 'PRICE_ABOVE' && basePrice > val) return true;
+        if (r.conditionType === 'PRICE_BELOW' && basePrice < val) return true;
+        return false;
+      });
+      if (matchRule && Number(matchRule.discountValue) > 0) {
+        const isFlat = String(matchRule.discountType || '').toUpperCase() === 'FLAT';
+        const dVal = Number(matchRule.discountValue);
+        const ruleDiscAmount = isFlat ? dVal : (basePrice * dVal) / 100;
+        const capped = Math.max(0, Math.min(basePrice, ruleDiscAmount));
+        if (capped > bestDiscountAmount) {
+          bestDiscountAmount = capped;
+        }
+      }
+    }
+
+    // 4. Check Restaurant-wide flat percentage discount (restaurant.discount)
+    const restGlobalDiscount = Number(restaurant?.discount || 0);
+    if (restGlobalDiscount > 0) {
+      const globalDiscAmount = (basePrice * restGlobalDiscount) / 100;
+      const capped = Math.max(0, Math.min(basePrice, globalDiscAmount));
+      if (capped > bestDiscountAmount) {
+        bestDiscountAmount = capped;
+      }
+    }
+
+    const itemDiscountAmountPerUnit = Math.round(bestDiscountAmount * 100) / 100;
+    const discountedUnitPrice = Math.max(0, basePrice - itemDiscountAmountPerUnit);
+
     const clientSentPrice = Number(it.price);
-    if (Number.isFinite(clientSentPrice) && Math.abs(clientSentPrice - discountedUnitPrice) > 0.5) {
+    if (Number.isFinite(clientSentPrice) && Math.abs(clientSentPrice - discountedUnitPrice) > 1) {
       logger.warn(`[SECURITY] Price mismatch detected for item ${itemIdStr} in restaurant ${dto.restaurantId}: clientSent=${clientSentPrice}, serverCalculated=${discountedUnitPrice}`);
     }
 

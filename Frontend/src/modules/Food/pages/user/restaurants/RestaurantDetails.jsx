@@ -2105,14 +2105,23 @@ function RestaurantDetailsContent() {
   const currentOfferIndex = offersList.length > 0 ? (highlightIndex % offersList.length) : 0
   const activeOffer = offersList.length > 0 ? offersList[currentOfferIndex] : null
 
+  const itemDiscountsList = Array.isArray(restaurant?.itemDiscounts) ? restaurant.itemDiscounts : []
+  const maxItemDiscount = itemDiscountsList.reduce((max, d) => Math.max(max, Number(d.discountValue) || 0), 0)
+
+  const defaultHeadline = maxItemDiscount > 0
+    ? `Up to ${maxItemDiscount}% OFF on selected items`
+    : restaurant?.discount > 0
+      ? `FLAT ${restaurant.discount}% OFF on all items`
+      : "No offers currently available"
+
   const offerIndicatorCount = Math.min(offersList.length > 0 ? offersList.length : 1, 5)
   const activeOfferIndicator = offerIndicatorCount > 0 ? highlightIndex % offerIndicatorCount : 0
 
-  const offerHeadline = activeOffer?.title || restaurant?.offerText || "No offers currently available"
+  const offerHeadline = activeOffer?.title || restaurant?.offerText || defaultHeadline
   const offerSubline =
     activeOffer?.description ||
     activeOffer?.subtitle ||
-    (activeOffer?.code ? `Use code ${activeOffer.code}` : "Tap to view all offers")
+    (activeOffer?.code ? `Use code ${activeOffer.code}` : maxItemDiscount > 0 ? "Discount applied automatically" : "Tap to view all offers")
 
   // Auto-rotate images every 3 seconds
   useEffect(() => {
@@ -2177,39 +2186,46 @@ function RestaurantDetailsContent() {
 
           <div className="flex items-center gap-3 mt-1">
             {(() => {
-              const origPrice = Number(item.originalPrice || item.basePrice);
-              const discPrice = Number(item.discountedPrice || item.price);
-              const hasDisc = item.hasDiscount || (origPrice > 0 && discPrice < origPrice);
-              const pct = item.discountPercentage || (origPrice > 0 ? Math.round(((origPrice - discPrice) / origPrice) * 100) : 0);
+              const priceStr = getFoodPriceLabel(item);
+              const isStartingFrom = priceStr.includes('Starting from');
+              const basePriceNum = typeof item.price === 'number' ? item.price : (parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0);
 
-              if (hasDisc && origPrice > discPrice) {
+              const { discountAmount, discountValue, isFlatDiscount } = calculateBestDiscount(item, basePriceNum);
+              const discPrice = discountAmount > 0 ? Math.round(basePriceNum - discountAmount) : basePriceNum;
+              const origPrice = Math.round(basePriceNum);
+              const hasDisc = discountAmount > 0 && discPrice < origPrice;
+              const pct = isFlatDiscount ? 0 : Math.round(discountValue || ((origPrice - discPrice) / origPrice) * 100);
+
+              if (hasDisc) {
                 return (
                   <div className="flex items-center gap-2 flex-wrap">
+                    {isStartingFrom && <span className="text-[11px] text-gray-500 font-medium">Starting from</span>}
                     <span className="font-bold text-gray-900 dark:text-white text-base sm:text-lg">
                       ₹{discPrice}
                     </span>
                     <span className="text-xs sm:text-sm text-gray-400 line-through font-normal">
                       ₹{origPrice}
                     </span>
-                    {pct > 0 && (
+                    {isFlatDiscount ? (
+                      <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                        ₹{discountValue} OFF
+                      </span>
+                    ) : pct > 0 ? (
                       <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
                         {pct}% OFF
                       </span>
-                    )}
+                    ) : null}
                   </div>
                 );
               }
 
-              const priceStr = getFoodPriceLabel(item);
-              const isStartingFrom = priceStr.includes('Starting from');
-              const priceNum = parseFloat(priceStr.replace(/[^0-9.]/g, ''));
-              if (isNaN(priceNum)) return <p className="font-semibold text-gray-900 dark:text-white">{priceStr}</p>;
+              if (isNaN(basePriceNum)) return <p className="font-semibold text-gray-900 dark:text-white">{priceStr}</p>;
 
               if (isStartingFrom) {
                 return (
                   <div className="flex flex-col leading-tight">
                     <span className="text-[11px] text-gray-500 font-medium">Starting from</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">₹{priceNum}</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">₹{basePriceNum}</span>
                   </div>
                 );
               }
@@ -3724,17 +3740,20 @@ function RestaurantDetailsContent() {
                         <div className="flex items-center gap-1">
                           {(() => {
                             const variant = getVariantForDish(selectedItem, selectedVariantId);
-                            const basePrice = hasFoodVariants(selectedItem) ? (variant?.price || selectedItem.price) : selectedItem.price;
+                            const rawPrice = hasFoodVariants(selectedItem) ? (variant?.price || selectedItem.price) : selectedItem.price;
+                            const basePrice = typeof rawPrice === 'number' ? rawPrice : (parseFloat(String(rawPrice).replace(/[^0-9.]/g, '')) || 0);
                             
-                            if (restaurant?.discount > 0) {
-                              const discountedPrice = basePrice * (1 - restaurant.discount / 100);
+                            const { discountAmount } = calculateBestDiscount(selectedItem, basePrice);
+                            const finalPrice = discountAmount > 0 ? Math.round(basePrice - discountAmount) : Math.round(basePrice);
+
+                            if (discountAmount > 0 && finalPrice < basePrice) {
                               return (
                                 <>
                                   <span className="text-sm line-through text-red-200">
                                     {RUPEE_SYMBOL}{Math.round(basePrice)}
                                   </span>
                                   <span className="text-base font-bold">
-                                    {hasFoodVariants(selectedItem) ? `${variant?.name || "Default"} · ` : ""}{RUPEE_SYMBOL}{Math.round(discountedPrice)}
+                                    {hasFoodVariants(selectedItem) ? `${variant?.name || "Default"} · ` : ""}{RUPEE_SYMBOL}{finalPrice}
                                   </span>
                                 </>
                               );
