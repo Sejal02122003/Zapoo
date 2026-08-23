@@ -8,7 +8,20 @@ export const STORAGE_BASE_DIR = process.env.VPS_STORAGE_PATH || (
         : '/var/storage'
 );
 
-export const APP_BASE_URL = process.env.APP_BASE_URL || 'https://zapoo.co.in';
+export const getAppBaseUrl = (req = null) => {
+    if (process.env.APP_BASE_URL && String(process.env.APP_BASE_URL).trim()) {
+        return String(process.env.APP_BASE_URL).trim().replace(/\/$/, '');
+    }
+    if (req && typeof req.get === 'function') {
+        const protocol = req.protocol || 'http';
+        const host = req.get('host');
+        if (host) return `${protocol}://${host}`;
+    }
+    const port = process.env.PORT || 5000;
+    return process.env.NODE_ENV === 'production' ? 'https://zapoo.co.in' : `http://localhost:${port}`;
+};
+
+export const APP_BASE_URL = getAppBaseUrl();
 
 // Subfolder categorization mapping
 export const STORAGE_CATEGORIES = {

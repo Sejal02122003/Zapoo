@@ -23,6 +23,16 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     host: true,
+    proxy: {
+      '/images': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     chunkSizeWarningLimit: 2000,
