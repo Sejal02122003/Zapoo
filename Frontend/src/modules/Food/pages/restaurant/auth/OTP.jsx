@@ -197,6 +197,12 @@ export default function RestaurantOTP() {
           if (authData?.isSignUp) {
             navigate("/food/restaurant/onboarding", { replace: true })
           } else {
+            // Check if user is OWNER vs OUTLETER
+            if (restaurant.role === "OWNER" || restaurant.isOwner || (!restaurant.outletId && restaurant.role !== "OUTLETER")) {
+              navigate("/food/restaurant/owner", { replace: true })
+              return
+            }
+
             const onboardingComplete = isRestaurantOnboardingComplete(restaurant)
             if (!onboardingComplete) {
               const incompleteStep = await checkOnboardingStatus()

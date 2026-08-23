@@ -58,6 +58,14 @@ const ForgotPassword = lazy(() => import("@food/pages/restaurant/auth/ForgotPass
 const VerificationPending = lazy(() => import("@food/pages/restaurant/auth/VerificationPending"))
 const RestaurantLocationCoupons = lazy(() => import("@food/pages/restaurant/locationCoupons/RestaurantLocationCoupons"))
 
+// Owner Multi-Outlet Hub Pages
+const OwnerDashboard = lazy(() => import("@food/pages/restaurant/owner/OwnerDashboard"))
+const OwnerOutletsPage = lazy(() => import("@food/pages/restaurant/owner/OwnerOutletsPage"))
+const OwnerOrdersPage = lazy(() => import("@food/pages/restaurant/owner/OwnerOrdersPage"))
+const OwnerInventoryPage = lazy(() => import("@food/pages/restaurant/owner/OwnerInventoryPage"))
+const OwnerFinancePage = lazy(() => import("@food/pages/restaurant/owner/OwnerFinancePage"))
+const OwnerAnalyticsPage = lazy(() => import("@food/pages/restaurant/owner/OwnerAnalyticsPage"))
+
 export default function RestaurantRouter() {
   useEffect(() => {
     let link = document.querySelector("link[rel~='icon']")
@@ -103,6 +111,14 @@ export default function RestaurantRouter() {
               <RestaurantBlockGuard />
             </ProtectedRoute>
           }>
+            {/* Multi-Outlet Owner Control Hub */}
+            <Route path="owner" element={<OwnerDashboard />} />
+            <Route path="owner/outlets" element={<OwnerOutletsPage />} />
+            <Route path="owner/orders" element={<OwnerOrdersPage />} />
+            <Route path="owner/inventory" element={<OwnerInventoryPage />} />
+            <Route path="owner/finance" element={<OwnerFinancePage />} />
+            <Route path="owner/analytics" element={<OwnerAnalyticsPage />} />
+
             <Route path="" element={<OrdersMain />} />
             <Route path="orders/all" element={<AllOrdersPage />} />
             <Route path="orders/:id" element={<OrderDetails />} />

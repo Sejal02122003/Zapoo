@@ -186,13 +186,39 @@ export default function RestaurantSignup() {
           style={{ animation: "fadeInUp 0.8s ease-out 0.15s both" }}
         >
           {/* Title */}
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">
-              Register Your Restaurant
+          <div className="mb-6 text-center">
+            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-2 font-['Outfit']">
+              Join Zapoo Restaurant Network
             </h2>
-            <p className="text-sm text-gray-500">
-              Enter your details to get started.
+            <p className="text-xs text-gray-500 font-semibold">
+              Select how you want to join our unified restaurant ecosystem
             </p>
+          </div>
+
+          {/* Role Choice Cards */}
+          <div className="grid grid-cols-2 gap-3 w-full max-w-lg mb-6">
+            <div className="p-3.5 rounded-2xl border-2 border-[#22A2E3] bg-[#22A2E3]/5 text-left space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-black text-[#22A2E3]">
+                <UtensilsCrossed className="w-3.5 h-3.5" />
+                <span>Restaurant Owner</span>
+              </div>
+              <p className="text-[11px] text-gray-600 font-medium leading-tight">
+                Manage multiple outlets, brand catalog, all orders & finance
+              </p>
+            </div>
+
+            <div 
+              onClick={() => navigate("/food/restaurant/login")}
+              className="p-3.5 rounded-2xl border border-gray-200 bg-gray-50/70 hover:bg-gray-100 text-left space-y-1 cursor-pointer transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-700">Outlet Staff</span>
+                <span className="text-[10px] bg-[#22A2E3]/15 text-[#22A2E3] font-black px-1.5 py-0.5 rounded">Login</span>
+              </div>
+              <p className="text-[11px] text-gray-500 font-medium leading-tight">
+                Login with outlet credentials created by your Owner
+              </p>
+            </div>
           </div>
 
           {/* Form */}

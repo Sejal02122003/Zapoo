@@ -8,6 +8,7 @@ import { DeliveryBonusTransaction } from '../../admin/models/deliveryBonusTransa
 import { DeliveryPenalty } from '../models/deliveryPenalty.model.js';
 import { getDeliveryCashLimitSettings } from '../../admin/services/admin.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
+import { decrypt } from '../../../../utils/encryption.js';
 import { createRazorpayOrder, getRazorpayKeyId, isRazorpayConfigured, verifyPaymentSignature } from '../../orders/helpers/razorpay.helper.js';
 
 /**
@@ -122,12 +123,16 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
     const pocketBalance = Math.max(0, (totalEarned + totalBonus) - totalWithdrawn - totalPenalty);
 
     // Fetch transactions for UI (Orders, Bonuses, Withdrawals, Penalties)
-    const [ordersTx] = await Promise.all([
+    const [ordersTx, bonusesList] = await Promise.all([
         FoodOrder.find({ 'dispatch.deliveryPartnerId': partnerId, orderStatus: 'delivered' })
             .sort({ createdAt: -1 })
             .select('orderId riderEarning payment orderStatus createdAt')
             .limit(20)
             .lean(),
+        DeliveryBonusTransaction.find({ deliveryPartnerId: partnerId })
+            .sort({ createdAt: -1 })
+            .limit(20)
+            .lean()
     ]);
 
     const transactions = [
@@ -139,6 +144,15 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
             date: o.createdAt,
             description: o.payment?.method === 'cash' ? 'COD delivery earning' : 'Online delivery earning',
             orderId: o.orderId
+        })),
+        ...(bonusesList || []).map(b => ({
+            id: b._id,
+            type: 'payment',
+            amount: b.amount || 0,
+            status: 'Completed',
+            date: b.createdAt,
+            description: b.reference || 'Shift Guarantee Bonus',
+            orderId: b.transactionId
         })),
         ...(withdrawalsList || []).map(w => ({
             id: w._id,
@@ -216,10 +230,10 @@ export const requestDeliveryWithdrawal = async (deliveryPartnerId, payload) => {
         amount,
         paymentMethod,
         bankDetails: bankDetails || {
-            accountNumber: partner.bankAccountNumber,
-            ifscCode: partner.bankIfscCode,
-            bankName: partner.bankName,
-            accountHolderName: partner.bankAccountHolderName
+            accountNumber: partner.bankAccountNumber ? (decrypt(partner.bankAccountNumber) || '') : '',
+            ifscCode: partner.bankIfscCode || '',
+            bankName: partner.bankName || '',
+            accountHolderName: partner.bankAccountHolderName || partner.name || ''
         },
         upiId: partner.upiId,
         upiQrCode: partner.upiQrCode,

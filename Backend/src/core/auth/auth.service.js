@@ -4,6 +4,8 @@ import { FoodUser } from "../users/user.model.js";
 import { FoodAdmin } from "../admin/admin.model.js";
 import { AdminResetOtp } from "../admin/adminResetOtp.model.js";
 import { FoodRestaurant } from "../../modules/food/restaurant/models/restaurant.model.js";
+import { FoodOutlet } from "../../modules/food/owner/models/outlet.model.js";
+import bcrypt from "bcryptjs";
 import { FoodDeliveryPartner } from "../../modules/food/delivery/models/deliveryPartner.model.js";
 import { FoodReferralSettings } from "../../modules/food/admin/models/referralSettings.model.js";
 import { FoodReferralLog } from "../../modules/food/admin/models/referralLog.model.js";
@@ -15,6 +17,7 @@ import { ValidationError, AuthError } from "./errors.js";
 import { config } from "../../config/env.js";
 import { logger } from "../../utils/logger.js";
 import { sendAdminResetOtpEmail } from "../../utils/email.js";
+import { decrypt } from "../../utils/encryption.js";
 import mongoose from "mongoose";
 
 const ROLES = {
@@ -318,8 +321,6 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
     throw new AuthError(result.reason || "OTP verification failed");
   }
 
-  // Restaurants may store ownerPhone with country code or formatting, or normalized fields.
-  // Match by exact phone, last-10 digits, suffix match, or normalized fields to avoid false "needsRegistration".
   const digits = String(phone || "").replace(/\D/g, "");
   const last10 = digits.slice(-10);
   const phoneCandidates = [phone, digits, last10].filter(Boolean);
@@ -328,6 +329,86 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
     ...(last10 ? [{ [field]: { $regex: new RegExp(last10 + "$") } }] : []),
   ];
 
+  // 1. Check if phone belongs to an Outlet (Outleter role)
+  const outletDoc = await FoodOutlet.findOne({
+    $or: [
+      { phone: { $in: phoneCandidates } },
+      { phoneLast10: { $in: phoneCandidates } },
+      { "credentials.contactPhone": { $in: phoneCandidates } },
+      ...(last10 ? [{ phone: { $regex: new RegExp(last10 + "$") } }] : []),
+    ],
+  });
+
+  if (outletDoc) {
+    if (fcmToken) {
+      let isModified = false;
+      if (platform === "mobile") {
+        if (!outletDoc.fcmTokenMobile) outletDoc.fcmTokenMobile = [];
+        if (!outletDoc.fcmTokenMobile.includes(fcmToken)) {
+          outletDoc.fcmTokenMobile.push(fcmToken);
+          isModified = true;
+        }
+      } else {
+        if (!outletDoc.fcmTokens) outletDoc.fcmTokens = [];
+        if (!outletDoc.fcmTokens.includes(fcmToken)) {
+          outletDoc.fcmTokens.push(fcmToken);
+          isModified = true;
+        }
+      }
+      if (isModified) await outletDoc.save();
+    }
+
+    if (outletDoc.status === "inactive" || outletDoc.status === "suspended") {
+      throw new AuthError("This outlet account is inactive or suspended. Please contact the owner.");
+    }
+
+    const payload = {
+      userId: outletDoc._id.toString(),
+      role: ROLES.RESTAURANT,
+      outletRole: "OUTLETER",
+      restaurantId: outletDoc.restaurantId.toString(),
+      outletId: outletDoc._id.toString(),
+      permissions: outletDoc.permissions || [],
+    };
+    const accessToken = signAccessToken(payload);
+    const refreshToken = signRefreshToken(payload);
+    const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
+    const expiresAt = new Date(Date.now() + ttlMs);
+
+    await FoodRefreshToken.create({
+      userId: outletDoc._id,
+      token: refreshToken,
+      expiresAt,
+    });
+
+    const userObj = {
+      id: outletDoc._id.toString(),
+      _id: outletDoc._id.toString(),
+      role: "OUTLETER",
+      isOutlet: true,
+      restaurantId: outletDoc.restaurantId.toString(),
+      outletId: outletDoc._id.toString(),
+      name: outletDoc.name,
+      restaurantName: outletDoc.name,
+      outletCode: outletDoc.outletCode,
+      phone: outletDoc.phone,
+      email: outletDoc.email || "",
+      permissions: outletDoc.permissions || [],
+      address: outletDoc.address,
+      status: outletDoc.status,
+      isAcceptingOrders: outletDoc.isAcceptingOrders,
+    };
+
+    return {
+      token: accessToken,
+      accessToken,
+      refreshToken,
+      user: userObj,
+      needsRegistration: false,
+    };
+  }
+
+  // 2. Check if phone belongs to Parent Restaurant Owner
   const restaurant = await FoodRestaurant.findOne({
     $or: [
       ...phoneOrFields("ownerPhone"),
@@ -366,7 +447,6 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
   }
 
   // If restaurant approval status is used, handle pending/rejected states by returning info instead of throwing errors.
-  // Legacy restaurants created before this feature was rolled out (May 26, 2026) bypass this block.
   const isLegacyRestaurant = restaurantDoc.createdAt && new Date(restaurantDoc.createdAt) < new Date("2026-05-26T00:00:00Z");
   if (restaurantDoc.status && restaurantDoc.status !== "approved" && !isLegacyRestaurant) {
     return {
@@ -378,7 +458,14 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
     };
   }
 
-  const payload = { userId: restaurantDoc._id.toString(), role: ROLES.RESTAURANT };
+  const payload = {
+    userId: restaurantDoc._id.toString(),
+    role: ROLES.RESTAURANT,
+    ownerRole: "OWNER",
+    restaurantId: restaurantDoc._id.toString(),
+    outletId: null,
+    isOwner: true,
+  };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
   const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
@@ -390,12 +477,119 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
     expiresAt,
   });
 
+  const rawUser = sanitizeRestaurantForAuthResponse(restaurantDoc?.toObject?.() || restaurantDoc);
+  const userObj = {
+    ...rawUser,
+    role: "OWNER",
+    isOwner: true,
+    restaurantId: restaurantDoc._id.toString(),
+    outletId: null,
+    permissions: ["*"],
+  };
+
   return {
     token: accessToken,
     accessToken,
     refreshToken,
-    user: sanitizeRestaurantForAuthResponse(restaurantDoc?.toObject?.() || restaurantDoc),
+    user: userObj,
     needsRegistration: false,
+  };
+};
+
+export const loginOutletWithCredentials = async (usernameOrPhone, password, fcmToken, platform) => {
+  if (!usernameOrPhone || !password) {
+    throw new ValidationError("Username/Phone and password are required");
+  }
+  const query = String(usernameOrPhone).trim();
+  const digits = query.replace(/\D/g, "");
+  const last10 = digits.slice(-10);
+
+  const outletDoc = await FoodOutlet.findOne({
+    $or: [
+      { "credentials.username": query.toLowerCase() },
+      { phone: query },
+      ...(last10 ? [{ phoneLast10: last10 }] : []),
+      { email: query.toLowerCase() },
+    ],
+  });
+
+  if (!outletDoc) {
+    throw new AuthError("Invalid outlet credentials");
+  }
+
+  const isValidPassword = outletDoc.credentials?.passwordHash
+    ? await bcrypt.compare(password, outletDoc.credentials.passwordHash)
+    : outletDoc.credentials?.rawPasswordDisplay === password;
+
+  if (!isValidPassword) {
+    throw new AuthError("Invalid outlet credentials");
+  }
+
+  if (outletDoc.status === "inactive" || outletDoc.status === "suspended") {
+    throw new AuthError("This outlet account is inactive or suspended. Please contact the owner.");
+  }
+
+  if (fcmToken) {
+    let isMod = false;
+    if (platform === "mobile") {
+      if (!outletDoc.fcmTokenMobile) outletDoc.fcmTokenMobile = [];
+      if (!outletDoc.fcmTokenMobile.includes(fcmToken)) {
+        outletDoc.fcmTokenMobile.push(fcmToken);
+        isMod = true;
+      }
+    } else {
+      if (!outletDoc.fcmTokens) outletDoc.fcmTokens = [];
+      if (!outletDoc.fcmTokens.includes(fcmToken)) {
+        outletDoc.fcmTokens.push(fcmToken);
+        isMod = true;
+      }
+    }
+    if (isMod) await outletDoc.save();
+  }
+
+  const payload = {
+    userId: outletDoc._id.toString(),
+    role: ROLES.RESTAURANT,
+    outletRole: "OUTLETER",
+    restaurantId: outletDoc.restaurantId.toString(),
+    outletId: outletDoc._id.toString(),
+    permissions: outletDoc.permissions || [],
+  };
+
+  const accessToken = signAccessToken(payload);
+  const refreshToken = signRefreshToken(payload);
+  const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
+  const expiresAt = new Date(Date.now() + ttlMs);
+
+  await FoodRefreshToken.create({
+    userId: outletDoc._id,
+    token: refreshToken,
+    expiresAt,
+  });
+
+  const userObj = {
+    id: outletDoc._id.toString(),
+    _id: outletDoc._id.toString(),
+    role: "OUTLETER",
+    isOutlet: true,
+    restaurantId: outletDoc.restaurantId.toString(),
+    outletId: outletDoc._id.toString(),
+    name: outletDoc.name,
+    restaurantName: outletDoc.name,
+    outletCode: outletDoc.outletCode,
+    phone: outletDoc.phone,
+    email: outletDoc.email || "",
+    permissions: outletDoc.permissions || [],
+    address: outletDoc.address,
+    status: outletDoc.status,
+    isAcceptingOrders: outletDoc.isAcceptingOrders,
+  };
+
+  return {
+    token: accessToken,
+    accessToken,
+    refreshToken,
+    user: userObj,
   };
 };
 
@@ -560,61 +754,97 @@ export const getProfile = async (userId, role) => {
       break;
     case ROLES.RESTAURANT:
       {
-        const doc = await FoodRestaurant.findById(id).lean();
-        if (!doc) break;
+        let doc = await FoodRestaurant.findById(id).lean();
+        if (doc) {
+          const location =
+            doc.addressLine1 ||
+              doc.addressLine2 ||
+              doc.area ||
+              doc.city ||
+              doc.state ||
+              doc.pincode ||
+              doc.landmark
+              ? {
+                addressLine1: doc.addressLine1 || "",
+                addressLine2: doc.addressLine2 || "",
+                area: doc.area || "",
+                city: doc.city || "",
+                state: doc.state || "",
+                pincode: doc.pincode || "",
+                landmark: doc.landmark || "",
+              }
+              : null;
 
-        const location =
-          doc.addressLine1 ||
-            doc.addressLine2 ||
-            doc.area ||
-            doc.city ||
-            doc.state ||
-            doc.pincode ||
-            doc.landmark
-            ? {
-              addressLine1: doc.addressLine1 || "",
-              addressLine2: doc.addressLine2 || "",
-              area: doc.area || "",
-              city: doc.city || "",
-              state: doc.state || "",
-              pincode: doc.pincode || "",
-              landmark: doc.landmark || "",
-            }
-            : null;
+          const menuImages = Array.isArray(doc.menuImages)
+            ? doc.menuImages
+              .map((m) => (m && (typeof m === "string" ? m : m.url)) || null)
+              .filter(Boolean)
+              .map((url) => ({ url, publicId: null }))
+            : [];
 
-        const menuImages = Array.isArray(doc.menuImages)
-          ? doc.menuImages
-            .map((m) => (m && (typeof m === "string" ? m : m.url)) || null)
-            .filter(Boolean)
-            .map((url) => ({ url, publicId: null }))
-          : [];
-
-        profile = {
-          id: doc._id,
-          _id: doc._id,
-          // Frontend expects "name" and "location" for restaurant screens.
-          name: doc.restaurantName || "",
-          restaurantName: doc.restaurantName || "",
-          cuisines: Array.isArray(doc.cuisines) ? doc.cuisines : [],
-          location,
-          ownerName: doc.ownerName || "",
-          ownerEmail: doc.ownerEmail || "",
-          ownerPhone: doc.ownerPhone || "",
-          primaryContactNumber: doc.primaryContactNumber || "",
-          profileImage: doc.profileImage ? { url: doc.profileImage } : null,
-          menuImages,
-          coverImages: [],
-          openingTime: doc.openingTime || null,
-          closingTime: doc.closingTime || null,
-          openDays: Array.isArray(doc.openDays) ? doc.openDays : [],
-          status: doc.status || null,
-          createdAt: doc.createdAt,
-          updatedAt: doc.updatedAt,
-          // These fields may not exist yet in DB, keep stable defaults for UI.
-          rating: typeof doc.rating === "number" ? doc.rating : 0,
-          totalRatings:
-            typeof doc.totalRatings === "number" ? doc.totalRatings : 0,
-        };
+          profile = {
+            id: doc._id,
+            _id: doc._id,
+            role: "OWNER",
+            isOwner: true,
+            restaurantId: doc._id,
+            outletId: null,
+            name: doc.restaurantName || "",
+            restaurantName: doc.restaurantName || "",
+            cuisines: Array.isArray(doc.cuisines) ? doc.cuisines : [],
+            location,
+            ownerName: doc.ownerName || "",
+            ownerEmail: doc.ownerEmail || "",
+            ownerPhone: doc.ownerPhone || "",
+            primaryContactNumber: doc.primaryContactNumber || "",
+            profileImage: doc.profileImage ? { url: doc.profileImage } : null,
+            menuImages,
+            coverImages: [],
+            openingTime: doc.openingTime || null,
+            closingTime: doc.closingTime || null,
+            openDays: Array.isArray(doc.openDays) ? doc.openDays : [],
+            status: doc.status || null,
+            isAcceptingOrders: doc.isAcceptingOrders !== false,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+            rating: typeof doc.rating === "number" ? doc.rating : 0,
+            totalRatings:
+              typeof doc.totalRatings === "number" ? doc.totalRatings : 0,
+            permissions: ["*"],
+          };
+        } else {
+          // Check if it's an Outlet profile
+          const outletDoc = await FoodOutlet.findById(id).populate("restaurantId", "restaurantName ownerName").lean();
+          if (outletDoc) {
+            profile = {
+              id: outletDoc._id,
+              _id: outletDoc._id,
+              role: "OUTLETER",
+              isOutlet: true,
+              restaurantId: outletDoc.restaurantId?._id || outletDoc.restaurantId,
+              outletId: outletDoc._id,
+              outletCode: outletDoc.outletCode,
+              name: outletDoc.name,
+              restaurantName: outletDoc.name,
+              brandName: outletDoc.restaurantId?.restaurantName || outletDoc.name,
+              cuisines: outletDoc.cuisines || [],
+              location: outletDoc.address,
+              phone: outletDoc.phone,
+              email: outletDoc.email || "",
+              managerName: outletDoc.managerName || "",
+              managerPhone: outletDoc.managerPhone || "",
+              status: outletDoc.status,
+              isAcceptingOrders: outletDoc.isAcceptingOrders !== false,
+              isTakeawayEnabled: outletDoc.isTakeawayEnabled !== false,
+              timings: outletDoc.timings,
+              permissions: outletDoc.permissions || [],
+              rating: outletDoc.rating || 0,
+              totalRatings: outletDoc.totalRatings || 0,
+              createdAt: outletDoc.createdAt,
+              updatedAt: outletDoc.updatedAt,
+            };
+          }
+        }
       }
       break;
     case ROLES.DELIVERY_PARTNER: {
@@ -623,8 +853,10 @@ export const getProfile = async (userId, role) => {
       const deliveryId = partner._id
         ? `DP-${partner._id.toString().slice(-8).toUpperCase()}`
         : null;
+      const decryptedAccountNumber = partner.bankAccountNumber ? (decrypt(partner.bankAccountNumber) || '') : '';
       profile = {
         ...partner,
+        bankAccountNumber: decryptedAccountNumber,
         email: partner.email || null,
         deliveryId,
         status: partner.status === "rejected" ? "blocked" : partner.status,
@@ -633,10 +865,12 @@ export const getProfile = async (userId, role) => {
           : null,
         documents: {
           aadhar:
-            partner.aadharPhoto || partner.aadharNumber
+            partner.aadharPhoto || partner.aadharFrontPhoto || partner.aadharBackPhoto || partner.aadharNumber
               ? {
                 number: partner.aadharNumber || null,
-                document: partner.aadharPhoto || null,
+                document: partner.aadharFrontPhoto || partner.aadharPhoto || null,
+                front: partner.aadharFrontPhoto || partner.aadharPhoto || null,
+                back: partner.aadharBackPhoto || null,
               }
               : null,
           pan:
@@ -646,11 +880,13 @@ export const getProfile = async (userId, role) => {
                 document: partner.panPhoto || null,
               }
               : null,
-          drivingLicense: partner.drivingLicensePhoto || partner.drivingLicenseNumber
+          drivingLicense: partner.drivingLicensePhoto || partner.drivingLicenseFrontPhoto || partner.drivingLicenseBackPhoto || partner.drivingLicenseNumber
             ? {
-              number: partner.drivingLicenseNumber || null,
-              document: partner.drivingLicensePhoto || null,
-            }
+                number: partner.drivingLicenseNumber || null,
+                document: partner.drivingLicenseFrontPhoto || partner.drivingLicensePhoto || null,
+                front: partner.drivingLicenseFrontPhoto || partner.drivingLicensePhoto || null,
+                back: partner.drivingLicenseBackPhoto || null,
+              }
             : null,
           bankDetails:
             partner.bankAccountHolderName ||
@@ -661,7 +897,7 @@ export const getProfile = async (userId, role) => {
               partner.upiQrCode
               ? {
                 accountHolderName: partner.bankAccountHolderName || null,
-                accountNumber: partner.bankAccountNumber || null,
+                accountNumber: decryptedAccountNumber || null,
                 ifscCode: partner.bankIfscCode || null,
                 bankName: partner.bankName || null,
                 upiId: partner.upiId || null,

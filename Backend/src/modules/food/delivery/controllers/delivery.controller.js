@@ -79,19 +79,25 @@ export const verifyDeliveryPhoneChangeOtpController = async (req, res, next) => 
 
 export const updateDeliveryPartnerBankDetailsController = async (req, res, next) => {
     try {
-        const userId = req.user?.userId;
+        const userId = req.user?.userId || req.user?._id || req.user?.id;
         const validated = validateDeliveryBankDetailsDto(req.body);
         const partner = await updateDeliveryPartnerBankDetails(userId, validated, req.files);
         const data = {
+            accountHolderName: partner.bankAccountHolderName || '',
+            accountNumber: partner.bankAccountNumber || '',
+            ifscCode: partner.bankIfscCode || '',
+            bankName: partner.bankName || '',
+            upiId: partner.upiId || '',
+            upiQrCode: partner.upiQrCode || '',
+            panNumber: partner.panNumber || '',
             bankDetails: {
-                accountHolderName: partner.bankAccountHolderName,
-                accountNumber: partner.bankAccountNumber,
-                ifscCode: partner.bankIfscCode,
-                bankName: partner.bankName,
-                upiId: partner.upiId,
-                upiQrCode: partner.upiQrCode
-            },
-            panNumber: partner.panNumber
+                accountHolderName: partner.bankAccountHolderName || '',
+                accountNumber: partner.bankAccountNumber || '',
+                ifscCode: partner.bankIfscCode || '',
+                bankName: partner.bankName || '',
+                upiId: partner.upiId || '',
+                upiQrCode: partner.upiQrCode || ''
+            }
         };
         return sendResponse(res, 200, 'Bank details updated successfully', data);
     } catch (error) {

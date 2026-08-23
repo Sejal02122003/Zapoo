@@ -23,7 +23,7 @@ export default function RiderBankDetails() {
             setLoading(true);
             const response = await apiClient.get('/food/delivery/profile/bank-details');
             if (response.data?.success && response.data?.data) {
-                const b = response.data.data;
+                const b = response.data.data.bankDetails || response.data.data;
                 setFormData({
                     accountHolderName: b.accountHolderName || '',
                     accountNumber: b.accountNumber || '',
@@ -84,11 +84,17 @@ export default function RiderBankDetails() {
         try {
             setSaving(true);
             const body = new FormData();
-            body.append('accountHolderName', formData.accountHolderName);
-            body.append('accountNumber', formData.accountNumber);
-            body.append('ifscCode', formData.ifscCode.toUpperCase());
-            body.append('bankName', formData.bankName);
-            body.append('upiId', formData.upiId);
+            body.append('accountHolderName', (formData.accountHolderName || '').trim());
+            body.append('accountNumber', (formData.accountNumber || '').trim());
+            body.append('ifscCode', (formData.ifscCode || '').trim().toUpperCase());
+            body.append('bankName', (formData.bankName || '').trim());
+            body.append('upiId', (formData.upiId || '').trim());
+
+            body.append('documents[bankDetails][accountHolderName]', (formData.accountHolderName || '').trim());
+            body.append('documents[bankDetails][accountNumber]', (formData.accountNumber || '').trim());
+            body.append('documents[bankDetails][ifscCode]', (formData.ifscCode || '').trim().toUpperCase());
+            body.append('documents[bankDetails][bankName]', (formData.bankName || '').trim());
+            body.append('documents[bankDetails][upiId]', (formData.upiId || '').trim());
 
             if (qrFile) {
                 body.append('upiQrCode', qrFile);

@@ -159,8 +159,12 @@ export async function updateDispatchSettingsController(req, res, next) {
 
 export async function listOrdersRestaurantController(req, res, next) {
     try {
-        const restaurantId = req.user?.userId;
-        const result = await orderService.listOrdersRestaurant(restaurantId, req.query);
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
+        const query = { ...req.query };
+        if (req.user?.outletId) {
+            query.outletId = req.user.outletId;
+        }
+        const result = await orderService.listOrdersRestaurant(restaurantId, query);
         return sendResponse(res, 200, 'Orders retrieved', result);
     } catch (err) {
         next(err);

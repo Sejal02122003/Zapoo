@@ -19,29 +19,30 @@ export const ProfileBankV2 = () => {
   const [qrPreview, setQrPreview] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    const fetchBankDetails = async () => {
-      try {
-        const response = await apiClient.get('/food/delivery/profile/bank-details');
-        if (response?.data?.success && response?.data?.data) {
-          const b = response.data.data;
-          setForm({
-            accountHolderName: b.accountHolderName || '',
-            accountNumber: b.accountNumber || '',
-            ifscCode: b.ifscCode || '',
-            bankName: b.bankName || '',
-            upiId: b.upiId || ''
-          });
-          if (b.upiQrCode) {
-            setQrPreview(b.upiQrCode);
-          }
+  const fetchBankDetails = async () => {
+    try {
+      const response = await apiClient.get('/food/delivery/profile/bank-details');
+      if (response?.data?.success && response?.data?.data) {
+        const b = response.data.data.bankDetails || response.data.data;
+        setForm({
+          accountHolderName: b.accountHolderName || '',
+          accountNumber: b.accountNumber || '',
+          ifscCode: b.ifscCode || '',
+          bankName: b.bankName || '',
+          upiId: b.upiId || ''
+        });
+        if (b.upiQrCode) {
+          setQrPreview(b.upiQrCode);
         }
-      } catch (e) {
-        toast.error('Failed to load bank details');
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (e) {
+      toast.error('Failed to load bank details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchBankDetails();
   }, []);
 
@@ -59,11 +60,18 @@ export const ProfileBankV2 = () => {
     setIsSaving(true);
     try {
       const body = new FormData();
-      body.append('accountHolderName', form.accountHolderName);
-      body.append('accountNumber', form.accountNumber);
-      body.append('ifscCode', form.ifscCode.toUpperCase());
-      body.append('bankName', form.bankName);
-      body.append('upiId', form.upiId);
+      body.append('accountHolderName', (form.accountHolderName || '').trim());
+      body.append('accountNumber', (form.accountNumber || '').trim());
+      body.append('ifscCode', (form.ifscCode || '').trim().toUpperCase());
+      body.append('bankName', (form.bankName || '').trim());
+      body.append('upiId', (form.upiId || '').trim());
+
+      body.append('documents[bankDetails][accountHolderName]', (form.accountHolderName || '').trim());
+      body.append('documents[bankDetails][accountNumber]', (form.accountNumber || '').trim());
+      body.append('documents[bankDetails][ifscCode]', (form.ifscCode || '').trim().toUpperCase());
+      body.append('documents[bankDetails][bankName]', (form.bankName || '').trim());
+      body.append('documents[bankDetails][upiId]', (form.upiId || '').trim());
+
       if (qrFile) {
         body.append('upiQrCode', qrFile);
       }
@@ -73,8 +81,24 @@ export const ProfileBankV2 = () => {
       });
 
       if (response?.data?.success) {
-        toast.success('Bank details updated');
+        toast.success('Bank details saved successfully');
         setIsEditing(false);
+        setQrFile(null);
+        const updated = response.data.data?.bankDetails || response.data.data;
+        if (updated) {
+          setForm({
+            accountHolderName: updated.accountHolderName || form.accountHolderName,
+            accountNumber: updated.accountNumber || form.accountNumber,
+            ifscCode: updated.ifscCode || form.ifscCode,
+            bankName: updated.bankName || form.bankName,
+            upiId: updated.upiId || form.upiId
+          });
+          if (updated.upiQrCode) {
+            setQrPreview(updated.upiQrCode);
+          }
+        } else {
+          fetchBankDetails();
+        }
       }
     } catch (e) {
       toast.error(e.response?.data?.message || 'Update failed');

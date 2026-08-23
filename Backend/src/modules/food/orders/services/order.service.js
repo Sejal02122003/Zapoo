@@ -1663,18 +1663,33 @@ export async function updateOrderInstructions(orderId, userId, instructions) {
 }
 
 // ----- Restaurant -----
-export async function listOrdersRestaurant(restaurantId, query) {
+export async function listOrdersRestaurant(restaurantId, query = {}) {
   const { page, limit, skip } = buildPaginationOptions(query);
+  const restObjectId = new mongoose.Types.ObjectId(restaurantId);
+
   const filter = {
-    restaurantId: new mongoose.Types.ObjectId(restaurantId),
     $or: [
-      { "payment.method": { $in: ["cash", "wallet"] } },
-      { "payment.status": { $in: ["paid", "authorized", "captured", "settled", "refunded"] } },
+      { restaurantId: restObjectId },
+      { outletId: restObjectId },
+    ],
+    $and: [
+      {
+        $or: [
+          { "payment.method": { $in: ["cash", "wallet"] } },
+          { "payment.status": { $in: ["paid", "authorized", "captured", "settled", "refunded"] } },
+        ],
+      },
     ],
   };
+
+  if (query.outletId && mongoose.Types.ObjectId.isValid(query.outletId)) {
+    filter.outletId = new mongoose.Types.ObjectId(query.outletId);
+  }
+
   const [docs, total] = await Promise.all([
     FoodOrder.find(filter)
       .populate("userId", "name phone email profileImage")
+      .populate("outletId", "name outletCode phone")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -1685,6 +1700,7 @@ export async function listOrdersRestaurant(restaurantId, query) {
   return buildPaginatedResult({ docs: docs.map(d => {
     const o = normalizeOrderForClient(d);
     if (d.pickupOtp) o.pickupOtp = d.pickupOtp;
+    if (d.outletId) o.outlet = d.outletId;
     return o;
   }), total, page, limit });
 }

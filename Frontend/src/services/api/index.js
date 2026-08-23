@@ -781,6 +781,9 @@ export const restaurantAPI = {
       return Promise.reject(new Error("Phone and OTP are required"));
     return authService.verifyRestaurantOtp(phone, otp, fcmToken, platform);
   },
+  loginOutlet: (usernameOrPhone, password, fcmToken = null, platform = "web") => {
+    return authService.loginOutlet(usernameOrPhone, password, fcmToken, platform);
+  },
   getMe: () => authService.getMe("restaurant"),
   /** Restaurant dashboard: fetch current restaurant profile (deduped + short-cached). */
   getCurrentRestaurant: () => getRestaurantCurrentOnce(),
@@ -1221,6 +1224,32 @@ export const restaurantAPI = {
     restaurantClient.delete("/food/restaurant/account"),
 };
 
+/** Owner API for Multi-Outlet Restaurant Management */
+export const ownerAPI = {
+  getSummary: (params = {}) =>
+    restaurantClient.get("/food/owner/summary", { params: params || {} }),
+  getOutlets: (params = {}) =>
+    restaurantClient.get("/food/owner/outlets", { params: params || {} }),
+  createOutlet: (data) =>
+    restaurantClient.post("/food/owner/outlets", data),
+  getOutletById: (id) =>
+    restaurantClient.get(`/food/owner/outlets/${String(id)}`),
+  updateOutlet: (id, data) =>
+    restaurantClient.patch(`/food/owner/outlets/${String(id)}`, data),
+  resetOutletCredentials: (id, data) =>
+    restaurantClient.post(`/food/owner/outlets/${String(id)}/reset-credentials`, data),
+  deleteOutlet: (id) =>
+    restaurantClient.delete(`/food/owner/outlets/${String(id)}`),
+  getOrders: (params = {}) =>
+    restaurantClient.get("/food/owner/orders", { params: params || {} }),
+  getInventory: (params = {}) =>
+    restaurantClient.get("/food/owner/inventory", { params: params || {} }),
+  getFinance: (params = {}) =>
+    restaurantClient.get("/food/owner/finance", { params: params || {} }),
+  loginOutlet: (credentials) =>
+    restaurantClient.post("/food/auth/restaurant/outlet-login", credentials),
+};
+
 function stableStringify(value) {
   if (value === null || value === undefined) return String(value);
   if (typeof value !== "object") return JSON.stringify(value);
@@ -1477,6 +1506,11 @@ let deliveryMeCached = null;
 let deliveryMeCacheTime = 0;
 const DELIVERY_ME_CACHE_MS = 3000;
 
+export const invalidateDeliveryMeCache = () => {
+  deliveryMeCached = null;
+  deliveryMeCacheTime = 0;
+};
+
 const getDeliveryMeOnce = () => {
   const now = Date.now();
   if (deliveryMeCached && now - deliveryMeCacheTime < DELIVERY_ME_CACHE_MS) {
@@ -1524,6 +1558,7 @@ export const deliveryAPI = {
     return authService.verifyDeliveryOtp(phone, otp, fcmToken, platform);
   },
   getMe: () => getDeliveryMeOnce(),
+  invalidateCache: invalidateDeliveryMeCache,
   /** Get delivery profile (same as getMe under the hood; maps response to profile shape). */
   getProfile: () =>
     getDeliveryMeOnce().then((res) => ({
@@ -1536,8 +1571,7 @@ export const deliveryAPI = {
   getReferralStats: () =>
     deliveryClient.get("/food/delivery/referrals/stats"),
   logout: (refreshToken, fcmToken = null, platform = "web") => {
-    deliveryMeCached = null;
-    deliveryMeCacheTime = 0;
+    invalidateDeliveryMeCache();
     try {
       localStorage.removeItem("app:isOnline");
     } catch (_) {}
@@ -1565,39 +1599,71 @@ export const deliveryAPI = {
         new Error("FormData with details and document files is required"),
       );
     }
-    return deliveryClient.patch("/food/delivery/profile", formData);
+    invalidateDeliveryMeCache();
+    return deliveryClient.patch("/food/delivery/profile", formData).then((res) => {
+      invalidateDeliveryMeCache();
+      return res;
+    });
   },
   /** PATCH /food/delivery/profile/details - JSON updates (vehicle number, etc). */
-  updateProfileDetails: (payload) =>
-    deliveryClient.patch("/food/delivery/profile/details", payload ?? {}),
+  updateProfileDetails: (payload) => {
+    invalidateDeliveryMeCache();
+    return deliveryClient.patch("/food/delivery/profile/details", payload ?? {}).then((res) => {
+      invalidateDeliveryMeCache();
+      return res;
+    });
+  },
   /** PATCH /food/delivery/profile - multipart updates for photos/documents (uses same endpoint). */
   updateProfileMultipart: (formData) => {
     if (!formData || !(formData instanceof FormData)) {
       return Promise.reject(new Error("FormData is required"));
     }
-    return deliveryClient.patch("/food/delivery/profile", formData);
+    invalidateDeliveryMeCache();
+    return deliveryClient.patch("/food/delivery/profile", formData).then((res) => {
+      invalidateDeliveryMeCache();
+      return res;
+    });
   },
   /** POST /food/delivery/profile/photo-base64 - Flutter in-app camera base64 upload. */
-  updateProfilePhotoBase64: (payload) =>
-    deliveryClient.post("/food/delivery/profile/photo-base64", payload ?? {}),
+  updateProfilePhotoBase64: (payload) => {
+    invalidateDeliveryMeCache();
+    return deliveryClient.post("/food/delivery/profile/photo-base64", payload ?? {}).then((res) => {
+      invalidateDeliveryMeCache();
+      return res;
+    });
+  },
   /** POST /food/delivery/profile/phone/request-otp - Request OTP to change phone number */
   requestPhoneChangeOtp: (newPhone) =>
     deliveryClient.post("/food/delivery/profile/phone/request-otp", { newPhone }),
   /** POST /food/delivery/profile/phone/verify-otp - Verify OTP and update phone number */
-  verifyPhoneChangeOtp: (newPhone, otp) =>
-    deliveryClient.post("/food/delivery/profile/phone/verify-otp", { newPhone, otp }),
+  verifyPhoneChangeOtp: (newPhone, otp) => {
+    invalidateDeliveryMeCache();
+    return deliveryClient.post("/food/delivery/profile/phone/verify-otp", { newPhone, otp }).then((res) => {
+      invalidateDeliveryMeCache();
+      return res;
+    });
+  },
   /** POST /food/calls/bridge - Initiate secure masked call via Exotel */
   initiateCall: (orderId, targetRole = "customer", callerPhoneOverride = null) =>
     deliveryClient.post("/food/calls/bridge", { orderId, targetRole, callerPhoneOverride }),
   /** PATCH /food/delivery/profile/bank-details - update bank details + PAN (JSON, Bearer required). */
-  updateProfile: (payload) =>
-    deliveryClient.patch("/food/delivery/profile/bank-details", payload ?? {}),
+  updateProfile: (payload) => {
+    invalidateDeliveryMeCache();
+    return deliveryClient.patch("/food/delivery/profile/bank-details", payload ?? {}).then((res) => {
+      invalidateDeliveryMeCache();
+      return res;
+    });
+  },
   /** PATCH /food/delivery/profile/bank-details - multipart updates for bank details + UPI QR (FormData required). */
   updateBankDetailsMultipart: (formData) => {
     if (!formData || !(formData instanceof FormData)) {
       return Promise.reject(new Error("FormData is required"));
     }
-    return deliveryClient.patch("/food/delivery/profile/bank-details", formData);
+    invalidateDeliveryMeCache();
+    return deliveryClient.patch("/food/delivery/profile/bank-details", formData).then((res) => {
+      invalidateDeliveryMeCache();
+      return res;
+    });
   },
   saveFcmToken: saveDeliveryFcmTokenOnce,
   removeFcmToken: (token, platform = "web") => {

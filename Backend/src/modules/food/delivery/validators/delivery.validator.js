@@ -76,37 +76,62 @@ export const validateDeliveryProfileUpdateDto = (body) => {
 };
 
 const bankDetailsSchema = z.object({
-    accountHolderName: z.string().min(1, 'Account holder name is required').optional().or(z.literal('')),
-    accountNumber: z.string().min(1, 'Account number is required').optional().or(z.literal('')),
-    ifscCode: z.string().min(1, 'IFSC code is required').optional().or(z.literal('')),
-    bankName: z.string().min(1, 'Bank name is required').optional().or(z.literal('')),
+    accountHolderName: z.string().optional().or(z.literal('')),
+    accountNumber: z.string().optional().or(z.literal('')),
+    ifscCode: z.string().optional().or(z.literal('')),
+    bankName: z.string().optional().or(z.literal('')),
     upiId: z.string().optional().or(z.literal('')),
     upiQrCode: z.string().optional().or(z.literal(''))
 });
 
 const bankDetailsUpdateSchema = z.object({
+    accountHolderName: z.string().optional().or(z.literal('')),
+    accountNumber: z.string().optional().or(z.literal('')),
+    ifscCode: z.string().optional().or(z.literal('')),
+    bankName: z.string().optional().or(z.literal('')),
+    upiId: z.string().optional().or(z.literal('')),
+    upiQrCode: z.string().optional().or(z.literal('')),
+    panNumber: z.string().optional().or(z.literal('')),
     documents: z.object({
         bankDetails: bankDetailsSchema.optional(),
-        pan: z.object({ number: z.string().optional() }).optional()
+        pan: z.object({ number: z.string().optional().or(z.literal('')) }).optional()
     }).optional()
-}).optional();
+}).passthrough();
 
-export const validateDeliveryBankDetailsDto = (body) => {
-    // If we have flat keys from FormData (multer), reconstruct the nested object for Zod
-    const processed = { ...body };
-    if (!processed.documents) processed.documents = {};
-    if (!processed.documents.bankDetails) {
-        processed.documents.bankDetails = {
-            accountHolderName: body['documents[bankDetails][accountHolderName]'],
-            accountNumber: body['documents[bankDetails][accountNumber]'],
-            ifscCode: body['documents[bankDetails][ifscCode]'],
-            bankName: body['documents[bankDetails][bankName]'],
-            upiId: body['documents[bankDetails][upiId]']
-        };
-    }
-    if (!processed.documents.pan && body['documents[pan][number]']) {
-        processed.documents.pan = { number: body['documents[pan][number]'] };
-    }
+export const validateDeliveryBankDetailsDto = (body = {}) => {
+    const raw = typeof body === 'object' && body !== null ? body : {};
+
+    // Extract values from flat keys, bracket notation, or nested objects
+    const accountHolderName = raw.accountHolderName ?? raw['documents[bankDetails][accountHolderName]'] ?? raw.documents?.bankDetails?.accountHolderName;
+    const accountNumber = raw.accountNumber ?? raw['documents[bankDetails][accountNumber]'] ?? raw.documents?.bankDetails?.accountNumber;
+    const ifscCode = raw.ifscCode ?? raw['documents[bankDetails][ifscCode]'] ?? raw.documents?.bankDetails?.ifscCode;
+    const bankName = raw.bankName ?? raw['documents[bankDetails][bankName]'] ?? raw.documents?.bankDetails?.bankName;
+    const upiId = raw.upiId ?? raw['documents[bankDetails][upiId]'] ?? raw.documents?.bankDetails?.upiId;
+    const upiQrCode = raw.upiQrCode ?? raw['documents[bankDetails][upiQrCode]'] ?? raw.documents?.bankDetails?.upiQrCode;
+    const panNumber = raw.panNumber ?? raw['documents[pan][number]'] ?? raw.documents?.pan?.number;
+
+    const processed = {
+        ...(accountHolderName !== undefined ? { accountHolderName: String(accountHolderName) } : {}),
+        ...(accountNumber !== undefined ? { accountNumber: String(accountNumber) } : {}),
+        ...(ifscCode !== undefined ? { ifscCode: String(ifscCode) } : {}),
+        ...(bankName !== undefined ? { bankName: String(bankName) } : {}),
+        ...(upiId !== undefined ? { upiId: String(upiId) } : {}),
+        ...(upiQrCode !== undefined ? { upiQrCode: String(upiQrCode) } : {}),
+        ...(panNumber !== undefined ? { panNumber: String(panNumber) } : {}),
+        documents: {
+            bankDetails: {
+                ...(accountHolderName !== undefined ? { accountHolderName: String(accountHolderName) } : {}),
+                ...(accountNumber !== undefined ? { accountNumber: String(accountNumber) } : {}),
+                ...(ifscCode !== undefined ? { ifscCode: String(ifscCode) } : {}),
+                ...(bankName !== undefined ? { bankName: String(bankName) } : {}),
+                ...(upiId !== undefined ? { upiId: String(upiId) } : {}),
+                ...(upiQrCode !== undefined ? { upiQrCode: String(upiQrCode) } : {})
+            },
+            pan: {
+                ...(panNumber !== undefined ? { number: String(panNumber) } : {})
+            }
+        }
+    };
 
     const result = bankDetailsUpdateSchema.safeParse(processed);
     if (!result.success) {

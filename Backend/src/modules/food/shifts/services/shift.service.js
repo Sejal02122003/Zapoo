@@ -459,6 +459,10 @@ export const shiftService = {
     },
 
     getRiderBookedShifts: async (riderId) => {
+        try {
+            await shiftService.autoSettlePastShifts();
+        } catch (e) {}
+
         let partner = null;
         if (mongoose.Types.ObjectId.isValid(riderId)) {
             partner = await FoodDeliveryPartner.findById(riderId);
@@ -474,18 +478,33 @@ export const shiftService = {
         const bookings = await shiftRepository.getBookingsByRider(riderIds);
         const now = new Date();
 
-        return bookings.map((b) => {
+        const results = await Promise.all(bookings.map(async (b) => {
             const bookingObj = b.toObject();
             const shift = bookingObj.shiftId || {};
             const endTime = shift.endTime ? new Date(shift.endTime) : null;
             const startTime = shift.startTime ? new Date(shift.startTime) : null;
 
+            // Fetch payout info for this booking
+            const payout = await FoodShiftPayout.findOne({
+                shiftId: shift._id,
+                riderId: { $in: riderIds }
+            }).lean();
+
             return {
                 ...bookingObj,
                 canCancel: bookingObj.status === 'BOOKED' && startTime && now < startTime,
                 isPast: endTime ? now > endTime : false,
+                payout: payout ? {
+                    payoutId: payout._id,
+                    amount: payout.amount,
+                    status: payout.status,
+                    referenceNumber: payout.referenceNumber || '',
+                    paidAt: payout.paidAt || null
+                } : null
             };
-        });
+        }));
+
+        return results;
     },
 
     // --- ATTENDANCE ---
@@ -536,6 +555,25 @@ export const shiftService = {
 
     // --- SETTLEMENT ENGINE & PAYOUT TRIGGER ---
 
+    autoSettlePastShifts: async () => {
+        try {
+            const now = new Date();
+            const pastShifts = await FoodShift.find({ endTime: { $lte: now } }).select('_id').lean();
+            if (!pastShifts || pastShifts.length === 0) return;
+            for (const shift of pastShifts) {
+                const pendingBookings = await FoodShiftBooking.countDocuments({
+                    shiftId: shift._id,
+                    status: 'BOOKED'
+                });
+                if (pendingBookings > 0) {
+                    await shiftService.processShiftSettlements(shift._id);
+                }
+            }
+        } catch (e) {
+            console.error('Error auto-settling past shifts:', e);
+        }
+    },
+
     processShiftSettlements: async (shiftId) => {
         const shift = await shiftRepository.getShiftById(shiftId);
         if (!shift) throw new Error("Shift not found");
@@ -547,42 +585,68 @@ export const shiftService = {
             const session = await mongoose.startSession();
             session.startTransaction();
             try {
+                let partner = (mongoose.Types.ObjectId.isValid(booking.riderId) ? await FoodDeliveryPartner.findById(booking.riderId) : null) ||
+                              await FoodDeliveryPartner.findOne({ userId: String(booking.riderId) });
+                let userDoc = (mongoose.Types.ObjectId.isValid(booking.riderId) ? await FoodUser.findById(booking.riderId).lean() : null) ||
+                              await FoodAdmin.findById(booking.riderId).lean();
+
+                const resolvedRiderId = partner?._id || booking.riderId;
+                const partnerIds = [booking.riderId];
+                if (partner?._id) partnerIds.push(partner._id);
+                if (partner?.userId) partnerIds.push(partner.userId);
+
                 // Check if already settled
-                const existingSettlement = await mongoose.model('FoodShiftSettlement').findOne({ shiftId, riderId: booking.riderId });
+                const existingSettlement = await mongoose.model('FoodShiftSettlement').findOne({ 
+                    shiftId, 
+                    riderId: { $in: partnerIds } 
+                });
                 if (existingSettlement) {
                     await session.abortTransaction();
                     continue; // Already settled
                 }
 
-                const attendance = await shiftRepository.getAttendanceByRiderAndShift(booking.riderId, shiftId);
-                const attendancePercentage = attendance ? attendance.loginPercentage : 0;
+                const attendance = await shiftRepository.getAttendanceByRiderAndShift(booking.riderId, shiftId) ||
+                                   (partner?._id ? await shiftRepository.getAttendanceByRiderAndShift(partner._id, shiftId) : null);
+                const attendancePercentage = attendance ? (attendance.loginPercentage || 0) : 0;
 
-                // Query Orders in shift window
+                // Query Orders in shift window (checking both dispatch.deliveryPartnerId and deliveryPartnerId with both case formats)
                 const completedOrdersCount = await FoodOrder.countDocuments({
-                    deliveryPartnerId: booking.riderId,
-                    orderStatus: 'Delivered',
-                    deliveredAt: { $gte: shift.startTime, $lte: shift.endTime }
+                    $or: [
+                        { 'dispatch.deliveryPartnerId': { $in: partnerIds } },
+                        { deliveryPartnerId: { $in: partnerIds } }
+                    ],
+                    orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] },
+                    $or: [
+                        { deliveredAt: { $gte: shift.startTime, $lte: shift.endTime } },
+                        { createdAt: { $gte: shift.startTime, $lte: shift.endTime } },
+                        { updatedAt: { $gte: shift.startTime, $lte: shift.endTime } }
+                    ]
                 });
 
                 // Query Earnings in shift window
                 const transactions = await FoodTransaction.find({
-                    deliveryPartnerId: booking.riderId,
+                    deliveryPartnerId: { $in: partnerIds },
                     createdAt: { $gte: shift.startTime, $lte: shift.endTime },
-                    status: { $in: ['authorized', 'captured', 'settled'] }
+                    status: { $in: ['authorized', 'captured', 'settled', 'success'] }
                 });
                 
                 const actualEarnings = transactions.reduce((sum, tx) => sum + (tx.amounts?.riderShare || 0), 0);
                 
                 // --- Eligibility Rules ---
-                const rules = booking.snapshotRules;
+                const rules = {
+                    guaranteeAmount: booking.snapshotRules?.guaranteeAmount ?? shift.guaranteeAmount ?? 0,
+                    minimumOrders: booking.snapshotRules?.minimumOrders ?? shift.minimumOrders ?? 0,
+                    minimumLoginPercentage: booking.snapshotRules?.minimumLoginPercentage ?? shift.minimumLoginPercentage ?? 0
+                };
+
                 let isEligible = true;
                 let rejectionReason = null;
                 let guaranteeBonus = 0;
 
-                if (attendancePercentage < rules.minimumLoginPercentage) {
+                if (rules.minimumLoginPercentage > 0 && attendancePercentage < rules.minimumLoginPercentage) {
                     isEligible = false;
                     rejectionReason = 'REJECTED_ATTENDANCE';
-                } else if (completedOrdersCount < rules.minimumOrders) {
+                } else if (rules.minimumOrders > 0 && completedOrdersCount < rules.minimumOrders) {
                     isEligible = false;
                     rejectionReason = 'REJECTED_ORDERS';
                 } else if (attendance?.gpsAnomalyFlags?.length > 5) {
@@ -590,32 +654,34 @@ export const shiftService = {
                     rejectionReason = 'REJECTED_FRAUD';
                 }
 
-                if (isEligible && shift.bonusEnabled && actualEarnings < rules.guaranteeAmount) {
+                if (isEligible && (shift.bonusEnabled || rules.guaranteeAmount > 0) && actualEarnings < rules.guaranteeAmount) {
                     guaranteeBonus = rules.guaranteeAmount - actualEarnings;
                 }
 
-                const totalPayoutOwed = actualEarnings + guaranteeBonus;
+                const totalPayoutOwed = Math.max(rules.guaranteeAmount > 0 ? (isEligible ? rules.guaranteeAmount : actualEarnings) : 0, actualEarnings + guaranteeBonus);
 
-                // Fetch rider profile to snapshot bank details
-                const rider = await FoodDeliveryPartner.findById(booking.riderId);
-                
                 // Decrypt account number if encrypted
-                const rawAccNum = rider?.bankAccountNumber || '';
-                const decryptedAccNum = decrypt(rawAccNum);
+                const rawAccNum = partner?.bankAccountNumber || partner?.documents?.bankDetails?.accountNumber || '';
+                let decryptedAccNum = '';
+                try {
+                    if (rawAccNum) decryptedAccNum = decrypt(rawAccNum);
+                } catch (e) {
+                    decryptedAccNum = rawAccNum;
+                }
 
-                const hasBankDetails = Boolean((decryptedAccNum || rider?.upiId || rider?.upiQrCode) && rider?.bankIfscCode);
+                const hasBankDetails = Boolean((decryptedAccNum || partner?.upiId || partner?.documents?.bankDetails?.upiId) && (partner?.bankIfscCode || partner?.documents?.bankDetails?.ifscCode));
 
                 const payoutSnapshot = {
-                    accountHolderName: rider?.bankAccountHolderName || rider?.name || 'N/A',
+                    accountHolderName: partner?.bankAccountHolderName || partner?.documents?.bankDetails?.accountHolderName || partner?.name || userDoc?.name || 'N/A',
                     accountNumber: decryptedAccNum || 'N/A',
-                    ifscCode: rider?.bankIfscCode || 'N/A',
-                    bankName: rider?.bankName || 'N/A',
-                    upiId: rider?.upiId || 'N/A',
-                    upiQrCode: rider?.upiQrCode || ''
+                    ifscCode: partner?.bankIfscCode || partner?.documents?.bankDetails?.ifscCode || 'N/A',
+                    bankName: partner?.bankName || partner?.documents?.bankDetails?.bankName || 'N/A',
+                    upiId: partner?.upiId || partner?.documents?.bankDetails?.upiId || 'N/A',
+                    upiQrCode: partner?.upiQrCode || partner?.documents?.bankDetails?.upiQrCode?.url || partner?.documents?.bankDetails?.upiQrCode || ''
                 };
 
                 const payoutData = {
-                    riderId: booking.riderId,
+                    riderId: resolvedRiderId,
                     shiftId: shift._id,
                     amount: totalPayoutOwed,
                     status: hasBankDetails ? 'PENDING' : 'ON_HOLD',
@@ -627,7 +693,7 @@ export const shiftService = {
                 const settlementRecord = await shiftRepository.executeSettlementTransaction(session, {
                     settlementData: {
                         shiftId: shift._id,
-                        riderId: booking.riderId,
+                        riderId: resolvedRiderId,
                         attendancePercentage,
                         completedOrders: completedOrdersCount,
                         actualEarnings,
@@ -706,13 +772,15 @@ export const shiftService = {
             const deliveryId = partner?.deliveryId || (partner?._id ? `DP-${String(partner._id).slice(-8).toUpperCase()}` : `DP-${String(booking.riderId).slice(-8).toUpperCase()}`);
             const isOnline = !!partner?.isOnline || !!userDoc?.isOnline;
 
-            const bank = partner?.documents?.bankDetails || {};
-            let decryptedAccount = bank.accountNumber || '';
+            const rawAcc = partner?.bankAccountNumber || partner?.documents?.bankDetails?.accountNumber || '';
+            let decryptedAccount = '';
             try {
-                if (decryptedAccount && decryptedAccount.includes(':')) {
-                    decryptedAccount = decrypt(decryptedAccount);
+                if (rawAcc) {
+                    decryptedAccount = decrypt(rawAcc);
                 }
-            } catch (e) {}
+            } catch (e) {
+                decryptedAccount = rawAcc;
+            }
 
             const attendance = await FoodShiftAttendance.findOne({ 
                 $or: [
@@ -745,12 +813,12 @@ export const shiftService = {
                     ordersCompleted: attendance?.completedOrdersCount || 0
                 },
                 bankDetails: {
-                    accountHolderName: bank.accountHolderName || riderName,
-                    accountNumber: decryptedAccount,
-                    ifscCode: bank.ifscCode || '',
-                    bankName: bank.bankName || '',
-                    upiId: bank.upiId || partner?.documents?.upiId || '',
-                    upiQrCode: partner?.documents?.upiQrCode?.url || partner?.documents?.upiQrCode || ''
+                    accountHolderName: partner?.bankAccountHolderName || partner?.documents?.bankDetails?.accountHolderName || riderName,
+                    accountNumber: decryptedAccount || '',
+                    ifscCode: partner?.bankIfscCode || partner?.documents?.bankDetails?.ifscCode || '',
+                    bankName: partner?.bankName || partner?.documents?.bankDetails?.bankName || '',
+                    upiId: partner?.upiId || partner?.documents?.bankDetails?.upiId || partner?.documents?.upiId || '',
+                    upiQrCode: partner?.upiQrCode || partner?.documents?.bankDetails?.upiQrCode?.url || partner?.documents?.bankDetails?.upiQrCode || partner?.documents?.upiQrCode || ''
                 },
                 payout: payout ? {
                     payoutId: payout._id,
@@ -785,13 +853,15 @@ export const shiftService = {
 
         let payout = await FoodShiftPayout.findOne({ shiftId, riderId });
 
-        const bank = partner.documents?.bankDetails || {};
-        let decryptedAccount = bank.accountNumber || '';
+        const rawAcc = partner.bankAccountNumber || partner.documents?.bankDetails?.accountNumber || '';
+        let decryptedAccount = '';
         try {
-            if (decryptedAccount && decryptedAccount.includes(':')) {
-                decryptedAccount = decrypt(decryptedAccount);
+            if (rawAcc) {
+                decryptedAccount = decrypt(rawAcc);
             }
-        } catch (e) {}
+        } catch (e) {
+            decryptedAccount = rawAcc;
+        }
 
         const payoutAmount = amount || shift.guaranteeAmount || 0;
 
@@ -802,11 +872,11 @@ export const shiftService = {
                 riderName: partner.name,
                 riderPhone: partner.phone,
                 bankDetailsSnapshot: {
-                    accountHolderName: bank.accountHolderName || partner.name,
-                    accountNumber: decryptedAccount,
-                    ifscCode: bank.ifscCode || '',
-                    bankName: bank.bankName || '',
-                    upiId: bank.upiId || ''
+                    accountHolderName: partner.bankAccountHolderName || partner.documents?.bankDetails?.accountHolderName || partner.name,
+                    accountNumber: decryptedAccount || 'N/A',
+                    ifscCode: partner.bankIfscCode || partner.documents?.bankDetails?.ifscCode || 'N/A',
+                    bankName: partner.bankName || partner.documents?.bankDetails?.bankName || 'N/A',
+                    upiId: partner.upiId || partner.documents?.bankDetails?.upiId || 'N/A'
                 },
                 payoutAmount,
                 status: 'PAID',
@@ -828,45 +898,56 @@ export const shiftService = {
     },
 
     syncPendingPayoutsForBookings: async () => {
+        try {
+            await shiftService.autoSettlePastShifts();
+        } catch (e) {}
+
         const bookings = await FoodShiftBooking.find({ status: { $in: ['BOOKED', 'COMPLETED'] } }).lean();
         for (const booking of bookings) {
             const shift = await FoodShift.findById(booking.shiftId).lean();
             if (!shift) continue;
 
+            let partner = (mongoose.Types.ObjectId.isValid(booking.riderId) ? await FoodDeliveryPartner.findById(booking.riderId).lean() : null) || 
+                          await FoodDeliveryPartner.findOne({ userId: String(booking.riderId) }).lean();
+            let userDoc = (mongoose.Types.ObjectId.isValid(booking.riderId) ? await FoodUser.findById(booking.riderId).lean() : null) || 
+                          await FoodAdmin.findById(booking.riderId).lean();
+
+            const partnerIds = [booking.riderId];
+            if (partner?._id) partnerIds.push(partner._id);
+            if (partner?.userId) partnerIds.push(partner.userId);
+
             const existingPayout = await FoodShiftPayout.findOne({ 
-                $or: [
-                    { shiftId: booking.shiftId, riderId: booking.riderId },
-                    { shiftId: String(booking.shiftId), riderId: String(booking.riderId) }
-                ] 
+                shiftId: booking.shiftId,
+                riderId: { $in: partnerIds }
             }).lean();
 
             if (!existingPayout) {
-                let partner = await FoodDeliveryPartner.findById(booking.riderId).lean() || await FoodDeliveryPartner.findOne({ userId: booking.riderId }).lean();
-                let userDoc = await FoodUser.findById(booking.riderId).lean() || await FoodAdmin.findById(booking.riderId).lean();
-
-                const bank = partner?.documents?.bankDetails || {};
-                let decryptedAccount = bank.accountNumber || '';
+                const rawAcc = partner?.bankAccountNumber || partner?.documents?.bankDetails?.accountNumber || '';
+                let decryptedAccount = '';
                 try {
-                    if (decryptedAccount && decryptedAccount.includes(':')) {
-                        decryptedAccount = decrypt(decryptedAccount);
+                    if (rawAcc) {
+                        decryptedAccount = decrypt(rawAcc);
                     }
-                } catch (e) {}
+                } catch (e) {
+                    decryptedAccount = rawAcc;
+                }
 
                 const riderName = partner?.name || userDoc?.name || booking.riderName || 'Delivery Partner';
                 const riderPhone = partner?.phone || userDoc?.phone || booking.riderPhone || 'N/A';
+                const guaranteeAmount = booking.snapshotRules?.guaranteeAmount ?? shift.guaranteeAmount ?? 350;
 
                 await FoodShiftPayout.create({
                     shiftId: booking.shiftId,
-                    riderId: booking.riderId,
-                    amount: shift.guaranteeAmount || 350,
+                    riderId: partner?._id || booking.riderId,
+                    amount: guaranteeAmount,
                     status: 'PENDING',
                     bankDetailsSnapshot: {
-                        accountHolderName: bank.accountHolderName || riderName,
+                        accountHolderName: partner?.bankAccountHolderName || partner?.documents?.bankDetails?.accountHolderName || riderName,
                         accountNumber: decryptedAccount || 'N/A',
-                        ifscCode: bank.ifscCode || 'N/A',
-                        bankName: bank.bankName || 'N/A',
-                        upiId: bank.upiId || partner?.documents?.upiId || 'N/A',
-                        upiQrCode: partner?.documents?.upiQrCode?.url || partner?.documents?.upiQrCode || ''
+                        ifscCode: partner?.bankIfscCode || partner?.documents?.bankDetails?.ifscCode || 'N/A',
+                        bankName: partner?.bankName || partner?.documents?.bankDetails?.bankName || 'N/A',
+                        upiId: partner?.upiId || partner?.documents?.bankDetails?.upiId || partner?.documents?.upiId || 'N/A',
+                        upiQrCode: partner?.upiQrCode || partner?.documents?.bankDetails?.upiQrCode?.url || partner?.documents?.bankDetails?.upiQrCode || partner?.documents?.upiQrCode || ''
                     }
                 });
             }

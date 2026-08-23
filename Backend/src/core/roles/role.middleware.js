@@ -16,3 +16,29 @@ export const requireRoles = (...allowedRoles) => {
     };
 };
 
+export const requireOutletPermission = (permission) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return sendError(res, 401, 'Not authenticated');
+        }
+
+        // If user is Admin or Owner, full permission granted
+        if (
+            req.user.isOwner ||
+            req.user.ownerRole === 'OWNER' ||
+            req.user.role === 'ADMIN' ||
+            req.user.role === 'SUPER_ADMIN' ||
+            !req.user.outletId
+        ) {
+            return next();
+        }
+
+        const permissions = req.user.permissions || [];
+        if (permissions.includes('*') || permissions.includes(permission)) {
+            return next();
+        }
+
+        return sendError(res, 403, `Forbidden: requires permission ${permission}`);
+    };
+};
+
