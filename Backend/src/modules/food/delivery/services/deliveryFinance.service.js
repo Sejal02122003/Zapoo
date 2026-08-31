@@ -6,6 +6,7 @@ import { FoodDeliveryCashDeposit } from '../models/foodDeliveryCashDeposit.model
 import { FoodDeliveryPartner } from '../models/deliveryPartner.model.js';
 import { DeliveryBonusTransaction } from '../../admin/models/deliveryBonusTransaction.model.js';
 import { DeliveryPenalty } from '../models/deliveryPenalty.model.js';
+import { FoodShiftPayout } from '../../shifts/models/payout.model.js';
 import { getDeliveryCashLimitSettings } from '../../admin/services/admin.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { decrypt } from '../../../../utils/encryption.js';
@@ -29,7 +30,18 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
     const partner = await FoodDeliveryPartner.findById(partnerId).lean();
     if (!partner) throw new ValidationError('Delivery partner not found');
 
-    const [cashLimitSettings, earningsAgg, bonusAgg, withdrawalAgg, withdrawalsList, depositList, penaltyAgg, penaltyList] = await Promise.all([
+    const [
+        cashLimitSettings,
+        earningsAgg,
+        bonusAgg,
+        withdrawalAgg,
+        withdrawalsList,
+        depositList,
+        penaltyAgg,
+        penaltyList,
+        payoutsAgg,
+        payoutsList
+    ] = await Promise.all([
         getDeliveryCashLimitSettings(),
         // 1. Total Earnings from Delivered Orders
         FoodOrder.aggregate([
@@ -69,6 +81,16 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
         ]),
         // 7. Recent Penalties
         DeliveryPenalty.find({ riderId: partnerId, status: { $in: ['APPLIED', 'APPEALED', 'REFUNDED', 'WAIVED'] } })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .lean(),
+        // 8. Total Paid Shift Payouts
+        FoodShiftPayout.aggregate([
+            { $match: { riderId: partnerId, status: 'PAID' } },
+            { $group: { _id: null, totalPaidPayouts: { $sum: { $ifNull: ['$amount', 0] } } } }
+        ]),
+        // 9. Recent Shift Payouts for History
+        FoodShiftPayout.find({ riderId: partnerId })
             .sort({ createdAt: -1 })
             .limit(50)
             .lean()
@@ -114,13 +136,14 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
     const totalWithdrawn = Number(withdrawalAgg?.[0]?.totalWithdrawn) || 0;
     const pendingWithdrawals = Number(withdrawalAgg?.[0]?.pendingWithdrawals) || 0;
     const totalPenalty = Number(penaltyAgg?.[0]?.totalPenalty) || 0;
+    const totalPaidShiftPayouts = Number(payoutsAgg?.[0]?.totalPaidPayouts) || 0;
 
     const totalCashLimit = Number(cashLimitSettings.deliveryCashLimit) || 0;
     const deliveryWithdrawalLimit = Number(cashLimitSettings.deliveryWithdrawalLimit) || 100;
 
-    // Pocket Balance = (Earnings + Bonus) - Total Withdrawn (approved) - Total Penalty (applied)
+    // Pocket Balance = (Earnings + Bonus) - Total Withdrawn (approved) - Total Penalty (applied) - Total Paid Shift Payouts
     // As requested: Pending withdrawals are NOT deducted from the displayed balance until admin approves them.
-    const pocketBalance = Math.max(0, (totalEarned + totalBonus) - totalWithdrawn - totalPenalty);
+    const pocketBalance = Math.max(0, (totalEarned + totalBonus) - totalWithdrawn - totalPenalty - totalPaidShiftPayouts);
 
     // Fetch transactions for UI (Orders, Bonuses, Withdrawals, Penalties)
     const [ordersTx, bonusesList] = await Promise.all([
@@ -182,6 +205,14 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
             date: p.createdAt,
             description: `Late Delivery Penalty (${p.lateMinutes} mins late)`,
             orderId: p.orderId
+        })),
+        ...(payoutsList || []).map(p => ({
+            id: p._id,
+            type: 'withdrawal',
+            amount: p.amount,
+            status: p.status === 'PAID' ? 'Completed' : (p.status === 'PENDING' ? 'Pending' : p.status),
+            date: p.paidAt || p.createdAt,
+            description: `Shift Completion Payout - ${p.status}`
         }))
     ].sort((a, b) => new Date(b.date) - new Date(a.date));
 

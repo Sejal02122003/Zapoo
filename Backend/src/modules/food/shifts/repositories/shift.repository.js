@@ -50,12 +50,21 @@ export const shiftRepository = {
 
     // --- Attendance ---
     getAttendanceByRiderAndShift: async (riderId, shiftId) => FoodShiftAttendance.findOne({ riderId, shiftId }),
-    createOrUpdateAttendance: async (riderId, shiftId, updateData) => 
-        FoodShiftAttendance.findOneAndUpdate(
+    createOrUpdateAttendance: async (riderId, shiftId, updateData) => {
+        const update = {};
+        if (updateData.$push) {
+            update.$push = updateData.$push;
+            delete updateData.$push;
+        }
+        if (Object.keys(updateData).length > 0) {
+            update.$set = updateData;
+        }
+        return FoodShiftAttendance.findOneAndUpdate(
             { riderId, shiftId },
-            { $set: updateData },
+            update,
             { new: true, upsert: true }
-        ),
+        );
+    },
 
     // --- Payouts ---
     createPayout: async (data, options = {}) => FoodShiftPayout.create(data, options),

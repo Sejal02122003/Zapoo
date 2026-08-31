@@ -64,6 +64,28 @@ export async function handleHeartbeat(riderId) {
     const now = new Date();
 
     let openSession = await FoodDeliveryDutyLog.findOne({ riderId: rId, status: 'OPEN' });
+
+    // Sync active shift attendance heartbeat
+    try {
+        const { FoodShiftBooking } = await import('../../shifts/models/shiftBooking.model.js');
+        const { FoodShift } = await import('../../shifts/models/shift.model.js');
+        const { shiftService } = await import('../../shifts/services/shift.service.js');
+
+        const bookings = await FoodShiftBooking.find({
+            riderId: rId,
+            status: 'BOOKED'
+        }).lean();
+
+        for (const booking of bookings) {
+            const shift = await FoodShift.findById(booking.shiftId).lean();
+            if (shift && now >= new Date(shift.startTime) && now <= new Date(shift.endTime)) {
+                await shiftService.recordHeartbeat(rId.toString(), shift._id.toString(), null);
+            }
+        }
+    } catch (shiftErr) {
+        logger.error(`Error syncing shift heartbeat: ${shiftErr.message}`);
+    }
+
     if (openSession) {
         openSession.lastHeartbeatAt = now;
         await openSession.save();
