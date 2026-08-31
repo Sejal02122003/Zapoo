@@ -48,7 +48,19 @@ export default function RestaurantLogin() {
   useEffect(() => {
     const token = localStorage.getItem("restaurant_accessToken") || localStorage.getItem("restaurantToken")
     if (token) {
-      navigate("/food/restaurant", { replace: true })
+      const userStr = localStorage.getItem("restaurant_user")
+      let isOwner = false
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr)
+          isOwner = user.role === "OWNER" || user.isOwner || (!user.outletId && user.role !== "OUTLETER")
+        } catch (e) {}
+      }
+      if (isOwner) {
+        navigate("/food/restaurant/owner", { replace: true })
+      } else {
+        navigate("/food/restaurant", { replace: true })
+      }
     }
   }, [navigate])
 
