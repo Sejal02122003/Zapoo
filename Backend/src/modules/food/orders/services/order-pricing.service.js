@@ -633,7 +633,6 @@ export async function calculateOrderPricing(userId, dto) {
   const roundedWeatherFee = Math.round(weatherFee);
 
   const totalBeforeDiscount = roundedSubtotal + roundedDeliveryFee + tax + roundedPlatformFee + roundedPackagingFee + roundedWeatherFee;
-  const total = Math.round(Math.max(0, totalBeforeDiscount - totalDiscount));
 
   // --- Rule-based Cashback Evaluation for Pricing Display ---
   let ruleCashback = null;
@@ -662,6 +661,8 @@ export async function calculateOrderPricing(userId, dto) {
   const couponCashbackAmount = (appliedCashbackCoupon?.amount || (appliedCoupon?.rewardType === 'CASHBACK' || appliedCoupon?.rewardType === 'BOTH' ? appliedCoupon.amount : 0) || 0);
   const totalCashbackAmount = couponCashbackAmount + (ruleCashback?.amount || 0);
 
+  const total = Math.round(Math.max(0, totalBeforeDiscount - totalDiscount - totalCashbackAmount));
+
   return {
     pricing: {
       subtotal: roundedSubtotal,
@@ -680,7 +681,7 @@ export async function calculateOrderPricing(userId, dto) {
       weatherPricing: weatherPricingSnapshot,
       freeDeliveryUpTo: Number.isFinite(freeUpTo) ? freeUpTo : undefined,
       platformFee: roundedPlatformFee,
-      discount: totalDiscount,
+      discount: totalDiscount + totalCashbackAmount,
       itemDiscount: itemDiscountTotal > 0 ? Math.round(itemDiscountTotal) : undefined,
       couponDiscount: couponDiscount > 0 ? couponDiscount : undefined,
       restaurantCouponDiscount: roundedRestaurantCouponDiscount > 0 ? roundedRestaurantCouponDiscount : undefined,

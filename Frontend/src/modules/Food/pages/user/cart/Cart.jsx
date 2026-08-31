@@ -3093,7 +3093,7 @@ export default function Cart() {
                           </span>
                         )}
                         <span className="text-base font-bold text-green-600 dark:text-green-500">
-                          {RUPEE_SYMBOL}{total.toFixed(2)}
+                          {RUPEE_SYMBOL}{((useWalletBalance && (selectedPaymentMethod === 'razorpay' || selectedPaymentMethod === 'cash')) ? Math.max(0, total - walletBalance) : total).toFixed(2)}
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Incl. taxes and charges</p>
@@ -3177,19 +3177,25 @@ export default function Cart() {
                     {pricing?.appliedCoupon?.rewardType === 'CASHBACK' && pricing?.appliedCoupon?.amount > 0 && (
                       <div className="flex justify-between text-sm text-green-600 font-medium">
                         <span>Wallet Cashback ({pricing.appliedCoupon.code})</span>
-                        <span>+{RUPEE_SYMBOL}{pricing.appliedCoupon.amount.toFixed(2)}</span>
+                        <span>-{RUPEE_SYMBOL}{pricing.appliedCoupon.amount.toFixed(2)}</span>
                       </div>
                     )}
                     {pricing?.appliedCoupon?.rewardType === 'BOTH' && pricing?.appliedCoupon?.amount > 0 && (
                       <div className="flex justify-between text-sm text-green-600 font-medium">
                         <span>Wallet Cashback ({pricing.appliedCoupon.code})</span>
-                        <span>+{RUPEE_SYMBOL}{pricing.appliedCoupon.amount.toFixed(2)}</span>
+                        <span>-{RUPEE_SYMBOL}{pricing.appliedCoupon.amount.toFixed(2)}</span>
                       </div>
                     )}
                     {((pricing?.ruleCashback?.amount || 0) > 0) && (
                       <div className="flex justify-between text-sm text-green-600 font-medium">
                         <span>Order Cashback ({pricing.ruleCashback.name || 'Offer'})</span>
-                        <span>+{RUPEE_SYMBOL}{Number(pricing.ruleCashback.amount).toFixed(2)}</span>
+                        <span>-{RUPEE_SYMBOL}{Number(pricing.ruleCashback.amount).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {useWalletBalance && (selectedPaymentMethod === 'razorpay' || selectedPaymentMethod === 'cash') && walletBalance > 0 && (
+                      <div className="flex justify-between text-sm text-blue-600 font-medium">
+                        <span>Wallet Balance Deduction</span>
+                        <span>-{RUPEE_SYMBOL}{Math.min(walletBalance, total).toFixed(2)}</span>
                       </div>
                     )}
                     {/* Platform Pricing Comparison - Bottom */}
@@ -3302,7 +3308,9 @@ export default function Cart() {
             >
               {(selectedPaymentMethod === "razorpay" || selectedPaymentMethod === "wallet" || selectedPaymentMethod === "cash") && (
                 <div className="text-left flex flex-col justify-center border-r-[1.5px] border-white/20 pr-4">
-                  <span className="text-xs md:text-sm font-semibold text-white/90">{RUPEE_SYMBOL}{total.toFixed(2)}</span>
+                  <span className="text-xs md:text-sm font-semibold text-white/90">
+                    {RUPEE_SYMBOL}{((useWalletBalance && (selectedPaymentMethod === 'razorpay' || selectedPaymentMethod === 'cash')) ? Math.max(0, total - walletBalance) : total).toFixed(2)}
+                  </span>
                   <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-white/80 mt-[-2px]">Total</span>
                 </div>
               )}
@@ -3777,15 +3785,14 @@ export default function Cart() {
                         </button>
                       ))}
                     </div>
-
-                    <div
+                <div
                       className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center gap-4 bg-white dark:bg-[#1a1a1a]"
                       style={{ paddingBottom: "max(0.25rem, env(safe-area-inset-bottom, 0px))" }}
                     >
                       <div className="flex-shrink-0">
                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Total Pay</p>
                          <p className="text-xl font-black text-primary tabular-nums">
-                            {RUPEE_SYMBOL}{(useWalletBalance && selectedPaymentMethod === 'razorpay' ? Math.max(0, total - walletBalance) : total).toFixed(0)}
+                            {RUPEE_SYMBOL}{(useWalletBalance && (selectedPaymentMethod === 'razorpay' || selectedPaymentMethod === 'cash') ? Math.max(0, total - walletBalance) : total).toFixed(0)}
                          </p>
                        </div>
                        <Button
