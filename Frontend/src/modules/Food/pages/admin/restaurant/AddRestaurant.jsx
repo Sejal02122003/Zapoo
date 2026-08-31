@@ -6,6 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Button } from "@food/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@food/components/ui/select"
 import { adminAPI, uploadAPI, zoneAPI } from "@food/api"
 import AdminLocationMapPicker from "@food/components/admin/restaurants/AdminLocationMapPicker"
 import { toast } from "sonner"
@@ -959,23 +966,27 @@ export default function AddRestaurant() {
 
         <div>
           <Label className="text-xs text-gray-700">Service zone*</Label>
-          <select
-            value={step1.zoneId || ""}
-            onChange={(e) => setStep1({ ...step1, zoneId: e.target.value })}
-            className="mt-1 w-full h-9 rounded-md border border-input bg-white px-3 text-sm"
+          <Select
+            value={step1.zoneId ? String(step1.zoneId) : ""}
+            onValueChange={(val) => setStep1((prev) => ({ ...prev, zoneId: val }))}
             disabled={zonesLoading}
           >
-            <option value="">{zonesLoading ? "Loading zones..." : "Select a zone"}</option>
-            {zones.map((z) => {
-              const id = String(z?._id || z?.id || "")
-              const label = z?.name || z?.zoneName || z?.serviceLocation || id
-              return (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              )
-            })}
-          </select>
+            <SelectTrigger className="mt-1 w-full bg-white text-sm">
+              <SelectValue placeholder={zonesLoading ? "Loading zones..." : "Select a zone"} />
+            </SelectTrigger>
+            <SelectContent className="bg-white z-[9999] max-h-60">
+              {zones.map((z) => {
+                const id = String(z?._id || z?.id || "")
+                const label = z?.name || z?.zoneName || z?.serviceLocation || id
+                if (!id) return null
+                return (
+                  <SelectItem key={id} value={id}>
+                    {label}
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
           <p className="text-[11px] text-gray-500 mt-1">
             Choose the service zone where your restaurant will be available.
           </p>

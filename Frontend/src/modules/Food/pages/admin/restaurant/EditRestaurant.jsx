@@ -5,6 +5,13 @@ import AdminLocationMapPicker from "@food/components/admin/restaurants/AdminLoca
 import { Input } from "@food/components/ui/input"
 import { Button } from "@food/components/ui/button"
 import { Label } from "@food/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@food/components/ui/select"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { ArrowLeft, Loader2, Image as ImageIcon } from "lucide-react"
 
@@ -598,23 +605,27 @@ export default function EditRestaurant() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <Label>Service Zone*</Label>
-                  <select
-                    value={locationForm.zoneId || ""}
-                    onChange={(e) => setLocationForm((p) => ({ ...p, zoneId: e.target.value }))}
-                    className="mt-1 h-10 w-full rounded-md border border-input bg-white px-3 text-sm"
+                  <Select
+                    value={locationForm.zoneId ? String(locationForm.zoneId) : ""}
+                    onValueChange={(val) => setLocationForm((p) => ({ ...p, zoneId: val }))}
                     disabled={zonesLoading}
                   >
-                    <option value="">{zonesLoading ? "Loading zones..." : "Select a zone"}</option>
-                    {zones.map((z) => {
-                      const zid = normalizeZoneId(z?._id || z?.id)
-                      const label = z?.name || z?.zoneName || zid
-                      return (
-                        <option key={zid} value={zid}>
-                          {label}
-                        </option>
-                      )
-                    })}
-                  </select>
+                    <SelectTrigger className="mt-1 h-10 w-full bg-white text-sm">
+                      <SelectValue placeholder={zonesLoading ? "Loading zones..." : "Select a zone"} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-[9999] max-h-60">
+                      {zones.map((z) => {
+                        const zid = normalizeZoneId(z?._id || z?.id)
+                        const label = z?.name || z?.zoneName || zid
+                        if (!zid) return null
+                        return (
+                          <SelectItem key={zid} value={zid}>
+                            {label}
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="md:col-span-2 pt-2">

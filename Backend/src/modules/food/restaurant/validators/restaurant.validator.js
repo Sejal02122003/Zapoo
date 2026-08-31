@@ -4,7 +4,9 @@ import { ValidationError } from '../../../../core/auth/errors.js';
 const phoneSchema = z
     .string()
     .min(8, 'Phone must be at least 8 digits')
-    .max(15, 'Phone must be at most 15 digits');
+    .max(15, 'Phone must be at most 15 digits')
+    .optional()
+    .or(z.literal(''));
 
 const emailSchema = z.string().email('Invalid email').optional().or(z.literal(''));
 const requiredBooleanSchema = z.preprocess((value) => {
@@ -17,7 +19,7 @@ const requiredBooleanSchema = z.preprocess((value) => {
     return value;
 }, z.boolean({ required_error: 'Please select whether the restaurant is pure veg' }));
 
-const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+const panOrAadhaarRegex = /^([A-Z]{5}[0-9]{4}[A-Z]{1}|[0-9]{12})$/;
 
 const normalizeTimeValue = (value) => {
     const raw = String(value || '').trim();
@@ -84,7 +86,8 @@ const restaurantRegisterSchema = z.object({
         .transform((val) => (val ? val.split(',').map((d) => d.trim()).filter(Boolean) : [])),
     panNumber: z
         .string()
-        .regex(panRegex, 'Invalid PAN format')
+        .transform((val) => (typeof val === 'string' ? val.trim().toUpperCase().replace(/\s+/g, '') : ''))
+        .refine((val) => !val || panOrAadhaarRegex.test(val), { message: 'Invalid PAN or Aadhaar format' })
         .optional()
         .or(z.literal('')),
     nameOnPan: z.string().optional(),
@@ -96,7 +99,7 @@ const restaurantRegisterSchema = z.object({
     gstLegalName: z.string().optional(),
     gstAddress: z.string().optional(),
     fssaiNumber: z.string().optional(),
-    fssaiExpiry: z.string().optional(),
+    fssaiExpiry: z.string().optional().or(z.literal('')),
     accountNumber: z.string().optional(),
     ifscCode: z.string().optional(),
     accountHolderName: z.string().optional(),

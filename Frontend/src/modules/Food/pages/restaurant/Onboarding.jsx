@@ -1709,8 +1709,8 @@ function RestaurantOnboardingContent() {
         }
 
         // Step 3
-        formData.append("panNumber", step3.panNumber || "")
-        formData.append("nameOnPan", step3.nameOnPan || "")
+        formData.append("panNumber", (step3.panNumber || "").toUpperCase().replace(/\s+/g, ""))
+        formData.append("nameOnPan", (step3.nameOnPan || "").trim())
         if (!isUploadableFile(step3.panImage)) {
           throw new Error("PAN image is required")
         }
@@ -1718,25 +1718,25 @@ function RestaurantOnboardingContent() {
 
         formData.append("gstRegistered", step3.gstRegistered ? "true" : "false")
         if (step3.gstRegistered) {
-          formData.append("gstNumber", step3.gstNumber || "")
-          formData.append("gstLegalName", step3.gstLegalName || "")
-          formData.append("gstAddress", step3.gstAddress || "")
+          formData.append("gstNumber", (step3.gstNumber || "").toUpperCase().trim())
+          formData.append("gstLegalName", (step3.gstLegalName || "").trim())
+          formData.append("gstAddress", (step3.gstAddress || "").trim())
           if (!isUploadableFile(step3.gstImage)) {
             throw new Error("GST image is required when GST registered")
           }
           formData.append("gstImage", step3.gstImage)
         }
 
-        formData.append("fssaiNumber", step3.fssaiNumber || "")
+        formData.append("fssaiNumber", (step3.fssaiNumber || "").trim())
         formData.append("fssaiExpiry", step3.fssaiExpiry || "")
         if (!isUploadableFile(step3.fssaiImage)) {
           throw new Error("FSSAI image is required")
         }
         formData.append("fssaiImage", step3.fssaiImage)
 
-        formData.append("accountNumber", step3.accountNumber || "")
-        formData.append("ifscCode", (step3.ifscCode || "").toUpperCase())
-        formData.append("accountHolderName", step3.accountHolderName || "")
+        formData.append("accountNumber", (step3.accountNumber || "").trim())
+        formData.append("ifscCode", (step3.ifscCode || "").toUpperCase().trim())
+        formData.append("accountHolderName", (step3.accountHolderName || "").trim())
         formData.append("accountType", step3.accountType || "")
 
         await restaurantAPI.register(formData)
@@ -1761,6 +1761,7 @@ function RestaurantOnboardingContent() {
         err?.message ||
         "Failed to save onboarding data"
       setError(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }
@@ -2100,23 +2101,27 @@ function RestaurantOnboardingContent() {
 
           <div className="pt-2">
             <Label className="text-xs text-gray-700">Service zone*</Label>
-            <select
-              value={step1.zoneId || ""}
-              onChange={(e) => setStep1({ ...step1, zoneId: e.target.value })}
-              className="mt-1 w-full h-9 rounded-md border border-input bg-white px-3 text-sm disabled:opacity-50"
+            <Select
+              value={step1.zoneId ? String(step1.zoneId) : ""}
+              onValueChange={(val) => setStep1((prev) => ({ ...prev, zoneId: val }))}
               disabled={zonesLoading || !isEditing || !!step1.location?.latitude}
             >
-              <option value="">{zonesLoading ? "Loading zones..." : "Select a zone"}</option>
-              {zones.map((z) => {
-                const id = String(z?._id || z?.id || "")
-                const label = z?.name || z?.zoneName || z?.serviceLocation || id
-                return (
-                  <option key={id} value={id}>
-                    {label}
-                  </option>
-                )
-              })}
-            </select>
+              <SelectTrigger className="mt-1 w-full bg-white text-sm">
+                <SelectValue placeholder={zonesLoading ? "Loading zones..." : "Select a zone"} />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-[9999] max-h-60">
+                {zones.map((z) => {
+                  const id = String(z?._id || z?.id || "")
+                  const label = z?.name || z?.zoneName || z?.serviceLocation || id
+                  if (!id) return null
+                  return (
+                    <SelectItem key={id} value={id}>
+                      {label}
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
             <p className="text-[11px] text-gray-500 mt-1">
               Choose the service zone where your restaurant will be available.
             </p>

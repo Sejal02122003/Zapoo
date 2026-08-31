@@ -119,7 +119,7 @@ const outletSchema = new mongoose.Schema(
       default: [],
     },
     credentials: {
-      username: { type: String, trim: true, index: true },
+      username: { type: String, trim: true },
       passwordHash: { type: String },
       rawPasswordDisplay: { type: String }, // Stored for owner view display convenience
       contactPhone: { type: String, trim: true },
