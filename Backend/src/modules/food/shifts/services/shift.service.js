@@ -609,18 +609,24 @@ export const shiftService = {
                                    (partner?._id ? await shiftRepository.getAttendanceByRiderAndShift(partner._id, shiftId) : null);
                 const attendancePercentage = attendance ? (attendance.loginPercentage || 0) : 0;
 
-                // Query Orders in shift window (checking both dispatch.deliveryPartnerId and deliveryPartnerId with both case formats)
                 const completedOrdersCount = await FoodOrder.countDocuments({
-                    $or: [
-                        { 'dispatch.deliveryPartnerId': { $in: partnerIds } },
-                        { deliveryPartnerId: { $in: partnerIds } }
+                    $and: [
+                        {
+                            $or: [
+                                { 'dispatch.deliveryPartnerId': { $in: partnerIds } },
+                                { deliveryPartnerId: { $in: partnerIds } }
+                            ]
+                        },
+                        {
+                            $or: [
+                                { 'deliveryState.deliveredAt': { $gte: shift.startTime, $lte: shift.endTime } },
+                                { deliveredAt: { $gte: shift.startTime, $lte: shift.endTime } },
+                                { createdAt: { $gte: shift.startTime, $lte: shift.endTime } },
+                                { updatedAt: { $gte: shift.startTime, $lte: shift.endTime } }
+                            ]
+                        }
                     ],
-                    orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] },
-                    $or: [
-                        { deliveredAt: { $gte: shift.startTime, $lte: shift.endTime } },
-                        { createdAt: { $gte: shift.startTime, $lte: shift.endTime } },
-                        { updatedAt: { $gte: shift.startTime, $lte: shift.endTime } }
-                    ]
+                    orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] }
                 });
 
                 // Query Earnings in shift window
