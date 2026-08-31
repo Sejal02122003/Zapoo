@@ -66,6 +66,30 @@ async function listNearbyOnlineDeliveryPartners(
     return { restaurant: null, partners: [] };
   }
 
+  // Fetch active shift riders
+  let activeRiderIds = [];
+  try {
+    const { FoodShiftBooking } = await import('../../shifts/models/shiftBooking.model.js');
+    const { FoodShift } = await import('../../shifts/models/shift.model.js');
+    const now = new Date();
+    const activeBookings = await FoodShiftBooking.find({ status: 'BOOKED' }).lean();
+    if (activeBookings && activeBookings.length > 0) {
+      const shiftIds = [...new Set(activeBookings.map(b => b.shiftId.toString()))];
+      const activeShifts = await FoodShift.find({
+        _id: { $in: shiftIds },
+        startTime: { $lte: now },
+        endTime: { $gte: now }
+      }).lean();
+      const activeShiftIds = new Set(activeShifts.map(s => s._id.toString()));
+      const riderIds = activeBookings
+        .filter(b => activeShiftIds.has(b.shiftId.toString()))
+        .map(b => b.riderId.toString());
+      activeRiderIds = [...new Set(riderIds)].map(id => new mongoose.Types.ObjectId(id));
+    }
+  } catch (err) {
+    logger.error(`[Dispatch] Error fetching active shift riders: ${err.message}`);
+  }
+
   const [rLng, rLat] = Array.isArray(restaurant.location?.coordinates) && restaurant.location.coordinates.length === 2
     ? restaurant.location.coordinates
     : [null, null];
@@ -89,6 +113,7 @@ async function listNearbyOnlineDeliveryPartners(
                 { online: true }
               ],
               'lastLocation.coordinates': { $exists: true },
+              _id: { $in: activeRiderIds }
             },
           },
         },
@@ -133,7 +158,8 @@ async function listNearbyOnlineDeliveryPartners(
         $or: [
           { availabilityStatus: 'online' },
           { online: true }
-        ]
+        ],
+        _id: { $in: activeRiderIds }
       })
         .select('_id status lastLat lastLng lastLocation vehicleType zoneId')
         .lean();
