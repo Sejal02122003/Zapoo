@@ -313,7 +313,7 @@ export async function createOrder(userId, dto) {
     walletAmountToUse = normalizedPricing.total;
     normalizedPricing.walletAmountUsed = walletAmountToUse;
     payableAmount = 0;
-  } else if (dto.useWalletBalance && paymentMethod === "razorpay") {
+  } else if (dto.useWalletBalance && (paymentMethod === "razorpay" || paymentMethod === "cash")) {
     try {
       const wallet = await userWalletService.getUserWallet(userId);
       const balance = wallet ? wallet.balance : 0;
