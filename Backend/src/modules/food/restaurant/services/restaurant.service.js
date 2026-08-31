@@ -374,21 +374,27 @@ export const registerRestaurant = async (payload, files) => {
         const latNum = toFiniteNumber(latitude);
         const lngNum = toFiniteNumber(longitude);
 
-        // Allow retry: If a restaurant with the same name and phone exists but was rejected,
-        // delete it so the user can re-register without "number blocked" errors.
-        const existingRejected = await FoodRestaurant.findOne({
+        // Check if another different owner already has an approved restaurant with this exact name
+        const existingDifferentOwner = await FoodRestaurant.findOne({
+            restaurantNameNormalized,
+            ownerPhoneLast10: { $ne: ownerPhoneLast10 },
+            status: 'approved'
+        });
+        if (existingDifferentOwner) {
+            throw new ValidationError('An approved restaurant with this name already exists');
+        }
+
+        // Allow retry/re-registration: If a restaurant with the same owner phone exists,
+        // delete it so the user can re-register or update their onboarding details cleanly.
+        const existing = await FoodRestaurant.findOne({
             $or: [
                 { ownerPhoneDigits },
-                { restaurantNameNormalized, ownerPhoneLast10 }
+                { ownerPhoneLast10 }
             ]
         });
 
-        if (existingRejected) {
-            if (existingRejected.status === 'rejected') {
-                await FoodRestaurant.deleteOne({ _id: existingRejected._id });
-            } else {
-                throw new ValidationError('Restaurant with this name and owner phone already exists');
-            }
+        if (existing) {
+            await FoodRestaurant.deleteOne({ _id: existing._id });
         }
 
         const restaurant = await FoodRestaurant.create({
@@ -434,7 +440,7 @@ export const registerRestaurant = async (payload, files) => {
             gstLegalName,
             gstAddress,
             fssaiNumber,
-            fssaiExpiry,
+            fssaiExpiry: fssaiExpiry && !isNaN(new Date(fssaiExpiry).getTime()) ? new Date(fssaiExpiry) : undefined,
             accountNumber,
             ifscCode,
             accountHolderName,

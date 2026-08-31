@@ -6,6 +6,13 @@ import { clearModuleAuth } from "@food/utils/auth"
 import { normalizeImageUrl as commonNormalizeImageUrl } from "@food/utils/common"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { exportRestaurantsToPDF } from "@food/components/admin/restaurants/restaurantsExportUtils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@food/components/ui/select"
 import AdminLocationMapPicker from "@food/components/admin/restaurants/AdminLocationMapPicker"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 
@@ -2501,18 +2508,26 @@ export default function RestaurantsList() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div className="md:col-span-2">
                             <label className="block text-xs text-slate-600 mb-1 font-semibold">Service Zone*</label>
-                            <select
-                              value={locationForm.zoneId || ""}
-                              onChange={(e) => setLocationForm((prev) => ({ ...prev, zoneId: e.target.value }))}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
+                            <Select
+                              value={locationForm.zoneId ? String(locationForm.zoneId) : ""}
+                              onValueChange={(val) => setLocationForm((prev) => ({ ...prev, zoneId: val }))}
+                              disabled={zonesLoading}
                             >
-                              <option value="">{zonesLoading ? "Loading zones..." : "Select a zone"}</option>
-                              {zones.map((z) => (
-                                <option key={z._id || z.id} value={z._id || z.id}>
-                                  {z.name || z.zoneName || z.serviceLocation || "Zone"}
-                                </option>
-                              ))}
-                            </select>
+                              <SelectTrigger className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm">
+                                <SelectValue placeholder={zonesLoading ? "Loading zones..." : "Select a zone"} />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white z-[9999] max-h-60">
+                                {zones.map((z) => {
+                                  const zid = String(z._id || z.id || "")
+                                  if (!zid) return null
+                                  return (
+                                    <SelectItem key={zid} value={zid}>
+                                      {z.name || z.zoneName || z.serviceLocation || "Zone"}
+                                    </SelectItem>
+                                  )
+                                })}
+                              </SelectContent>
+                            </Select>
                           </div>
 
                           <div className="md:col-span-2 pt-2">

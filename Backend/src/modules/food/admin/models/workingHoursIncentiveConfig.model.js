@@ -28,8 +28,7 @@ const workingHoursIncentiveConfigSchema = new mongoose.Schema(
         },
         isDeleted: {
             type: Boolean,
-            default: false,
-            index: true
+            default: false
         }
     },
     { collection: 'food_working_hours_incentive_configs', timestamps: true }
