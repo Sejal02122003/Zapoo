@@ -3,7 +3,7 @@ import { sendResponse, sendError } from '../../../../utils/response.js';
 
 export async function deleteRestaurantAccountController(req, res) {
     try {
-        const userId = req.user?.userId;
+        const userId = req.user?.restaurantId || req.user?.userId;
         if (!userId) return sendError(res, 401, 'Authentication required');
 
         const result = await deleteRestaurantAccount(userId);

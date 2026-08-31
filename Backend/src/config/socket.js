@@ -77,7 +77,11 @@ export const initSocket = async (server) => {
                 tokenPreview: maskToken(token),
             });
             const decoded = verifyAccessToken(token);
-            socket.user = { userId: decoded.userId, role: decoded.role };
+            socket.user = { 
+                userId: decoded.userId, 
+                role: decoded.role,
+                restaurantId: decoded.restaurantId
+            };
             logger.info(`Socket auth success: ${decoded.role}:${decoded.userId} for socket ${socket.id}`);
             return next();
         } catch (err) {
@@ -124,7 +128,10 @@ export const initSocket = async (server) => {
 
         // Auto-join role rooms (lets us emit without a custom join).
         if (userId && role) {
-            if (role === 'RESTAURANT') socket.join(roomNames.restaurant(userId));
+            if (role === 'RESTAURANT') {
+                const restId = socket.user?.restaurantId || userId;
+                socket.join(roomNames.restaurant(restId));
+            }
             if (role === 'USER') socket.join(roomNames.user(userId));
             if (role === 'ADMIN') socket.join('admin'); // Admin panel broadcasts
             if (role === 'DELIVERY_PARTNER') {
@@ -150,7 +157,8 @@ export const initSocket = async (server) => {
         socket.on('join-restaurant', (restaurantId) => {
             if (socket.user?.role !== 'RESTAURANT') return;
             // Security: only join your own restaurant room.
-            if (String(socket.user?.userId) !== String(restaurantId)) return;
+            const allowedId = socket.user?.restaurantId || socket.user?.userId;
+            if (String(allowedId) !== String(restaurantId)) return;
             socket.join(roomNames.restaurant(restaurantId));
             socket.emit('restaurant-room-joined', { room: roomNames.restaurant(restaurantId), restaurantId: String(restaurantId) });
         });

@@ -4,7 +4,7 @@ import { sendResponse } from '../../../../utils/response.js';
 
 export async function getRestaurantLocationCoupons(req, res, next) {
     try {
-        const restaurantId = req.user.userId; // authMiddleware sets userId as the restaurantId for restaurant users
+        const restaurantId = req.user?.restaurantId || req.user?.userId; // support restaurantId for outlet users
         
         // Fetch all coupons for this restaurant
         const coupons = await LocationCoupon.find({ restaurantId }).sort({ createdAt: -1 }).lean();

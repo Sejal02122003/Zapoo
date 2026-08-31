@@ -7,7 +7,7 @@ import {
 
 export const getMenuController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const menu = await getRestaurantMenu(restaurantId);
         return sendResponse(res, 200, 'Menu fetched successfully', { menu });
     } catch (error) {
@@ -17,7 +17,7 @@ export const getMenuController = async (req, res, next) => {
 
 export const updateMenuController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const menu = await updateRestaurantMenu(restaurantId, req.body || {});
         return sendResponse(res, 200, 'Menu updated successfully', { menu });
     } catch (error) {

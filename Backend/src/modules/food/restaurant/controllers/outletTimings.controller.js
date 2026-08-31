@@ -12,7 +12,7 @@ export const getOutletTimingsByRestaurantIdController = async (req, res, next) =
 
 export const getCurrentRestaurantOutletTimingsController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const data = await getOutletTimingsForRestaurant(restaurantId);
         return sendResponse(res, 200, 'Outlet timings fetched successfully', data);
     } catch (error) {
@@ -22,7 +22,7 @@ export const getCurrentRestaurantOutletTimingsController = async (req, res, next
 
 export const upsertCurrentRestaurantOutletTimingsController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const data = await upsertOutletTimingsForRestaurant(restaurantId, req.body?.outletTimings);
         return sendResponse(res, 200, 'Outlet timings saved successfully', data);
     } catch (error) {

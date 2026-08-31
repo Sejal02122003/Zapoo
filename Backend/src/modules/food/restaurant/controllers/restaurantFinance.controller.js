@@ -3,7 +3,7 @@ import { getRestaurantFinance } from '../services/restaurantFinance.service.js';
 
 export const getRestaurantFinanceController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         if (!restaurantId) return sendError(res, 401, 'Restaurant authentication required');
 
         const data = await getRestaurantFinance(restaurantId, req.query || {});

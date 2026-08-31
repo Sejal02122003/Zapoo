@@ -10,7 +10,7 @@ import {
 
 export const listAddonsController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const query = validateAddonListQuery(req.query || {});
         const data = await listRestaurantAddons(restaurantId, query);
         return sendResponse(res, 200, 'Add-ons fetched successfully', data);
@@ -21,7 +21,7 @@ export const listAddonsController = async (req, res, next) => {
 
 export const createAddonController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const body = validateAddonCreateDto(req.body || {});
         const addon = await createRestaurantAddon(restaurantId, body);
         await invalidateCache('restaurant_addons:*');
@@ -33,7 +33,7 @@ export const createAddonController = async (req, res, next) => {
 
 export const updateAddonController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const body = validateAddonUpdateDto(req.body || {});
         const addon = await updateRestaurantAddon(restaurantId, req.params.id, body);
         if (!addon) return sendError(res, 404, 'Add-on not found');
@@ -46,7 +46,7 @@ export const updateAddonController = async (req, res, next) => {
 
 export const deleteAddonController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const result = await deleteRestaurantAddon(restaurantId, req.params.id);
         if (!result) return sendError(res, 404, 'Add-on not found');
         await invalidateCache('restaurant_addons:*');
