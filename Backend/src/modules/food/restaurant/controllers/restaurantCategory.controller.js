@@ -10,7 +10,7 @@ import { FoodRestaurant } from '../models/restaurant.model.js';
 
 export const listCategoriesController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         // Default to restaurant's zone when caller doesn't pass zoneId.
         // This returns (zone categories + global categories) instead of only global.
         const query = { ...(req.query || {}) };
@@ -35,7 +35,7 @@ export const listCategoriesController = async (req, res, next) => {
 
 export const createCategoryController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const category = await createRestaurantCategory(restaurantId, req.body || {});
         return sendResponse(res, 201, 'Category created successfully', { category });
     } catch (error) {
@@ -45,7 +45,7 @@ export const createCategoryController = async (req, res, next) => {
 
 export const updateCategoryController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const category = await updateRestaurantCategory(restaurantId, req.params.id, req.body || {});
         if (!category) return sendError(res, 404, 'Category not found');
         return sendResponse(res, 200, 'Category updated successfully', { category });
@@ -56,7 +56,7 @@ export const updateCategoryController = async (req, res, next) => {
 
 export const deleteCategoryController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const result = await deleteRestaurantCategory(restaurantId, req.params.id);
         if (!result) return sendError(res, 404, 'Category not found');
         return sendResponse(res, 200, 'Category deleted successfully', result);

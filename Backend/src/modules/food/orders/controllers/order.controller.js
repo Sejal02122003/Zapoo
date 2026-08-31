@@ -173,7 +173,7 @@ export async function listOrdersRestaurantController(req, res, next) {
 
 export async function getOrderByIdRestaurantController(req, res, next) {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const orderId = req.params.orderId;
         const order = await orderService.getOrderById(orderId, { restaurantId });
         return sendResponse(res, 200, 'Order retrieved', { order });
@@ -184,7 +184,7 @@ export async function getOrderByIdRestaurantController(req, res, next) {
 
 export async function updateOrderStatusRestaurantController(req, res, next) {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const orderId = req.params.orderId;
         const dto = validateOrderStatusDto(req.body);
         const order = await orderService.updateOrderStatusRestaurant(orderId, restaurantId, dto.orderStatus, dto.note);
@@ -444,7 +444,7 @@ export async function deleteOrderAdminController(req, res, next) {
 
 export async function resendDeliveryNotificationRestaurantController(req, res, next) {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const orderId = req.params.orderId;
         const result = await orderService.resendDeliveryNotificationRestaurant(orderId, restaurantId);
         return sendResponse(res, 200, 'Notification resent successfully', result);

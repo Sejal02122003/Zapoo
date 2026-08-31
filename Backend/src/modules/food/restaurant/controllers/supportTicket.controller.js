@@ -8,7 +8,7 @@ const ALLOWED_STATUSES = ['open', 'in-progress', 'resolved'];
 
 export const createRestaurantSupportTicketController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         if (!restaurantId || !mongoose.Types.ObjectId.isValid(restaurantId)) {
             return sendError(res, 401, 'Unauthorized');
         }
@@ -51,7 +51,7 @@ export const createRestaurantSupportTicketController = async (req, res, next) =>
 
 export const listRestaurantSupportTicketsController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         if (!restaurantId || !mongoose.Types.ObjectId.isValid(restaurantId)) {
             return sendError(res, 401, 'Unauthorized');
         }

@@ -5,7 +5,7 @@ import { getRestaurantFinance } from '../services/restaurantFinance.service.js';
 
 export const createWithdrawalRequestController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const { amount, bankDetails } = req.body;
 
         if (!restaurantId) return sendError(res, 401, 'Restaurant authentication required');
@@ -47,7 +47,7 @@ export const createWithdrawalRequestController = async (req, res, next) => {
 
 export const listMyWithdrawalsController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         if (!restaurantId) return sendError(res, 401, 'Restaurant authentication required');
 
         const withdrawals = await FoodRestaurantWithdrawal.find({ restaurantId })

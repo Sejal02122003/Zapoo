@@ -4,7 +4,7 @@ import { sendResponse } from '../../../../utils/response.js';
 
 export async function getSellerActivePromotions(req, res, next) {
     try {
-        const restaurantId = req.user?.restaurantId || req.user?.id || req.user?._id;
+        const restaurantId = req.user?.restaurantId || req.user?.userId;
         const now = new Date();
 
         // Active coupons for this seller's restaurant
