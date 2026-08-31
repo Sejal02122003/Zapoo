@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect } from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import ProtectedRoute from "@food/components/ProtectedRoute"
+import { getCurrentUser } from "@food/utils/auth"
 import Loader from "@food/components/Loader"
 import { Loader2 } from "lucide-react"
 import GlobalPickupOtpModal from "./GlobalPickupOtpModal"
@@ -66,6 +67,14 @@ const OwnerInventoryPage = lazy(() => import("@food/pages/restaurant/owner/Owner
 const OwnerFinancePage = lazy(() => import("@food/pages/restaurant/owner/OwnerFinancePage"))
 const OwnerAnalyticsPage = lazy(() => import("@food/pages/restaurant/owner/OwnerAnalyticsPage"))
 
+function RestaurantRootRedirector() {
+  const user = getCurrentUser("restaurant")
+  if (user && (user.role === "OWNER" || user.isOwner || (!user.outletId && user.role !== "OUTLETER"))) {
+    return <Navigate to="/food/restaurant/owner" replace />
+  }
+  return <OrdersMain />
+}
+
 export default function RestaurantRouter() {
   useEffect(() => {
     let link = document.querySelector("link[rel~='icon']")
@@ -119,7 +128,7 @@ export default function RestaurantRouter() {
             <Route path="owner/finance" element={<OwnerFinancePage />} />
             <Route path="owner/analytics" element={<OwnerAnalyticsPage />} />
 
-            <Route path="" element={<OrdersMain />} />
+            <Route path="" element={<RestaurantRootRedirector />} />
             <Route path="orders/all" element={<AllOrdersPage />} />
             <Route path="orders/:id" element={<OrderDetails />} />
             <Route path="notifications" element={<RestaurantNotifications />} />
