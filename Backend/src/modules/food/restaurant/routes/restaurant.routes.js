@@ -67,7 +67,8 @@ import { cacheResponse, invalidateCache } from '../../../../middleware/cache.js'
 const router = express.Router();
 
 const requireRestaurant = (req, res, next) => {
-    if (req.user?.role !== 'RESTAURANT') {
+    const role = req.user?.role;
+    if (role !== 'RESTAURANT' && role !== 'OWNER' && role !== 'OUTLETER' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
         return sendError(res, 403, 'Restaurant access required');
     }
     next();

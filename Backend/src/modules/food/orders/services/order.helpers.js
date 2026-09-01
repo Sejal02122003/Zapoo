@@ -302,6 +302,8 @@ export async function notifyRestaurantNewOrder(orderDoc) {
 
     const io = getIO();
     const restId = String(orderDoc.restaurantId?._id || orderDoc.restaurantId || '').trim();
+    const outletId = String(orderDoc.outletId?._id || orderDoc.outletId || '').trim();
+
     if (io && restId) {
       const rawDoc = typeof orderDoc.toObject === 'function' ? orderDoc.toObject() : orderDoc;
       const payload = {
@@ -310,20 +312,37 @@ export async function notifyRestaurantNewOrder(orderDoc) {
         orderId: rawDoc.order_id || rawDoc.orderId || rawDoc._id?.toString?.(),
       };
       logger.info(
-        `[RestaurantOrders] Emitting new_order & play_notification_sound to restaurant:${restId} for order ${payload.orderId}`,
+        `[RestaurantOrders] Emitting new_order & play_notification_sound to restaurant:${restId} (outlet:${outletId || 'none'}) for order ${payload.orderId}`,
       );
-      // Emit to named room and raw ID
+      // Emit to named room and raw ID for parent restaurant
       io.to(rooms.restaurant(restId)).emit("new_order", payload);
       io.to(rooms.restaurant(restId)).emit("food:order:restaurant_new_order", payload);
       io.to(rooms.restaurant(restId)).emit("play_notification_sound", payload);
       io.to(`restaurant:${restId}`).emit("new_order", payload);
       io.to(`restaurant:${restId}`).emit("food:order:restaurant_new_order", payload);
       io.to(`restaurant:${restId}`).emit("play_notification_sound", payload);
+
+      // Also emit directly to the specific outlet rooms if assigned
+      if (outletId) {
+        io.to(rooms.restaurant(outletId)).emit("new_order", payload);
+        io.to(rooms.restaurant(outletId)).emit("food:order:restaurant_new_order", payload);
+        io.to(rooms.restaurant(outletId)).emit("play_notification_sound", payload);
+        io.to(`restaurant:${outletId}`).emit("new_order", payload);
+        io.to(`restaurant:${outletId}`).emit("food:order:restaurant_new_order", payload);
+        io.to(`restaurant:${outletId}`).emit("play_notification_sound", payload);
+        io.to(`outlet:${outletId}`).emit("new_order", payload);
+        io.to(`outlet:${outletId}`).emit("food:order:restaurant_new_order", payload);
+        io.to(`outlet:${outletId}`).emit("play_notification_sound", payload);
+      }
     }
 
-    if (restId) {
+    const notifyTargets = [];
+    if (restId) notifyTargets.push({ ownerType: "RESTAURANT", ownerId: restId });
+    if (outletId) notifyTargets.push({ ownerType: "RESTAURANT", ownerId: outletId });
+
+    if (notifyTargets.length > 0) {
       await notifyOwnersSafely(
-        [{ ownerType: "RESTAURANT", ownerId: restId }],
+        notifyTargets,
         {
           title: "New order received! 🔔",
           body: `Order #${orderDoc.order_id || orderDoc._id} is waiting for review.`,
