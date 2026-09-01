@@ -85,6 +85,11 @@ export const normalizeImageUrl = (imageUrl, backendOrigin = "") => {
     }
   }
 
+  // Leave Vite frontend assets alone
+  if (normalized.startsWith("/src/") || normalized.startsWith("/assets/") || normalized.startsWith("/node_modules/")) {
+    return normalized;
+  }
+
   const absolutePath = normalized.startsWith("/")
     ? `${effectiveBackendOrigin}${normalized}`
     : `${effectiveBackendOrigin}/${normalized.replace(/^\.?\/*/, "")}`;
