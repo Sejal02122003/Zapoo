@@ -4,6 +4,7 @@ import { FoodOutlet } from "../models/outlet.model.js";
 import { FoodRestaurant } from "../../restaurant/models/restaurant.model.js";
 import { FoodOrder } from "../../orders/models/order.model.js";
 import { FoodRestaurantMenu } from "../../restaurant/models/restaurantMenu.model.js";
+import { FoodItem } from "../../admin/models/food.model.js";
 import { ValidationError, NotFoundError, AuthError } from "../../../../core/auth/errors.js";
 
 /**
@@ -540,38 +541,79 @@ export async function getOwnerInventory(restaurantId, query = {}) {
   if (!restaurantId) throw new ValidationError("Restaurant ID is required");
 
   const restObjectId = new mongoose.Types.ObjectId(restaurantId);
-  const menuDoc = await FoodRestaurantMenu.findOne({ restaurantId: restObjectId }).lean();
 
   const outlets = await FoodOutlet.find({ restaurantId: restObjectId })
     .select("name outletCode status")
     .lean();
 
-  const sections = menuDoc?.sections || [];
+  // Query live menu items from FoodItem collection
+  const foodItems = await FoodItem.find({
+    restaurantId: restObjectId,
+    approvalStatus: { $ne: "rejected" },
+  })
+    .populate("categoryId", "name")
+    .sort({ createdAt: -1 })
+    .lean();
+
   let totalItems = 0;
   let inStockItems = 0;
   let outOfStockItems = 0;
-
   const itemsList = [];
 
-  sections.forEach((section) => {
-    const items = section.items || [];
-    items.forEach((item) => {
+  if (foodItems && foodItems.length > 0) {
+    foodItems.forEach((item) => {
       totalItems++;
-      const isAvailable = item.isAvailable !== false && item.inStock !== false;
+      const isAvailable = item.isAvailable !== false;
       if (isAvailable) inStockItems++;
       else outOfStockItems++;
 
+      const category =
+        item.categoryName || item.categoryId?.name || item.category || "Main Menu";
+
       itemsList.push({
-        _id: item.itemId || item._id,
+        _id: item._id,
+        id: String(item._id),
         name: item.name,
-        category: section.categoryName || section.title || "Main Menu",
+        category,
         price: item.price,
-        isVeg: Boolean(item.isVeg),
+        isVeg: item.foodType === "Veg" || item.isVeg === true,
+        foodType: item.foodType || "Non-Veg",
         isAvailable,
-        stock: item.stockCount !== undefined ? item.stockCount : 50,
+        stock: isAvailable ? 50 : 0,
+        image: item.image || "",
+        description: item.description || "",
+        variants: item.variants || [],
       });
     });
-  });
+  } else {
+    // Fallback to legacy FoodRestaurantMenu if exists
+    const menuDoc = await FoodRestaurantMenu.findOne({ restaurantId: restObjectId }).lean();
+    const sections = menuDoc?.sections || [];
+
+    sections.forEach((section) => {
+      const items = section.items || [];
+      items.forEach((item) => {
+        totalItems++;
+        const isAvailable = item.isAvailable !== false && item.inStock !== false;
+        if (isAvailable) inStockItems++;
+        else outOfStockItems++;
+
+        itemsList.push({
+          _id: item.itemId || item._id,
+          id: String(item.itemId || item._id),
+          name: item.name,
+          category: section.categoryName || section.title || "Main Menu",
+          price: item.price,
+          isVeg: Boolean(item.isVeg),
+          foodType: item.isVeg ? "Veg" : "Non-Veg",
+          isAvailable,
+          stock: item.stockCount !== undefined ? item.stockCount : 50,
+          image: item.image || "",
+          description: item.description || "",
+        });
+      });
+    });
+  }
 
   return {
     summary: {
