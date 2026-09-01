@@ -329,7 +329,87 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
     ...(last10 ? [{ [field]: { $regex: new RegExp(last10 + "$") } }] : []),
   ];
 
-  // 1. Check if phone belongs to an Outlet (Outleter role)
+  // 1. Check if phone belongs to Parent Restaurant Owner FIRST
+  const restaurant = await FoodRestaurant.findOne({
+    $or: [
+      ...phoneOrFields("ownerPhone"),
+      ...phoneOrFields("primaryContactNumber"),
+      ...phoneOrFields("ownerPhoneDigits"),
+      ...phoneOrFields("ownerPhoneLast10"),
+    ],
+  });
+
+  if (restaurant) {
+    if (fcmToken) {
+      let isModified = false;
+      if (platform === "mobile") {
+        if (!restaurant.fcmTokenMobile) restaurant.fcmTokenMobile = [];
+        if (!restaurant.fcmTokenMobile.includes(fcmToken)) {
+          restaurant.fcmTokenMobile.push(fcmToken);
+          isModified = true;
+        }
+      } else {
+        if (!restaurant.fcmTokens) restaurant.fcmTokens = [];
+        if (!restaurant.fcmTokens.includes(fcmToken)) {
+          restaurant.fcmTokens.push(fcmToken);
+          isModified = true;
+        }
+      }
+      if (isModified) {
+        await restaurant.save();
+      }
+    }
+
+    const isLegacyRestaurant = restaurant.createdAt && new Date(restaurant.createdAt) < new Date("2026-05-26T00:00:00Z");
+    if (restaurant.status && restaurant.status !== "approved" && !isLegacyRestaurant) {
+      return {
+        pendingApproval: true,
+        status: restaurant.status,
+        isRejected: restaurant.status === "rejected",
+        rejectionReason: restaurant.rejectionReason || null,
+        phone,
+      };
+    }
+
+    const payload = {
+      userId: restaurant._id.toString(),
+      role: ROLES.RESTAURANT,
+      ownerRole: "OWNER",
+      restaurantId: restaurant._id.toString(),
+      outletId: null,
+      isOwner: true,
+    };
+    const accessToken = signAccessToken(payload);
+    const refreshToken = signRefreshToken(payload);
+    const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
+    const expiresAt = new Date(Date.now() + ttlMs);
+
+    await FoodRefreshToken.create({
+      userId: restaurant._id,
+      token: refreshToken,
+      expiresAt,
+    });
+
+    const rawUser = sanitizeRestaurantForAuthResponse(restaurant?.toObject?.() || restaurant);
+    const userObj = {
+      ...rawUser,
+      role: "OWNER",
+      isOwner: true,
+      restaurantId: restaurant._id.toString(),
+      outletId: null,
+      permissions: ["*"],
+    };
+
+    return {
+      token: accessToken,
+      accessToken,
+      refreshToken,
+      user: userObj,
+      needsRegistration: false,
+    };
+  }
+
+  // 2. If not Owner, check if phone belongs to an Outlet (Outleter role)
   const outletDoc = await FoodOutlet.findOne({
     $or: [
       { phone: { $in: phoneCandidates } },
@@ -408,91 +488,10 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
     };
   }
 
-  // 2. Check if phone belongs to Parent Restaurant Owner
-  const restaurant = await FoodRestaurant.findOne({
-    $or: [
-      ...phoneOrFields("ownerPhone"),
-      ...phoneOrFields("primaryContactNumber"),
-      ...phoneOrFields("ownerPhoneDigits"),
-      ...phoneOrFields("ownerPhoneLast10"),
-    ],
-  });
-  const restaurantDoc = restaurant;
-  if (!restaurantDoc) {
-    return {
-      needsRegistration: true,
-      phone,
-    };
-  }
-
-  // Update FCM token if provided
-  if (fcmToken) {
-    let isModified = false;
-    if (platform === "mobile") {
-      if (!restaurantDoc.fcmTokenMobile) restaurantDoc.fcmTokenMobile = [];
-      if (!restaurantDoc.fcmTokenMobile.includes(fcmToken)) {
-        restaurantDoc.fcmTokenMobile.push(fcmToken);
-        isModified = true;
-      }
-    } else {
-      if (!restaurantDoc.fcmTokens) restaurantDoc.fcmTokens = [];
-      if (!restaurantDoc.fcmTokens.includes(fcmToken)) {
-        restaurantDoc.fcmTokens.push(fcmToken);
-        isModified = true;
-      }
-    }
-    if (isModified) {
-      await restaurantDoc.save();
-    }
-  }
-
-  // If restaurant approval status is used, handle pending/rejected states by returning info instead of throwing errors.
-  const isLegacyRestaurant = restaurantDoc.createdAt && new Date(restaurantDoc.createdAt) < new Date("2026-05-26T00:00:00Z");
-  if (restaurantDoc.status && restaurantDoc.status !== "approved" && !isLegacyRestaurant) {
-    return {
-      pendingApproval: true,
-      status: restaurantDoc.status,
-      isRejected: restaurantDoc.status === "rejected",
-      rejectionReason: restaurantDoc.rejectionReason || null,
-      phone,
-    };
-  }
-
-  const payload = {
-    userId: restaurantDoc._id.toString(),
-    role: ROLES.RESTAURANT,
-    ownerRole: "OWNER",
-    restaurantId: restaurantDoc._id.toString(),
-    outletId: null,
-    isOwner: true,
-  };
-  const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken(payload);
-  const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
-  const expiresAt = new Date(Date.now() + ttlMs);
-
-  await FoodRefreshToken.create({
-    userId: restaurantDoc._id,
-    token: refreshToken,
-    expiresAt,
-  });
-
-  const rawUser = sanitizeRestaurantForAuthResponse(restaurantDoc?.toObject?.() || restaurantDoc);
-  const userObj = {
-    ...rawUser,
-    role: "OWNER",
-    isOwner: true,
-    restaurantId: restaurantDoc._id.toString(),
-    outletId: null,
-    permissions: ["*"],
-  };
-
+  // 3. If neither, they need registration
   return {
-    token: accessToken,
-    accessToken,
-    refreshToken,
-    user: userObj,
-    needsRegistration: false,
+    needsRegistration: true,
+    phone,
   };
 };
 
