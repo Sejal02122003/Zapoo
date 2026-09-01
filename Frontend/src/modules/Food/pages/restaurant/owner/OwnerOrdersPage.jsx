@@ -15,10 +15,12 @@ import {
   Clock, 
   XCircle, 
   Loader2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Check,
+  X
 } from "lucide-react"
 import { toast } from "sonner"
-import { ownerAPI } from "@food/api"
+import { ownerAPI, restaurantAPI } from "@food/api"
 import OwnerNav from "@food/components/restaurant/owner/OwnerNav"
 import AddOutletModal from "@food/components/restaurant/owner/AddOutletModal"
 
@@ -75,6 +77,8 @@ export default function OwnerOrdersPage() {
     }
   }
 
+  const [actionOrderId, setActionOrderId] = useState(null)
+
   useEffect(() => {
     fetchOutlets()
   }, [])
@@ -82,6 +86,45 @@ export default function OwnerOrdersPage() {
   useEffect(() => {
     fetchOrders()
   }, [page, statusFilter, selectedOutletId, search])
+
+  // Auto-refresh when order status updates from modal or socket
+  useEffect(() => {
+    const handleOrderUpdate = () => {
+      fetchOrders()
+    }
+    window.addEventListener("restaurantOrderStatusUpdate", handleOrderUpdate)
+    return () => window.removeEventListener("restaurantOrderStatusUpdate", handleOrderUpdate)
+  }, [])
+
+  const handleAcceptOrder = async (e, orderId) => {
+    e.stopPropagation()
+    if (!orderId || actionOrderId) return
+    setActionOrderId(orderId)
+    try {
+      await restaurantAPI.acceptOrder(orderId)
+      toast.success("Order accepted successfully! 🎉")
+      fetchOrders()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to accept order")
+    } finally {
+      setActionOrderId(null)
+    }
+  }
+
+  const handleRejectOrder = async (e, orderId) => {
+    e.stopPropagation()
+    if (!orderId || actionOrderId) return
+    setActionOrderId(orderId)
+    try {
+      await restaurantAPI.rejectOrder(orderId, "Restaurant busy")
+      toast.error("Order rejected")
+      fetchOrders()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to reject order")
+    } finally {
+      setActionOrderId(null)
+    }
+  }
 
   const handleSelectOutlet = (id) => {
     setSelectedOutletId(id)
@@ -250,7 +293,7 @@ export default function OwnerOrdersPage() {
                     </div>
 
                     {/* Right Price & Status */}
-                    <div className="flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between md:justify-end gap-4 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800">
                       <div className="text-left md:text-right">
                         <p className="text-lg font-black text-slate-900 dark:text-white font-['Outfit']">
                           ₹{Number(order.pricing?.total || 0).toLocaleString()}
@@ -260,15 +303,45 @@ export default function OwnerOrdersPage() {
                         </p>
                       </div>
 
-                      <span className={`text-xs font-black uppercase px-3 py-1.5 rounded-xl tracking-wider ${
-                        order.orderStatus === 'completed' || order.orderStatus === 'delivered'
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'
-                          : order.orderStatus === 'cancelled_by_user' || order.orderStatus === 'cancelled_by_restaurant'
-                          ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400'
-                          : 'bg-[#22A2E3]/15 text-[#22A2E3]'
-                      }`}>
-                        {order.orderStatus?.replace(/_/g, " ")}
-                      </span>
+                      {/* Quick Action Buttons for Newly Received Orders */}
+                      {(order.orderStatus === 'created' || order.orderStatus === 'placed' || order.orderStatus === 'pending') ? (
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => handleRejectOrder(e, order._id)}
+                            disabled={actionOrderId === order._id}
+                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 rounded-xl text-xs font-black border border-rose-200 dark:border-rose-800 flex items-center gap-1 transition-all disabled:opacity-50"
+                            title="Reject Order"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>Reject</span>
+                          </button>
+                          <button
+                            onClick={(e) => handleAcceptOrder(e, order._id)}
+                            disabled={actionOrderId === order._id}
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-sm flex items-center gap-1 transition-all disabled:opacity-50"
+                            title="Accept Order"
+                          >
+                            {actionOrderId === order._id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <>
+                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                <span>Accept</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className={`text-xs font-black uppercase px-3 py-1.5 rounded-xl tracking-wider ${
+                          order.orderStatus === 'completed' || order.orderStatus === 'delivered'
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'
+                            : order.orderStatus === 'cancelled_by_user' || order.orderStatus === 'cancelled_by_restaurant'
+                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400'
+                            : 'bg-[#22A2E3]/15 text-[#22A2E3]'
+                        }`}>
+                          {order.orderStatus?.replace(/_/g, " ")}
+                        </span>
+                      )}
                     </div>
                   </div>
                 )
