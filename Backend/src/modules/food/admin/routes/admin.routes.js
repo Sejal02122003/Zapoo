@@ -292,6 +292,7 @@ router.patch('/dining/requests/:id/reject', diningAdminController.rejectDiningRe
 // ----- Orders -----
 router.get('/orders', orderController.listOrdersAdminController);
 router.get('/orders/:orderId', orderController.getOrderByIdAdminController);
+router.patch('/orders/:orderId/status', orderController.updateOrderStatusAdminController);
 router.patch('/orders/:orderId/update-status', orderController.updateOrderStatusAdminController);
 router.delete('/orders/:orderId', orderController.deleteOrderAdminController);
 router.post('/orders/:orderId/cancel', orderController.cancelOrderAdminController);

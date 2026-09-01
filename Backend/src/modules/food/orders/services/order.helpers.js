@@ -103,8 +103,15 @@ export async function notifyOwnerSafely(target, payload) {
 export function buildOrderIdentityFilter(orderIdOrMongoId) {
   const raw = String(orderIdOrMongoId || "").trim();
   if (!raw) return null;
-  if (mongoose.isValidObjectId(raw))
-    return { _id: new mongoose.Types.ObjectId(raw) };
+  if (mongoose.isValidObjectId(raw)) {
+    return {
+      $or: [
+        { _id: new mongoose.Types.ObjectId(raw) },
+        { order_id: raw },
+        { orderId: raw }
+      ]
+    };
+  }
   
   // Search BOTH underscore and camelCase variants for robust lookup
   return { 
@@ -382,6 +389,8 @@ export async function notifyUserNewOrder(orderDoc) {
 }
 
 export const STATUS_PRIORITY = {
+  pending: 10,
+  placed: 10,
   created: 10,
   confirmed: 20,
   preparing: 30,
@@ -406,6 +415,9 @@ export function isStatusAdvance(current, next) {
   // If current status is missing, it's effectively 'created' or start of flow
   if (!current) return true;
   
+  // Same status update (idempotent action like reaffirming confirmation) is allowed
+  if (current === next) return true;
+  
   const currentPrio = STATUS_PRIORITY[current] || 0;
   const nextPrio = STATUS_PRIORITY[next] || 0;
 
@@ -418,5 +430,5 @@ export function isStatusAdvance(current, next) {
   // Special case: Cancellation is almost always an advance unless already delivered
   if (nextPrio === 100 && currentPrio < 80) return true;
 
-  return nextPrio > currentPrio;
+  return nextPrio >= currentPrio;
 }

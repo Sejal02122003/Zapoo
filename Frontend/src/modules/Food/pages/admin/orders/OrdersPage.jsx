@@ -1111,10 +1111,10 @@ export default function OrdersPage({ statusKey = "all" }) {
         onViewOrder={handleViewOrder}
         onPrintOrder={handlePrintOrder}
         onRefund={handleRefund}
-        onDeleteOrder={statusKey === "all" ? handleDeleteOrder : undefined}
+        onDeleteOrder={handleDeleteOrder}
         onCancelOrder={handleCancelOrder}
-        onAcceptOrder={statusKey === "all" ? handleAcceptOrder : undefined}
-        onRejectOrder={statusKey === "all" ? handleRejectOrder : undefined}
+        onAcceptOrder={handleAcceptOrder}
+        onRejectOrder={handleRejectOrder}
         onAssignDelivery={handleAssignDelivery}
         onEmergencyBroadcast={handleEmergencyBroadcast}
         actionLoadingOrderId={processingActionOrderId}
