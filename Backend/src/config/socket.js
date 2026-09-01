@@ -128,12 +128,15 @@ export const initSocket = async (server) => {
 
         // Auto-join role rooms (lets us emit without a custom join).
         if (userId && role) {
-            if (role === 'RESTAURANT') {
+            if (role === 'RESTAURANT' || role === 'OWNER') {
                 const restId = socket.user?.restaurantId || userId;
-                socket.join(roomNames.restaurant(restId));
+                if (restId) {
+                    socket.join(roomNames.restaurant(restId));
+                    socket.join(`restaurant:${restId}`);
+                }
             }
             if (role === 'USER') socket.join(roomNames.user(userId));
-            if (role === 'ADMIN') socket.join('admin'); // Admin panel broadcasts
+            if (role === 'ADMIN' || role === 'SUPER_ADMIN') socket.join('admin'); // Admin panel broadcasts
             if (role === 'DELIVERY_PARTNER') {
                 socket.join(roomNames.delivery(userId));
                 socket.join('all_delivery'); // Global delivery broadcast room
@@ -155,11 +158,13 @@ export const initSocket = async (server) => {
 
         // Explicit join (used by existing restaurant client hook).
         socket.on('join-restaurant', (restaurantId) => {
-            if (socket.user?.role !== 'RESTAURANT') return;
+            const role = socket.user?.role;
+            if (role !== 'RESTAURANT' && role !== 'OWNER' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') return;
             // Security: only join your own restaurant room.
             const allowedId = socket.user?.restaurantId || socket.user?.userId;
-            if (String(allowedId) !== String(restaurantId)) return;
+            if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && String(allowedId) !== String(restaurantId)) return;
             socket.join(roomNames.restaurant(restaurantId));
+            socket.join(`restaurant:${restaurantId}`);
             socket.emit('restaurant-room-joined', { room: roomNames.restaurant(restaurantId), restaurantId: String(restaurantId) });
         });
 

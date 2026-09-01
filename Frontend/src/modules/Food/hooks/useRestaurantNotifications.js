@@ -970,16 +970,13 @@ export const useRestaurantNotifications = () => {
 
   const playNotificationSound = async (orderData = {}) => {
     try {
-      const usedNativeBridge = await triggerWebViewNativeNotification(orderData);
+      await triggerWebViewNativeNotification(orderData);
       if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
         try {
           navigator.vibrate([300, 150, 300, 150, 500]);
         } catch (e) {
           // Ignore vibration errors
         }
-      }
-      if (usedNativeBridge) {
-        return;
       }
 
       await playRestaurantOrderNotificationAlarm();
