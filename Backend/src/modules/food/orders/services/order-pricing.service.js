@@ -40,11 +40,20 @@ export async function calculateOrderPricing(userId, dto) {
     
     // Base original price of item or variant
     let basePrice = 0;
-    if (it.variantPrice != null && Number(it.variantPrice) > 0) {
-      basePrice = Number(it.variantPrice);
+    if (it.variantId) {
+      const vDoc = foodDoc?.variants?.find((v) => String(v._id) === String(it.variantId));
+      if (vDoc && vDoc.price != null && Number(vDoc.price) > 0) {
+        basePrice = Number(vDoc.price);
+      } else if (it.originalPrice != null && Number(it.originalPrice) > 0) {
+        basePrice = Number(it.originalPrice);
+      } else if (it.variantPrice != null && Number(it.variantPrice) > 0) {
+        basePrice = Number(it.variantPrice);
+      } else {
+        basePrice = Number(it.price) || 0;
+      }
     } else if (it.originalPrice != null && Number(it.originalPrice) > 0) {
       basePrice = Number(it.originalPrice);
-    } else if (foodDoc && foodDoc.price != null) {
+    } else if (foodDoc && foodDoc.price != null && Number(foodDoc.price) > 0) {
       basePrice = Number(foodDoc.price);
     } else {
       basePrice = Number(it.price) || 0;
@@ -144,7 +153,7 @@ export async function calculateOrderPricing(userId, dto) {
     it.discountedPrice = discountedUnitPrice;
     it.discount = lineDiscount;
   }
-  itemDiscountTotal = Math.floor(itemDiscountTotal);
+  itemDiscountTotal = Math.round(itemDiscountTotal * 100) / 100;
 
   const feeDoc = await FoodFeeSettings.findOne({ isActive: true })
     .sort({ createdAt: -1 })

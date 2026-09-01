@@ -85,9 +85,9 @@ const normalizeCartData = (rawCart) => {
           : typeof item.variant?.name === "string"
             ? item.variant.name
             : ""
-      const parsedVariantPrice = Number(
-        item.variantPrice ?? item.variant?.price ?? item.price,
-      )
+      const parsedVariantPrice = variantId
+        ? Number(item.variantPrice ?? item.variant?.price ?? item.originalPrice ?? item.price)
+        : undefined
       const lineItemId =
         item.lineItemId ||
         item.cartLineId ||
@@ -101,7 +101,7 @@ const normalizeCartData = (rawCart) => {
         productId: String(baseItemId),
         variantId: variantId ? String(variantId) : "",
         variantName,
-        variantPrice: Number.isFinite(parsedVariantPrice) ? parsedVariantPrice : 0,
+        variantPrice: variantId && Number.isFinite(parsedVariantPrice) ? parsedVariantPrice : undefined,
         name: item.name || item.product?.name || "Item",
         quantity:
           Number.isFinite(parsedQuantity) && parsedQuantity > 0
