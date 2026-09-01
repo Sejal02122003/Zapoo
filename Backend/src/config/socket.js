@@ -134,6 +134,12 @@ export const initSocket = async (server) => {
                     socket.join(roomNames.restaurant(restId));
                     socket.join(`restaurant:${restId}`);
                 }
+                const outId = socket.user?.outletId;
+                if (outId) {
+                    socket.join(roomNames.restaurant(outId));
+                    socket.join(`restaurant:${outId}`);
+                    socket.join(`outlet:${outId}`);
+                }
             }
             if (role === 'USER') socket.join(roomNames.user(userId));
             if (role === 'ADMIN' || role === 'SUPER_ADMIN') socket.join('admin'); // Admin panel broadcasts
@@ -160,11 +166,18 @@ export const initSocket = async (server) => {
         socket.on('join-restaurant', (restaurantId) => {
             const role = socket.user?.role;
             if (role !== 'RESTAURANT' && role !== 'OWNER' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') return;
-            // Security: only join your own restaurant room.
+            // Security: only join your own restaurant room or outlet room.
             const allowedId = socket.user?.restaurantId || socket.user?.userId;
-            if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && String(allowedId) !== String(restaurantId)) return;
+            const outletId = socket.user?.outletId;
+            if (
+                role !== 'ADMIN' &&
+                role !== 'SUPER_ADMIN' &&
+                String(allowedId) !== String(restaurantId) &&
+                String(outletId) !== String(restaurantId)
+            ) return;
             socket.join(roomNames.restaurant(restaurantId));
             socket.join(`restaurant:${restaurantId}`);
+            socket.join(`outlet:${restaurantId}`);
             socket.emit('restaurant-room-joined', { room: roomNames.restaurant(restaurantId), restaurantId: String(restaurantId) });
         });
 

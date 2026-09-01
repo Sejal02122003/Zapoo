@@ -5,6 +5,7 @@ import { getCurrentUser } from "@food/utils/auth"
 import Loader from "@food/components/Loader"
 import { Loader2 } from "lucide-react"
 import GlobalPickupOtpModal from "./GlobalPickupOtpModal"
+import GlobalNewOrderModal from "./GlobalNewOrderModal"
 import RestaurantBlockGuard from "./RestaurantBlockGuard"
 import "./restaurantTheme.css"
 import restaurantLogo from "@/assets/restaurant_logo.jpeg"
@@ -173,6 +174,7 @@ export default function RestaurantRouter() {
         </Routes>
       </Suspense>
       <GlobalPickupOtpModal />
+      <GlobalNewOrderModal />
     </div>
   )
 }
