@@ -13,12 +13,34 @@ function getSharedAudioContext() {
   return sharedAudioContext;
 }
 
-// Global user gesture listener to unlock Web Audio API on mobile WebViews & browsers
+let prewarmedRestaurantAudio = null;
+
+function getPrewarmedRestaurantAudio() {
+  if (typeof window === 'undefined') return null;
+  if (!prewarmedRestaurantAudio) {
+    try {
+      prewarmedRestaurantAudio = new Audio(alertSound);
+      prewarmedRestaurantAudio.preload = 'auto';
+    } catch {}
+  }
+  return prewarmedRestaurantAudio;
+}
+
+// Global user gesture listener to unlock Web Audio API and HTML5 audio on mobile WebViews & browsers
 if (typeof window !== 'undefined') {
   const unlockAudio = () => {
     const ctx = getSharedAudioContext();
     if (ctx && ctx.state === 'suspended') {
       ctx.resume().catch(() => {});
+    }
+    const a = getPrewarmedRestaurantAudio();
+    if (a) {
+      a.muted = true;
+      a.play().then(() => {
+        a.pause();
+        a.currentTime = 0;
+        a.muted = false;
+      }).catch(() => {});
     }
   };
   window.addEventListener('click', unlockAudio, { capture: true, passive: true });
@@ -150,8 +172,10 @@ export async function playRestaurantOrderNotificationAlarm() {
   let playedFile = false;
 
   try {
-    const audio = new Audio(alertSound);
+    const audio = getPrewarmedRestaurantAudio() || new Audio(alertSound);
+    audio.muted = false;
     audio.volume = 1.0;
+    audio.currentTime = 0;
     currentRestaurantAudio = audio;
     await audio.play();
     playedFile = true;
