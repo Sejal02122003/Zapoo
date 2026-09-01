@@ -410,7 +410,8 @@ export async function updateOrderStatusAdminController(req, res, next) {
     try {
         const adminId = req.user?.userId;
         const orderId = req.params.orderId;
-        const { orderStatus, note } = req.body;
+        const orderStatus = req.body?.orderStatus || req.body?.status;
+        const note = req.body?.note || req.body?.reason || "";
         const order = await orderService.updateOrderStatusAdmin(orderId, adminId, orderStatus, note);
         return sendResponse(res, 200, 'Order status updated successfully', { order });
     } catch (err) {
