@@ -445,7 +445,12 @@ export const useRestaurantNotifications = () => {
         }
         // -------------------------------------------------------------
       } catch (error) {
-        // Non-blocking: keep polling.
+        // Stop polling if unauthorized (token expired/invalid)
+        if (error?.response?.status === 401 || error?.response?.status === 403) {
+          isCancelled = true;
+          clearInterval(intervalId);
+          setRestaurantId(null);
+        }
       }
     };
 
@@ -532,7 +537,11 @@ export const useRestaurantNotifications = () => {
                   }
                 }
              }
-          }).catch(() => {});
+           }).catch((error) => {
+             if (error?.response?.status === 401 || error?.response?.status === 403) {
+               setRestaurantId(null);
+             }
+           });
         }
       } else if (document.visibilityState === 'hidden' && activeOrderRef.current) {
         // Trigger one-shot alert when tab is hidden to ensure user didn't miss it
