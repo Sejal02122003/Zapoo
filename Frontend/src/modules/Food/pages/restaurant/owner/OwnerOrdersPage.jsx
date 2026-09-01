@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useNavigate } from "react-router-dom"
 import { 
   ShoppingBag, 
   Search, 
@@ -32,6 +33,7 @@ const STATUS_TABS = [
 ]
 
 export default function OwnerOrdersPage() {
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [orders, setOrders] = useState([])
   const [outlets, setOutlets] = useState([])
@@ -212,7 +214,8 @@ export default function OwnerOrdersPage() {
                 return (
                   <div
                     key={order._id}
-                    className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-[#22A2E3]/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-5"
+                    onClick={() => navigate(`/food/restaurant/orders/${order._id}`, { state: { mongoId: order._id } })}
+                    className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-[#22A2E3]/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 cursor-pointer"
                   >
                     {/* Left Info */}
                     <div className="space-y-2">
