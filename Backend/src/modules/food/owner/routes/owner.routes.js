@@ -14,6 +14,13 @@ import {
   getOwnerFinanceController,
 } from "../controllers/owner.controller.js";
 
+import {
+  createRestaurantFoodController,
+  bulkCreateRestaurantFoodController,
+  updateRestaurantFoodController,
+  deleteRestaurantFoodController,
+} from "../../restaurant/controllers/restaurantFood.controller.js";
+
 const router = express.Router();
 
 // Owner protection: requires authentication + OWNER or RESTAURANT or ADMIN role
@@ -36,8 +43,12 @@ router.delete("/outlets/:id", ownerAuth, deleteOutletController);
 // Multi-Outlet Orders Hub
 router.get("/orders", ownerAuth, listOwnerOrdersController);
 
-// Multi-Outlet Inventory Hub
+// Multi-Outlet Inventory Hub & Menu Foods CRUD
 router.get("/inventory", ownerAuth, getOwnerInventoryController);
+router.post("/foods", ownerAuth, createRestaurantFoodController);
+router.post("/foods/bulk", ownerAuth, bulkCreateRestaurantFoodController);
+router.patch("/foods/:id", ownerAuth, updateRestaurantFoodController);
+router.delete("/foods/:id", ownerAuth, deleteRestaurantFoodController);
 
 // Multi-Outlet Finance & Profit Hub
 router.get("/finance", ownerAuth, getOwnerFinanceController);

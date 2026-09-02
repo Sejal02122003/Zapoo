@@ -73,10 +73,16 @@ const ensureVPSImageUrl = async (value) => {
     const url = toStr(value);
     if (!url) return '';
     if (!shouldUploadImageUrl(url)) return url;
-    const buffer = await downloadImageBuffer(url);
-    const res = await processAndSaveImage(buffer, STORAGE_CATEGORIES.MENU);
-    return res.fullUrl;
+    try {
+        const buffer = await downloadImageBuffer(url);
+        const res = await processAndSaveImage(buffer, STORAGE_CATEGORIES.MENU);
+        return res?.fullUrl || url;
+    } catch (err) {
+        return url; // fallback gracefully to original url
+    }
 };
+
+const ensureCloudinaryImageUrl = ensureVPSImageUrl;
 
 const asyncPool = async (limit, items, iterator) => {
     const results = [];
@@ -215,22 +221,28 @@ const resolveCategoryForRestaurant = async (context, body = {}) => {
             .sort({ createdAt: -1 })
             .limit(2)
             .lean();
-        if (matches.length > 1) {
-            throw new ValidationError('Multiple categories share this name. Please choose a specific category.');
-        }
+        
         category = matches[0] || null;
 
         // Automatically create category if not found by name
         if (!category) {
-            category = await FoodCategory.create({
-                name: categoryNameRaw,
-                restaurantId: context.restaurantId,
-                createdByRestaurantId: context.restaurantId,
-                foodTypeScope: context.pureVegRestaurant ? 'Veg' : 'Both',
-                approvalStatus: 'approved',
-                isApproved: true,
-                isActive: true
-            });
+            try {
+                category = await FoodCategory.create({
+                    name: categoryNameRaw,
+                    restaurantId: context.restaurantId,
+                    createdByRestaurantId: context.restaurantId,
+                    foodTypeScope: context.pureVegRestaurant ? 'Veg' : 'Both',
+                    approvalStatus: 'approved',
+                    isApproved: true,
+                    isActive: true
+                });
+            } catch (createErr) {
+                // If created concurrently by another parallel batch worker, find the created one
+                category = await FoodCategory.findOne({
+                    ...baseFilter,
+                    name: { $regex: exact, $options: 'i' }
+                }).lean();
+            }
         }
     }
 

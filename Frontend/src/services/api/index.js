@@ -1244,6 +1244,14 @@ export const ownerAPI = {
     restaurantClient.get("/food/owner/orders", { params: params || {} }),
   getInventory: (params = {}) =>
     restaurantClient.get("/food/owner/inventory", { params: params || {} }),
+  createFood: (data) =>
+    restaurantClient.post("/food/owner/foods", data ?? {}),
+  bulkCreateFood: (items) =>
+    restaurantClient.post("/food/owner/foods/bulk", items ?? []),
+  updateFood: (id, data) =>
+    restaurantClient.patch(`/food/owner/foods/${String(id)}`, data ?? {}),
+  deleteFood: (id) =>
+    restaurantClient.delete(`/food/owner/foods/${String(id)}`),
   getFinance: (params = {}) =>
     restaurantClient.get("/food/owner/finance", { params: params || {} }),
   loginOutlet: (credentials) =>
