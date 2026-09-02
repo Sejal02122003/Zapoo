@@ -80,17 +80,18 @@ export const getUserWallet = async (userId) => {
     .sort({ expiryDate: 1 })
     .lean();
 
-    const activeCashbackBalance = activeCashbacks.reduce((sum, c) => sum + (Number(c.remainingAmount) || 0), 0);
-    const cashBalance = Number(wallet.cashBalance || 0);
+    const activeCashbackBalance = Math.max(0, activeCashbacks.reduce((sum, c) => sum + (Number(c.remainingAmount) || 0), 0));
+    const cashBalance = Math.max(0, Number(wallet.cashBalance || 0));
 
     // Auto-sync wallet model if cache/balance document is out of sync with ledgers
-    if (Number(wallet.cashbackBalance) !== activeCashbackBalance) {
+    if (Number(wallet.cashbackBalance) !== activeCashbackBalance || Number(wallet.cashBalance) < 0) {
         wallet.cashbackBalance = activeCashbackBalance;
+        wallet.cashBalance = cashBalance;
         wallet.balance = cashBalance + activeCashbackBalance;
         await wallet.save();
     }
 
-    const totalBalance = cashBalance + activeCashbackBalance;
+    const totalBalance = Math.max(0, cashBalance + activeCashbackBalance);
 
     const ledgerEntries = await WalletLedgerEntry.find({ userId: oid })
         .sort({ createdAt: -1 })
