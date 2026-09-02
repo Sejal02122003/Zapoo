@@ -1,6 +1,24 @@
-import { useState, useEffect, useCallback } from "react";
-import { Search, Plus, RefreshCw, Trash2, Calendar, DollarSign, Layers, Users, Clock, Zap, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Search, Plus, RefreshCw, Trash2, Calendar, DollarSign, Layers, Users, Clock, Zap, CheckCircle2, AlertCircle, Sparkles, Edit, X } from "lucide-react";
 import { adminClient } from "../../../../services/api/axios";
+
+const defaultFormData = {
+  name: "Standard Cashback Rule",
+  restaurantScope: "ALL",
+  restaurantId: "",
+  restaurantIds: [],
+  orderType: "BOTH",
+  minOrderValue: 99,
+  cashbackType: "PERCENTAGE",
+  cashbackValue: 5,
+  maxCashbackAmount: 30,
+  expiryDays: 30,
+  stackableWithCoupons: true,
+  userSegment: "ALL",
+  firstOrderOnlyForRestaurant: false,
+  validFrom: new Date().toISOString().split("T")[0],
+  validUntil: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
+};
 
 export default function Cashback() {
   const [cashbacks, setCashbacks] = useState([]);
@@ -16,24 +34,40 @@ export default function Cashback() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [editingRuleId, setEditingRuleId] = useState(null);
+  const formRef = useRef(null);
 
-  const [formData, setFormData] = useState({
-    name: "Standard Cashback Rule",
-    restaurantScope: "ALL",
-    restaurantId: "",
-    restaurantIds: [],
-    orderType: "BOTH",
-    minOrderValue: 99,
-    cashbackType: "PERCENTAGE",
-    cashbackValue: 5,
-    maxCashbackAmount: 30,
-    expiryDays: 30,
-    stackableWithCoupons: true,
-    userSegment: "ALL",
-    firstOrderOnlyForRestaurant: false,
-    validFrom: new Date().toISOString().split("T")[0],
-    validUntil: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
-  });
+  const [formData, setFormData] = useState(defaultFormData);
+
+  const handleEdit = (rule) => {
+    setEditingRuleId(rule._id);
+    setError("");
+    setSuccessMsg("");
+    setFormData({
+      name: rule.name || "",
+      restaurantScope: rule.restaurantScope || "ALL",
+      restaurantId: rule.restaurantId?._id || rule.restaurantId || "",
+      restaurantIds: Array.isArray(rule.restaurantIds) ? rule.restaurantIds.map(r => r._id || r) : [],
+      orderType: rule.orderType || "BOTH",
+      minOrderValue: rule.minOrderValue ?? 0,
+      cashbackType: rule.cashbackType || "PERCENTAGE",
+      cashbackValue: rule.cashbackValue ?? 0,
+      maxCashbackAmount: rule.maxCashbackAmount ?? "",
+      expiryDays: rule.expiryDays || 30,
+      stackableWithCoupons: rule.stackableWithCoupons ?? true,
+      userSegment: rule.userSegment || "ALL",
+      firstOrderOnlyForRestaurant: rule.firstOrderOnlyForRestaurant || false,
+      validFrom: rule.validFrom ? new Date(rule.validFrom).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+      validUntil: rule.validUntil ? new Date(rule.validUntil).toISOString().split("T")[0] : new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
+    });
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRuleId(null);
+    setFormData(defaultFormData);
+    setError("");
+  };
 
   const fetchLedgers = useCallback(async (page = 1, search = searchLedger, status = statusLedger) => {
     setLedgerLoading(true);
@@ -98,11 +132,19 @@ export default function Cashback() {
     setSuccessMsg("");
 
     try {
-      await adminClient.post("/food/admin/cashback-rules", formData);
-      setSuccessMsg("Cashback rule created successfully!");
+      if (editingRuleId) {
+        await adminClient.patch(`/food/admin/cashback-rules/${editingRuleId}`, formData);
+        setSuccessMsg("Cashback rule updated successfully!");
+        setEditingRuleId(null);
+        setFormData(defaultFormData);
+      } else {
+        await adminClient.post("/food/admin/cashback-rules", formData);
+        setSuccessMsg("Cashback rule created successfully!");
+        setFormData(defaultFormData);
+      }
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to create cashback rule");
+      setError(err.response?.data?.message || (editingRuleId ? "Failed to update cashback rule" : "Failed to create cashback rule"));
     } finally {
       setSubmitting(false);
     }
@@ -115,6 +157,9 @@ export default function Cashback() {
     try {
       await adminClient.delete(`/food/admin/cashback-rules/${id}`);
       setSuccessMsg("Cashback rule deleted successfully!");
+      if (editingRuleId === id) {
+        handleCancelEdit();
+      }
       setCashbacks(prev => prev.filter(c => c._id !== id));
       fetchData();
     } catch (err) {
@@ -203,11 +248,35 @@ export default function Cashback() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Create Cashback Rule Form */}
-          <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-            <h2 className="text-lg font-bold text-slate-900 border-b pb-4 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-purple-600" /> Create Cashback Rule
-            </h2>
+          {/* Create / Edit Cashback Rule Form */}
+          <div 
+            ref={formRef} 
+            className={`lg:col-span-5 bg-white p-6 rounded-2xl border transition-all duration-200 shadow-sm space-y-6 ${
+              editingRuleId ? "border-purple-500 ring-4 ring-purple-100 dark:ring-purple-950/40 shadow-md" : "border-slate-200"
+            }`}
+          >
+            <div className="flex items-center justify-between border-b pb-4">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                {editingRuleId ? (
+                  <>
+                    <Edit className="w-5 h-5 text-purple-600" /> Edit Cashback Rule
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5 text-purple-600" /> Create Cashback Rule
+                  </>
+                )}
+              </h2>
+              {editingRuleId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
+                >
+                  <X className="w-3.5 h-3.5" /> Cancel Edit
+                </button>
+              )}
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               
@@ -369,13 +438,26 @@ export default function Cashback() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full py-3.5 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl transition shadow-lg flex items-center justify-center gap-2"
-              >
-                {submitting ? "Saving..." : "Save & Activate Cashback Rule"}
-              </button>
+              <div className="flex gap-2">
+                {editingRuleId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="w-1/3 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className={`${editingRuleId ? "w-2/3" : "w-full"} py-3.5 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl transition shadow-lg flex items-center justify-center gap-2 active:scale-98`}
+                >
+                  {submitting 
+                    ? (editingRuleId ? "Updating..." : "Saving...") 
+                    : (editingRuleId ? "Update Cashback Rule" : "Save & Activate Cashback Rule")}
+                </button>
+              </div>
             </form>
           </div>
 
@@ -389,13 +471,23 @@ export default function Cashback() {
               ) : (
                 <div className="divide-y divide-slate-100">
                   {cashbacks.map(cb => (
-                    <div key={cb._id} className="py-4 flex items-center justify-between gap-4">
+                    <div 
+                      key={cb._id} 
+                      className={`py-4 px-3 rounded-xl flex items-center justify-between gap-4 transition-colors ${
+                        editingRuleId === cb._id ? "bg-purple-50/80 border border-purple-200" : ""
+                      }`}
+                    >
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-extrabold text-slate-900">{cb.name}</span>
                           <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${cb.restaurantScope === "ALL" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
                             {cb.restaurantScope === "ALL" ? "Global Rule" : "Outlet Override"}
                           </span>
+                          {editingRuleId === cb._id && (
+                            <span className="text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-amber-100 text-amber-800 animate-pulse">
+                              Editing Now
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-slate-600 mt-1">
                           Earns <strong className="text-purple-600">{cb.cashbackType === "PERCENTAGE" ? `${cb.cashbackValue}%` : `₹${cb.cashbackValue}`} cashback</strong> on min order ₹{cb.minOrderValue} (Capped at ₹{cb.maxCashbackAmount || "Unlimited"}, Valid for {cb.expiryDays} days).
@@ -405,9 +497,25 @@ export default function Cashback() {
                         </p>
                       </div>
 
-                      <button onClick={() => handleDelete(cb._id)} className="p-2 text-slate-400 hover:text-red-600 transition rounded-lg hover:bg-red-50">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button 
+                          type="button"
+                          onClick={() => handleEdit(cb)} 
+                          className="px-2.5 py-1.5 text-purple-600 hover:text-purple-800 hover:bg-purple-50 transition rounded-lg flex items-center gap-1 text-xs font-bold border border-purple-200"
+                          title="Edit Cashback Rule"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => handleDelete(cb._id)} 
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 transition rounded-lg border border-transparent hover:border-red-200"
+                          title="Delete Cashback Rule"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
