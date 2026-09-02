@@ -23,8 +23,10 @@ import { ArrowLeft,
   Share2,
   Utensils,
   Trash2,
-  Bell } from "lucide-react";
+  Bell,
+  Headphones } from "lucide-react";
 import WalletIcon from "@food/components/ui/WalletIcon";
+import ContactSupportModal from "@food/components/user/ContactSupportModal";
 
 import AnimatedPage from "@food/components/user/AnimatedPage";
 import { Card, CardContent } from "@food/components/ui/card";
@@ -88,6 +90,7 @@ export default function Profile() {
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [deleteStep, setDeleteStep] = useState(1);
   const [deleteCaptcha, setDeleteCaptcha] = useState("");
+  const [contactSupportOpen, setContactSupportOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTestingNotification, setIsTestingNotification] = useState(false);
 
@@ -946,6 +949,39 @@ export default function Profile() {
             </h3>
           </div>
           <div className="space-y-2">
+            <motion.div
+              whileHover={{ x: 4, scale: 1.01 }}
+              transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
+              <Card 
+                className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:to-transparent py-0 rounded-xl shadow-sm border border-primary/20 cursor-pointer"
+                onClick={() => setContactSupportOpen(true)}
+              >
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <motion.div
+                      className="bg-primary text-white rounded-full p-2"
+                      whileHover={{ rotate: 15, scale: 1.1 }}
+                      transition={{ duration: 0.3 }}>
+                      <Headphones className="h-5 w-5" />
+                    </motion.div>
+                    <div>
+                      <span className="text-base font-bold text-gray-900 dark:text-white block">
+                        Contact Officials & Support
+                      </span>
+                      <span className="text-xs text-primary font-medium">
+                        Direct Call, Email & WhatsApp
+                      </span>
+                    </div>
+                  </div>
+                  <motion.div
+                    whileHover={{ x: 4 }}
+                    transition={{ duration: 0.2 }}>
+                    <ChevronRight className="h-5 w-5 text-primary" />
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
             <Link to="/user/profile/support" className="block">
               <motion.div
                 whileHover={{ x: 4, scale: 1.01 }}
@@ -960,7 +996,7 @@ export default function Profile() {
                         <SettingsIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                       </motion.div>
                       <span className="text-base font-medium text-gray-900 dark:text-white">
-                        Help & Support
+                        Help & Support Tickets
                       </span>
                     </div>
                     <motion.div
@@ -1368,6 +1404,12 @@ export default function Profile() {
           </motion.div>
         </div>
       )}
+
+      {/* Direct Contact Support Modal */}
+      <ContactSupportModal 
+        isOpen={contactSupportOpen} 
+        onClose={() => setContactSupportOpen(false)} 
+      />
     </AnimatedPage>
   );
 }

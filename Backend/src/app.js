@@ -27,7 +27,9 @@ app.use(compression());
 
 // 2. Security Headers (Helmet)
 app.use(helmet({
-    contentSecurityPolicy: { directives: { defaultSrc: ["'self'"] } },
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: false,
     hsts: config.nodeEnv === 'production' ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
     xssFilter: true,
     noSniff: true,

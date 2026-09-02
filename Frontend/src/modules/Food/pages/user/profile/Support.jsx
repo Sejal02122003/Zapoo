@@ -7,7 +7,22 @@ import { Textarea } from "@food/components/ui/textarea"
 import { Card, CardContent } from "@food/components/ui/card"
 import { orderAPI, restaurantAPI, supportAPI, authAPI } from "@food/api"
 import { toast } from "sonner"
-import { ArrowLeft, Building2, HelpCircle, ShoppingBag, ChevronRight } from "lucide-react"
+import { 
+  ArrowLeft, 
+  Building2, 
+  HelpCircle, 
+  ShoppingBag, 
+  ChevronRight, 
+  Phone, 
+  Mail, 
+  MessageCircle, 
+  Clock, 
+  Copy, 
+  Check, 
+  Headphones, 
+  ShieldCheck 
+} from "lucide-react"
+import { loadBusinessSettings } from "@food/utils/businessSettings"
 
 export default function Support() {
   const navigate = useNavigate()
@@ -33,6 +48,37 @@ export default function Support() {
   const [loadingTickets, setLoadingTickets] = useState(false)
   const [orderSearch, setOrderSearch] = useState("")
   const [restaurantSearch, setRestaurantSearch] = useState("")
+  const [copiedField, setCopiedField] = useState(null)
+
+  const [contacts, setContacts] = useState({
+    supportEmail: "support@zapoo.in",
+    supportPhone: "+91 98765 43210",
+    whatsappPhone: "+91 98765 43210",
+    supportHours: "24/7 Available (Mon - Sun)",
+    companyName: "Zapoo"
+  })
+
+  useEffect(() => {
+    loadBusinessSettings()
+      .then((settings) => {
+        if (!settings) return
+        setContacts({
+          supportEmail: settings.supportEmail?.trim() || settings.email?.trim() || "support@zapoo.in",
+          supportPhone: settings.supportPhone?.trim() || settings.phone?.trim() || "+91 98765 43210",
+          whatsappPhone: settings.whatsappNumber?.trim() || settings.supportPhone?.trim() || settings.phone?.trim() || "+91 98765 43210",
+          supportHours: settings.supportHours || "24/7 Available (Mon - Sun)",
+          companyName: settings.companyName || "Zapoo"
+        })
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleCopy = (text, fieldName) => {
+    navigator.clipboard.writeText(text)
+    setCopiedField(fieldName)
+    toast.success(`${fieldName} copied!`)
+    setTimeout(() => setCopiedField(null), 2000)
+  }
 
   useEffect(() => {
     setLoadingTickets(true)
@@ -238,10 +284,91 @@ export default function Support() {
           )}
         </div>
 
+        {/* Official Direct Contact Card */}
+        <div className="bg-gradient-to-br from-primary via-primary/95 to-primary/80 rounded-2xl p-5 text-white shadow-lg mb-4 relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner">
+                  <Headphones className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white tracking-tight">
+                    Official Support Desk
+                  </h2>
+                  <p className="text-xs text-white/80">
+                    Connect directly with {contacts.companyName} customer care
+                  </p>
+                </div>
+              </div>
+              <span className="hidden sm:flex items-center gap-1 bg-black/20 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] font-semibold text-green-300">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                {contacts.supportHours}
+              </span>
+            </div>
+
+            {/* Direct Contact Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-4">
+              {/* Call */}
+              <a
+                href={`tel:${contacts.supportPhone.replace(/[^0-9+]/g, "")}`}
+                className="flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 transition-all active:scale-95 text-white"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/80 flex items-center justify-center text-white shadow-sm shrink-0">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <p className="text-xs font-semibold leading-tight">Call Helpline</p>
+                    <p className="text-[11px] text-white/70 truncate">{contacts.supportPhone}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-white/50 shrink-0" />
+              </a>
+
+              {/* Email */}
+              <a
+                href={`mailto:${contacts.supportEmail}?subject=Support%20Request%20-%20${contacts.companyName}&body=Hello%20${contacts.companyName}%20Support,%0A%0AI%20need%20assistance%20with:`}
+                className="flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 transition-all active:scale-95 text-white"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/80 flex items-center justify-center text-white shadow-sm shrink-0">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <p className="text-xs font-semibold leading-tight">Email Support</p>
+                    <p className="text-[11px] text-white/70 truncate">{contacts.supportEmail}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-white/50 shrink-0" />
+              </a>
+
+              {/* WhatsApp */}
+              <a
+                href={`https://wa.me/${contacts.whatsappPhone.replace(/[^0-9]/g, "")}?text=Hi%20${contacts.companyName}%20Support,%20I%20need%20help.`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 transition-all active:scale-95 text-white"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/80 flex items-center justify-center text-white shadow-sm shrink-0">
+                    <MessageCircle className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <p className="text-xs font-semibold leading-tight">WhatsApp</p>
+                    <p className="text-[11px] text-white/70 truncate">Instant Live Chat</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-white/50 shrink-0" />
+              </a>
+            </div>
+          </div>
+        </div>
+
         <Card className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border border-slate-200 dark:border-gray-800 mb-3">
           <CardContent className="p-4">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Help & Support</h1>
-            <p className="text-sm text-slate-500 mt-1">Raise a support ticket and track updates in one place.</p>
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white">Raise an Issue Ticket</h1>
+            <p className="text-xs text-slate-500 mt-1">Select an issue category below to submit a formal ticket.</p>
           </CardContent>
         </Card>
 

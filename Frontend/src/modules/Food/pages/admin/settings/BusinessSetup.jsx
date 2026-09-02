@@ -33,6 +33,7 @@ export default function BusinessSetup() {
     region: "",
     supportEmail: "",
     supportPhone: "",
+    whatsappNumber: "",
     supportHours: "",
     fssai: "",
     gstin: "",
@@ -62,6 +63,7 @@ export default function BusinessSetup() {
           region: settings.region || "India",
           supportEmail: settings.supportEmail || "",
           supportPhone: settings.supportPhone || "",
+          whatsappNumber: settings.whatsappNumber || "",
           supportHours: settings.supportHours || "",
           fssai: settings.fssai || "",
           gstin: settings.gstin || "",
@@ -186,6 +188,7 @@ export default function BusinessSetup() {
         region: formData.region,
         supportEmail: formData.supportEmail?.trim(),
         supportPhone: formData.supportPhone?.trim(),
+        whatsappNumber: formData.whatsappNumber?.trim(),
         supportHours: formData.supportHours?.trim(),
         fssai: formData.fssai?.trim(),
         gstin: formData.gstin?.trim() };
@@ -470,46 +473,59 @@ export default function BusinessSetup() {
               </div>
 
               <div className="md:col-span-2 border-t pt-4 mt-2">
-                <h4 className="text-sm font-bold text-slate-800 mb-3">Support Information (Dynamic Support Page)</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">Customer Support & Helpline Settings</h4>
+                    <p className="text-xs text-slate-500">Live contact options displayed on user app (Helpline, Email, WhatsApp)</p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                       Support Email
                     </label>
                     <input
                       type="email"
-                      placeholder="support@zapoo.com"
+                      placeholder="support@zapoo.in"
                       value={formData.supportEmail || ""}
                       onChange={(e) => handleInputChange("supportEmail", e.target.value)}
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white dark:bg-zinc-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                      Support Phone
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
+                      Support Phone / Helpline
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. 1234567890"
+                      placeholder="e.g. +91 9876543210"
                       value={formData.supportPhone || ""}
-                      maxLength={10}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, "");
-                        handleInputChange("supportPhone", val);
-                      }}
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      onChange={(e) => handleInputChange("supportPhone", e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white dark:bg-zinc-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
+                      Official WhatsApp Number
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. +91 9876543210"
+                      value={formData.whatsappNumber || ""}
+                      onChange={(e) => handleInputChange("whatsappNumber", e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white dark:bg-zinc-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                       Support Availability Hours
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g., 24/7 Availability"
+                      placeholder="e.g. 24/7 Available (Mon - Sun)"
                       value={formData.supportHours || ""}
                       onChange={(e) => handleInputChange("supportHours", e.target.value)}
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white dark:bg-zinc-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>

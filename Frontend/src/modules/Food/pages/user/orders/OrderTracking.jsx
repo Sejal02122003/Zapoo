@@ -21,9 +21,11 @@ import {
   Loader2,
   Clock,
   Calendar,
-  XCircle
+  XCircle,
+  Headphones
 } from "lucide-react"
 import AnimatedPage from "@food/components/user/AnimatedPage"
+import ContactSupportModal from "@food/components/user/ContactSupportModal"
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import {
@@ -519,6 +521,7 @@ export default function OrderTracking() {
   const [resolvedLookupId, setResolvedLookupId] = useState("")
   const [timerNow, setTimerNow] = useState(Date.now())
   const [cancelSecondsRemaining, setCancelSecondsRemaining] = useState(0)
+  const [supportModalOpen, setSupportModalOpen] = useState(false)
 
   useEffect(() => {
     if (!order?.createdAt) return;
@@ -2121,14 +2124,24 @@ export default function OrderTracking() {
           </div>
         </motion.div>
 
-        {/* Cancel Order Section (Top level so it's clearly visible) */}
-        {orderStatus !== 'cancelled' && orderStatus !== 'delivered' && orderStatus !== 'picked_up' && (
-          <motion.div
-            className="flex flex-col gap-3 bg-white dark:bg-[#1a1a1a] p-4 rounded-xl shadow-sm"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
+        {/* Need Help / Contact Support Section */}
+        <motion.div
+          className="flex flex-col gap-2.5 bg-white dark:bg-[#1a1a1a] p-4 rounded-xl shadow-sm border border-slate-100 dark:border-zinc-800"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+        >
+          <Button
+            variant="outline"
+            className="w-full h-12 rounded-xl font-bold transition-all bg-primary/5 hover:bg-primary/10 text-primary border-primary/20 flex items-center justify-center gap-2"
+            onClick={() => setSupportModalOpen(true)}
           >
+            <Headphones className="w-4 h-4" />
+            Need Help? Contact Officials & Support
+          </Button>
+
+          {/* Cancel Order Section (Top level so it's clearly visible) */}
+          {orderStatus !== 'cancelled' && orderStatus !== 'delivered' && orderStatus !== 'picked_up' && (
             <Button
               variant="outline"
               className="w-full h-12 rounded-xl font-semibold transition-colors text-red-600 border-red-100 hover:bg-red-50"
@@ -2138,8 +2151,8 @@ export default function OrderTracking() {
               <XCircle className="w-4 h-4 mr-2" />
               {isCancelling ? "Cancelling..." : "Cancel Order"}
             </Button>
-          </motion.div>
-        )}
+          )}
+        </motion.div>
 
       </div>
 
@@ -2505,6 +2518,13 @@ export default function OrderTracking() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Official Contact Support Modal */}
+      <ContactSupportModal 
+        isOpen={supportModalOpen}
+        onClose={() => setSupportModalOpen(false)}
+        order={order}
+      />
     </div>
   )
 }

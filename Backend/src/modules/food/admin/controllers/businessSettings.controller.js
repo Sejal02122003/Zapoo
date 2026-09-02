@@ -36,7 +36,7 @@ export async function updateBusinessSettings(req, res, next) {
 
         const { 
             companyName, email, phoneCountryCode, phoneNumber, address, state, pincode, region,
-            supportEmail, supportPhone, supportHours, fssai, gstin, pan, cin, onlinePaymentOnly, maxCodAmount,
+            supportEmail, supportPhone, whatsappNumber, supportHours, fssai, gstin, pan, cin, onlinePaymentOnly, maxCodAmount,
             maintenanceMode, customerRegistration, restaurantRegistration, deliveryRegistration
         } = data;
 
@@ -49,6 +49,7 @@ export async function updateBusinessSettings(req, res, next) {
         const s_pincode = String(pincode || "").trim();
         const s_supportEmail = String(supportEmail || "").trim();
         const s_supportPhone = String(supportPhone || "").trim();
+        const s_whatsappNumber = String(whatsappNumber || "").trim();
         const s_supportHours = String(supportHours || "").trim();
         const s_fssai = String(fssai || "").trim();
         const s_gstin = String(gstin || "").trim();
@@ -98,6 +99,7 @@ export async function updateBusinessSettings(req, res, next) {
         
         if (supportEmail !== undefined) settings.supportEmail = s_supportEmail;
         if (supportPhone !== undefined) settings.supportPhone = s_supportPhone;
+        if (whatsappNumber !== undefined) settings.whatsappNumber = s_whatsappNumber;
         if (supportHours !== undefined) settings.supportHours = s_supportHours;
         if (fssai !== undefined) settings.fssai = s_fssai;
         if (gstin !== undefined) settings.gstin = s_gstin;
