@@ -10,14 +10,16 @@ ensureStorageDirectories();
  * In development or non-Nginx setup, this allows Express to directly serve stored assets.
  */
 export const setupStaticImageServing = (app) => {
-    app.use('/images', express.static(STORAGE_BASE_DIR, {
+    const staticOptions = {
         maxAge: '30d',
         etag: true,
-        lastModified: true
-    }));
-    app.use('/uploads', express.static(STORAGE_BASE_DIR, {
-        maxAge: '30d',
-        etag: true,
-        lastModified: true
-    }));
+        lastModified: true,
+        setHeaders: (res) => {
+            res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+        }
+    };
+
+    app.use('/images', express.static(STORAGE_BASE_DIR, staticOptions));
+    app.use('/uploads', express.static(STORAGE_BASE_DIR, staticOptions));
 };

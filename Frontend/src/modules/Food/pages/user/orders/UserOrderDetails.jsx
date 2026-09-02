@@ -13,7 +13,8 @@ import {
   MapPin,
   RotateCcw,
   FileText,
-  XCircle } from "lucide-react"
+  XCircle,
+  Headphones } from "lucide-react"
 import { orderAPI, restaurantAPI, callsAPI } from "@food/api"
 import { useCart } from "@food/context/CartContext"
 import { toast } from "sonner"
@@ -21,6 +22,7 @@ import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
 import { getCompanyNameAsync, loadBusinessSettings } from "@food/utils/businessSettings"
 import { downloadFile } from "@/shared/utils/downloadUtils"
+import ContactSupportModal from "@food/components/user/ContactSupportModal"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -36,6 +38,7 @@ export default function UserOrderDetails() {
   const [loading, setLoading] = useState(true)
   const [isCancelling, setIsCancelling] = useState(false)
   const [isCancellable, setIsCancellable] = useState(false)
+  const [supportModalOpen, setSupportModalOpen] = useState(false)
 
   useEffect(() => {
     if (!order) return;
@@ -541,7 +544,7 @@ export default function UserOrderDetails() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-24 font-sans relative">
       {/* Header */}
-      <div className="bg-white dark:bg-[#121212] p-4 flex items-center sticky top-0 z-20 shadow-sm border-b dark:border-gray-800">
+      <div className="bg-white dark:bg-[#121212] p-4 flex items-center justify-between sticky top-0 z-20 shadow-sm border-b dark:border-gray-800">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -552,6 +555,14 @@ export default function UserOrderDetails() {
           </button>
           <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Order Details</h1>
         </div>
+        <button
+          type="button"
+          onClick={() => setSupportModalOpen(true)}
+          className="px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold flex items-center gap-1.5 transition-colors"
+        >
+          <Headphones className="w-3.5 h-3.5" />
+          Support
+        </button>
       </div>
 
       {/* Scrollable Content */}
@@ -885,14 +896,21 @@ export default function UserOrderDetails() {
         </button>
       </div>
 
-      {/* Restaurant Complaint Button - Below Order Details */}
+      {/* Support & Restaurant Complaint Section - Below Order Details */}
       {order && (
-        <div className="p-4 pb-24">
+        <div className="p-4 pt-1 space-y-2.5 pb-24">
+          <button
+            type="button"
+            onClick={() => setSupportModalOpen(true)}
+            className="w-full bg-primary text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-secondary transition-all active:scale-98 shadow-md"
+          >
+            <Headphones className="w-4 h-4" />
+            Need Help? Contact Officials & Support
+          </button>
+
           <button
             type="button"
             onClick={() => {
-              // Use MongoDB _id (ObjectId) for the API call - backend complaint controller expects ObjectId
-              // Priority: order._id (MongoDB ObjectId) > orderId from route params
               const orderMongoId = order._id || orderId
 
               if (!orderMongoId) {
@@ -904,7 +922,6 @@ export default function UserOrderDetails() {
                 return
               }
 
-              // Convert to string if it's an ObjectId object
               const orderIdString = typeof orderMongoId === 'object' && orderMongoId.toString
                 ? orderMongoId.toString()
                 : String(orderMongoId)
@@ -912,13 +929,20 @@ export default function UserOrderDetails() {
               debugLog("Navigating to complaint page with orderId:", orderIdString)
               navigate(`/user/complaints/submit/${encodeURIComponent(orderIdString)}`)
             }}
-            className="w-full bg-primary/5 border border-primary/20 text-primary py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-primary/10 transition-colors"
+            className="w-full bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"
           >
             <FileText className="w-4 h-4" />
-            Restaurant Complaint
+            Report Restaurant Complaint
           </button>
         </div>
       )}
+
+      {/* Contact Support Modal */}
+      <ContactSupportModal 
+        isOpen={supportModalOpen}
+        onClose={() => setSupportModalOpen(false)}
+        order={order}
+      />
     </div>
   )
 }
