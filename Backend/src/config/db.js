@@ -7,7 +7,7 @@ import { AppConfig } from '../core/appConfig/appConfig.model.js';
 mongoose.set('bufferTimeoutMS', 30000);
 
 export const connectDB = async (retryCount = 0) => {
-    const MAX_RETRIES = 3;
+    const MAX_RETRIES = 6;
     try {
         const conn = await mongoose.connect(config.mongodbUri, {
             maxPoolSize: 100,       // Handle up to 100 concurrent DB operations (default is ~5-10)
@@ -41,10 +41,11 @@ export const connectDB = async (retryCount = 0) => {
         }
 
     } catch (error) {
+        const delay = Math.min(3000 * Math.pow(1.5, retryCount), 15000);
         logger.error(`MongoDB connection error (attempt ${retryCount + 1}/${MAX_RETRIES}): ${error.message}`);
         if (retryCount < MAX_RETRIES - 1) {
-            logger.info(`Retrying MongoDB connection in 3 seconds...`);
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            logger.info(`Retrying MongoDB connection in ${Math.round(delay / 1000)} seconds...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
             return connectDB(retryCount + 1);
         }
         process.exit(1);
