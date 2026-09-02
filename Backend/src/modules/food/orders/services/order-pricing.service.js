@@ -672,6 +672,10 @@ export async function calculateOrderPricing(userId, dto) {
 
   const total = Math.round(Math.max(0, totalBeforeDiscount - totalDiscount - totalCashbackAmount));
 
+  const pgFeeRate = feeSettings.applyGlobalTaxes !== false ? (Number(feeSettings.globalPaymentGatewayFee) || 0) : 0;
+  const pgBaseAmount = Math.max(0, roundedSubtotal + roundedPackagingFee - roundedRestaurantCouponDiscount - couponDiscount);
+  const paymentGatewayFee = Math.round(pgBaseAmount * (pgFeeRate / 100) * 100) / 100;
+
   return {
     pricing: {
       subtotal: roundedSubtotal,
@@ -690,6 +694,7 @@ export async function calculateOrderPricing(userId, dto) {
       weatherPricing: weatherPricingSnapshot,
       freeDeliveryUpTo: Number.isFinite(freeUpTo) ? freeUpTo : undefined,
       platformFee: roundedPlatformFee,
+      paymentGatewayFee,
       discount: totalDiscount + totalCashbackAmount,
       itemDiscount: itemDiscountTotal > 0 ? Math.round(itemDiscountTotal) : undefined,
       couponDiscount: couponDiscount > 0 ? couponDiscount : undefined,
