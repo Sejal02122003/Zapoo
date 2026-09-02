@@ -31,7 +31,13 @@ export function computeRestaurantCommissionAmount(baseAmount, rule) {
 }
 
 export async function getRestaurantCommissionSnapshot(orderDoc) {
-    const baseAmount = (Number(orderDoc?.pricing?.subtotal ?? 0) || 0) + (Number(orderDoc?.pricing?.itemDiscount ?? 0) || 0);
+    const subtotal = Number(orderDoc?.pricing?.subtotal ?? 0) || 0;
+    const restaurantCouponDiscount = Number(orderDoc?.pricing?.restaurantCouponDiscount) || 0;
+    const couponDiscount = Number(orderDoc?.pricing?.couponDiscount) || 0;
+    const packagingFee = Number(orderDoc?.pricing?.packagingFee) || 0;
+
+    // Base amount for restaurant commission & taxes is strictly on the discounted food price
+    const baseAmount = Math.max(0, subtotal - restaurantCouponDiscount);
     const restaurantIdRaw =
         orderDoc?.restaurantId?._id ?? orderDoc?.restaurantId ?? null;
     const orderType = String(orderDoc?.orderType || 'delivery').toLowerCase();
@@ -67,8 +73,8 @@ export async function getRestaurantCommissionSnapshot(orderDoc) {
     const pgFee = applyTaxes ? (Number(globalSettings.globalPaymentGatewayFee) || 0) : 0;
     const tcs = applyTaxes ? (Number(globalSettings.globalTcs) || 0) : 0;
 
-    const totalPaid = Number(orderDoc?.pricing?.total) || 0;
-    const pgBaseAmount = Number(orderDoc?.pricing?.subtotal ?? 0) + (Number(orderDoc?.pricing?.packagingFee) || 0) - (Number(orderDoc?.pricing?.restaurantCouponDiscount) || 0);
+    // Payment Gateway fee is calculated strictly on the price AFTER the discount of the food item
+    const pgBaseAmount = Math.max(0, subtotal + packagingFee - restaurantCouponDiscount - couponDiscount);
 
     result.gstOnItem = Math.round(baseAmount * (gstOnItemRate / 100) * 100) / 100;
     result.gstOnCommission = Math.round(result.commissionAmount * (gstOnCommission / 100) * 100) / 100;
