@@ -111,6 +111,21 @@ export default function OwnerOrdersPage() {
     }
   }
 
+  const handleMarkReady = async (e, orderId) => {
+    e.stopPropagation()
+    if (!orderId || actionOrderId) return
+    setActionOrderId(orderId)
+    try {
+      await restaurantAPI.markOrderReady(orderId)
+      toast.success("Order marked as ready! 🎉")
+      fetchOrders()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to mark order as ready")
+    } finally {
+      setActionOrderId(null)
+    }
+  }
+
   const handleRejectOrder = async (e, orderId) => {
     e.stopPropagation()
     if (!orderId || actionOrderId) return
@@ -327,6 +342,24 @@ export default function OwnerOrdersPage() {
                               <>
                                 <Check className="w-3.5 h-3.5 stroke-[3]" />
                                 <span>Accept</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ) : (order.orderStatus === 'preparing' || order.orderStatus === 'confirmed') ? (
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => handleMarkReady(e, order._id)}
+                            disabled={actionOrderId === order._id}
+                            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-sm flex items-center gap-1 transition-all disabled:opacity-50"
+                            title="Mark Order as Ready"
+                          >
+                            {actionOrderId === order._id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <>
+                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                <span>Mark Ready</span>
                               </>
                             )}
                           </button>

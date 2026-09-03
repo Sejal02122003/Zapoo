@@ -921,11 +921,11 @@ function TableBookings() {
   );
 }
 
-// New Orders List Component
 function NewOrders({ onSelectOrder }) {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [markingReadyOrderIds, setMarkingReadyOrderIds] = useState({});
 
   useEffect(() => {
     let isMounted = true;
@@ -972,6 +972,32 @@ function NewOrders({ onSelectOrder }) {
     };
   }, []);
 
+  const handleMarkReady = async ({ orderId, mongoId, customerName }) => {
+    const orderKey = mongoId || orderId;
+    if (!orderKey || markingReadyOrderIds[orderKey]) return;
+
+    try {
+      setMarkingReadyOrderIds((prev) => ({ ...prev, [orderKey]: true }));
+      await restaurantAPI.markOrderReady(orderKey);
+      setOrders((prev) =>
+        prev.filter((order) => (order.mongoId || order.orderId) !== orderKey),
+      );
+      toast.success(
+        `Order ${orderId} marked ready${customerName ? ` for ${customerName}` : ""}`,
+      );
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to mark order as ready",
+      );
+    } finally {
+      setMarkingReadyOrderIds((prev) => {
+        const next = { ...prev };
+        delete next[orderKey];
+        return next;
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="pt-1 pb-6">
@@ -1003,6 +1029,10 @@ function NewOrders({ onSelectOrder }) {
               key={order.orderId || order.mongoId}
               {...order}
               onSelect={onSelectOrder}
+              onMarkReady={handleMarkReady}
+              isMarkingReady={Boolean(
+                markingReadyOrderIds[order.mongoId || order.orderId],
+              )}
             />
           ))}
         </div>
@@ -1177,10 +1207,10 @@ function AllOrders({ onSelectOrder, onCancel }) {
                 eta={etaDisplay}
                 onSelect={onSelectOrder}
                 onCancel={
-                  normalizedStatus === "preparing" ? onCancel : undefined
+                  ["preparing", "confirmed", "created", "pending"].includes(normalizedStatus) ? onCancel : undefined
                 }
                 onMarkReady={
-                  normalizedStatus === "preparing" ? handleMarkReady : undefined
+                  ["preparing", "confirmed", "created", "pending"].includes(normalizedStatus) ? handleMarkReady : undefined
                 }
                 isMarkingReady={Boolean(
                   markingReadyOrderIds[order.mongoId || order.orderId],
@@ -3719,6 +3749,29 @@ export default function OrdersMain() {
                 </div>
               ) : null}
 
+              {["preparing", "confirmed", "created", "pending"].includes(String(selectedOrder.status).toLowerCase()) && (
+                <div className="mb-4">
+                  <button
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm shadow transition-colors flex items-center justify-center gap-2 shadow-blue-200"
+                    onClick={async () => {
+                      try {
+                        const targetId = selectedOrder.mongoId || selectedOrder.orderId;
+                        await restaurantAPI.markOrderReady(targetId);
+                        toast.success("Order marked as ready!");
+                        setIsSheetOpen(false);
+                        requestOrdersRefresh();
+                      } catch (err) {
+                        toast.error(err?.response?.data?.message || "Failed to mark order as ready");
+                      }
+                    }}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Mark as Ready
+                  </button>
+                </div>
+              )}
+
               {selectedOrder.type === "Takeaway" && (String(selectedOrder.status).toLowerCase() === "ready" || String(selectedOrder.status).toLowerCase() === "ready_for_pickup") && (
                 <div className="mb-4">
                   <button
@@ -3795,6 +3848,8 @@ function OrderCard({
   const normalizedStatus = String(status || "").toLowerCase();
   const isReady = normalizedStatus === "ready" || normalizedStatus === "ready_for_pickup";
   const isPreparing = normalizedStatus === "preparing";
+  const isPendingOrConfirmed = ["created", "placed", "pending", "confirmed"].includes(normalizedStatus);
+  const canMarkReady = isPreparing || isPendingOrConfirmed;
   const brandColor = "#2563eb";
 
   let statusLabel = String(status || "")
@@ -3958,7 +4013,7 @@ function OrderCard({
                 </>
               )}
 
-              {isPreparing && onMarkReady && (
+              {canMarkReady && onMarkReady && (
                 <button
                   type="button"
                   onClick={(e) => {
@@ -3966,9 +4021,16 @@ function OrderCard({
                     onMarkReady({ orderId, mongoId, customerName });
                   }}
                   disabled={isMarkingReady}
-                  className="px-3 py-1.5 rounded-lg text-[9px] font-black text-white shadow-sm transition-transform active:scale-95 disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-lg text-[9px] font-black text-white shadow-sm transition-transform active:scale-95 disabled:opacity-50 flex items-center gap-1"
                   style={{ backgroundColor: brandColor }}>
-                  {isMarkingReady ? "..." : "MARK READY"}
+                  {isMarkingReady ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>...</span>
+                    </>
+                  ) : (
+                    "MARK READY"
+                  )}
                 </button>
               )}
 
