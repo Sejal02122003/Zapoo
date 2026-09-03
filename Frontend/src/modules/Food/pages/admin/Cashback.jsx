@@ -35,6 +35,7 @@ export default function Cashback() {
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [editingRuleId, setEditingRuleId] = useState(null);
+  const [restSearchQuery, setRestSearchQuery] = useState("");
   const formRef = useRef(null);
 
   const [formData, setFormData] = useState(defaultFormData);
@@ -43,11 +44,25 @@ export default function Cashback() {
     setEditingRuleId(rule._id);
     setError("");
     setSuccessMsg("");
+
+    // Collect all restaurant IDs from restaurantIds array and fallback restaurantId
+    const extractedIds = [];
+    if (Array.isArray(rule.restaurantIds)) {
+      rule.restaurantIds.forEach(r => {
+        const id = r?._id || r?.id || r;
+        if (id && !extractedIds.includes(String(id))) extractedIds.push(String(id));
+      });
+    }
+    if (rule.restaurantId) {
+      const singleId = String(rule.restaurantId?._id || rule.restaurantId?.id || rule.restaurantId);
+      if (singleId && !extractedIds.includes(singleId)) extractedIds.push(singleId);
+    }
+
     setFormData({
       name: rule.name || "",
       restaurantScope: rule.restaurantScope || "ALL",
-      restaurantId: rule.restaurantId?._id || rule.restaurantId || "",
-      restaurantIds: Array.isArray(rule.restaurantIds) ? rule.restaurantIds.map(r => r._id || r) : [],
+      restaurantId: extractedIds[0] || "",
+      restaurantIds: extractedIds,
       orderType: rule.orderType || "BOTH",
       minOrderValue: rule.minOrderValue ?? 0,
       cashbackType: rule.cashbackType || "PERCENTAGE",
@@ -131,14 +146,30 @@ export default function Cashback() {
     setError("");
     setSuccessMsg("");
 
+    if (
+      (formData.restaurantScope === "SELECTED" || formData.restaurantScope === "SPECIFIC") &&
+      (!formData.restaurantIds || formData.restaurantIds.length === 0) &&
+      !formData.restaurantId
+    ) {
+      setError("Please select at least one restaurant for the specific override scope.");
+      setSubmitting(false);
+      return;
+    }
+
     try {
+      const payload = {
+        ...formData,
+        restaurantIds: formData.restaurantIds || [],
+        restaurantId: formData.restaurantIds?.[0] || formData.restaurantId || null
+      };
+
       if (editingRuleId) {
-        await adminClient.patch(`/food/admin/cashback-rules/${editingRuleId}`, formData);
+        await adminClient.patch(`/food/admin/cashback-rules/${editingRuleId}`, payload);
         setSuccessMsg("Cashback rule updated successfully!");
         setEditingRuleId(null);
         setFormData(defaultFormData);
       } else {
-        await adminClient.post("/food/admin/cashback-rules", formData);
+        await adminClient.post("/food/admin/cashback-rules", payload);
         setSuccessMsg("Cashback rule created successfully!");
         setFormData(defaultFormData);
       }
@@ -359,30 +390,149 @@ export default function Cashback() {
                 <div>
                   <select
                     value={formData.restaurantScope}
-                    onChange={e => setFormData({ ...formData, restaurantScope: e.target.value })}
+                    onChange={e => {
+                      const nextScope = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        restaurantScope: nextScope,
+                        restaurantIds: nextScope === "ALL" ? [] : formData.restaurantIds,
+                        restaurantId: nextScope === "ALL" ? "" : formData.restaurantId
+                      });
+                    }}
                     className="w-full p-3 border border-slate-300 rounded-xl text-sm bg-white font-semibold"
                   >
                     <option value="ALL">Global (All Restaurants)</option>
-                    <option value="SELECTED">Specific Restaurant Override</option>
+                    <option value="SELECTED">Specific Restaurants (Multi-Select)</option>
                   </select>
                 </div>
 
-                {formData.restaurantScope === "SELECTED" && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Select Outlet</label>
-                    <select
-                      value={formData.restaurantId}
-                      onChange={e => setFormData({ ...formData, restaurantId: e.target.value })}
-                      className="w-full p-3 border border-slate-300 rounded-xl text-sm bg-white"
-                      required
-                    >
-                      <option value="">-- Select Restaurant --</option>
-                      {restaurants.map(r => (
-                        <option key={r._id || r.id} value={r._id || r.id}>
-                          {r.restaurantName || r.name}
-                        </option>
-                      ))}
-                    </select>
+                {(formData.restaurantScope === "SELECTED" || formData.restaurantScope === "SPECIFIC") && (
+                  <div className="space-y-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide">
+                        Select Outlets ({formData.restaurantIds?.length || 0} Selected)
+                      </label>
+                      <div className="flex items-center gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const allIds = restaurants.map(r => String(r._id || r.id));
+                            setFormData({ ...formData, restaurantIds: allIds, restaurantId: allIds[0] || "" });
+                          }}
+                          className="text-purple-600 hover:text-purple-800 font-bold transition"
+                        >
+                          Select All
+                        </button>
+                        <span className="text-slate-300">|</span>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, restaurantIds: [], restaurantId: "" })}
+                          className="text-slate-500 hover:text-slate-700 font-medium transition"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Search Restaurant Input */}
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search restaurant by name..."
+                        value={restSearchQuery}
+                        onChange={e => setRestSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+
+                    {/* Selected Restaurants Badges/Chips */}
+                    {formData.restaurantIds?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1 max-h-24 overflow-y-auto">
+                        {formData.restaurantIds.map(selectedId => {
+                          const restObj = restaurants.find(r => String(r._id || r.id) === String(selectedId));
+                          const name = restObj?.restaurantName || restObj?.name || "Selected Outlet";
+                          return (
+                            <span 
+                              key={selectedId}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-200"
+                            >
+                              <span className="max-w-[120px] truncate">{name}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const filtered = formData.restaurantIds.filter(id => String(id) !== String(selectedId));
+                                  setFormData({ ...formData, restaurantIds: filtered, restaurantId: filtered[0] || "" });
+                                }}
+                                className="text-purple-600 hover:text-purple-900 rounded-full"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Restaurant Checkbox List */}
+                    <div className="border border-slate-200 rounded-lg p-1.5 max-h-48 overflow-y-auto space-y-1 bg-white">
+                      {(() => {
+                        const filtered = restaurants.filter(r => {
+                          const name = String(r.restaurantName || r.name || "").toLowerCase();
+                          return name.includes(restSearchQuery.toLowerCase());
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="text-center py-4 text-xs text-slate-400">
+                              No matching restaurants found.
+                            </div>
+                          );
+                        }
+
+                        return filtered.map(r => {
+                          const rId = String(r._id || r.id);
+                          const isSelected = (formData.restaurantIds || []).some(id => String(id) === rId);
+                          return (
+                            <label
+                              key={rId}
+                              className={`flex items-center justify-between p-2 rounded-lg cursor-pointer text-xs transition ${
+                                isSelected 
+                                  ? "bg-purple-50 text-purple-900 font-bold border border-purple-200" 
+                                  : "hover:bg-slate-50 text-slate-700"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={e => {
+                                    let nextIds = [...(formData.restaurantIds || [])];
+                                    if (e.target.checked) {
+                                      if (!nextIds.some(id => String(id) === rId)) {
+                                        nextIds.push(rId);
+                                      }
+                                    } else {
+                                      nextIds = nextIds.filter(id => String(id) !== rId);
+                                    }
+                                    setFormData({
+                                      ...formData,
+                                      restaurantIds: nextIds,
+                                      restaurantId: nextIds[0] || ""
+                                    });
+                                  }}
+                                  className="rounded border-slate-300 text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
+                                />
+                                <span className="truncate">{r.restaurantName || r.name}</span>
+                              </div>
+                              {isSelected && (
+                                <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 ml-2" />
+                              )}
+                            </label>
+                          );
+                        });
+                      })()}
+                    </div>
                   </div>
                 )}
               </div>
@@ -480,8 +630,18 @@ export default function Cashback() {
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-extrabold text-slate-900">{cb.name}</span>
-                          <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${cb.restaurantScope === "ALL" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
-                            {cb.restaurantScope === "ALL" ? "Global Rule" : "Outlet Override"}
+                          <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
+                            cb.restaurantScope === "ALL" 
+                              ? "bg-blue-100 text-blue-700" 
+                              : "bg-purple-100 text-purple-700"
+                          }`}>
+                            {cb.restaurantScope === "ALL" 
+                              ? "Global Rule" 
+                              : `Specific Outlets (${
+                                  Array.isArray(cb.restaurantIds) && cb.restaurantIds.length > 0 
+                                    ? cb.restaurantIds.length 
+                                    : (cb.restaurantId ? 1 : 0)
+                                })`}
                           </span>
                           {editingRuleId === cb._id && (
                             <span className="text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-amber-100 text-amber-800 animate-pulse">
@@ -492,6 +652,15 @@ export default function Cashback() {
                         <p className="text-xs text-slate-600 mt-1">
                           Earns <strong className="text-purple-600">{cb.cashbackType === "PERCENTAGE" ? `${cb.cashbackValue}%` : `₹${cb.cashbackValue}`} cashback</strong> on min order ₹{cb.minOrderValue} (Capped at ₹{cb.maxCashbackAmount || "Unlimited"}, Valid for {cb.expiryDays} days).
                         </p>
+                        {cb.restaurantScope !== "ALL" && (
+                          <p className="text-[11px] text-purple-700 font-medium mt-0.5">
+                            Outlets: {
+                              Array.isArray(cb.restaurantIds) && cb.restaurantIds.length > 0
+                                ? cb.restaurantIds.map(r => r?.restaurantName || r?.name || "Outlet").join(", ")
+                                : (cb.restaurantId?.restaurantName || cb.restaurantId?.name || "1 Outlet")
+                            }
+                          </p>
+                        )}
                         <p className="text-[11px] text-slate-500 mt-0.5">
                           Order Type: <strong className="text-slate-700">{cb.orderType === 'DELIVERY' ? 'Delivery Only' : cb.orderType === 'TAKEAWAY' ? 'Takeaway Only' : 'Both (Delivery & Takeaway)'}</strong>
                         </p>
