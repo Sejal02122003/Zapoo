@@ -287,11 +287,6 @@ export default function AddZone() {
       center: { lat: 20.5937, lng: 78.9629 },
       zoom: 5,
       mapTypeControl: true,
-      mapTypeControlOptions: {
-        style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-        position: google.maps.ControlPosition.TOP_RIGHT,
-        mapTypeIds: [google.maps.MapTypeId.ROADMAP, google.maps.MapTypeId.SATELLITE]
-      },
       zoomControl: true,
       streetViewControl: false,
       fullscreenControl: true,

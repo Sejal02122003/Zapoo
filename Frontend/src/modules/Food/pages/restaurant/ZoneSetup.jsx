@@ -2,11 +2,11 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
 import { MapPin, Search, Save, Loader2, ArrowLeft, Navigation, CheckCircle2, AlertTriangle, Building2, Store } from "lucide-react"
-import RestaurantNavbar from "@food/components/restaurant/RestaurantNavbar"
 import { restaurantAPI, zoneAPI } from "@food/api"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { Loader } from "@googlemaps/js-api-loader"
 import { toast } from "sonner"
+import { getCurrentUser } from "@food/utils/auth"
 
 /**
  * Check if a point (lat, lng) is inside a polygon defined by coordinate objects/arrays.
@@ -192,7 +192,7 @@ export default function ZoneSetup() {
         position: pos,
         map: mapInstanceRef.current,
         draggable: true,
-        animation: window.google.maps.Animation.DROP,
+        animation: window.google.maps.Animation?.DROP,
         title: "Outlet Pin Location"
       })
 
@@ -287,14 +287,40 @@ export default function ZoneSetup() {
           throw new Error("Google Maps API key is not configured.")
         }
 
-        let googleObj = window.google
-        if (!googleObj?.maps) {
+        let googleMaps = window.google?.maps
+        if (!googleMaps || typeof googleMaps.Map !== "function") {
           const loader = new Loader({
             apiKey,
             version: "weekly",
             libraries: ["places", "geometry"]
           })
-          googleObj = await loader.load()
+          try {
+            await loader.load()
+          } catch (loadErr) {
+            try {
+              await loader.importLibrary("maps")
+              await loader.importLibrary("places")
+              await loader.importLibrary("geometry")
+            } catch (importErr) {
+              console.warn("Maps import library fallback warning:", importErr)
+            }
+          }
+          googleMaps = window.google?.maps
+        }
+
+        // Retry polling if script is still parsing
+        if (!googleMaps || typeof googleMaps.Map !== "function") {
+          for (let i = 0; i < 30; i++) {
+            if (typeof window.google?.maps?.Map === "function") {
+              googleMaps = window.google.maps
+              break
+            }
+            await new Promise(r => setTimeout(r, 100))
+          }
+        }
+
+        if (!googleMaps || typeof googleMaps.Map !== "function") {
+          throw new Error("Google Maps JavaScript API could not be initialized.")
         }
 
         if (isCancelled || !mapRef.current) return
@@ -308,15 +334,10 @@ export default function ZoneSetup() {
         const center = { lat: initialLat, lng: initialLng }
         const zoom = hasValidCoords ? 16 : 5
 
-        const map = new googleObj.maps.Map(mapRef.current, {
+        const map = new googleMaps.Map(mapRef.current, {
           center,
           zoom,
           mapTypeControl: true,
-          mapTypeControlOptions: {
-            style: googleObj.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-            position: googleObj.maps.ControlPosition.TOP_RIGHT,
-            mapTypeIds: [googleObj.maps.MapTypeId.ROADMAP, googleObj.maps.MapTypeId.SATELLITE]
-          },
           zoomControl: true,
           streetViewControl: false,
           fullscreenControl: true,
@@ -325,7 +346,7 @@ export default function ZoneSetup() {
         })
 
         mapInstanceRef.current = map
-        geocoderRef.current = new googleObj.maps.Geocoder()
+        geocoderRef.current = new googleMaps.Geocoder()
 
         // Click listener on Map
         map.addListener("click", (e) => {
@@ -335,8 +356,8 @@ export default function ZoneSetup() {
         })
 
         // Setup Autocomplete
-        if (autocompleteInputRef.current && googleObj.maps.places) {
-          const autocomplete = new googleObj.maps.places.Autocomplete(autocompleteInputRef.current, {
+        if (autocompleteInputRef.current && googleMaps.places?.Autocomplete) {
+          const autocomplete = new googleMaps.places.Autocomplete(autocompleteInputRef.current, {
             componentRestrictions: { country: "in" }
           })
           autocomplete.addListener("place_changed", () => {
@@ -492,7 +513,13 @@ export default function ZoneSetup() {
         
         // Return back after 1 second
         setTimeout(() => {
-          navigate("/food/restaurant/outlet-info")
+          const user = getCurrentUser("restaurant")
+          const isOwner = user && (user.role === "OWNER" || user.isOwner || (!user.outletId && user.role !== "OUTLETER"))
+          if (isOwner) {
+            navigate("/food/restaurant/owner")
+          } else {
+            navigate("/food/restaurant/outlet-info")
+          }
         }, 1000)
       } else {
         throw new Error(response?.data?.message || "Failed to save location")
@@ -504,17 +531,24 @@ export default function ZoneSetup() {
       setSaving(false)
     }
   }
+  const handleBack = () => {
+    const user = getCurrentUser("restaurant")
+    const isOwner = user && (user.role === "OWNER" || user.isOwner || (!user.outletId && user.role !== "OUTLETER"))
+    if (isOwner) {
+      navigate("/food/restaurant/owner")
+    } else {
+      goBack()
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
-      <RestaurantNavbar />
-      
       <div className="p-4 md:p-6 max-w-6xl mx-auto">
         {/* Header Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <button
-              onClick={goBack}
+              onClick={handleBack}
               className="p-2 hover:bg-white bg-white/80 border border-slate-200 rounded-xl transition shadow-sm text-slate-700"
               aria-label="Go back"
             >
@@ -523,14 +557,16 @@ export default function ZoneSetup() {
             <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-red-600 to-rose-500 flex items-center justify-center text-white shadow-md shadow-red-200">
               <MapPin className="w-6 h-6" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Zone & Outlet Pin Setup</h1>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-red-100 text-red-700 uppercase">
+            <div className="min-w-0">
+              <div className="flex items-center flex-wrap gap-2">
+                <h1 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+                  Zone & Outlet Pin Setup
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold bg-red-100 text-red-700 uppercase tracking-wider whitespace-nowrap shrink-0 inline-flex items-center">
                   Owner Portal
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
                 Pin your outlet entrance on map & link to your active service zone
               </p>
             </div>
