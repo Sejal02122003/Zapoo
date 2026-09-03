@@ -453,7 +453,13 @@ export async function getDashboardStats(query = {}) {
         ? new mongoose.Types.ObjectId(query.zoneId)
         : null;
 
-    const orderMatch = {};
+    const orderMatch = {
+        $or: [
+            { "payment.method": { $in: ["cash", "cod", "CASH", "COD", "wallet", "WALLET"] } },
+            { "payment.status": { $in: ["paid", "PAID", "authorized", "captured", "settled", "refunded"] } },
+            { orderStatus: { $in: ["confirmed", "accepted", "preparing", "ready_for_pickup", "ready", "picked_up", "out_for_delivery", "reached_drop", "delivered", "completed", "cancelled_by_user", "cancelled_by_restaurant", "cancelled_by_admin"] } }
+        ]
+    };
     if (periodRange) {
         orderMatch.createdAt = { $gte: periodRange.start, $lte: periodRange.end };
     }

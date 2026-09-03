@@ -29,6 +29,11 @@ export async function getOwnerSummary(restaurantId, query = {}) {
   // Base match filter for orders
   const matchFilter = {
     restaurantId: restObjectId,
+    $or: [
+      { "payment.method": { $in: ["cash", "cod", "CASH", "COD", "wallet", "WALLET"] } },
+      { "payment.status": { $in: ["paid", "PAID", "authorized", "captured", "settled", "refunded"] } },
+      { orderStatus: { $in: ["confirmed", "accepted", "preparing", "ready_for_pickup", "ready", "picked_up", "out_for_delivery", "reached_drop", "delivered", "completed", "cancelled_by_user", "cancelled_by_restaurant", "cancelled_by_admin"] } }
+    ]
   };
 
   if (outletId && mongoose.Types.ObjectId.isValid(outletId)) {
@@ -496,6 +501,22 @@ export async function listOwnerOrders(restaurantId, query = {}) {
 
   if (query.status && query.status !== "all") {
     filter.orderStatus = query.status;
+  }
+
+  // Exclude unconfirmed/half-placed online payment attempts unless explicitly requested
+  if (query.status !== "payment-failed") {
+    const validPlacedOrderClause = {
+      $or: [
+        { "payment.method": { $in: ["cash", "cod", "CASH", "COD", "wallet", "WALLET"] } },
+        { "payment.status": { $in: ["paid", "PAID", "authorized", "captured", "settled", "refunded"] } },
+        { orderStatus: { $in: ["confirmed", "accepted", "preparing", "ready_for_pickup", "ready", "picked_up", "out_for_delivery", "reached_drop", "delivered", "completed", "cancelled_by_user", "cancelled_by_restaurant", "cancelled_by_admin"] } }
+      ]
+    };
+    if (filter.$and) {
+      filter.$and.push(validPlacedOrderClause);
+    } else {
+      filter.$and = [validPlacedOrderClause];
+    }
   }
 
   if (query.search) {
