@@ -144,56 +144,9 @@ export default function EditRestaurantAddress() {
   }
 
   // Handle Proceed to update
-  const handleProceedUpdate = async () => {
-    try {
-      // For now, we'll update the location in the database
-      // In a real scenario, you might want to handle FSSAI update flow separately
-      if (selectedOption === "update_address") {
-        // For major address update, you might want to navigate to a form
-        // For now, we'll just show a message
-        alert("For major address updates, FSSAI verification may be required. Please contact support.")
-        setShowSelectOptionDialog(false)
-        return
-      } else {
-        // Minor correction - update location coordinates
-        // Fetch live address from coordinates using Google Maps API
-        try {
-          let formattedAddress = location?.formattedAddress || ""
-          // Google Geocoding disabled - new backend in progress. Use existing or coords.
-          if (lat && lng && !formattedAddress) {
-            formattedAddress = `${lat.toFixed(6)}, ${lng.toFixed(6)}`
-          }
-
-          // Update location with coordinates array and formattedAddress
-          const updatedLocation = {
-            ...location,
-            latitude: lat,
-            longitude: lng,
-            coordinates: [lng, lat], // GeoJSON format: [longitude, latitude]
-            formattedAddress: formattedAddress || location?.formattedAddress || ""
-          }
-          
-          const response = await restaurantAPI.updateProfile({ location: updatedLocation })
-          
-          if (response?.data?.data?.restaurant) {
-            // Update local state
-            setLocation(updatedLocation)
-            // Dispatch event to notify other components
-            window.dispatchEvent(new Event("addressUpdated"))
-            setShowSelectOptionDialog(false)
-            goBack()
-          } else {
-            throw new Error("Invalid response from server")
-          }
-        } catch (updateError) {
-          debugError("Error updating address:", updateError)
-          alert(`Failed to update address: ${updateError.response?.data?.message || updateError.message || "Please try again."}`)
-        }
-      }
-    } catch (error) {
-      debugError("Error updating address:", error)
-      alert(`Failed to update address: ${error.response?.data?.message || error.message || "Please try again."}`)
-    }
+  const handleProceedUpdate = () => {
+    setShowSelectOptionDialog(false)
+    navigate("/food/restaurant/zone-setup")
   }
 
   // Get simplified address for navbar (last two parts: area, city)
