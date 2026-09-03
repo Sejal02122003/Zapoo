@@ -269,14 +269,40 @@ export default function AdminLocationMapPicker({
           throw new Error("Google Maps API Key not configured.")
         }
 
-        let googleObj = window.google
-        if (!googleObj?.maps) {
+        let googleMaps = window.google?.maps
+        if (!googleMaps || typeof googleMaps.Map !== "function") {
           const loader = new Loader({
             apiKey,
             version: "weekly",
             libraries: ["places", "geometry"]
           })
-          googleObj = await loader.load()
+          try {
+            await loader.load()
+          } catch (loadErr) {
+            try {
+              await loader.importLibrary("maps")
+              await loader.importLibrary("places")
+              await loader.importLibrary("geometry")
+            } catch (importErr) {
+              console.warn("Maps import library fallback warning:", importErr)
+            }
+          }
+          googleMaps = window.google?.maps
+        }
+
+        // Retry polling if script is still parsing
+        if (!googleMaps || typeof googleMaps.Map !== "function") {
+          for (let i = 0; i < 30; i++) {
+            if (typeof window.google?.maps?.Map === "function") {
+              googleMaps = window.google.maps
+              break
+            }
+            await new Promise(r => setTimeout(r, 100))
+          }
+        }
+
+        if (!googleMaps || typeof googleMaps.Map !== "function") {
+          throw new Error("Google Maps JavaScript API could not be initialized.")
         }
 
         if (cancelled || !mapRef.current) return
@@ -291,15 +317,10 @@ export default function AdminLocationMapPicker({
           : { lat: 20.5937, lng: 78.9629 }
         const zoom = hasValidInitial ? 17 : 5
 
-        const map = new googleObj.maps.Map(mapRef.current, {
+        const map = new googleMaps.Map(mapRef.current, {
           center,
           zoom,
           mapTypeControl: true,
-          mapTypeControlOptions: {
-            style: googleObj.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-            position: googleObj.maps.ControlPosition.TOP_RIGHT,
-            mapTypeIds: [googleObj.maps.MapTypeId.ROADMAP, googleObj.maps.MapTypeId.SATELLITE]
-          },
           zoomControl: true,
           streetViewControl: false,
           fullscreenControl: true,
@@ -309,7 +330,7 @@ export default function AdminLocationMapPicker({
         })
 
         mapInstanceRef.current = map
-        geocoderRef.current = new googleObj.maps.Geocoder()
+        geocoderRef.current = new googleMaps.Geocoder()
 
         // Map Click Listener
         map.addListener("click", (e) => {
@@ -320,8 +341,8 @@ export default function AdminLocationMapPicker({
         })
 
         // Places Autocomplete
-        if (autocompleteInputRef.current && googleObj.maps.places) {
-          const autocomplete = new googleObj.maps.places.Autocomplete(autocompleteInputRef.current, {
+        if (autocompleteInputRef.current && googleMaps.places?.Autocomplete) {
+          const autocomplete = new googleMaps.places.Autocomplete(autocompleteInputRef.current, {
             componentRestrictions: { country: "in" },
             fields: ["formatted_address", "address_components", "geometry", "name"]
           })

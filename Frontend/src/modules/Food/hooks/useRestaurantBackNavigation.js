@@ -1,5 +1,6 @@
 import { useCallback } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
+import { getCurrentUser } from "@food/utils/auth"
 
 const toRestaurantPath = (value) => {
   if (typeof value !== "string") return null
@@ -24,6 +25,15 @@ const getNormalizedRestaurantPath = (pathname) => {
 const resolveRestaurantBackPath = ({ pathname, state }) => {
   const normalizedPath = getNormalizedRestaurantPath(pathname)
   const explicitBackPath = toRestaurantPath(state?.backTo) || toRestaurantPath(state?.from)
+  
+  const user = getCurrentUser("restaurant")
+  const isOwner = user && (user.role === "OWNER" || user.isOwner || (!user.outletId && user.role !== "OUTLETER"))
+
+  if (isOwner) {
+    if (normalizedPath === "/zone-setup" || normalizedPath === "/settings" || normalizedPath.startsWith("/owner/")) {
+      return explicitBackPath || "/food/restaurant/owner"
+    }
+  }
 
   if (normalizedPath === "/orders/all") {
     return explicitBackPath || "/food/restaurant/explore"

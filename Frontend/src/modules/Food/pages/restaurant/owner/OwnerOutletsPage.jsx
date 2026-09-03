@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Building2, 
@@ -326,13 +327,14 @@ export default function OwnerOutletsPage() {
                 </div>
 
                 <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5">
                     <button
                       onClick={() => setSelectedOutletForCredentials(outlet)}
-                      className="py-2 px-3 bg-[#22A2E3]/10 dark:bg-[#22A2E3]/10 hover:bg-[#22A2E3]/20 text-[#22A2E3] rounded-xl text-xs font-black transition-colors flex items-center justify-center gap-1.5"
+                      className="py-2 px-2 bg-[#22A2E3]/10 dark:bg-[#22A2E3]/10 hover:bg-[#22A2E3]/20 text-[#22A2E3] rounded-xl text-[11px] font-black transition-colors flex items-center justify-center gap-1 truncate"
+                      title="View Login Credentials"
                     >
-                      <Key className="w-3.5 h-3.5" />
-                      <span>Login Details</span>
+                      <Key className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Login</span>
                     </button>
 
                     <button
@@ -340,11 +342,21 @@ export default function OwnerOutletsPage() {
                         setSelectedOutletForPermissions(outlet)
                         setTempPermissions(outlet.permissions || [])
                       }}
-                      className="py-2 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-colors flex items-center justify-center gap-1.5"
+                      className="py-2 px-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-[11px] font-black transition-colors flex items-center justify-center gap-1 truncate"
+                      title="Manage Permissions"
                     >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Permissions</span>
+                      <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Perms</span>
                     </button>
+
+                    <Link
+                      to="/food/restaurant/zone-setup"
+                      className="py-2 px-2 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 dark:text-red-400 rounded-xl text-[11px] font-black transition-colors flex items-center justify-center gap-1 border border-red-200/60 dark:border-red-900/40 truncate"
+                      title="Pin Outlet on Map & Setup Zone"
+                    >
+                      <MapPin className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                      <span className="truncate">Map Pin</span>
+                    </Link>
                   </div>
 
                   <div className="flex items-center justify-between pt-1">

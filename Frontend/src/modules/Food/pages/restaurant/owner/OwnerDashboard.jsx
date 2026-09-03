@@ -22,7 +22,8 @@ import {
   RefreshCw,
   SlidersHorizontal,
   ChevronRight,
-  FileSpreadsheet
+  FileSpreadsheet,
+  MapPin
 } from "lucide-react"
 import { toast } from "sonner"
 import { ownerAPI } from "@food/api"
@@ -243,6 +244,33 @@ export default function OwnerDashboard() {
               <span>All branches online & operational</span>
             </div>
           </div>
+        </div>
+
+        {/* Quick Action: Zone Setup Banner */}
+        <div className="bg-gradient-to-r from-red-500/10 via-rose-500/5 to-transparent p-5 rounded-3xl border border-red-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-red-200">
+              <MapPin className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Outlet Zone Setup & GPS Map Pin</h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-700 uppercase">
+                  Service Area
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Pin your exact restaurant entrance and connect your outlets to active delivery service zones.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/food/restaurant/zone-setup"
+            className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-red-200 flex items-center gap-2 transition-all self-start sm:self-auto active:scale-95 shrink-0"
+          >
+            <MapPin className="w-4 h-4" />
+            <span>Open Zone & Pin Setup →</span>
+          </Link>
         </div>
 
         {/* Section: Outlets Performance Breakdown */}
