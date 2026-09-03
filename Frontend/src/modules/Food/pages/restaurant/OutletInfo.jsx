@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
-import { ArrowLeft, Star, ChevronRight, ShoppingBag } from "lucide-react"
+import { ArrowLeft, Star, ChevronRight, ShoppingBag, MapPin, ExternalLink } from "lucide-react"
 import { restaurantAPI } from "@food/api"
 import { toast } from "sonner"
 import { Input } from "@food/components/ui/input"
@@ -506,6 +506,58 @@ export default function OutletInfo() {
               </div>
             </div>
             <p className="text-base font-black text-gray-900 mt-0.5">{restaurantName || "N/A"}</p>
+          </div>
+
+          {/* Card: Outlet Location & Zone Setup */}
+          <div className="bg-white rounded-3xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-gray-100/50">
+            <div className="flex items-center justify-between mb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 leading-tight">Outlet Location & Zone</h3>
+                  <p className="text-[11px] text-gray-500 font-medium">Map pin location and delivery service zone</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => navigate("/food/restaurant/zone-setup")}
+                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-red-200/60"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span>Pin on Map</span>
+              </button>
+            </div>
+
+            <div className="space-y-3 bg-slate-50/70 p-3.5 rounded-2xl border border-slate-100">
+              <div>
+                <p className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">Address</p>
+                <p className="text-sm font-bold text-gray-900 mt-0.5">
+                  {restaurantData?.location?.formattedAddress || 
+                   restaurantData?.location?.address || 
+                   restaurantData?.address || 
+                   [restaurantData?.location?.addressLine1, restaurantData?.location?.area, restaurantData?.location?.city].filter(Boolean).join(", ") || 
+                   "No address set"}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200/70 text-xs">
+                <div>
+                  <span className="text-gray-500 font-medium">Coordinates: </span>
+                  <span className="font-bold text-slate-800">
+                    {restaurantData?.location?.latitude != null && restaurantData?.location?.longitude != null
+                      ? `${Number(restaurantData.location.latitude).toFixed(4)}, ${Number(restaurantData.location.longitude).toFixed(4)}`
+                      : "Not pinned"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500 font-medium">Zone: </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
+                    {typeof restaurantData?.zoneId === "object" ? (restaurantData?.zoneId?.name || "Assigned") : (restaurantData?.zoneId ? "Linked" : "Setup Required")}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Card 2: Basic Details */}

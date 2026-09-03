@@ -405,12 +405,16 @@ export default function RestaurantNavbar({
           
           {/* Location & Company */}
           {!loading && (
-            <div className="flex items-center gap-1 mt-0.5 opacity-90 min-w-0">
+            <div 
+              onClick={() => navigate("/food/restaurant/zone-setup")}
+              className="flex items-center gap-1 mt-0.5 opacity-90 min-w-0 cursor-pointer hover:opacity-100 transition-opacity"
+              title="Click to setup outlet location & service zone"
+            >
               {location && location.trim() !== "" && (
                 <MapPin className="w-3 h-3 text-white/80 shrink-0" />
               )}
-              <p className="text-[11px] text-white/80 truncate font-medium">
-                {location && location.trim() !== "" ? location : ""}
+              <p className="text-[11px] text-white/80 truncate font-medium underline-offset-2 hover:underline">
+                {location && location.trim() !== "" ? location : "Set Outlet Location"}
                 {location && location.trim() !== "" && companyName ? " • " : ""}
                 {companyName ? <span className="uppercase tracking-wider font-bold">{companyName}</span> : ""}
               </p>
