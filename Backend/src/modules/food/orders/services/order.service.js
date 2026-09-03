@@ -438,6 +438,35 @@ export async function createOrder(userId, dto) {
   let razorpayPayload = null;
 
   if (paymentMethod === "razorpay" && isRazorpayConfigured()) {
+    // Auto-cleanup any previous uncompleted/unpaid online orders from this user to prevent spam
+    try {
+      await FoodOrder.updateMany(
+        {
+          userId: new mongoose.Types.ObjectId(userId),
+          'payment.method': 'razorpay',
+          'payment.status': 'created',
+          orderStatus: 'created'
+        },
+        {
+          $set: {
+            orderStatus: 'cancelled_by_user',
+            'payment.status': 'failed'
+          },
+          $push: {
+            statusHistory: {
+              at: new Date(),
+              byRole: 'SYSTEM',
+              from: 'created',
+              to: 'cancelled_by_user',
+              note: 'Auto-cancelled: superseded by new order attempt'
+            }
+          }
+        }
+      );
+    } catch (cleanupErr) {
+      console.warn("Error cleaning up stale draft orders for user:", cleanupErr.message);
+    }
+
     const amountPaise = Math.round((payableAmount ?? 0) * 100);
     if (amountPaise < 100)
       throw new ValidationError("Amount too low for online payment");
@@ -980,14 +1009,14 @@ export async function recoverStuckOrders() {
       { $unset: { 'dispatch.dispatchingAt': '' } }
     );
 
-    // 3. Auto-cancel stale unpaid Razorpay orders (payment never completed)
-    const FIFTEEN_MIN = 15 * 60 * 1000;
+    // 3. Auto-cancel stale unpaid Razorpay orders (payment never completed after 5 mins)
+    const FIVE_MIN_TIMEOUT = 5 * 60 * 1000;
     const staleUnpaidResult = await FoodOrder.updateMany(
       {
         'payment.method': 'razorpay',
         'payment.status': 'created',
         orderStatus: 'created',
-        createdAt: { $lt: new Date(now - FIFTEEN_MIN) }
+        createdAt: { $lt: new Date(now - FIVE_MIN_TIMEOUT) }
       },
       {
         $set: {
@@ -2024,6 +2053,10 @@ export async function listOrdersAdmin(query) {
     switch (rawStatus) {
       case "pending":
         filter.orderStatus = { $in: ["created", "pending", "PENDING", "placed", "PLACED"] };
+        filter.$or = [
+          { "payment.method": { $in: ["cash", "cod", "CASH", "COD", "wallet", "WALLET"] } },
+          { "payment.status": { $in: ["paid", "PAID", "authorized", "captured", "settled"] } }
+        ];
         break;
       case "accepted":
         filter.orderStatus = { $in: ["confirmed", "accepted", "ACCEPTED", "CONFIRMED"] };
@@ -2069,6 +2102,22 @@ export async function listOrdersAdmin(query) {
         break;
       default:
         break;
+    }
+  }
+
+  // Ensure uncompleted online payment attempts / abandoned checkouts are never returned in normal order lists
+  if (rawStatus !== "payment-failed") {
+    const validPlacedOrderClause = {
+      $or: [
+        { "payment.method": { $in: ["cash", "cod", "CASH", "COD", "wallet", "WALLET"] } },
+        { "payment.status": { $in: ["paid", "PAID", "authorized", "captured", "settled", "refunded"] } },
+        { orderStatus: { $in: ["confirmed", "accepted", "preparing", "ready_for_pickup", "ready", "picked_up", "out_for_delivery", "reached_drop", "delivered", "completed", "cancelled_by_user", "cancelled_by_restaurant", "cancelled_by_admin"] } }
+      ]
+    };
+    if (filter.$and) {
+      filter.$and.push(validPlacedOrderClause);
+    } else {
+      filter.$and = [validPlacedOrderClause];
     }
   }
 
