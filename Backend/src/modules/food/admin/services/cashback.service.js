@@ -288,11 +288,16 @@ export async function createCashbackRule(data, adminId = null) {
     let rId = null;
     let rIds = [];
     if (scope === 'SELECTED' || scope === 'SPECIFIC') {
-        if (restaurantId && mongoose.Types.ObjectId.isValid(restaurantId)) {
-            rId = new mongoose.Types.ObjectId(restaurantId);
-        }
         if (Array.isArray(restaurantIds)) {
             rIds = restaurantIds.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
+        }
+        if (restaurantId && mongoose.Types.ObjectId.isValid(restaurantId)) {
+            rId = new mongoose.Types.ObjectId(restaurantId);
+            if (!rIds.some(id => String(id) === String(rId))) {
+                rIds.unshift(rId);
+            }
+        } else if (rIds.length > 0) {
+            rId = rIds[0];
         }
         if (!rId && rIds.length === 0) {
             throw new ValidationError('At least one valid restaurant is required for SELECTED scope');
@@ -349,9 +354,24 @@ export async function updateCashbackRule(ruleId, updates) {
     if (!rule) throw new ValidationError('Cashback rule not found');
 
     if (updates.name !== undefined) rule.name = updates.name;
-    if (updates.restaurantScope !== undefined) rule.restaurantScope = updates.restaurantScope.toUpperCase();
-    if (updates.restaurantId !== undefined) rule.restaurantId = updates.restaurantId && mongoose.Types.ObjectId.isValid(updates.restaurantId) ? new mongoose.Types.ObjectId(updates.restaurantId) : null;
-    if (Array.isArray(updates.restaurantIds)) rule.restaurantIds = updates.restaurantIds.filter(id => mongoose.Types.ObjectId.isValid(id));
+    if (updates.restaurantScope !== undefined) {
+        rule.restaurantScope = updates.restaurantScope.toUpperCase();
+        if (rule.restaurantScope === 'ALL') {
+            rule.restaurantId = null;
+            rule.restaurantIds = [];
+        }
+    }
+    if (Array.isArray(updates.restaurantIds)) {
+        rule.restaurantIds = updates.restaurantIds
+            .filter(id => mongoose.Types.ObjectId.isValid(id))
+            .map(id => new mongoose.Types.ObjectId(id));
+        rule.restaurantId = rule.restaurantIds[0] || (updates.restaurantId && mongoose.Types.ObjectId.isValid(updates.restaurantId) ? new mongoose.Types.ObjectId(updates.restaurantId) : null);
+    } else if (updates.restaurantId !== undefined) {
+        rule.restaurantId = updates.restaurantId && mongoose.Types.ObjectId.isValid(updates.restaurantId) ? new mongoose.Types.ObjectId(updates.restaurantId) : null;
+        if (rule.restaurantId) {
+            rule.restaurantIds = [rule.restaurantId];
+        }
+    }
     if (updates.orderType !== undefined) rule.orderType = updates.orderType.toUpperCase();
     if (updates.minOrderValue !== undefined) rule.minOrderValue = Number(updates.minOrderValue);
     if (updates.cashbackType !== undefined) rule.cashbackType = updates.cashbackType.toUpperCase();

@@ -37,7 +37,7 @@ export async function calculateOrderPricing(userId, dto) {
   for (const it of items) {
     const itemIdStr = String(it.id || it._id || it.foodId || it.itemId || '');
     const foodDoc = foodMap.get(itemIdStr);
-    
+
     // Base original price of item or variant
     let basePrice = 0;
     if (it.variantId) {
@@ -169,7 +169,7 @@ export async function calculateOrderPricing(userId, dto) {
 
   let platformFee = 0;
   let gstOnPlatformFee = 0;
-  
+
   if (orderType === 'takeaway') {
     platformFee = feeSettings.takeawayPlatformFee != null ? Number(feeSettings.takeawayPlatformFee) : 0;
     gstOnPlatformFee = feeSettings.gstOnTakeawayPlatformFee != null ? Number(feeSettings.gstOnTakeawayPlatformFee) : 0;
@@ -177,7 +177,7 @@ export async function calculateOrderPricing(userId, dto) {
     platformFee = feeSettings.platformFee != null ? Number(feeSettings.platformFee) : 0;
     gstOnPlatformFee = feeSettings.gstOnPlatformFee != null ? Number(feeSettings.gstOnPlatformFee) : 0;
   }
-  
+
   const packagingFee = restaurant?.packagingFee != null ? Number(restaurant.packagingFee) : (feeSettings.packagingFee != null ? Number(feeSettings.packagingFee) : 0);
 
   const freeUpTo = Number(feeSettings.freeDeliveryUpTo || 0);
@@ -280,7 +280,7 @@ export async function calculateOrderPricing(userId, dto) {
           break;
         }
       }
-      
+
       if (matchedMatrix && Array.isArray(matchedMatrix.amountRules)) {
         const rules = [...matchedMatrix.amountRules].sort((a, b) => Number(a.minAmount) - Number(b.minAmount));
         let matchedFee = null;
@@ -292,12 +292,12 @@ export async function calculateOrderPricing(userId, dto) {
           const inAmtRange = isLastRule
             ? subtotal >= minAmt && subtotal <= maxAmt
             : subtotal >= minAmt && subtotal < maxAmt;
-            
+
           if (inAmtRange) {
             if (r.feeType === 'per_km') {
-               matchedFee = Number(r.fee) * distanceKm;
+              matchedFee = Number(r.fee) * distanceKm;
             } else {
-               matchedFee = Number(r.fee);
+              matchedFee = Number(r.fee);
             }
             break;
           }
@@ -394,20 +394,20 @@ export async function calculateOrderPricing(userId, dto) {
   // --- Weather Pricing Logic ---
   const activeWeatherPolicy = await getActiveWeatherPolicy();
   const weatherEval = evaluateWeatherPricing(activeWeatherPolicy, distanceKm, restaurant.zoneId);
-  
+
   const weatherFee = weatherEval.isEligible ? weatherEval.weatherFee : 0;
   const weatherGST = weatherEval.isEligible ? weatherEval.gstAmount : 0;
-  
+
   const weatherPricingSnapshot = weatherEval.isEligible ? {
-      enabled: true,
-      weatherCondition: weatherEval.weatherCondition,
-      distance: distanceKm,
-      feePerKm: weatherEval.feePerKm,
-      weatherFee: weatherEval.weatherFee,
-      gstPercentage: weatherEval.gstPercentage,
-      gstAmount: weatherEval.gstAmount,
-      totalWeatherCharge: weatherEval.totalWeatherCharge,
-      policyId: weatherEval.policyId
+    enabled: true,
+    weatherCondition: weatherEval.weatherCondition,
+    distance: distanceKm,
+    feePerKm: weatherEval.feePerKm,
+    weatherFee: weatherEval.weatherFee,
+    gstPercentage: weatherEval.gstPercentage,
+    gstAmount: weatherEval.gstAmount,
+    totalWeatherCharge: weatherEval.totalWeatherCharge,
+    policyId: weatherEval.policyId
   } : undefined;
   // --- End Weather Pricing Logic ---
 
@@ -472,48 +472,48 @@ export async function calculateOrderPricing(userId, dto) {
       const now = new Date();
       let offer = await FoodOffer.findOne({ couponCode: codeRaw }).lean();
 
-    if (!offer) {
-      const locationCoupon = await LocationCoupon.findOne({ code: codeRaw, restaurantId: dto.restaurantId, isActive: true }).lean();
-      if (locationCoupon) {
-        offer = {
-          _id: locationCoupon._id,
-          status: locationCoupon.isActive ? "active" : "inactive",
-          startDate: locationCoupon.startDate,
-          endDate: locationCoupon.endDate,
-          restaurantScope: "selected",
-          restaurantId: locationCoupon.restaurantId,
-          minOrderValue: locationCoupon.minimumOrderAmount || 0,
-          usageLimit: 0,
-          usedCount: 0,
-          discountType: locationCoupon.discountType === 'percentage' ? 'percentage' : 'flat',
-          discountValue: locationCoupon.discountValue,
-          maxDiscount: locationCoupon.maximumDiscount || 0,
-          perUserLimit: 0,
-          customerScope: "all"
-        };
-      } else {
-        const { default: Promocode } = await import('../../../../models/Promocode.js');
-        const promo = await Promocode.findOne({ code: codeRaw, restaurantId: dto.restaurantId }).lean();
-        if (promo) {
+      if (!offer) {
+        const locationCoupon = await LocationCoupon.findOne({ code: codeRaw, restaurantId: dto.restaurantId, isActive: true }).lean();
+        if (locationCoupon) {
           offer = {
-            _id: promo._id,
-            status: promo.isActive ? "active" : "inactive",
-            startDate: promo.startDate,
-            endDate: promo.expiryDate,
+            _id: locationCoupon._id,
+            status: locationCoupon.isActive ? "active" : "inactive",
+            startDate: locationCoupon.startDate,
+            endDate: locationCoupon.endDate,
             restaurantScope: "selected",
-            restaurantId: promo.restaurantId,
-            minOrderValue: promo.minOrderAmount || 0,
-            usageLimit: promo.usageLimit || 0,
-            usedCount: promo.usageCount || 0,
-            discountType: promo.discountType === 'PERCENTAGE' ? 'percentage' : 'flat',
-            discountValue: promo.discountValue,
-            maxDiscount: promo.maxDiscountAmount || 0,
+            restaurantId: locationCoupon.restaurantId,
+            minOrderValue: locationCoupon.minimumOrderAmount || 0,
+            usageLimit: 0,
+            usedCount: 0,
+            discountType: locationCoupon.discountType === 'percentage' ? 'percentage' : 'flat',
+            discountValue: locationCoupon.discountValue,
+            maxDiscount: locationCoupon.maximumDiscount || 0,
             perUserLimit: 0,
             customerScope: "all"
           };
+        } else {
+          const { default: Promocode } = await import('../../../../models/Promocode.js');
+          const promo = await Promocode.findOne({ code: codeRaw, restaurantId: dto.restaurantId }).lean();
+          if (promo) {
+            offer = {
+              _id: promo._id,
+              status: promo.isActive ? "active" : "inactive",
+              startDate: promo.startDate,
+              endDate: promo.expiryDate,
+              restaurantScope: "selected",
+              restaurantId: promo.restaurantId,
+              minOrderValue: promo.minOrderAmount || 0,
+              usageLimit: promo.usageLimit || 0,
+              usedCount: promo.usageCount || 0,
+              discountType: promo.discountType === 'PERCENTAGE' ? 'percentage' : 'flat',
+              discountValue: promo.discountValue,
+              maxDiscount: promo.maxDiscountAmount || 0,
+              perUserLimit: 0,
+              customerScope: "all"
+            };
+          }
         }
       }
-    }
 
       if (offer) {
         const statusOk = offer.status === "active";
@@ -605,23 +605,23 @@ export async function calculateOrderPricing(userId, dto) {
   if (restaurantCodeRaw) {
     const itemsCount = items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
     const locationRes = await validateLocationCoupon({
-        couponCode: restaurantCodeRaw,
-        restaurantId: dto.restaurantId,
-        subtotal,
-        itemsCount,
-        distanceKm
+      couponCode: restaurantCodeRaw,
+      restaurantId: dto.restaurantId,
+      subtotal,
+      itemsCount,
+      distanceKm
     });
 
     if (locationRes.discount > 0) {
-        // We found a valid location coupon!
-        restaurantCouponDiscount = locationRes.discount;
-        appliedRestaurantCoupon = locationRes.appliedCoupon;
+      // We found a valid location coupon!
+      restaurantCouponDiscount = locationRes.discount;
+      appliedRestaurantCoupon = locationRes.appliedCoupon;
     } else if (locationRes.error && !appliedCoupon) {
-        // If neither global nor location coupon was valid, show the location coupon error
-        // ONLY if the global coupon error was generic "Invalid or expired"
-        if (couponError === "Invalid or expired coupon code.") {
-            couponError = locationRes.error;
-        }
+      // If neither global nor location coupon was valid, show the location coupon error
+      // ONLY if the global coupon error was generic "Invalid or expired"
+      if (couponError === "Invalid or expired coupon code.") {
+        couponError = locationRes.error;
+      }
     }
   }
   // --- End Location Coupon Service Execution ---
@@ -629,7 +629,7 @@ export async function calculateOrderPricing(userId, dto) {
   const couponDiscount = Math.round(discount);
   const roundedRestaurantCouponDiscount = Math.round(restaurantCouponDiscount);
   const totalDiscount = couponDiscount + roundedRestaurantCouponDiscount;
-  
+
   // Recalculate itemTax and total tax based on reduced subtotal due to restaurant discount
   const taxableSubtotal = Math.max(0, subtotal - roundedRestaurantCouponDiscount);
   itemTax = (Number.isFinite(gstRate) && gstRate > 0) ? (taxableSubtotal * (gstRate / 100)) : 0;
@@ -715,4 +715,3 @@ export async function calculateOrderPricing(userId, dto) {
     },
   };
 }
-
