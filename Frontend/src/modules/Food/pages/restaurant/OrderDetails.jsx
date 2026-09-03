@@ -20,7 +20,9 @@ import {
   Volume2,
   FileText,
   ChevronDown,
-  ChevronUp } from "lucide-react"
+  ChevronUp,
+  Check } from "lucide-react"
+import { toast } from "sonner"
 import ResendNotificationButton from "@food/components/restaurant/ResendNotificationButton"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -69,6 +71,41 @@ export default function OrderDetails() {
   const [showCustomerPaidBreakdown, setShowCustomerPaidBreakdown] = useState(false)
   const [showFeesBreakdown, setShowFeesBreakdown] = useState(false)
   const [showTaxesBreakdown, setShowTaxesBreakdown] = useState(false)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+
+  const handleMarkReady = async () => {
+    if (isUpdatingStatus || !orderId) return
+    setIsUpdatingStatus(true)
+    try {
+      await restaurantAPI.markOrderReady(orderId)
+      toast.success("Order marked as ready for pickup!")
+      setOrderData(prev => ({
+        ...prev,
+        status: "READY"
+      }))
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to mark order as ready")
+    } finally {
+      setIsUpdatingStatus(false)
+    }
+  }
+
+  const handleHandoverComplete = async () => {
+    if (isUpdatingStatus || !orderId) return
+    setIsUpdatingStatus(true)
+    try {
+      await restaurantAPI.updateOrderStatus(orderId, { orderStatus: "completed" })
+      toast.success("Takeaway order completed & handed over!")
+      setOrderData(prev => ({
+        ...prev,
+        status: "COMPLETED"
+      }))
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to complete takeaway order")
+    } finally {
+      setIsUpdatingStatus(false)
+    }
+  }
 
   // Fetch order data from API
   useEffect(() => {
@@ -1141,6 +1178,42 @@ export default function OrderDetails() {
           </div>
         </div>
       </div>
+
+      {/* Fixed Bottom Action Bar */}
+      {orderData && (
+        <div className="sticky bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 shadow-lg flex items-center justify-between gap-3 max-w-lg mx-auto w-full mt-4">
+          {["PREPARING", "CONFIRMED", "CREATED", "PENDING"].includes(orderData.status) && (
+            <button
+              onClick={handleMarkReady}
+              disabled={isUpdatingStatus}
+              className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isUpdatingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              <span>MARK AS READY</span>
+            </button>
+          )}
+
+          {orderData.orderType === "takeaway" && orderData.status === "READY" && (
+            <button
+              onClick={handleHandoverComplete}
+              disabled={isUpdatingStatus}
+              className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isUpdatingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              <span>HANDOVER & COMPLETE</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleDownloadReceipt}
+            disabled={isGeneratingPDF}
+            className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1.5 transition shrink-0"
+          >
+            <Printer className="w-4 h-4 text-slate-600" />
+            <span className="hidden sm:inline">Receipt</span>
+          </button>
+        </div>
+      )}
 
       {/* Toast Notification */}
       <AnimatePresence>
