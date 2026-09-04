@@ -257,8 +257,9 @@ export async function createOrder(userId, dto) {
       : undefined,
   };
 
-  let paymentMethod =
-    dto.paymentMethod === "card" ? "razorpay" : dto.paymentMethod;
+  let paymentMethod = String(dto.paymentMethod || "cash").toLowerCase();
+  if (paymentMethod === "card") paymentMethod = "razorpay";
+  if (paymentMethod === "cod") paymentMethod = "cash";
   const isCash = paymentMethod === "cash";
   let isWallet = paymentMethod === "wallet";
 
@@ -312,15 +313,16 @@ export async function createOrder(userId, dto) {
   // Handle Split Payment Logic
   let payableAmount = normalizedPricing.total;
   let walletAmountToUse = 0;
+  const wantsWallet = dto.useWalletBalance === true || dto.useWalletBalance === "true";
   
   if (isWallet) {
     walletAmountToUse = normalizedPricing.total;
     normalizedPricing.walletAmountUsed = walletAmountToUse;
     payableAmount = 0;
-  } else if (dto.useWalletBalance && (paymentMethod === "razorpay" || paymentMethod === "cash")) {
+  } else if (wantsWallet && (paymentMethod === "razorpay" || paymentMethod === "cash")) {
     try {
       const wallet = await userWalletService.getUserWallet(userId);
-      const balance = wallet ? wallet.balance : 0;
+      const balance = Number(wallet?.balance || 0);
       if (balance > 0) {
         walletAmountToUse = Math.min(balance, normalizedPricing.total);
         normalizedPricing.walletAmountUsed = walletAmountToUse;
@@ -494,7 +496,7 @@ export async function createOrder(userId, dto) {
 
   if (walletAmountToUse > 0) {
     try {
-      await userWalletService.deductWalletBalance(userId, walletAmountToUse, `Payment for order #${order.order_id || order._id}`, { orderId: order._id });
+      await userWalletService.deductWalletBalance(userId, walletAmountToUse, `Payment for order #${order.order_id || order._id}`, { orderId: order._id }, orderType);
     } catch (err) {
       // If wallet deduction fails (e.g. insufficient balance), we should not have saved the order or we should delete/cancel it.
       // But since we already saved it, let's at least throw the error so the user knows.

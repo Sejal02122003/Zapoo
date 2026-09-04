@@ -188,7 +188,12 @@ const PaymentModal = ({ order, otpString, onComplete, onClose }) => {
   const pollingRef = useRef(null);
 
   const orderId = order.orderId || order._id || 'ORD';
-  const amountToCollect = order.pricing?.total || order.amountToCollect || 0;
+  const orderTotal = Number(order.pricing?.total ?? order.total ?? order.amount ?? 0);
+  const walletUsed = Number(order.pricing?.walletAmountUsed ?? order.walletAmountUsed ?? 0);
+  const defaultDue = Math.max(0, orderTotal - walletUsed);
+  const amountToCollect = isPaid 
+    ? 0 
+    : Number(order.collectAmount ?? order.payment?.amountDue ?? order.amountDue ?? defaultDue);
 
   const checkPaymentSync = useCallback(async () => {
     try {
@@ -280,12 +285,17 @@ const PaymentModal = ({ order, otpString, onComplete, onClose }) => {
 
           <div className="bg-amber-50 rounded-3xl p-4 sm:p-6 border border-amber-100 mb-6 sm:mb-8">
              <div className="flex justify-between items-center mb-6">
-               <div>
-                 <p className="text-amber-700 text-[10px] font-bold uppercase tracking-widest mb-1">
-                    {isPaid ? "Amount Paid Online" : "Cash to Collect"}
-                 </p>
-                 <p className="text-amber-950 text-3xl sm:text-4xl font-bold">₹{amountToCollect.toFixed(2)}</p>
-               </div>
+                <div>
+                  <p className="text-amber-700 text-[10px] font-bold uppercase tracking-widest mb-1">
+                     {isPaid ? "Amount Paid Online" : "Cash to Collect"}
+                  </p>
+                  <p className="text-amber-950 text-3xl sm:text-4xl font-bold">₹{amountToCollect.toFixed(2)}</p>
+                  {walletUsed > 0 && !isPaid && (
+                    <p className="text-green-700 text-xs font-semibold mt-1">
+                      ₹{walletUsed.toFixed(2)} paid via Wallet • Collect remaining ₹{amountToCollect.toFixed(2)}
+                    </p>
+                  )}
+                </div>
                {isPaid && <div className="bg-green-500 text-white px-4 py-2 rounded-full text-[10px] font-bold">PAID ✓</div>}
              </div>
 
@@ -352,7 +362,11 @@ const PaymentModal = ({ order, otpString, onComplete, onClose }) => {
               onClick={e => e.stopPropagation()}
             >
               <h3 className="text-gray-950 font-bold text-xl mb-2">Scan to Pay</h3>
-              <p className="text-gray-500 text-sm mb-8 font-medium">Order Total: ₹{amountToCollect.toFixed(2)}</p>
+              <p className="text-gray-500 text-sm mb-8 font-medium">
+                {walletUsed > 0 
+                  ? `Amount to Collect: ₹${amountToCollect.toFixed(2)} (₹${walletUsed.toFixed(2)} paid via Wallet)` 
+                  : `Order Total: ₹${amountToCollect.toFixed(2)}`}
+              </p>
               
               <div className="flex flex-col items-center gap-6 bg-gray-50 rounded-3xl border-2 border-gray-100 p-6 mb-8 w-full">
                  <img 

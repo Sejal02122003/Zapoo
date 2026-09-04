@@ -81,7 +81,9 @@ export default function IncomingReassignmentModal({ isOpen, reassignmentData, on
   const isPrepaid = reassignmentData.isPrepaid === true || ['paid', 'authorized', 'captured', 'settled'].includes(status) || method === 'wallet' || (method === 'razorpay' && status !== 'failed');
   const isWallet = method === 'wallet';
   const total = Number(reassignmentData.total ?? reassignmentData.pricing?.total ?? reassignmentData.orderTotal ?? 0);
-  const collectAmount = isPrepaid ? 0 : Number(reassignmentData.collectAmount ?? reassignmentData.payment?.amountDue ?? total);
+  const walletUsed = Number(reassignmentData.pricing?.walletAmountUsed ?? reassignmentData.walletAmountUsed ?? 0);
+  const defaultDue = Math.max(0, total - walletUsed);
+  const collectAmount = isPrepaid ? 0 : Number(reassignmentData.collectAmount ?? reassignmentData.payment?.amountDue ?? defaultDue);
 
   return (
     <AnimatePresence>

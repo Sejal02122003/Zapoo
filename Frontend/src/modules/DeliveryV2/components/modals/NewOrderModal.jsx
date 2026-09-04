@@ -163,12 +163,16 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
     }
 
     // Default to Cash on Delivery (COD)
-    const due = Number(order.collectAmount ?? order.payment?.amountDue ?? orderTotal);
+    const walletUsed = Number(order.pricing?.walletAmountUsed ?? order.walletAmountUsed ?? 0);
+    const defaultDue = Math.max(0, orderTotal - walletUsed);
+    const due = Number(order.collectAmount ?? order.payment?.amountDue ?? defaultDue);
     return {
       type: 'cod',
       label: 'Cash on Delivery',
       badge: 'COD',
-      subtext: 'Collect cash from customer at drop-off',
+      subtext: walletUsed > 0 
+        ? `₹${walletUsed.toFixed(0)} paid from Wallet • Collect ₹${due.toFixed(0)} cash`
+        : 'Collect cash from customer at drop-off',
       collectAmount: due,
       isPrepaid: false,
     };

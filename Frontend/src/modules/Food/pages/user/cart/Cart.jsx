@@ -1830,6 +1830,14 @@ export default function Cart() {
         orderPricing.couponCode = appliedCoupon.code;
       }
 
+      if (useWalletBalance && (selectedPaymentMethod === 'razorpay' || selectedPaymentMethod === 'cash') && walletBalance > 0) {
+        orderPricing.walletAmountUsed = Math.min(walletBalance, total);
+      } else if (selectedPaymentMethod === 'wallet') {
+        orderPricing.walletAmountUsed = total;
+      } else {
+        orderPricing.walletAmountUsed = 0;
+      }
+
       // Include all cart items (main items + addons)
       // Note: Addons are added as separate cart items when user clicks the + button
       const orderItems = cart.map(item => ({

@@ -794,8 +794,12 @@ const toTripDto = (order) => {
     const pricingTotal = Number(order?.pricing?.total) || Number(order?.totalAmount) || 0;
 
     const earningAmount = Number(order?.riderEarning ?? order?.deliveryEarning ?? 0) || 0;
-    const isPaidOnline = paymentMethod !== 'cash' || order?.payment?.status === 'paid' || Number(order?.payment?.amountDue) === 0;
-    const codAmount = (paymentMethod === 'cash' && !isPaidOnline) ? (Number(order?.payment?.amountDue) || pricingTotal) : 0;
+    const walletAmountUsed = Number(order?.pricing?.walletAmountUsed || 0);
+    const calculatedDue = order?.payment?.amountDue != null 
+        ? Number(order.payment.amountDue) 
+        : Math.max(0, pricingTotal - walletAmountUsed);
+    const isPaidOnline = paymentMethod !== 'cash' || order?.payment?.status === 'paid' || calculatedDue === 0;
+    const codAmount = (paymentMethod === 'cash' && !isPaidOnline) ? calculatedDue : 0;
     const codCollectedAmount = paymentMethod === 'cash' && order?.payment?.status === 'paid' ? codAmount : 0;
     return {
         id: order?._id,

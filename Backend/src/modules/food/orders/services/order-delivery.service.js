@@ -301,11 +301,16 @@ export async function getCurrentTripDelivery(deliveryPartnerId) {
   if (tx) {
     out.paymentMethod = tx.payment?.method || tx.paymentMethod || out.paymentMethod;
     const isPaid = tx.status === 'captured' || tx.payment?.status === 'paid' || ['wallet'].includes(String(out.paymentMethod).toLowerCase()) || (String(out.paymentMethod).toLowerCase() === 'razorpay' && (tx.status === 'captured' || tx.payment?.status === 'paid'));
+    const walletUsed = Number(tx.pricing?.walletAmountUsed ?? out.pricing?.walletAmountUsed ?? 0);
+    const defaultDue = Math.max(0, Number(tx.pricing?.total ?? out.pricing?.total ?? 0) - walletUsed);
+    const due = isPaid ? 0 : Number(tx.payment?.amountDue ?? out.payment?.amountDue ?? defaultDue);
     out.payment = {
       ...(tx.payment || out.payment || {}),
       status: isPaid ? 'paid' : (tx.payment?.status || out.payment?.status || 'cod_pending'),
-      amountDue: isPaid ? 0 : Number(tx.payment?.amountDue ?? out.payment?.amountDue ?? out.pricing?.total ?? 0),
+      amountDue: due,
     };
+    out.collectAmount = due;
+    out.amountDue = due;
     out.pricing = tx.pricing || out.pricing;
     out.amounts = tx.amounts || out.amounts;
     out.transactionStatus = tx.status || out.transactionStatus;
@@ -371,23 +376,30 @@ export async function listOrdersAvailableDelivery(deliveryPartnerId, query) {
     const tx = txByOrderId.get(String(doc?._id)) || null;
     const paymentMethod = tx?.payment?.method || tx?.paymentMethod || doc.paymentMethod || doc.payment?.method || 'cash';
     const isPaid = doc.payment?.status === 'paid' || tx?.status === 'captured' || tx?.payment?.status === 'paid' || ['wallet'].includes(String(paymentMethod).toLowerCase()) || (String(paymentMethod).toLowerCase() === 'razorpay' && (tx?.status === 'captured' || doc.payment?.status === 'paid'));
+    const walletUsed = Number(tx?.pricing?.walletAmountUsed ?? doc.pricing?.walletAmountUsed ?? 0);
+    const defaultDue = Math.max(0, Number(tx?.pricing?.total ?? doc.pricing?.total ?? 0) - walletUsed);
+    const due = isPaid ? 0 : Number(tx?.payment?.amountDue ?? doc.payment?.amountDue ?? defaultDue);
     const paymentObj = {
       ...(tx?.payment || doc.payment || {}),
       method: paymentMethod,
       status: isPaid ? 'paid' : (tx?.payment?.status || doc.payment?.status || 'cod_pending'),
-      amountDue: isPaid ? 0 : Number(tx?.payment?.amountDue ?? doc.payment?.amountDue ?? doc.pricing?.total ?? 0),
+      amountDue: due,
     };
     if (!tx) {
       return {
         ...doc,
         paymentMethod,
         payment: paymentObj,
+        collectAmount: due,
+        amountDue: due,
       };
     }
     return {
       ...doc,
       paymentMethod,
       payment: paymentObj,
+      collectAmount: due,
+      amountDue: due,
       pricing: tx.pricing || doc.pricing,
       amounts: tx.amounts || doc.amounts,
       transactionStatus: tx.status || doc.transactionStatus,
