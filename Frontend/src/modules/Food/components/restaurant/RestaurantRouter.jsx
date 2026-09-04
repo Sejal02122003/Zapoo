@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from "react"
+import React, { Component, Suspense, lazy, useEffect } from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import ProtectedRoute from "@food/components/ProtectedRoute"
 import { getCurrentUser } from "@food/utils/auth"
