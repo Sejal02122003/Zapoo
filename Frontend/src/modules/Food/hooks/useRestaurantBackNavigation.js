@@ -40,6 +40,9 @@ const resolveRestaurantBackPath = ({ pathname, state }) => {
   }
 
   if (/^\/orders\/[^/]+$/.test(normalizedPath)) {
+    if (isOwner) {
+      return explicitBackPath || "/food/restaurant/owner/orders"
+    }
     return explicitBackPath || "/food/restaurant/orders/all"
   }
 

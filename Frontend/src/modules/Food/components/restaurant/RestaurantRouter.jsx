@@ -75,6 +75,54 @@ function RestaurantRootRedirector() {
   return <OrdersMain />
 }
 
+class RestaurantErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Restaurant portal error caught:", error, errorInfo)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-50 dark:bg-[#0c0c0c] flex items-center justify-center p-6 font-['Poppins']">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 max-w-md w-full text-center border border-slate-200 dark:border-slate-800">
+            <div className="w-16 h-16 bg-rose-50 dark:bg-rose-950/40 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-2 font-['Outfit']">Something Went Wrong</h2>
+            <p className="text-slate-500 text-xs mb-6 leading-relaxed">
+              We encountered an unexpected error displaying this section. Please try reloading or head back to your dashboard.
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-[#22A2E3] hover:bg-[#1b8bc4] text-white font-bold py-3 px-5 rounded-xl text-xs transition active:scale-95 shadow-md shadow-[#22A2E3]/20"
+              >
+                Reload Page
+              </button>
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false, error: null })
+                  window.location.href = "/food/restaurant/owner"
+                }}
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 px-5 rounded-xl text-xs transition active:scale-95"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 export default function RestaurantRouter() {
   useEffect(() => {
     let link = document.querySelector("link[rel~='icon']")
@@ -93,12 +141,13 @@ export default function RestaurantRouter() {
 
   return (
     <div className="restaurant-theme">
-      <Suspense fallback={
-        <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-[#0a0a0a]">
-          <Loader2 className="w-8 h-8 animate-spin text-[#7e3866]" />
-        </div>
-      }>
-        <Routes>
+      <RestaurantErrorBoundary>
+        <Suspense fallback={
+          <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-[#0a0a0a]">
+            <Loader2 className="w-8 h-8 animate-spin text-[#7e3866]" />
+          </div>
+        }>
+          <Routes>
           {/* Auth Routes */}
           <Route path="welcome" element={<Welcome />} />
           <Route path="login" element={<Login />} />
@@ -172,6 +221,7 @@ export default function RestaurantRouter() {
           <Route path="*" element={<Navigate to="/food/restaurant/login" replace />} />
         </Routes>
       </Suspense>
+      </RestaurantErrorBoundary>
       <GlobalNewOrderModal />
     </div>
   )

@@ -481,7 +481,11 @@ export default function OwnerDashboard() {
             ) : (
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {recentOrders.map((order) => (
-                  <div key={order._id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                  <div
+                    key={order._id}
+                    onClick={() => navigate(`/food/restaurant/orders/${order._id}`, { state: { mongoId: order._id } })}
+                    className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                  >
                     <div className="flex items-start sm:items-center gap-3">
                       <div className="w-10 h-10 rounded-2xl bg-[#22A2E3]/15 text-[#22A2E3] flex items-center justify-center shrink-0">
                         <ShoppingBag className="w-5 h-5" />
