@@ -34,8 +34,8 @@ const getStatusColor = (orderStatus) => {
 
 const getPaymentStatusColor = (paymentStatus) => {
   if (paymentStatus === "Paid" || paymentStatus === "Collected") return "text-emerald-600"
-  if (paymentStatus === "Not Collected") return "text-amber-600"
-  if (paymentStatus === "Unpaid" || paymentStatus === "Failed") return "text-red-600"
+  if (paymentStatus === "Refunded") return "text-sky-600"
+  if (paymentStatus === "Cancelled" || paymentStatus === "Canceled" || paymentStatus === "Unpaid" || paymentStatus === "Failed" || paymentStatus === "Not Collected") return "text-red-600"
   return "text-slate-600"
 }
 
@@ -294,11 +294,11 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                   </p>
                   <p className={`text-sm font-medium ${getPaymentStatusColor(
                     order.paymentType === 'Cash on Delivery' || order.payment?.method === 'cash' || order.payment?.method === 'cod'
-                      ? (order.paymentCollectionStatus ? 'Collected' : (order.status === 'delivered' ? 'Collected' : 'Not Collected'))
+                      ? (order.paymentCollectionStatus ? 'Collected' : (order.status === 'delivered' || order.orderStatus === 'Delivered' ? 'Collected' : (String(order.orderStatus || order.status || '').toLowerCase().includes('cancel') ? 'Cancelled' : 'Not Collected')))
                       : order.paymentStatus
                   )}`}>
                     {order.paymentType === 'Cash on Delivery' || order.payment?.method === 'cash' || order.payment?.method === 'cod'
-                      ? (order.paymentCollectionStatus ? 'Collected' : (order.status === 'delivered' ? 'Collected' : 'Not Collected'))
+                      ? (order.paymentCollectionStatus ? 'Collected' : (order.status === 'delivered' || order.orderStatus === 'Delivered' ? 'Collected' : (String(order.orderStatus || order.status || '').toLowerCase().includes('cancel') ? 'Cancelled' : 'Not Collected')))
                       : order.paymentStatus}
                   </p>
                 </div>

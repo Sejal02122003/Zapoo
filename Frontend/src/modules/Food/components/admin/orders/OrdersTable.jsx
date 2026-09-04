@@ -28,9 +28,9 @@ const getStatusColor = (orderStatus) => {
 }
 
 const getPaymentStatusColor = (paymentStatus) => {
-  if (paymentStatus === "Paid") return "text-emerald-600"
-  if (paymentStatus === "Refunded") return "text-sky-600"
-  if (paymentStatus === "Unpaid" || paymentStatus === "Failed") return "text-red-600"
+  if (paymentStatus === "Paid" || paymentStatus === "Collected") return "text-emerald-600 font-semibold"
+  if (paymentStatus === "Refunded") return "text-sky-600 font-semibold"
+  if (paymentStatus === "Cancelled" || paymentStatus === "Canceled" || paymentStatus === "Unpaid" || paymentStatus === "Failed" || paymentStatus === "Not Collected") return "text-red-600 font-semibold"
   return "text-slate-600"
 }
 
@@ -527,14 +527,25 @@ export default function OrdersTable({
                           )}
                         </button>
                       )}
-                      {/* Show Refund button or Refunded status for cancelled orders with Online/Wallet payment (restaurant or user cancelled) */}
+                      {/* Show Refund button or Refunded status for cancelled orders with Online/Wallet payment where money was actually paid */}
                       {(() => {
-                        // Check if order is cancelled by restaurant or user
+                        // Check if order is cancelled
                         const isCancelled = order.orderStatus === "Cancelled by Restaurant" || 
                                           order.orderStatus === "Cancelled" || 
+                                          order.orderStatus === "Canceled" || 
                                           order.orderStatus === "Cancelled by User" ||
-                                          (order.status === "cancelled" && (order.cancelledBy === "user" || order.cancelledBy === "restaurant"));
+                                          order.orderStatus === "Cancelled by Admin" ||
+                                          (String(order.status || '').toLowerCase().includes('cancel'));
                         
+                        // Refund ONLY applies if payment was actually collected/paid
+                        const wasPaid = order.paymentStatus === "Paid" || 
+                                        order.payment?.status === "paid" || 
+                                        order.payment?.status === "refunded" ||
+                                        order.paymentStatus === "Refunded" ||
+                                        order.refundStatus === "processed" ||
+                                        order.refundStatus === "initiated" ||
+                                        order.refundStatus === "failed";
+
                         // Check if payment type is Online or Wallet (not Cash on Delivery)
                         const paymentMethod = order.payment?.method || order.paymentMethod;
                         const isOnlinePayment = order.paymentType === "Online" ||
@@ -549,10 +560,10 @@ export default function OrdersTable({
                         
                         const isWalletPayment = order.paymentType === "Wallet" || paymentMethod === "wallet";
                         
-                        return isCancelled && (isOnlinePayment || isWalletPayment);
+                        return isCancelled && (isOnlinePayment || isWalletPayment) && wasPaid;
                       })() && (
                         <>
-                          {order.refundStatus === 'processed' || order.refundStatus === 'initiated' ? (
+                          {order.refundStatus === 'processed' || order.refundStatus === 'initiated' || order.paymentStatus === 'Refunded' ? (
                             <span className={`px-3 py-1.5 rounded-md text-xs font-medium ${
                               order.paymentType === "Wallet" || order.payment?.method === "wallet"
                                 ? "bg-purple-100 text-purple-700"
