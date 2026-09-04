@@ -3877,12 +3877,16 @@ function OrderCard({
             
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {scheduledAt && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-100 text-[8px] font-black uppercase">
+                <span 
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-100 text-[8px] font-black uppercase cursor-default">
                   <Calendar className="w-2 h-2" />
                   Scheduled
                 </span>
               )}
-              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-black border uppercase tracking-wider ${
+              <span 
+                onClick={(e) => e.stopPropagation()}
+                className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-black border uppercase tracking-wider cursor-default ${
                 isReady ? "bg-emerald-50 text-emerald-600 border-emerald-100" : 
                 normalizedStatus === "confirmed" ? "bg-amber-50 text-amber-600 border-amber-100" : 
                 "bg-slate-50 text-slate-500 border-slate-100"
@@ -3977,7 +3981,6 @@ function OrderCard({
                     <ResendNotificationButton
                       orderId={orderId}
                       mongoId={mongoId}
-                      onSuccess={onSelect}
                     />
                   )}
                 </>

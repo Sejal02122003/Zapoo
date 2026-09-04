@@ -597,7 +597,9 @@ export default function AllOrdersPage() {
             {/* Status and Order ID Row */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className={`px-2.5 py-1 rounded text-xs font-bold ${getStatusColor(order.status)}`}>
+                <span 
+                  onClick={(e) => e.stopPropagation()}
+                  className={`px-2.5 py-1 rounded text-xs font-bold cursor-default ${getStatusColor(order.status)}`}>
                   {order.status}
                 </span>
                 {order.tags && order.tags.map((tag, idx) => (
