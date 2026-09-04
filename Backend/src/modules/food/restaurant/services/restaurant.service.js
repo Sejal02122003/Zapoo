@@ -195,7 +195,7 @@ const toRestaurantProfile = (doc) => {
         isAcceptingOrders: doc.isAcceptingOrders !== false && doc.isClosed !== true && doc.isOpen !== false,
         isClosed: Boolean(doc.isClosed === true || doc.isAcceptingOrders === false || doc.isOpen === false),
         isOpen: doc.isAcceptingOrders !== false && doc.isClosed !== true && doc.isOpen !== false,
-        isTakeawayEnabled: Boolean(doc.isTakeawayEnabled),
+        isTakeawayEnabled: doc.isTakeawayEnabled !== false,
         status: doc.status || null,
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,

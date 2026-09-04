@@ -20,12 +20,18 @@ export async function calculateOrderPricing(userId, dto) {
   if (!restaurant) throw new ValidationError("Restaurant not found");
   if (restaurant.status !== "approved")
     throw new ValidationError("Restaurant not available");
+  if (restaurant.isAcceptingOrders === false)
+    throw new ValidationError("Restaurant is currently not accepting orders");
+
+  const orderType = String(dto.orderType || 'delivery').toLowerCase();
+  if (orderType === 'takeaway' && restaurant.isTakeawayEnabled === false) {
+    throw new ValidationError("Takeaway orders are currently disabled for this restaurant");
+  }
 
   const items = Array.isArray(dto.items) ? dto.items : [];
   let itemDiscountTotal = 0;
   let subtotal = 0;
   let eligibleSubtotalForCoupon = 0;
-  const orderType = String(dto.orderType || 'delivery').toLowerCase();
 
   const itemIds = items.map((it) => it.id || it._id || it.foodId || it.itemId)
     .filter(Boolean)

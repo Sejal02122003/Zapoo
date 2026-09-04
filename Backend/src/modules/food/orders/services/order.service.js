@@ -165,13 +165,18 @@ export async function calculateOrder(userId, dto) {
 // ----- Create order -----
 export async function createOrder(userId, dto) {
   const restaurant = await FoodRestaurant.findById(dto.restaurantId)
-    .select("status restaurantName zoneId location isAcceptingOrders")
+    .select("status restaurantName zoneId location isAcceptingOrders isTakeawayEnabled")
     .lean();
   if (!restaurant) throw new ValidationError("Restaurant not found");
   if (restaurant.status !== "approved")
     throw new ValidationError("Restaurant not accepting orders");
   if (restaurant.isAcceptingOrders === false)
     throw new ValidationError("Restaurant not accepting orders");
+
+  const orderType = String(dto.orderType || 'delivery').toLowerCase();
+  if (orderType === 'takeaway' && restaurant.isTakeawayEnabled === false) {
+    throw new ValidationError("Takeaway orders are currently disabled for this restaurant");
+  }
 
   // Check outlet timings using IST timezone (+5:30)
   const { outletTimings } = await getOutletTimingsForRestaurant(dto.restaurantId);
@@ -236,7 +241,6 @@ export async function createOrder(userId, dto) {
 
   const settings = await getDispatchSettings();
   const dispatchMode = settings.dispatchMode;
-  const orderType = dto.orderType || 'delivery';
 
   const deliveryAddress = orderType === 'takeaway' ? undefined : {
     label: dto.address?.label || "Home",

@@ -18,6 +18,7 @@ import { restaurantAPI } from "@food/api"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import useNotificationInbox from "@food/hooks/useNotificationInbox"
 import { clearModuleAuth } from "@food/utils/auth"
+import { toast } from "sonner"
 import restaurantLogo from "@/assets/restaurant_logo.jpeg"
 
 export default function DesktopRestaurantNav() {
@@ -26,6 +27,8 @@ export default function DesktopRestaurantNav() {
   
   const [restaurantData, setRestaurantData] = useState(null)
   const [status, setStatus] = useState("Offline")
+  const [takeawayEnabled, setTakeawayEnabled] = useState(true)
+  const [updatingTakeaway, setUpdatingTakeaway] = useState(false)
   const [companyName, setCompanyName] = useState("")
   const [logoUrl, setLogoUrl] = useState(null)
   const [searchValue, setSearchValue] = useState("")
@@ -62,6 +65,9 @@ export default function DesktopRestaurantNav() {
               setStatus(JSON.parse(savedStatus) ? "Online" : "Offline")
             }
           }
+          if (data.isTakeawayEnabled !== undefined) {
+            setTakeawayEnabled(Boolean(data.isTakeawayEnabled))
+          }
         }
       } catch (error) {
         // silent fallback
@@ -78,14 +84,42 @@ export default function DesktopRestaurantNav() {
     }
     window.addEventListener('restaurantStatusChanged', handleStatusChange)
 
+    const handleTakeawayChange = (event) => {
+      if (event.detail?.isTakeawayEnabled !== undefined) {
+        setTakeawayEnabled(Boolean(event.detail.isTakeawayEnabled))
+      }
+    }
+    window.addEventListener('takeawayStatusChanged', handleTakeawayChange)
+
     return () => {
       clearInterval(pollInterval)
       window.removeEventListener('restaurantStatusChanged', handleStatusChange)
+      window.removeEventListener('takeawayStatusChanged', handleTakeawayChange)
     }
   }, [])
 
   const handleStatusToggle = () => {
     navigate("/food/restaurant/status")
+  }
+
+  const handleQuickTakeawayToggle = async (e) => {
+    e.stopPropagation()
+    if (updatingTakeaway) return
+    const nextVal = !takeawayEnabled
+    setTakeawayEnabled(nextVal)
+    try {
+      setUpdatingTakeaway(true)
+      await restaurantAPI.updateProfile({ isTakeawayEnabled: nextVal })
+      window.dispatchEvent(new CustomEvent('takeawayStatusChanged', { 
+        detail: { isTakeawayEnabled: nextVal } 
+      }))
+      toast.success(nextVal ? "Takeaway orders enabled" : "Takeaway orders paused")
+    } catch (err) {
+      setTakeawayEnabled(!nextVal)
+      toast.error("Failed to update takeaway status")
+    } finally {
+      setUpdatingTakeaway(false)
+    }
   }
 
   const handleLogout = () => {
@@ -158,7 +192,7 @@ export default function DesktopRestaurantNav() {
               </div>
             </div>
 
-            {/* Live Online/Offline Status Toggle Badge */}
+            {/* Live Online/Offline Delivery Status Toggle Badge */}
             <button
               onClick={handleStatusToggle}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm shrink-0 border ${
@@ -166,9 +200,25 @@ export default function DesktopRestaurantNav() {
                   ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100"
                   : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:bg-rose-100"
               }`}
+              title="Restaurant Delivery Status (Click to manage)"
             >
               <span className={`w-2.5 h-2.5 rounded-full ${status === "Online" ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
-              <span className="tracking-wide uppercase">{status}</span>
+              <span className="tracking-wide uppercase">Delivery: {status}</span>
+            </button>
+
+            {/* Quick 1-Click Takeaway ON/OFF Toggle Button */}
+            <button
+              onClick={handleQuickTakeawayToggle}
+              disabled={updatingTakeaway}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm shrink-0 border ${
+                takeawayEnabled
+                  ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700 hover:bg-slate-200"
+              }`}
+              title="Toggle Takeaway Pickup Orders (Click to switch)"
+            >
+              <span className={`w-2 h-2 rounded-full ${takeawayEnabled ? "bg-[#22A2E3] animate-pulse" : "bg-slate-400"}`} />
+              <span className="tracking-wide uppercase">Takeaway: {takeawayEnabled ? "ON" : "OFF"}</span>
             </button>
           </div>
 

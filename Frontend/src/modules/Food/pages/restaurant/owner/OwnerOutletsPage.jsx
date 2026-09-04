@@ -107,6 +107,18 @@ export default function OwnerOutletsPage() {
     }
   }
 
+  // Handle Toggle Takeaway Orders
+  const handleToggleTakeaway = async (outlet) => {
+    const val = outlet.isTakeawayEnabled !== false ? false : true
+    try {
+      await ownerAPI.updateOutlet(outlet._id, { isTakeawayEnabled: val })
+      toast.success(val ? "Takeaway enabled for branch" : "Takeaway disabled for branch")
+      fetchOutlets()
+    } catch (err) {
+      toast.error("Failed to update takeaway status")
+    }
+  }
+
   // Reset Credentials submit
   const handleResetCredentials = async (e) => {
     e.preventDefault()
@@ -268,8 +280,8 @@ export default function OwnerOutletsPage() {
                 className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-[#22A2E3]/40 transition-all flex flex-col justify-between space-y-5"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono">
                         {outlet.outletCode}
                       </span>
@@ -280,23 +292,40 @@ export default function OwnerOutletsPage() {
                             ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                             : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
                         }`}
+                        title="Toggle Branch Active/Inactive"
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${outlet.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                         <span>{outlet.status}</span>
                       </button>
                     </div>
 
-                    <button
-                      onClick={() => handleToggleAccepting(outlet)}
-                      className={`text-[10px] font-black px-2.5 py-1 rounded-xl transition-all ${
-                        outlet.isAcceptingOrders
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-300 dark:border-emerald-800"
-                          : "bg-slate-100 text-slate-500 border border-slate-200 dark:border-slate-700"
-                      }`}
-                      title="Toggle Accepting Orders"
-                    >
-                      {outlet.isAcceptingOrders ? "Taking Orders" : "Paused"}
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Delivery Status Button */}
+                      <button
+                        onClick={() => handleToggleAccepting(outlet)}
+                        className={`text-[10px] font-black px-2 py-1 rounded-xl transition-all ${
+                          outlet.isAcceptingOrders
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-300 dark:border-emerald-800"
+                            : "bg-slate-100 text-slate-500 border border-slate-200 dark:border-slate-700"
+                        }`}
+                        title="Toggle Delivery Ordering"
+                      >
+                        {outlet.isAcceptingOrders ? "Delivery ON" : "Delivery OFF"}
+                      </button>
+
+                      {/* Takeaway Status Button */}
+                      <button
+                        onClick={() => handleToggleTakeaway(outlet)}
+                        className={`text-[10px] font-black px-2 py-1 rounded-xl transition-all ${
+                          outlet.isTakeawayEnabled !== false
+                            ? "bg-blue-50 text-blue-700 border border-blue-300 dark:border-blue-800"
+                            : "bg-slate-100 text-slate-500 border border-slate-200 dark:border-slate-700"
+                        }`}
+                        title="Toggle Takeaway Pickup Ordering"
+                      >
+                        {outlet.isTakeawayEnabled !== false ? "Takeaway ON" : "Takeaway OFF"}
+                      </button>
+                    </div>
                   </div>
 
                   <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">
@@ -370,8 +399,9 @@ export default function OwnerOutletsPage() {
                           managerName: outlet.managerName,
                           managerPhone: outlet.managerPhone,
                           address: outlet.address || {},
-                          status: outlet.status,
-                          isAcceptingOrders: outlet.isAcceptingOrders,
+                          status: outlet.status || "active",
+                          isAcceptingOrders: outlet.isAcceptingOrders !== false,
+                          isTakeawayEnabled: outlet.isTakeawayEnabled !== false,
                         })
                       }}
                       className="text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center gap-1"
@@ -583,6 +613,44 @@ export default function OwnerOutletsPage() {
                     onChange={(e) => setEditFormData({ ...editFormData, managerName: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold focus:outline-none focus:border-[#22A2E3]"
                   />
+                </div>
+              </div>
+
+              {/* Service & Availability Controls */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">Ordering & Service Controls</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={editFormData.isAcceptingOrders !== false}
+                      onChange={(e) => setEditFormData({ ...editFormData, isAcceptingOrders: e.target.checked })}
+                      className="w-4 h-4 rounded text-[#22A2E3] focus:ring-[#22A2E3]"
+                    />
+                    <span>Accept Delivery Orders</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={editFormData.isTakeawayEnabled !== false}
+                      onChange={(e) => setEditFormData({ ...editFormData, isTakeawayEnabled: e.target.checked })}
+                      className="w-4 h-4 rounded text-[#22A2E3] focus:ring-[#22A2E3]"
+                    />
+                    <span>Accept Takeaway Pickups</span>
+                  </label>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Branch Status</span>
+                  <select
+                    value={editFormData.status || "active"}
+                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                    className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#22A2E3]"
+                  >
+                    <option value="active">Active (Open)</option>
+                    <option value="inactive">Inactive (Closed)</option>
+                  </select>
                 </div>
               </div>
 

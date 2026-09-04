@@ -19,12 +19,14 @@ export default function DeliverySettings() {
   const navigate = useNavigate()
   const goBack = useRestaurantBackNavigation()
   const [deliveryStatus, setDeliveryStatus] = useState(false)
+  const [takeawayStatus, setTakeawayStatus] = useState(true)
   const [showWarning, setShowWarning] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [pendingStatus, setPendingStatus] = useState(false)
   const [showSuccessToast, setShowSuccessToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
   const [savingStatus, setSavingStatus] = useState(false)
+  const [savingTakeaway, setSavingTakeaway] = useState(false)
 
   // Lenis smooth scrolling
   useEffect(() => {
@@ -59,11 +61,11 @@ export default function DeliverySettings() {
     }))
   }
 
-  // Load delivery status from backend on mount
+  // Load delivery & takeaway status from backend on mount
   useEffect(() => {
     let cancelled = false
 
-    const loadDeliveryStatus = async () => {
+    const loadSettings = async () => {
       try {
         const response = await restaurantAPI.getCurrentRestaurant()
         const restaurant =
@@ -73,6 +75,9 @@ export default function DeliverySettings() {
         const nextStatus = restaurant?.isAcceptingOrders !== false
         if (!cancelled) {
           setDeliveryStatus(nextStatus)
+          if (restaurant?.isTakeawayEnabled !== undefined) {
+            setTakeawayStatus(Boolean(restaurant.isTakeawayEnabled))
+          }
           syncStatusLocally(nextStatus)
         }
       } catch (error) {
@@ -89,7 +94,7 @@ export default function DeliverySettings() {
       }
     }
 
-    loadDeliveryStatus()
+    loadSettings()
 
     const handleExternalStatusChange = (event) => {
       if (event.detail?.isOnline !== undefined && !cancelled) {
@@ -103,9 +108,17 @@ export default function DeliverySettings() {
     }
     window.addEventListener('restaurantStatusChanged', handleExternalStatusChange)
 
+    const handleTakeawayChange = (event) => {
+      if (event.detail?.isTakeawayEnabled !== undefined && !cancelled) {
+        setTakeawayStatus(Boolean(event.detail.isTakeawayEnabled))
+      }
+    }
+    window.addEventListener('takeawayStatusChanged', handleTakeawayChange)
+
     return () => {
       cancelled = true
       window.removeEventListener('restaurantStatusChanged', handleExternalStatusChange)
+      window.removeEventListener('takeawayStatusChanged', handleTakeawayChange)
     }
   }, [])
 
@@ -185,6 +198,26 @@ export default function DeliverySettings() {
     }
   }
 
+  const handleTakeawayToggle = async (checked) => {
+    if (savingTakeaway) return
+    const prev = takeawayStatus
+    setTakeawayStatus(checked)
+    try {
+      setSavingTakeaway(true)
+      await restaurantAPI.updateProfile({ isTakeawayEnabled: checked })
+      window.dispatchEvent(new CustomEvent('takeawayStatusChanged', { 
+        detail: { isTakeawayEnabled: checked } 
+      }))
+      showToast(checked ? "Takeaway Pickup is now ON" : "Takeaway Pickup is now OFF")
+    } catch (error) {
+      setTakeawayStatus(prev)
+      debugError("Error updating takeaway status:", error)
+      showToast("Error updating takeaway status")
+    } finally {
+      setSavingTakeaway(false)
+    }
+  }
+
   const handleConfirmStatusChange = () => {
     void saveDeliveryStatusToBackend(pendingStatus)
     setShowConfirmDialog(false)
@@ -214,14 +247,15 @@ export default function DeliverySettings() {
             <ArrowLeft className="w-6 h-6 text-gray-900" />
           </button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-gray-900">Delivery Settings</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Manage your delivery status</p>
+            <h1 className="text-lg font-bold text-gray-900">Delivery & Takeaway Settings</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Manage delivery and takeaway ordering status</p>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+        {/* Delivery Status Card */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -234,8 +268,8 @@ export default function DeliverySettings() {
                   <Truck className="w-5 h-5 text-gray-900" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-gray-900">Delivery Status</h2>
-                  <p className="text-sm text-gray-500">Control when you receive delivery orders</p>
+                  <h2 className="text-base font-bold text-gray-900">Delivery Orders</h2>
+                  <p className="text-sm text-gray-500">Control when customers can order for delivery</p>
                 </div>
               </div>
 
@@ -250,7 +284,7 @@ export default function DeliverySettings() {
                   >
                     <div className={`w-2 h-2 rounded-full ${deliveryStatus ? "bg-green-500 animate-pulse" : "bg-gray-600"}`}></div>
                     <p className="text-sm text-gray-500">
-                      {deliveryStatus ? "Receiving orders" : "Not receiving orders"}
+                      {deliveryStatus ? "Receiving delivery orders" : "Not receiving delivery orders"}
                     </p>
                   </motion.div>
                   <AnimatePresence>
@@ -289,17 +323,60 @@ export default function DeliverySettings() {
           </Card>
         </motion.div>
 
+        {/* Takeaway / Self-Pickup Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+        >
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-emerald-50 rounded-lg">
+                  <ShoppingBag className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">Takeaway (Self-Pickup)</h2>
+                  <p className="text-sm text-gray-500">Allow customers to order online & pick up at your outlet</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-base font-bold text-gray-900 mb-1.5">Turn on takeaway pickup</p>
+                  <motion.div 
+                    className="flex items-center gap-2"
+                    initial={false}
+                    animate={{ scale: takeawayStatus ? 1.05 : 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className={`w-2 h-2 rounded-full ${takeawayStatus ? "bg-green-500 animate-pulse" : "bg-gray-600"}`}></div>
+                    <p className="text-sm text-gray-500">
+                      {takeawayStatus ? "Accepting takeaway orders" : "Takeaway orders disabled"}
+                    </p>
+                  </motion.div>
+                </div>
+                <Switch
+                  checked={takeawayStatus}
+                  onCheckedChange={handleTakeawayToggle}
+                  disabled={savingTakeaway}
+                  className="ml-4 data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-300"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Info Card */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="mt-4"
         >
           <Card className="bg-blue-50 border-blue-200 shadow-sm">
             <CardContent className="p-4">
               <p className="text-sm text-gray-700">
-                <strong>Note:</strong> When delivery is turned off, customers won't be able to place delivery orders from your restaurant. You can turn it back on anytime.
+                <strong>Note:</strong> You have full real-time control over both Delivery and Takeaway channels. Toggle them off anytime when your kitchen is busy or out of stock.
               </p>
             </CardContent>
           </Card>
