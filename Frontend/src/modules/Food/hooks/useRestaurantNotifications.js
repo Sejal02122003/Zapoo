@@ -86,27 +86,10 @@ export const useRestaurantNotifications = () => {
   const socketRef = useRef(null);
   const [orderQueue, setOrderQueue] = useState([]); // Queue of pending orders
   const [newReservation, setNewReservation] = useState(null);
-  const [pickupOtpReveal, setPickupOtpRevealState] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('restaurant_pickupOtpReveal');
-        return saved ? JSON.parse(saved) : null;
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  }); // { orderId, otp, message }
+  const [pickupOtpReveal, setPickupOtpRevealState] = useState(null); // Deprecated: restaurant OTP removed
 
   const setPickupOtpReveal = (data) => {
-    setPickupOtpRevealState(data);
-    if (typeof window !== 'undefined') {
-      if (data) {
-        localStorage.setItem('restaurant_pickupOtpReveal', JSON.stringify(data));
-      } else {
-        localStorage.removeItem('restaurant_pickupOtpReveal');
-      }
-    }
+    // No-op: restaurant OTP removed
   };
   const [isConnected, setIsConnected] = useState(false);
   const audioRef = useRef(null);
@@ -407,43 +390,6 @@ export const useRestaurantNotifications = () => {
             }
           }
         }
-
-        // --- NEW: Fallback for Pickup OTP Request if Socket failed ---
-        const currentOtpRevealStr = typeof window !== 'undefined' ? localStorage.getItem('restaurant_pickupOtpReveal') : null;
-        let currentOtpRevealObj = null;
-        if (currentOtpRevealStr) {
-           try { currentOtpRevealObj = JSON.parse(currentOtpRevealStr); } catch(e) {}
-        }
-
-        const otpRequests = rows.filter(o => {
-          const reqAt = o?.deliveryVerification?.pickupOtp?.requestedAt;
-          const isVerified = o?.deliveryVerification?.pickupOtp?.verified;
-          const pickupOtp = o?.pickupOtp;
-          
-          if (!reqAt || isVerified || !pickupOtp) return false;
-          
-          // Only show if requested within last 15 minutes
-          const requestedTime = new Date(reqAt).getTime();
-          const now = Date.now();
-          if (now - requestedTime > 15 * 60000) return false;
-          
-          // Don't show if we are already showing it
-          if (currentOtpRevealObj && currentOtpRevealObj.orderMongoId === o._id) return false;
-          
-          return true;
-        }).sort((a, b) => new Date(b.deliveryVerification.pickupOtp.requestedAt).getTime() - new Date(a.deliveryVerification.pickupOtp.requestedAt).getTime());
-
-        if (otpRequests.length > 0) {
-           const latestReq = otpRequests[0];
-           const payload = {
-              orderMongoId: latestReq._id.toString(),
-              orderId: latestReq.orderId || latestReq.order_id || latestReq._id.toString(),
-              otp: latestReq.pickupOtp,
-              message: 'Delivery partner is requesting the Pickup OTP. Please share this code with them.'
-           };
-           setPickupOtpReveal(payload);
-        }
-        // -------------------------------------------------------------
       } catch (error) {
         // Stop polling if unauthorized (token expired/invalid)
         if (error?.response?.status === 401 || error?.response?.status === 403) {

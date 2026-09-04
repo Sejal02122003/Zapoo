@@ -888,19 +888,6 @@ export default function OrderDetails() {
               <p className="text-sm text-blue-900 font-medium">{orderData.restaurantNote}</p>
             </div>
           )}
-
-          {/* Pickup OTP */}
-          {orderData.pickupOtp && (
-            <div className="mt-3 p-4 bg-emerald-50 border border-emerald-100 rounded-lg flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider block mb-1">Pickup Verification OTP</span>
-                <p className="text-[10px] text-emerald-600 font-medium leading-tight max-w-[200px]">Share this code with the delivery partner when they arrive to pick up the order.</p>
-              </div>
-              <div className="bg-white px-4 py-2 rounded shadow-sm border border-emerald-200">
-                <span className="text-xl font-black text-emerald-800 tracking-[0.2em]">{orderData.pickupOtp}</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Customer Details Section */}
