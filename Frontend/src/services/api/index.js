@@ -314,6 +314,9 @@ export const adminAPI = {
   /** Dashboard summary stats (admin home) */
   getDashboardStats: (params = {}) =>
     adminClient.get("/food/admin/dashboard-stats", { params }),
+  /** List branch outlets across restaurants (admin) */
+  getOutlets: (params = {}) =>
+    adminClient.get("/food/admin/outlets", { params }),
   /** List restaurant withdrawal requests (admin). */
   getWithdrawals: (params = {}) =>
     adminClient.get("/food/admin/withdrawals", { params }),

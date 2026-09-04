@@ -207,6 +207,19 @@ export async function getDashboardStats(req, res, next) {
     }
 }
 
+export async function getAdminOutlets(req, res, next) {
+    try {
+        const data = await adminService.getAdminOutletsSummary(req.query || {});
+        res.status(200).json({
+            success: true,
+            message: 'Outlets fetched successfully',
+            data
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export async function getTransactionReport(req, res, next) {
     try {
         const data = await adminService.getTransactionReport(req.query || {});

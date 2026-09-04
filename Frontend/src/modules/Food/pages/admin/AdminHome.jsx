@@ -23,7 +23,12 @@ import {
   Tooltip,
   XAxis,
   YAxis } from "recharts"
-import { Activity, ArrowUpRight, ShoppingBag, CreditCard, Truck, Receipt, DollarSign, Store, UserCheck, Package, UserCircle, Clock, CheckCircle, Plus, XCircle, Zap } from "lucide-react"
+import {
+  Activity, ArrowUpRight, ShoppingBag, CreditCard, Truck, Receipt, DollarSign, Store,
+  UserCheck, Package, UserCircle, Clock, CheckCircle, Plus, XCircle, Zap,
+  Building2, Phone, Mail, MapPin, ChevronDown, ChevronUp, Search, Eye, ExternalLink,
+  ShieldCheck, Filter, Users, Copy, Check
+} from "lucide-react"
 import { adminAPI } from "@food/api"
 const debugLog = () => {}
 const debugError = () => {}
@@ -44,6 +49,25 @@ export default function AdminHome() {
   const [isLoading, setIsLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState(null)
   const [zones, setZones] = useState([])
+  const [outletSearch, setOutletSearch] = useState("")
+  const [outletFilter, setOutletFilter] = useState("all")
+  const [expandedBrandIds, setExpandedBrandIds] = useState({})
+  const [copiedPhone, setCopiedPhone] = useState(null)
+
+  const toggleBrandExpand = (id) => {
+    setExpandedBrandIds(prev => ({
+      ...prev,
+      [id]: prev[id] === false ? true : false
+    }))
+  }
+
+  const handleCopyPhone = (phone, e) => {
+    e.stopPropagation()
+    if (!phone) return
+    navigator.clipboard?.writeText(phone)
+    setCopiedPhone(phone)
+    setTimeout(() => setCopiedPhone(null), 2000)
+  }
 
   // Fetch zone list for filter
   useEffect(() => {
@@ -150,6 +174,44 @@ export default function AdminHome() {
   const pendingOrders = dashboardData?.orderStats?.pending || 0
   const processingOrders = dashboardData?.orderStats?.processing || 0
   const completedOrders = dashboardData?.orderStats?.completed || 0
+
+  // Outlet stats & Brand Network
+  const totalOutlets = dashboardData?.outlets?.total || 0
+  const activeOutlets = dashboardData?.outlets?.active || 0
+  const inactiveOutlets = dashboardData?.outlets?.inactive || 0
+  const acceptingOrdersOutlets = dashboardData?.outlets?.acceptingOrders || 0
+  const brandsWithOutlets = dashboardData?.brandsWithOutlets || []
+
+  const filteredBrands = brandsWithOutlets.filter(brand => {
+    if (outletSearch.trim()) {
+      const q = outletSearch.toLowerCase().trim()
+      const brandMatch =
+        (brand.restaurantName && brand.restaurantName.toLowerCase().includes(q)) ||
+        (brand.ownerName && brand.ownerName.toLowerCase().includes(q)) ||
+        (brand.ownerPhone && String(brand.ownerPhone).includes(q)) ||
+        (brand.ownerEmail && brand.ownerEmail.toLowerCase().includes(q)) ||
+        (brand.phone && String(brand.phone).includes(q)) ||
+        (brand.address?.city && brand.address.city.toLowerCase().includes(q)) ||
+        (brand.address?.area && brand.address.area.toLowerCase().includes(q))
+
+      const outletMatch = (brand.outlets || []).some(o =>
+        (o.name && o.name.toLowerCase().includes(q)) ||
+        (o.outletCode && o.outletCode.toLowerCase().includes(q)) ||
+        (o.managerName && o.managerName.toLowerCase().includes(q)) ||
+        (o.managerPhone && String(o.managerPhone).includes(q)) ||
+        (o.phone && String(o.phone).includes(q)) ||
+        (o.address?.city && o.address.city.toLowerCase().includes(q))
+      )
+
+      if (!brandMatch && !outletMatch) return false
+    }
+
+    if (outletFilter === "multi") return brand.outletsCount > 1
+    if (outletFilter === "single") return brand.outletsCount === 1
+    if (outletFilter === "active") return brand.activeOutletsCount > 0
+    if (outletFilter === "with_orders") return (brand.ordersSummary?.totalOrders || 0) > 0
+    return true
+  })
 
   const pieData = orderStats.map((item) => ({
     name: item.label,
@@ -291,6 +353,22 @@ export default function AdminHome() {
               icon={<UserCheck className="h-5 w-5 text-orange-600" />}
               accent="bg-orange-200/40"
               path="/admin/food/restaurants/joining-request"
+            />
+            <MetricCard
+              title="Total Outlets"
+              value={totalOutlets.toLocaleString("en-IN")}
+              helper={`${activeOutlets} active • ${acceptingOrdersOutlets} taking orders`}
+              icon={<Building2 className="h-5 w-5 text-teal-600" />}
+              accent="bg-teal-200/40"
+              path="/admin/food/restaurants"
+            />
+            <MetricCard
+              title="Active Outlets"
+              value={activeOutlets.toLocaleString("en-IN")}
+              helper={`${inactiveOutlets} inactive branches`}
+              icon={<Store className="h-5 w-5 text-emerald-600" />}
+              accent="bg-emerald-200/40"
+              path="/admin/food/restaurants"
             />
             <MetricCard
               title="Total delivery boy"
@@ -613,6 +691,373 @@ export default function AdminHome() {
                 ))}
               </CardContent>
             </Card>
+          </div>
+
+          {/* Brand Owners & Outlets Command Hub */}
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs">
+            <div className="flex flex-col gap-4 border-b border-neutral-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-600">
+                    <Building2 className="h-5 w-5" />
+                  </span>
+                  <h2 className="text-xl font-bold text-neutral-900">Brand Owners & Outlets Directory</h2>
+                  <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-semibold text-teal-800">
+                    {brandsWithOutlets.length} Brands • {totalOutlets} Outlets
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-neutral-500">
+                  Comprehensive network overview of brand owners, branch managers, live outlet operational status, and order performance
+                </p>
+              </div>
+
+              {/* Quick stats pills */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-medium text-neutral-700">
+                  <span className="h-2 w-2 rounded-full bg-blue-500" />
+                  Total Brands: <strong className="text-neutral-900">{brandsWithOutlets.length}</strong>
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-medium text-neutral-700">
+                  <span className="h-2 w-2 rounded-full bg-teal-500" />
+                  Total Outlets: <strong className="text-neutral-900">{totalOutlets}</strong>
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-medium text-neutral-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Active: <strong className="text-neutral-900">{activeOutlets}</strong>
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Taking Orders: <strong className="text-emerald-900">{acceptingOrdersOutlets}</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                <input
+                  type="text"
+                  placeholder="Search brand, owner name, phone, outlet name, code, manager, city..."
+                  value={outletSearch}
+                  onChange={(e) => setOutletSearch(e.target.value)}
+                  className="w-full rounded-xl border border-neutral-300 bg-white py-2 pl-10 pr-12 text-sm text-neutral-900 placeholder-neutral-400 transition-colors focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                />
+                {outletSearch && (
+                  <button
+                    onClick={() => setOutletSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-neutral-400 hover:text-neutral-600"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  { id: "all", label: `All (${brandsWithOutlets.length})` },
+                  { id: "multi", label: `Multi-Outlet (${brandsWithOutlets.filter(b => b.outletsCount > 1).length})` },
+                  { id: "single", label: `Single Outlet (${brandsWithOutlets.filter(b => b.outletsCount === 1).length})` },
+                  { id: "active", label: `Active (${brandsWithOutlets.filter(b => b.activeOutletsCount > 0).length})` },
+                  { id: "with_orders", label: `With Orders (${brandsWithOutlets.filter(b => (b.ordersSummary?.totalOrders || 0) > 0).length})` }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setOutletFilter(tab.id)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                      outletFilter === tab.id
+                        ? "bg-neutral-900 text-white shadow-xs"
+                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Brand and Outlets Cards */}
+            <div className="mt-5 space-y-4">
+              {filteredBrands.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-300 py-12 text-center">
+                  <Building2 className="h-10 w-10 text-neutral-300 mb-2" />
+                  <p className="text-sm font-semibold text-neutral-700">No brand owners or outlets found</p>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    {outletSearch ? `No matches for "${outletSearch}". Try a different search term.` : "No outlets configured."}
+                  </p>
+                </div>
+              ) : (
+                filteredBrands.map((brand) => {
+                  const isExpanded = expandedBrandIds[brand._id] !== false
+                  const hasOutlets = (brand.outlets || []).length > 0
+
+                  return (
+                    <div
+                      key={brand._id}
+                      className="rounded-2xl border border-neutral-200 bg-white transition-all duration-200 hover:border-neutral-300 hover:shadow-md overflow-hidden"
+                    >
+                      {/* Brand Header */}
+                      <div className="bg-neutral-50/80 p-4 sm:p-5 border-b border-neutral-200">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                          {/* Brand Info */}
+                          <div className="flex items-start gap-3.5">
+                            {brand.profileImage ? (
+                              <img
+                                src={brand.profileImage}
+                                alt={brand.restaurantName}
+                                className="h-12 w-12 rounded-xl object-cover ring-1 border border-neutral-200 shadow-xs shrink-0"
+                                onError={(e) => { e.target.style.display = 'none' }}
+                              />
+                            ) : (
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 text-base font-bold text-white shadow-xs">
+                                {(brand.restaurantName || "R").slice(0, 2).toUpperCase()}
+                              </div>
+                            )}
+
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-base font-bold text-neutral-900">{brand.restaurantName}</h3>
+                                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                  brand.status === 'approved'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : brand.status === 'pending'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-neutral-100 text-neutral-700'
+                                }`}>
+                                  <ShieldCheck className="h-3 w-3" />
+                                  {brand.status ? brand.status.charAt(0).toUpperCase() + brand.status.slice(1) : 'Unknown'}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700">
+                                  <Building2 className="h-3 w-3" />
+                                  {brand.outletsCount} {brand.outletsCount === 1 ? 'Branch' : 'Branches'}
+                                </span>
+                                {brand.isVegetarian && (
+                                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                                    PURE VEG
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-neutral-500">
+                                {brand.address?.city && (
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="h-3.5 w-3.5 text-neutral-400" />
+                                    {brand.address.area ? `${brand.address.area}, ` : ''}{brand.address.city}
+                                  </span>
+                                )}
+                                {brand.cuisines?.length > 0 && (
+                                  <span className="text-neutral-400">
+                                    • {brand.cuisines.slice(0, 3).join(', ')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Brand Owner Profile Card */}
+                          <div className="flex flex-wrap items-center gap-3 bg-white rounded-xl border border-neutral-200 px-3.5 py-2.5 shadow-xs">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 text-amber-700 font-bold text-xs">
+                                <UserCircle className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className="text-[10px] uppercase font-bold text-neutral-400">Brand Owner</p>
+                                <p className="text-xs font-bold text-neutral-800">{brand.ownerName || 'Not specified'}</p>
+                              </div>
+                            </div>
+
+                            <div className="h-6 w-px bg-neutral-200 hidden sm:block" />
+
+                            {/* Owner Phone */}
+                            {brand.ownerPhone && brand.ownerPhone !== 'N/A' && (
+                              <div className="flex items-center gap-1.5">
+                                <a
+                                  href={`tel:${brand.ownerPhone}`}
+                                  className="inline-flex items-center gap-1 text-xs text-neutral-700 hover:text-teal-600 font-medium bg-neutral-50 hover:bg-teal-50 px-2 py-1 rounded-lg transition-colors"
+                                  title="Call Owner"
+                                >
+                                  <Phone className="h-3.5 w-3.5 text-teal-600" />
+                                  <span>{brand.ownerPhone}</span>
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCopyPhone(brand.ownerPhone, e)}
+                                  className="text-neutral-400 hover:text-neutral-700 p-1"
+                                  title="Copy Phone"
+                                >
+                                  {copiedPhone === brand.ownerPhone ? (
+                                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Owner Email */}
+                            {brand.ownerEmail && brand.ownerEmail !== 'N/A' && (
+                              <a
+                                href={`mailto:${brand.ownerEmail}`}
+                                className="inline-flex items-center gap-1 text-xs text-neutral-600 hover:text-indigo-600 font-medium bg-neutral-50 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors truncate max-w-[180px]"
+                                title={brand.ownerEmail}
+                              >
+                                <Mail className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                                <span className="truncate">{brand.ownerEmail}</span>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Performance Strip & Actions */}
+                        <div className="mt-3.5 pt-3.5 border-t border-neutral-200/70 flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                            <span className="rounded-lg bg-white px-2.5 py-1 border border-neutral-200 font-medium text-neutral-700">
+                              Total Orders: <strong className="text-neutral-900">{brand.ordersSummary?.totalOrders || 0}</strong>
+                            </span>
+                            <span className="rounded-lg bg-emerald-50 px-2.5 py-1 border border-emerald-200 font-medium text-emerald-800">
+                              Delivered: <strong className="text-emerald-900">{brand.ordersSummary?.deliveredOrders || 0}</strong>
+                            </span>
+                            <span className="rounded-lg bg-blue-50 px-2.5 py-1 border border-blue-200 font-medium text-blue-800">
+                              GMV Revenue: <strong className="text-blue-900">{formatCurrency(brand.ordersSummary?.totalRevenue || 0)}</strong>
+                            </span>
+                            {brand.ordersSummary?.commission > 0 && (
+                              <span className="rounded-lg bg-purple-50 px-2.5 py-1 border border-purple-200 font-medium text-purple-800">
+                                Commission: <strong className="text-purple-900">{formatCurrency(brand.ordersSummary?.commission)}</strong>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/admin/food/orders/all?restaurantId=${brand._id}`)}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-700 hover:text-neutral-900 bg-white hover:bg-neutral-100 border border-neutral-200 px-3 py-1.5 rounded-lg transition-all"
+                            >
+                              <ShoppingBag className="h-3.5 w-3.5 text-neutral-500" />
+                              View Orders
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleBrandExpand(brand._id)}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3 py-1.5 rounded-lg transition-all"
+                            >
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp className="h-3.5 w-3.5" />
+                                  Hide Outlets ({brand.outletsCount})
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="h-3.5 w-3.5" />
+                                  Show Outlets ({brand.outletsCount})
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Outlets List Body */}
+                      {isExpanded && (
+                        <div className="p-4 sm:p-5">
+                          {!hasOutlets ? (
+                            <div className="py-4 text-center text-xs text-neutral-400 bg-neutral-50/50 rounded-xl border border-dashed border-neutral-200">
+                              No separate branch outlets configured under this brand yet.
+                            </div>
+                          ) : (
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                              {brand.outlets.map((outlet) => {
+                                const isOnline = outlet.isAcceptingOrders !== false && outlet.status === 'active'
+
+                                return (
+                                  <div
+                                    key={outlet._id}
+                                    className="rounded-xl border border-neutral-200 bg-white p-3.5 hover:border-teal-300 hover:shadow-sm transition-all flex flex-col justify-between"
+                                  >
+                                    <div>
+                                      {/* Top Row: Code & Status */}
+                                      <div className="flex items-center justify-between gap-2 mb-2">
+                                        <span className="inline-flex items-center gap-1 rounded-md bg-neutral-900 px-2 py-0.5 text-[11px] font-mono font-bold text-white shadow-xs">
+                                          {outlet.outletCode || "OUTLET"}
+                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                            outlet.status === 'active'
+                                              ? 'bg-emerald-100 text-emerald-800'
+                                              : 'bg-neutral-100 text-neutral-600'
+                                          }`}>
+                                            {outlet.status ? outlet.status.toUpperCase() : 'ACTIVE'}
+                                          </span>
+                                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                            isOnline
+                                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                          }`}>
+                                            <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                                            {isOnline ? 'Online' : 'Paused'}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Outlet Name */}
+                                      <h4 className="text-sm font-bold text-neutral-900 mb-1.5 truncate" title={outlet.name}>
+                                        {outlet.name}
+                                      </h4>
+
+                                      {/* Manager details */}
+                                      <div className="space-y-1 text-xs text-neutral-600 mb-3">
+                                        {outlet.managerName && (
+                                          <p className="flex items-center gap-1.5 font-medium text-neutral-800">
+                                            <UserCheck className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                                            <span>Mgr: {outlet.managerName}</span>
+                                          </p>
+                                        )}
+                                        {outlet.managerPhone && (
+                                          <p className="flex items-center gap-1.5">
+                                            <Phone className="h-3.5 w-3.5 text-teal-600 shrink-0" />
+                                            <a href={`tel:${outlet.managerPhone}`} className="hover:text-teal-600 hover:underline">
+                                              {outlet.managerPhone}
+                                            </a>
+                                          </p>
+                                        )}
+                                        {outlet.address?.city && (
+                                          <p className="flex items-center gap-1.5 text-[11px] text-neutral-500 truncate" title={outlet.address.formattedAddress || `${outlet.address.area}, ${outlet.address.city}`}>
+                                            <MapPin className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                                            <span className="truncate">{outlet.address.area ? `${outlet.address.area}, ` : ''}{outlet.address.city}</span>
+                                          </p>
+                                        )}
+                                        {outlet.timings?.openTime && (
+                                          <p className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+                                            <Clock className="h-3.5 w-3.5 shrink-0" />
+                                            <span>{outlet.timings.openTime} - {outlet.timings.closeTime}</span>
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Outlet Stats footer */}
+                                    <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-[11px]">
+                                      <span className="text-neutral-500 font-medium">
+                                        Orders: <strong className="text-neutral-900">{outlet.totalOrders || 0}</strong>
+                                      </span>
+                                      {outlet.totalRevenue > 0 && (
+                                        <span className="text-emerald-700 font-bold">
+                                          {formatCurrency(outlet.totalRevenue)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
           </div>
         </div>
       </div>
