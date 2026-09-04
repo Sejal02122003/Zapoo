@@ -83,11 +83,21 @@ export const triggerReassignment = async (req, res) => {
         // 6. Realtime Sockets
         const io = getSocketIo();
         if (io) {
+            const method = String(order.payment?.method || order.paymentMethod || 'cash').toLowerCase();
+            const status = String(order.payment?.status || '').toLowerCase();
+            const isPrepaid = ['paid', 'authorized', 'captured', 'settled'].includes(status) || method === 'wallet' || (method === 'razorpay' && status !== 'failed');
+            const total = Number(order.pricing?.total ?? order.total ?? 0);
+
             io.to(`delivery_${newDriverId}`).emit('reassignment_requested', {
                 orderId: order._id,
                 orderNumber: order.order_id,
                 reason: reason,
-                timeoutAt: order.reassignmentTimeoutAt
+                timeoutAt: order.reassignmentTimeoutAt,
+                paymentMethod: method,
+                paymentStatus: status,
+                isPrepaid,
+                total,
+                collectAmount: isPrepaid ? 0 : total
             });
             io.to('admin').emit('reassignment_pending_admin', {
                 orderId: order._id,

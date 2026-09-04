@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Clock, ShieldAlert, CheckCircle, XCircle } from 'lucide-react';
+import { Package, Clock, ShieldAlert, CheckCircle, XCircle, Banknote, CreditCard, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { deliveryAPI } from '@food/api';
 
@@ -76,6 +76,13 @@ export default function IncomingReassignmentModal({ isOpen, reassignmentData, on
 
   if (!isOpen || !reassignmentData) return null;
 
+  const method = String(reassignmentData.paymentMethod || reassignmentData.payment?.method || '').toLowerCase();
+  const status = String(reassignmentData.paymentStatus || reassignmentData.payment?.status || '').toLowerCase();
+  const isPrepaid = reassignmentData.isPrepaid === true || ['paid', 'authorized', 'captured', 'settled'].includes(status) || method === 'wallet' || (method === 'razorpay' && status !== 'failed');
+  const isWallet = method === 'wallet';
+  const total = Number(reassignmentData.total ?? reassignmentData.pricing?.total ?? reassignmentData.orderTotal ?? 0);
+  const collectAmount = isPrepaid ? 0 : Number(reassignmentData.collectAmount ?? reassignmentData.payment?.amountDue ?? total);
+
   return (
     <AnimatePresence>
       <motion.div
@@ -105,10 +112,45 @@ export default function IncomingReassignmentModal({ isOpen, reassignmentData, on
           </div>
           
           {/* Body */}
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-3.5">
             <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 text-center">
               <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-1">Order Number</p>
               <p className="text-2xl font-black text-gray-900">{reassignmentData.orderNumber || 'N/A'}</p>
+            </div>
+
+            {/* Payment Type Indicator */}
+            <div className={`p-3 rounded-xl border flex items-center justify-between ${
+              isPrepaid
+                ? isWallet
+                  ? 'bg-purple-50 border-purple-200 text-purple-900'
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                : 'bg-amber-50 border-amber-200 text-amber-900'
+            }`}>
+              <div className="flex items-center gap-2.5">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white ${
+                  isPrepaid
+                    ? isWallet ? 'bg-purple-600' : 'bg-emerald-600'
+                    : 'bg-amber-500'
+                }`}>
+                  {isPrepaid ? (isWallet ? <Wallet size={16} /> : <CreditCard size={16} />) : <Banknote size={16} />}
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider block">
+                    {isPrepaid ? (isWallet ? 'Zapoo Wallet (Prepaid)' : 'Paid Online (Prepaid)') : 'Cash on Delivery'}
+                  </span>
+                  <p className="text-xs font-medium opacity-80">
+                    {isPrepaid ? 'Do NOT collect cash' : 'Collect cash from customer'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[9px] font-bold uppercase tracking-wider opacity-70 block">
+                  {isPrepaid ? 'Collect' : 'To Collect'}
+                </span>
+                <span className="text-sm font-black">
+                  {isPrepaid ? '₹0' : (collectAmount > 0 ? `₹${collectAmount.toFixed(0)}` : 'COD')}
+                </span>
+              </div>
             </div>
             
             {reassignmentData.reason && (
@@ -118,7 +160,7 @@ export default function IncomingReassignmentModal({ isOpen, reassignmentData, on
               </div>
             )}
             
-            <div className="flex items-center justify-center gap-2 text-primary font-medium py-2">
+            <div className="flex items-center justify-center gap-2 text-primary font-medium py-1">
               <Clock size={20} className={timeLeft <= 10 ? 'animate-pulse text-red-500' : ''} />
               <span className={`text-xl ${timeLeft <= 10 ? 'text-red-500 font-bold' : ''}`}>
                 00:{timeLeft.toString().padStart(2, '0')}

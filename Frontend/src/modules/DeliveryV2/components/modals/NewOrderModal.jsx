@@ -1,10 +1,24 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, MapPin, FastForward, Clock, Phone, ChefHat, ChevronDown } from 'lucide-react';
+import { User, MapPin, FastForward, Clock, Phone, ChefHat, ChevronDown, CreditCard, Banknote, Wallet, QrCode } from 'lucide-react';
 import { ActionSlider } from '@/modules/DeliveryV2/components/ui/ActionSlider';
 import { useDeliveryStore } from '@/modules/DeliveryV2/store/useDeliveryStore';
 import { getHaversineDistance, calculateETA } from '@/modules/DeliveryV2/utils/geo';
 import { getOrderMongoId, getOrderDisplayId, isSameOrder } from '@food/utils/orderDispatchId';
+
+/**
+ * Helper to get payment badge config for queued orders
+ */
+const getOrderPaymentBadge = (queuedOrder) => {
+  if (!queuedOrder) return { label: 'COD', bg: 'bg-amber-100 text-amber-800' };
+  const method = String(queuedOrder.paymentMethod || queuedOrder.payment?.method || '').toLowerCase();
+  const status = String(queuedOrder.paymentStatus || queuedOrder.payment?.status || '').toLowerCase();
+  const isPaid = queuedOrder.isPrepaid === true || ['paid', 'authorized', 'captured', 'settled'].includes(status) || method === 'wallet' || (method === 'razorpay' && status !== 'failed');
+  if (method === 'wallet') return { label: 'WALLET', bg: 'bg-purple-100 text-purple-800' };
+  if (isPaid) return { label: 'PAID', bg: 'bg-emerald-100 text-emerald-800' };
+  if (method === 'razorpay_qr') return { label: 'QR', bg: 'bg-blue-100 text-blue-800' };
+  return { label: 'COD', bg: 'bg-amber-100 text-amber-800' };
+};
 
 /**
  * NewOrderModal - Ported to Original 1:1 Theme with Slider Accept.
@@ -64,6 +78,92 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
 
     return { distanceKm: '??', etaMins: order.prepTime || 15 };
   }, [order, riderLocation]);
+
+  const paymentDetails = useMemo(() => {
+    if (!order) {
+      return {
+        type: 'cod',
+        label: 'Cash on Delivery',
+        badge: 'COD',
+        subtext: 'Collect cash from customer at delivery',
+        collectAmount: 0,
+        isPrepaid: false,
+      };
+    }
+
+    const method = String(
+      order.paymentMethod ||
+      order.payment?.method ||
+      order.paymentMode ||
+      ''
+    ).toLowerCase();
+
+    const status = String(
+      order.paymentStatus ||
+      order.payment?.status ||
+      ''
+    ).toLowerCase();
+
+    const orderTotal = Number(
+      order.pricing?.total ??
+      order.total ??
+      order.orderAmount ??
+      order.collectAmount ??
+      order.payment?.amountDue ??
+      0
+    );
+
+    const isPrepaid =
+      order.isPrepaid === true ||
+      ['paid', 'authorized', 'captured', 'settled'].includes(status) ||
+      method === 'wallet' ||
+      (method === 'razorpay' && status !== 'failed' && status !== 'cod_pending');
+
+    if (method === 'wallet') {
+      return {
+        type: 'wallet',
+        label: 'Zapoo Wallet',
+        badge: 'Wallet Prepaid',
+        subtext: 'Paid from In-App Wallet • Do NOT collect cash',
+        collectAmount: 0,
+        isPrepaid: true,
+      };
+    }
+
+    if (method === 'razorpay_qr') {
+      const due = Number(order.collectAmount ?? order.payment?.amountDue ?? orderTotal);
+      return {
+        type: 'qr',
+        label: 'UPI QR on Delivery',
+        badge: 'Dynamic QR',
+        subtext: 'Customer will scan QR on delivery to pay',
+        collectAmount: due,
+        isPrepaid: false,
+      };
+    }
+
+    if (isPrepaid) {
+      return {
+        type: 'online',
+        label: 'Paid Online',
+        badge: 'Prepaid',
+        subtext: 'Payment received online • Do NOT collect cash',
+        collectAmount: 0,
+        isPrepaid: true,
+      };
+    }
+
+    // Default to Cash on Delivery (COD)
+    const due = Number(order.collectAmount ?? order.payment?.amountDue ?? orderTotal);
+    return {
+      type: 'cod',
+      label: 'Cash on Delivery',
+      badge: 'COD',
+      subtext: 'Collect cash from customer at drop-off',
+      collectAmount: due,
+      isPrepaid: false,
+    };
+  }, [order]);
 
   if (!order) return null;
 
@@ -133,13 +233,32 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
           </button>
         </div>
 
-        {/* Header Ribbon (Old Green Style) */}
+        {/* Header Ribbon */}
         <div 
           className="p-4 sm:p-8 flex justify-between items-center text-white border-b border-white/10"
           style={{ background: 'linear-gradient(33deg, #15498b 0%, #000000 100%)' }}
         >
           <div>
-            <p className="text-white/80 text-[10px] font-bold uppercase tracking-widest mb-1">Incoming Request</p>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <p className="text-white/80 text-[10px] font-bold uppercase tracking-widest">Incoming Request</p>
+              <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                paymentDetails.type === 'cod'
+                  ? 'bg-amber-400 text-amber-950 font-black'
+                  : paymentDetails.type === 'wallet'
+                  ? 'bg-purple-300 text-purple-950 font-black'
+                  : paymentDetails.type === 'qr'
+                  ? 'bg-blue-300 text-blue-950 font-black'
+                  : 'bg-emerald-400 text-emerald-950 font-black'
+              }`}>
+                {paymentDetails.type === 'cod' 
+                  ? `💵 COD (Collect ₹${paymentDetails.collectAmount.toFixed(0)})` 
+                  : paymentDetails.type === 'wallet'
+                  ? '👛 Wallet Prepaid'
+                  : paymentDetails.type === 'qr'
+                  ? `📱 QR (₹${paymentDetails.collectAmount.toFixed(0)})`
+                  : '💳 Prepaid'}
+              </span>
+            </div>
             <div className="flex items-end gap-2">
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tighter">₹{Number(earnings || 0).toFixed(2)}</h2>
               {bonus > 0 && (
@@ -171,6 +290,7 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
                 const label =
                   getOrderDisplayId(queuedOrder) ||
                   `Order ${index + 1}`;
+                const paymentBadge = getOrderPaymentBadge(queuedOrder);
 
                 return (
                   <button
@@ -183,9 +303,14 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
                         : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <span className="block text-[10px] font-bold uppercase tracking-wider opacity-80">
-                      {label.length > 12 ? `${label.slice(0, 12)}...` : label}
-                    </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="block text-[10px] font-bold uppercase tracking-wider opacity-80">
+                        {label.length > 12 ? `${label.slice(0, 12)}...` : label}
+                      </span>
+                      <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${paymentBadge.bg}`}>
+                        {paymentBadge.label}
+                      </span>
+                    </div>
                     <span className="block text-sm font-bold mt-0.5">
                       ₹{Number(earnings || 0).toFixed(0)}
                     </span>
@@ -197,7 +322,7 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
         )}
 
         {/* Info Body */}
-        <div className="p-4 sm:p-8 pb-6 sm:pb-12 space-y-5 sm:space-y-10 overflow-y-auto max-h-[78vh]">
+        <div className="p-4 sm:p-8 pb-6 sm:pb-12 space-y-4 sm:space-y-6 overflow-y-auto max-h-[78vh]">
           <div className="flex gap-3 sm:gap-6">
             <div className="flex flex-col items-center gap-1.5 mt-2 py-1">
               <div className="w-5 h-5 rounded-full bg-green-500 border-4 border-green-50 shadow-lg shadow-green-500/20" />
@@ -234,6 +359,7 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
             </div>
           </div>
 
+          {/* Time & Distance Grid */}
           <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
              <div className="p-3 sm:p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-2.5 sm:gap-3">
                <Clock className="w-5 h-5 text-orange-500" />
@@ -249,6 +375,75 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
                   <span className="text-sm font-bold text-gray-900">{distanceKm} KM</span>
                </div>
              </div>
+          </div>
+
+          {/* Dedicated Payment Type Indicator Card */}
+          <div className={`p-3.5 sm:p-4 rounded-2xl border transition-all ${
+            paymentDetails.type === 'cod'
+              ? 'bg-amber-50/90 border-amber-200/90'
+              : paymentDetails.type === 'wallet'
+              ? 'bg-purple-50/90 border-purple-200/90'
+              : paymentDetails.type === 'qr'
+              ? 'bg-blue-50/90 border-blue-200/90'
+              : 'bg-emerald-50/90 border-emerald-200/90'
+          }`}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-xs border ${
+                  paymentDetails.type === 'cod'
+                    ? 'bg-amber-500 text-white border-amber-400'
+                    : paymentDetails.type === 'wallet'
+                    ? 'bg-purple-600 text-white border-purple-500'
+                    : paymentDetails.type === 'qr'
+                    ? 'bg-blue-600 text-white border-blue-500'
+                    : 'bg-emerald-500 text-white border-emerald-400'
+                }`}>
+                  {paymentDetails.type === 'cod' ? (
+                    <Banknote className="w-5 h-5 sm:w-6 sm:h-6" />
+                  ) : paymentDetails.type === 'wallet' ? (
+                    <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
+                  ) : paymentDetails.type === 'qr' ? (
+                    <QrCode className="w-5 h-5 sm:w-6 sm:h-6" />
+                  ) : (
+                    <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                      paymentDetails.type === 'cod'
+                        ? 'bg-amber-200/70 text-amber-900'
+                        : paymentDetails.type === 'wallet'
+                        ? 'bg-purple-200/70 text-purple-900'
+                        : paymentDetails.type === 'qr'
+                        ? 'bg-blue-200/70 text-blue-900'
+                        : 'bg-emerald-200/70 text-emerald-900'
+                    }`}>
+                      {paymentDetails.label}
+                    </span>
+                    <span className="text-[10px] font-bold text-gray-400">•</span>
+                    <span className={`text-[10px] font-extrabold uppercase ${
+                      paymentDetails.isPrepaid ? 'text-emerald-700' : 'text-amber-700'
+                    }`}>
+                      {paymentDetails.isPrepaid ? 'Prepaid Order' : 'Pay On Delivery'}
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-gray-700 mt-1 line-clamp-1">
+                    {paymentDetails.subtext}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right shrink-0 pl-2">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">
+                  {paymentDetails.isPrepaid ? 'Collect' : 'To Collect'}
+                </span>
+                <span className={`text-base sm:text-lg font-black ${
+                  paymentDetails.isPrepaid ? 'text-emerald-700' : 'text-amber-950'
+                }`}>
+                  {paymentDetails.isPrepaid ? '₹0' : `₹${paymentDetails.collectAmount.toFixed(0)}`}
+                </span>
+              </div>
+            </div>
           </div>
           
           {bonus > 0 && bonusReason && (
