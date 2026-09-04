@@ -350,7 +350,23 @@ export async function updateRestaurantFood(restaurantId, foodId, body = {}) {
             : null;
     }
     Object.assign(update, getUpdatedFoodPricing(existing, body));
-    if (body.isAvailable !== undefined) update.isAvailable = body.isAvailable !== false;
+    if (body.isAvailable !== undefined) {
+        update.isAvailable = body.isAvailable !== false;
+        if (update.isAvailable && body.outOfStockUntil === undefined) {
+            update.outOfStockUntil = null;
+            update.stockTimingMode = 'none';
+            update.stockTimingConfig = null;
+        }
+    }
+    if (body.outOfStockUntil !== undefined) {
+        update.outOfStockUntil = body.outOfStockUntil ? new Date(body.outOfStockUntil) : null;
+    }
+    if (body.stockTimingMode !== undefined) {
+        update.stockTimingMode = body.stockTimingMode || 'none';
+    }
+    if (body.stockTimingConfig !== undefined) {
+        update.stockTimingConfig = body.stockTimingConfig || null;
+    }
     if (body.preparationTime !== undefined) update.preparationTime = toStr(body.preparationTime);
 
     const targetFoodType = body.foodType !== undefined ? normalizeFoodType(body.foodType) : normalizeFoodType(existing.foodType);
@@ -370,7 +386,10 @@ export async function updateRestaurantFood(restaurantId, foodId, body = {}) {
         update.categoryName = categoryName || '';
     }
 
-    const shouldResubmitForApproval = Object.keys(update).length > 0;
+    // Operational fields that do not require re-approval from admin
+    const OPERATIONAL_FIELDS = new Set(['isAvailable', 'outOfStockUntil', 'stockTimingMode', 'stockTimingConfig']);
+    const contentChanges = Object.keys(update).filter((k) => !OPERATIONAL_FIELDS.has(k));
+    const shouldResubmitForApproval = contentChanges.length > 0;
 
     if (shouldResubmitForApproval) {
         update.approvalStatus = 'pending';

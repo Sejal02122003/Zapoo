@@ -94,6 +94,14 @@ const buildMenuFromFoods = async (foods = []) => {
             image: food.image || '',
             foodType: food.foodType || 'Non-Veg',
             isAvailable: food.isAvailable !== false,
+            outOfStockUntil: food.isAvailable === false ? (food.outOfStockUntil || null) : null,
+            stockTimingMode: food.isAvailable === false ? (food.stockTimingMode || 'manual') : 'none',
+            stockTimingConfig: food.isAvailable === false ? (food.stockTimingConfig || null) : null,
+            stockRule: food.isAvailable === false ? {
+                mode: food.stockTimingMode || (food.outOfStockUntil ? 'specific-time' : 'manual'),
+                resumeAt: food.outOfStockUntil ? new Date(food.outOfStockUntil).toISOString() : null,
+                config: food.stockTimingConfig || null
+            } : null,
             approvalStatus: food.approvalStatus || 'approved',
             rejectionReason: food.rejectionReason || '',
             requestedAt: food.requestedAt,
