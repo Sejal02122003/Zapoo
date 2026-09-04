@@ -822,8 +822,12 @@ export async function getOrderById(
 
   if (userId && orderUserId !== userId.toString())
     throw new ForbiddenError("Not your order");
-  if (restaurantId && orderRestaurantId !== restaurantId.toString())
-    throw new ForbiddenError("Not your restaurant order");
+  if (restaurantId && orderRestaurantId !== restaurantId.toString()) {
+    const orderOutletId = order.outletId?._id?.toString() || order.outletId?.toString();
+    if (orderOutletId !== restaurantId.toString()) {
+      throw new ForbiddenError("Not your restaurant order");
+    }
+  }
   if (deliveryPartnerId && orderPartnerId !== deliveryPartnerId.toString())
     throw new ForbiddenError("Not assigned to you");
 

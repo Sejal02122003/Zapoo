@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate, useParams, useLocation } from "react-router-dom"
 import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import { getCurrentUser } from "@food/utils/auth"
 import Lenis from "lenis"
 import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
@@ -52,11 +53,13 @@ const formatMoney = (value) => `₹${Number(value || 0).toFixed(2)}`
 const formatDiscount = (value) => `-₹${Math.abs(Number(value || 0)).toFixed(2)}`
 
 
-export default function OrderDetails() {
+export function OrderDetailsContent() {
   const navigate = useNavigate()
   const goBack = useRestaurantBackNavigation()
   const { id: orderId } = useParams()
   const location = useLocation()
+  const user = getCurrentUser("restaurant")
+  const isOwner = user && (user.role === "OWNER" || user.isOwner || (!user.outletId && user.role !== "OUTLETER"))
   
   // State for order data
   const [orderData, setOrderData] = useState(null)
@@ -670,8 +673,9 @@ export default function OrderDetails() {
     } finally {
       setIsGeneratingPDF(false)
     }
-    
   }
+
+  const handleDownloadReceipt = handlePrintReceipt
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -755,7 +759,7 @@ export default function OrderDetails() {
               Try Again
             </button>
             <button
-              onClick={() => navigate('/food/restaurant/orders/all')}
+              onClick={() => navigate(isOwner ? '/food/restaurant/owner/orders' : '/food/restaurant/orders/all')}
               className="bg-white text-gray-700 font-bold py-4 px-6 rounded-2xl border-2 border-gray-100 hover:bg-gray-50 transition-all active:scale-95"
             >
               Back to History
@@ -775,7 +779,7 @@ export default function OrderDetails() {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Not Found</h2>
           <p className="text-gray-600 mb-6">The order you're looking for doesn't exist.</p>
           <button
-            onClick={() => navigate('/restaurant/orders')}
+            onClick={() => navigate(isOwner ? '/food/restaurant/owner/orders' : '/food/restaurant/orders/all')}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg transition-colors"
           >
             Back to Orders
@@ -901,8 +905,8 @@ export default function OrderDetails() {
                 <User className="w-5 h-5 text-gray-600" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900">{orderData.customer.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{orderData.customer.orderCount} order with you</p>
+                <p className="text-sm font-semibold text-gray-900">{orderData.customer?.name || "Customer"}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{orderData.customer?.orderCount || 1} order with you</p>
               </div>
 
               <hr className="border-gray-200 my-3" />
@@ -911,9 +915,9 @@ export default function OrderDetails() {
                <div className="flex items-center gap-3">
               <MapPin className="w-5 h-5 text-gray-600" />
               <div className="flex-1">
-                <p className="text-sm text-gray-900">{orderData.customer.location}</p>
+                <p className="text-sm text-gray-900">{orderData.customer?.location || orderData.address || "Address not available"}</p>
               </div>
-              <p className="text-sm text-gray-600">{orderData.customer.distance}</p>
+              <p className="text-sm text-gray-600">{orderData.customer?.distance || "-"}</p>
             </div>
           </div>
 
@@ -1119,11 +1123,11 @@ export default function OrderDetails() {
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-gray-600 font-medium">Distance for this order</span>
-                <span className="text-[13px] text-gray-900">{orderData.billing.deliveryDistance ? `${orderData.billing.deliveryDistance} km` : '-'}</span>
+                <span className="text-[13px] text-gray-900">{orderData.billing?.deliveryDistance ? `${orderData.billing.deliveryDistance} km` : '-'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-gray-600 font-medium">User delivery charge (distance based)</span>
-                <span className="text-[13px] text-gray-900">{formatMoney(orderData.billing.deliveryFee)}</span>
+                <span className="text-[13px] text-gray-900">{formatMoney(orderData.billing?.deliveryFee)}</span>
               </div>
             </div>
           </div>
@@ -1195,7 +1199,7 @@ export default function OrderDetails() {
           )}
 
           <button
-            onClick={handleDownloadReceipt}
+            onClick={handlePrintReceipt}
             disabled={isGeneratingPDF}
             className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1.5 transition shrink-0"
           >
@@ -1232,5 +1236,61 @@ export default function OrderDetails() {
     </div>
   )
 }
+
+class OrderDetailsErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("OrderDetails render error caught:", error, errorInfo)
+  }
+  render() {
+    if (this.state.hasError) {
+      const user = getCurrentUser("restaurant")
+      const isOwner = user && (user.role === "OWNER" || user.isOwner || (!user.outletId && user.role !== "OUTLETER"))
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 font-['Poppins']">
+          <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full text-center border border-gray-100">
+            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <XCircle className="w-8 h-8 text-amber-500" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Unable to Load Order View</h2>
+            <p className="text-gray-500 text-xs mb-6 leading-relaxed">
+              We encountered an unexpected error displaying this order. You can try reloading or return to your order stream.
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-gray-900 hover:bg-black text-white font-bold py-3 px-5 rounded-xl text-xs transition active:scale-95 shadow-md"
+              >
+                Reload Page
+              </button>
+              <a
+                href={isOwner ? "/food/restaurant/owner/orders" : "/food/restaurant/orders/all"}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-5 rounded-xl text-xs transition active:scale-95 text-center"
+              >
+                Back to Orders
+              </a>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+export default function OrderDetails() {
+  return (
+    <OrderDetailsErrorBoundary>
+      <OrderDetailsContent />
+    </OrderDetailsErrorBoundary>
+  )
+}
+
 
 
