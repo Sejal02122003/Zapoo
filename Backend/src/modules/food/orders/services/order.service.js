@@ -1298,12 +1298,20 @@ export async function executeOrderCancellationRefund(
       refundId: onlineRefundId || (walletRefundSuccess ? "wallet_refund" : ""),
       processedAt: new Date()
     };
-  } else if (walletAmountUsed > 0 || paymentMethod === "razorpay") {
+  } else if (
+    (paymentMethod === "razorpay" && (paymentStatus === "paid" || order.payment?.razorpay?.paymentId)) ||
+    walletAmountUsed > 0
+  ) {
+    // Was actually paid, but refund attempt failed or needs manual processing
+    order.payment.status = "paid";
     order.payment.refund = {
       status: "failed",
       destination: refundDestination || "source",
       amount: totalAmount
     };
+  } else {
+    // Was NEVER paid (unpaid online order, abandoned gateway, unpaid COD, etc.)
+    order.payment.status = "cancelled";
   }
 
   // 4. Reverse any unearned cashback

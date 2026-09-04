@@ -244,6 +244,7 @@ export default function OrderDetails() {
           ).toLowerCase()
           const paymentMethod = String(order.payment?.method || "").toLowerCase()
 
+          const isCancelled = orderStatusRaw.includes("cancel") || orderStatusRaw === "dead"
           let paymentStatus = "PENDING"
           if (["completed", "paid", "captured", "success", "succeeded"].includes(rawPaymentStatus)) {
             paymentStatus = "PAID"
@@ -251,7 +252,9 @@ export default function OrderDetails() {
             paymentStatus = "FAILED"
           } else if (["refunded", "refund"].includes(rawPaymentStatus)) {
             paymentStatus = "REFUNDED"
-          } else if (paymentMethod === "cash") {
+          } else if (isCancelled) {
+            paymentStatus = "CANCELLED"
+          } else if (paymentMethod === "cash" || paymentMethod === "cod") {
             paymentStatus = orderStatusRaw === "delivered" ? "PAID" : "COD"
           }
           

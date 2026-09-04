@@ -63,7 +63,7 @@ export default function FilterPanel({
                 Payment Status
               </label>
               <div className="flex flex-wrap gap-2">
-                {["All", "paid", "pending", "failed", "refunded"].map((status) => (
+                {["All", "paid", "pending", "cancelled", "failed", "refunded"].map((status) => (
                   <button
                     key={status}
                     onClick={() => setFilters(prev => ({ ...prev, paymentStatus: status === "All" ? "" : status }))}

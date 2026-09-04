@@ -433,20 +433,37 @@ export default function OrdersPage({ statusKey = "all" }) {
         else paymentType = "N/A"
       }
 
-      const backendStatus = String(order.orderStatus || "").toLowerCase()
+      const backendStatus = String(order.orderStatus || order.status || "").toLowerCase()
+      const isCancelled = backendStatus.includes("cancel") || backendStatus === "canceled" || backendStatus === "dead"
       const method = String(paymentMethod).toLowerCase();
-      const hasRazorpayId = !!(order.payment?.razorpay_payment_id || order.payment?.razorpayPaymentId);
+      const hasRazorpayId = !!(order.payment?.razorpay_payment_id || order.payment?.razorpayPaymentId || order.payment?.razorpay?.paymentId);
       const isQrPayment = method === "razorpay_qr" || method === "qr" || (method === "cod" && hasRazorpayId) || (method === "cash" && hasRazorpayId);
       
       let paymentStatus = order.paymentStatus
-      const paymentStatusRaw = order.payment?.status || ""
-      if (!paymentStatus) {
-        const s = String(paymentStatusRaw || "").toLowerCase()
-        if (s === "refunded") paymentStatus = "Refunded"
-        else if (s === "paid" || s === "authorized" || s === "captured" || s === "settled" || isQrPayment) paymentStatus = "Paid"
-        else if (s === "failed") paymentStatus = "Failed"
-        else if (backendStatus === "delivered" && (method === "cash" || method === "cod" || method === "cash on delivery")) paymentStatus = "Paid"
-        else paymentStatus = "Pending"
+      const paymentStatusRaw = String(order.payment?.status || "").toLowerCase()
+      const s = paymentStatusRaw
+      
+      const isRefunded = s === "refunded" || order.payment?.refund?.status === "processed" || paymentStatus === "Refunded" || order.refundStatus === "processed"
+      const isPaid = s === "paid" || s === "authorized" || s === "captured" || s === "settled" || isQrPayment || (paymentStatus === "Paid" && !isCancelled)
+
+      if (isRefunded) {
+        paymentStatus = "Refunded"
+      } else if (isCancelled) {
+        if (isPaid || (hasRazorpayId && s !== "failed" && s !== "cancelled")) {
+          paymentStatus = (order.payment?.refund?.status === "processed" || isRefunded) ? "Refunded" : "Paid"
+        } else {
+          paymentStatus = "Cancelled"
+        }
+      } else if (isPaid) {
+        paymentStatus = "Paid"
+      } else if (s === "failed" || paymentStatus === "Failed") {
+        paymentStatus = "Failed"
+      } else if (s === "cancelled" || paymentStatus === "Cancelled" || paymentStatus === "Canceled") {
+        paymentStatus = "Cancelled"
+      } else if (backendStatus === "delivered" && (method === "cash" || method === "cod" || method === "cash on delivery")) {
+        paymentStatus = "Paid"
+      } else {
+        paymentStatus = "Pending"
       }
 
       // Method detail for COD orders as requested by user

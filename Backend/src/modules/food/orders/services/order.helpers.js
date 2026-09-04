@@ -145,6 +145,34 @@ export function normalizeOrderForClient(orderDoc) {
   const order = orderDoc?.toObject ? orderDoc.toObject() : orderDoc || {};
   const mongoId = (order._id || orderDoc?._id || "").toString();
   const displayId = order.order_id || order.orderId || mongoId;
+  const orderStatus = String(order?.orderStatus || order?.status || "").toLowerCase();
+  const isCancelled = orderStatus.includes('cancel') || orderStatus === 'dead';
+  const paymentMethod = String(order?.payment?.method || order?.paymentMethod || "").toLowerCase();
+  const paymentStatusRaw = String(order?.payment?.status || "").toLowerCase();
+  const hasRazorpayId = !!(order?.payment?.razorpay_payment_id || order?.payment?.razorpayPaymentId || order?.payment?.razorpay?.paymentId);
+  const isPaid = ["paid", "authorized", "captured", "settled"].includes(paymentStatusRaw) || (hasRazorpayId && paymentStatusRaw !== "failed");
+  const isRefunded = paymentStatusRaw === "refunded" || order?.payment?.refund?.status === "processed";
+
+  let clientPaymentStatus = order?.paymentStatus || order?.payment?.status || "pending";
+  if (isRefunded) {
+    clientPaymentStatus = "refunded";
+  } else if (isCancelled) {
+    clientPaymentStatus = isPaid ? (isRefunded ? "refunded" : "paid") : "cancelled";
+  } else if (isPaid) {
+    clientPaymentStatus = "paid";
+  } else if (paymentStatusRaw === "failed") {
+    clientPaymentStatus = "failed";
+  } else if (orderStatus === "delivered" && (paymentMethod === "cash" || paymentMethod === "cod")) {
+    clientPaymentStatus = "paid";
+  }
+
+  const cancelHistoryEntry = Array.isArray(order.statusHistory)
+    ? [...order.statusHistory].reverse().find(h => String(h?.to || '').toLowerCase().includes('cancel'))
+    : null;
+  const cancellationReason = isCancelled 
+    ? (cancelHistoryEntry?.note || order.cancellationReason || "")
+    : null;
+
   return {
     ...order,
     id: mongoId,
@@ -152,15 +180,18 @@ export function normalizeOrderForClient(orderDoc) {
     orderMongoId: mongoId,
     orderId: displayId,
     status: order?.orderStatus || order?.status || "",
+    payment: {
+      ...(order?.payment || {}),
+      status: clientPaymentStatus
+    },
+    paymentStatus: clientPaymentStatus,
     deliveredAt:
       order?.deliveryState?.deliveredAt || order?.deliveredAt || null,
     deliveryPartnerId:
       order?.dispatch?.deliveryPartnerId || order?.deliveryPartnerId || null,
     rating: order?.ratings?.restaurant?.rating ?? order?.rating ?? null,
     restaurantNote: order?.restaurantNote || "",
-    cancellationReason: (order?.orderStatus?.includes('cancel') || order?.status?.includes('cancel')) 
-      ? (order.statusHistory?.findLast(h => h.to?.includes('cancel'))?.note || "")
-      : null,
+    cancellationReason,
     deliveryState: {
       ...(order?.deliveryState || {}),
       currentLocation: order?.lastRiderLocation?.coordinates?.length >= 2 ? {
