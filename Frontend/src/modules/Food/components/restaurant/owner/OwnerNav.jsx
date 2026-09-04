@@ -272,7 +272,7 @@ export default function OwnerNav({ selectedOutletId, onSelectOutlet, outlets = [
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800"
               }`}
             >
-              <MapPin className="w-3.5 h-3.5 shrink-0 text-red-500" />
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
               <span>Zone Setup & Pin</span>
             </Link>
 
