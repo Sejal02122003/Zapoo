@@ -501,7 +501,7 @@ export default function OwnerOutletsPage() {
                     </button>
 
                     <Link
-                      to="/food/restaurant/zone-setup"
+                      to={`/food/restaurant/zone-setup?outletId=${outlet._id}`}
                       className="py-2 px-1 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 dark:text-red-400 rounded-xl text-[11px] font-black transition-colors flex items-center justify-center gap-1 border border-red-200/60 dark:border-red-900/40 truncate"
                       title="Pin Outlet on Map & Setup Zone"
                     >
@@ -1035,7 +1035,7 @@ export default function OwnerOutletsPage() {
                     </h4>
                   </div>
                   <Link
-                    to="/food/restaurant/zone-setup"
+                    to={`/food/restaurant/zone-setup?outletId=${selectedOutletForInfo._id}`}
                     className="text-[11px] font-black text-red-600 hover:underline flex items-center gap-1"
                   >
                     <span>Edit Map Pin</span>

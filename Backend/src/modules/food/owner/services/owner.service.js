@@ -424,8 +424,13 @@ export async function updateOutlet(restaurantId, outletId, updateData = {}) {
         coordinates: [lng, lat],
         latitude: lat,
         longitude: lng,
+        formattedAddress: updateData.location?.formattedAddress || updateData.address?.formattedAddress || outlet.address?.formattedAddress || "",
       };
     }
+  }
+
+  if (updateData.zoneId !== undefined) {
+    outlet.zoneId = updateData.zoneId ? new mongoose.Types.ObjectId(updateData.zoneId) : null;
   }
 
   await outlet.save();
