@@ -79,7 +79,35 @@ export default function EmergencyDeliveryCard({ broadcast, onAccept, onDecline, 
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-3.5">
+          {/* Payment Type Indicator */}
+          {(() => {
+            const method = String(broadcast.paymentMethod || '').toLowerCase();
+            const isPrepaid = broadcast.isPrepaid === true || ['paid', 'authorized', 'captured'].includes(String(broadcast.paymentStatus || '').toLowerCase()) || method === 'wallet' || (method === 'razorpay');
+            const isWallet = method === 'wallet';
+            const collect = isPrepaid ? 0 : Number(broadcast.collectAmount ?? broadcast.orderTotal ?? 0);
+
+            return (
+              <div className={`p-2.5 rounded-xl border flex items-center justify-between ${
+                isPrepaid
+                  ? isWallet
+                    ? 'bg-purple-50 border-purple-200 text-purple-900'
+                    : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  : 'bg-amber-50 border-amber-200 text-amber-900'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{isPrepaid ? (isWallet ? '👛' : '💳') : '💵'}</span>
+                  <span className="text-xs font-bold">
+                    {isPrepaid ? (isWallet ? 'Wallet Prepaid' : 'Paid Online (Prepaid)') : 'Cash on Delivery'}
+                  </span>
+                </div>
+                <span className="text-xs font-black">
+                  {isPrepaid ? 'Collect ₹0' : (collect > 0 ? `Collect ₹${collect.toFixed(0)}` : 'COD')}
+                </span>
+              </div>
+            );
+          })()}
+
           <div className="flex items-start gap-3">
             <div className="mt-1"><MapPin className="w-5 h-5 text-emerald-600" /></div>
             <div>

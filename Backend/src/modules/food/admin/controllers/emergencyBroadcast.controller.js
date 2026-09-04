@@ -87,6 +87,11 @@ export const startEmergencyBroadcast = async (req, res) => {
         // Emit via Socket.io
         const io = getIO();
         if (io) {
+            const method = String(order.payment?.method || order.paymentMethod || 'cash').toLowerCase();
+            const status = String(order.payment?.status || '').toLowerCase();
+            const isPrepaid = ['paid', 'authorized', 'captured', 'settled'].includes(status) || method === 'wallet' || (method === 'razorpay' && status !== 'failed');
+            const orderTotal = Number(order.pricing?.total ?? order.total ?? 0);
+
             riders.forEach(rider => {
                 io.to(`delivery_partner_${rider._id}`).emit('EMERGENCY_BROADCAST', {
                     type: "EMERGENCY_BROADCAST",
@@ -96,7 +101,12 @@ export const startEmergencyBroadcast = async (req, res) => {
                     drop: order.deliveryAddress?.street || "Destination",
                     extraIncentive,
                     expiresAt,
-                    message
+                    message,
+                    paymentMethod: method,
+                    paymentStatus: status,
+                    isPrepaid,
+                    orderTotal,
+                    collectAmount: isPrepaid ? 0 : orderTotal
                 });
             });
             // Update Admin dashboard
