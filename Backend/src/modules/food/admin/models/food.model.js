@@ -22,6 +22,13 @@ const foodSchema = new mongoose.Schema(
         image: { type: String, trim: true, default: '' },
         foodType: { type: String, enum: ['Veg', 'Non-Veg'], default: 'Non-Veg' },
         isAvailable: { type: Boolean, default: true, index: true },
+        outOfStockUntil: { type: Date, default: null, index: true },
+        stockTimingMode: { 
+            type: String, 
+            enum: ['manual', 'specific-time', 'next-business-day', 'custom-date-time', 'none'], 
+            default: 'none' 
+        },
+        stockTimingConfig: { type: mongoose.Schema.Types.Mixed, default: null },
         preparationTime: { type: String, trim: true, default: '' },
         approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved', index: true },
         rejectionReason: { type: String, trim: true, default: '' },

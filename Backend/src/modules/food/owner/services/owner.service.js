@@ -582,14 +582,33 @@ export async function getOwnerInventory(restaurantId, query = {}) {
   const itemsList = [];
 
   if (foodItems && foodItems.length > 0) {
+    const now = Date.now();
     foodItems.forEach((item) => {
       totalItems++;
-      const isAvailable = item.isAvailable !== false;
+      let isAvailable = item.isAvailable !== false;
+      if (!isAvailable && item.outOfStockUntil) {
+        const resumeMs = new Date(item.outOfStockUntil).getTime();
+        if (resumeMs <= now) {
+          isAvailable = true;
+          // Asynchronously clear expired out-of-stock state in DB
+          FoodItem.updateOne(
+            { _id: item._id },
+            { $set: { isAvailable: true, outOfStockUntil: null, stockTimingMode: 'none', stockTimingConfig: null } }
+          ).catch(() => {});
+        }
+      }
+
       if (isAvailable) inStockItems++;
       else outOfStockItems++;
 
       const category =
         item.categoryName || item.categoryId?.name || item.category || "Main Menu";
+
+      const stockRule = !isAvailable ? {
+        mode: item.stockTimingMode || (item.outOfStockUntil ? "specific-time" : "manual"),
+        resumeAt: item.outOfStockUntil ? new Date(item.outOfStockUntil).toISOString() : null,
+        config: item.stockTimingConfig || null,
+      } : null;
 
       itemsList.push({
         _id: item._id,
@@ -600,6 +619,10 @@ export async function getOwnerInventory(restaurantId, query = {}) {
         isVeg: item.foodType === "Veg" || item.isVeg === true,
         foodType: item.foodType || "Non-Veg",
         isAvailable,
+        outOfStockUntil: isAvailable ? null : item.outOfStockUntil,
+        stockTimingMode: isAvailable ? "none" : (item.stockTimingMode || "manual"),
+        stockTimingConfig: isAvailable ? null : item.stockTimingConfig,
+        stockRule,
         stock: isAvailable ? 50 : 0,
         image: item.image || "",
         description: item.description || "",

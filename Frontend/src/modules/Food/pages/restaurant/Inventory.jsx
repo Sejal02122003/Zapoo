@@ -1699,13 +1699,20 @@ export default function Inventory() {
   }
 
   // Update menu API when category/item toggles change
-  const updateAvailabilityAPI = async (categoryId, itemId, isAvailable) => {
+  const updateAvailabilityAPI = async (categoryId, itemId, isAvailable, timingPayload = {}) => {
     try {
       if (!categoryId) return
 
+      const payload = {
+        isAvailable: Boolean(isAvailable),
+        outOfStockUntil: isAvailable ? null : (timingPayload.outOfStockUntil || null),
+        stockTimingMode: isAvailable ? "none" : (timingPayload.stockTimingMode || "manual"),
+        stockTimingConfig: isAvailable ? null : (timingPayload.stockTimingConfig || null),
+      }
+
       // Backend source of truth is food_items. Update availability via /food/restaurant/foods/:id.
       if (itemId) {
-        await restaurantAPI.updateFood(itemId, { isAvailable: Boolean(isAvailable) })
+        await restaurantAPI.updateFood(itemId, payload)
         return
       }
 
@@ -1714,7 +1721,7 @@ export default function Inventory() {
       // Bulk update all items in a category.
       await Promise.all(
         items.map((it) =>
-          restaurantAPI.updateFood(it.id, { isAvailable: Boolean(isAvailable) }),
+          restaurantAPI.updateFood(it.id, payload),
         ),
       )
     } catch (error) {
@@ -1865,11 +1872,17 @@ export default function Inventory() {
       return next
     })
 
+    const timingPayload = {
+      outOfStockUntil: nextRule?.resumeAt || null,
+      stockTimingMode: nextRule?.mode || "manual",
+      stockTimingConfig: nextRule || null,
+    }
+
     // Update menu API
     if (type === "category") {
-      await updateAvailabilityAPI(categoryId, null, false)
+      await updateAvailabilityAPI(categoryId, null, false, timingPayload)
     } else {
-      await updateAvailabilityAPI(categoryId, itemId, false)
+      await updateAvailabilityAPI(categoryId, itemId, false, timingPayload)
     }
 
     setTogglePopupOpen(false)

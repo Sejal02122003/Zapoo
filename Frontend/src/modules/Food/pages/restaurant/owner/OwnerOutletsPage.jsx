@@ -22,7 +22,16 @@ import {
   SlidersHorizontal,
   X,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Info,
+  ShoppingBag,
+  Calendar,
+  Sparkles,
+  Award,
+  Globe,
+  CheckCircle2,
+  AlertCircle,
+  Utensils
 } from "lucide-react"
 import { toast } from "sonner"
 import { ownerAPI } from "@food/api"
@@ -42,6 +51,65 @@ const ALL_PERMISSIONS = [
   { id: "MANAGE_STAFF", label: "Manage Staff", desc: "Manage staff & shift schedules" },
 ]
 
+export const formatTime12Hour = (time24) => {
+  if (!time24) return "09:00 AM"
+  const [hours, minutes] = String(time24).split(':').map(Number)
+  if (isNaN(hours)) return time24
+  const period = hours >= 12 ? 'PM' : 'AM'
+  const hours12 = hours % 12 || 12
+  const minutesStr = (minutes || 0).toString().padStart(2, '0')
+  return `${hours12}:${minutesStr} ${period}`
+}
+
+export const getOutletTimingDetails = (timings) => {
+  const openTime = timings?.openTime || "09:00"
+  const closeTime = timings?.closeTime || "23:00"
+  const openDays = Array.isArray(timings?.openDays) && timings.openDays.length > 0 
+    ? timings.openDays 
+    : ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+  const formattedTiming = `${formatTime12Hour(openTime)} - ${formatTime12Hour(closeTime)}`
+  
+  // Calculate if currently open
+  const now = new Date()
+  const currentDayName = now.toLocaleDateString("en-US", { weekday: "long" }).toLowerCase()
+  const isDayOpen = openDays.map(d => String(d).toLowerCase()).includes(currentDayName)
+
+  let isOpenNow = false
+  if (isDayOpen) {
+    const parseMins = (t) => {
+      if (!t) return 0
+      const [h, m] = String(t).split(":").map(Number)
+      return (h || 0) * 60 + (m || 0)
+    }
+    const openMins = parseMins(openTime)
+    const closeMins = parseMins(closeTime)
+    const currentMins = now.getHours() * 60 + now.getMinutes()
+
+    if (closeMins > openMins) {
+      isOpenNow = currentMins >= openMins && currentMins <= closeMins
+    } else {
+      isOpenNow = currentMins >= openMins || currentMins <= closeMins
+    }
+  }
+
+  const openDaysText = openDays.length === 7 
+    ? "All 7 Days" 
+    : openDays.length === 6 
+      ? "6 Days / Week" 
+      : `${openDays.length} Days Open`
+
+  return {
+    openTime,
+    closeTime,
+    openDays,
+    formattedTiming,
+    isOpenNow,
+    isDayOpen,
+    openDaysText
+  }
+}
+
 export default function OwnerOutletsPage() {
   const [loading, setLoading] = useState(true)
   const [outlets, setOutlets] = useState([])
@@ -50,6 +118,7 @@ export default function OwnerOutletsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   // Modals for individual outlet actions
+  const [selectedOutletForInfo, setSelectedOutletForInfo] = useState(null)
   const [selectedOutletForCredentials, setSelectedOutletForCredentials] = useState(null)
   const [selectedOutletForPermissions, setSelectedOutletForPermissions] = useState(null)
   const [selectedOutletForEdit, setSelectedOutletForEdit] = useState(null)
@@ -171,8 +240,24 @@ export default function OwnerOutletsPage() {
     if (!selectedOutletForEdit) return
     setEditLoading(true)
     try {
-      await ownerAPI.updateOutlet(selectedOutletForEdit._id, editFormData)
-      toast.success("Outlet details updated successfully!")
+      const payload = {
+        name: editFormData.name,
+        phone: editFormData.phone,
+        email: editFormData.email,
+        managerName: editFormData.managerName,
+        managerPhone: editFormData.managerPhone,
+        address: editFormData.address,
+        status: editFormData.status,
+        isAcceptingOrders: editFormData.isAcceptingOrders !== false,
+        isTakeawayEnabled: editFormData.isTakeawayEnabled !== false,
+        timings: {
+          openTime: editFormData.openTime || "09:00",
+          closeTime: editFormData.closeTime || "23:00",
+          openDays: editFormData.openDays || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+        }
+      }
+      await ownerAPI.updateOutlet(selectedOutletForEdit._id, payload)
+      toast.success("Outlet details & timings updated successfully!")
       setSelectedOutletForEdit(null)
       fetchOutlets()
     } catch (err) {
@@ -353,13 +438,50 @@ export default function OwnerOutletsPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Operational Timings Banner */}
+                  <div className="mt-3.5">
+                    {(() => {
+                      const timingInfo = getOutletTimingDetails(outlet.timings)
+                      return (
+                        <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800 text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Clock className="w-3.5 h-3.5 text-[#22A2E3] shrink-0" />
+                            <div className="truncate">
+                              <p className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                                {timingInfo.formattedTiming}
+                              </p>
+                              <p className="text-[10px] text-slate-400 capitalize">{timingInfo.openDaysText}</p>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1 ${
+                            timingInfo.isOpenNow
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                              : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${timingInfo.isOpenNow ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                            <span>{timingInfo.isOpenNow ? "Open Now" : "Closed"}</span>
+                          </span>
+                        </div>
+                      )
+                    })()}
+                  </div>
                 </div>
 
                 <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-4 gap-1.5">
+                    <button
+                      onClick={() => setSelectedOutletForInfo(outlet)}
+                      className="py-2 px-1 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 text-[#22A2E3] rounded-xl text-[11px] font-black transition-colors flex items-center justify-center gap-1 truncate border border-sky-200/60 dark:border-sky-800/40"
+                      title="View Full Outlet Info & Timings"
+                    >
+                      <Info className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Info</span>
+                    </button>
+
                     <button
                       onClick={() => setSelectedOutletForCredentials(outlet)}
-                      className="py-2 px-2 bg-[#22A2E3]/10 dark:bg-[#22A2E3]/10 hover:bg-[#22A2E3]/20 text-[#22A2E3] rounded-xl text-[11px] font-black transition-colors flex items-center justify-center gap-1 truncate"
+                      className="py-2 px-1 bg-[#22A2E3]/10 dark:bg-[#22A2E3]/10 hover:bg-[#22A2E3]/20 text-[#22A2E3] rounded-xl text-[11px] font-black transition-colors flex items-center justify-center gap-1 truncate"
                       title="View Login Credentials"
                     >
                       <Key className="w-3.5 h-3.5 shrink-0" />
@@ -371,7 +493,7 @@ export default function OwnerOutletsPage() {
                         setSelectedOutletForPermissions(outlet)
                         setTempPermissions(outlet.permissions || [])
                       }}
-                      className="py-2 px-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-[11px] font-black transition-colors flex items-center justify-center gap-1 truncate"
+                      className="py-2 px-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-[11px] font-black transition-colors flex items-center justify-center gap-1 truncate"
                       title="Manage Permissions"
                     >
                       <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
@@ -380,11 +502,11 @@ export default function OwnerOutletsPage() {
 
                     <Link
                       to="/food/restaurant/zone-setup"
-                      className="py-2 px-2 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 dark:text-red-400 rounded-xl text-[11px] font-black transition-colors flex items-center justify-center gap-1 border border-red-200/60 dark:border-red-900/40 truncate"
+                      className="py-2 px-1 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 dark:text-red-400 rounded-xl text-[11px] font-black transition-colors flex items-center justify-center gap-1 border border-red-200/60 dark:border-red-900/40 truncate"
                       title="Pin Outlet on Map & Setup Zone"
                     >
                       <MapPin className="w-3.5 h-3.5 shrink-0 text-red-500" />
-                      <span className="truncate">Map Pin</span>
+                      <span className="truncate">Pin</span>
                     </Link>
                   </div>
 
@@ -402,6 +524,9 @@ export default function OwnerOutletsPage() {
                           status: outlet.status || "active",
                           isAcceptingOrders: outlet.isAcceptingOrders !== false,
                           isTakeawayEnabled: outlet.isTakeawayEnabled !== false,
+                          openTime: outlet.timings?.openTime || "09:00",
+                          closeTime: outlet.timings?.closeTime || "23:00",
+                          openDays: outlet.timings?.openDays || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
                         })
                       }}
                       className="text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center gap-1"
@@ -616,6 +741,34 @@ export default function OwnerOutletsPage() {
                 </div>
               </div>
 
+              {/* Timings & Working Hours */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#22A2E3]" />
+                  <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">Operating Timings & Working Hours</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-slate-400">Opening Time</label>
+                    <input
+                      type="time"
+                      value={editFormData.openTime || "09:00"}
+                      onChange={(e) => setEditFormData({ ...editFormData, openTime: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#22A2E3]"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-slate-400">Closing Time</label>
+                    <input
+                      type="time"
+                      value={editFormData.closeTime || "23:00"}
+                      onChange={(e) => setEditFormData({ ...editFormData, closeTime: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#22A2E3]"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Service & Availability Controls */}
               <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
                 <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">Ordering & Service Controls</p>
@@ -671,6 +824,401 @@ export default function OwnerOutletsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Comprehensive Outlet Info Modal */}
+      {selectedOutletForInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header Banner */}
+            <div className="px-6 py-5 bg-gradient-to-r from-[#22A2E3]/15 via-blue-500/10 to-transparent border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-[#22A2E3] text-white flex items-center justify-center shadow-md">
+                  <Store className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-black text-slate-900 dark:text-white leading-tight">
+                      {selectedOutletForInfo.name}
+                    </h2>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#22A2E3]/15 text-[#22A2E3] font-mono border border-[#22A2E3]/30">
+                      {selectedOutletForInfo.outletCode}
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                    Complete Branch Profile & Operational Status
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedOutletForInfo(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Status Ribbon */}
+            <div className="px-6 py-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black uppercase flex items-center gap-1.5 ${
+                  selectedOutletForInfo.status === "active"
+                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                    : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${selectedOutletForInfo.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                  <span>Branch: {selectedOutletForInfo.status}</span>
+                </span>
+
+                <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black uppercase flex items-center gap-1.5 ${
+                  selectedOutletForInfo.isAcceptingOrders !== false
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-300 dark:border-emerald-800"
+                    : "bg-slate-100 text-slate-500 border border-slate-200 dark:border-slate-700"
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${selectedOutletForInfo.isAcceptingOrders !== false ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                  <span>Delivery: {selectedOutletForInfo.isAcceptingOrders !== false ? "ON" : "OFF"}</span>
+                </span>
+
+                <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black uppercase flex items-center gap-1.5 ${
+                  selectedOutletForInfo.isTakeawayEnabled !== false
+                    ? "bg-blue-50 text-blue-700 border border-blue-300 dark:border-blue-800"
+                    : "bg-slate-100 text-slate-500 border border-slate-200 dark:border-slate-700"
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${selectedOutletForInfo.isTakeawayEnabled !== false ? 'bg-[#22A2E3]' : 'bg-slate-400'}`} />
+                  <span>Takeaway: {selectedOutletForInfo.isTakeawayEnabled !== false ? "ON" : "OFF"}</span>
+                </span>
+              </div>
+
+              {(() => {
+                const tInfo = getOutletTimingDetails(selectedOutletForInfo.timings)
+                return (
+                  <span className={`px-3 py-1 rounded-xl text-[11px] font-black uppercase flex items-center gap-1.5 ${
+                    tInfo.isOpenNow
+                      ? "bg-emerald-500 text-white shadow-sm"
+                      : "bg-amber-500 text-white shadow-sm"
+                  }`}>
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{tInfo.isOpenNow ? "Open Right Now" : "Currently Closed"}</span>
+                  </span>
+                )
+              })()}
+            </div>
+
+            {/* Modal Body Info Cards */}
+            <div className="p-6 space-y-5 max-h-[68vh] overflow-y-auto">
+              {/* Section 1: Operating Timings & Schedule */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#22A2E3]" />
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                      Operating Hours & Weekly Schedule
+                    </h4>
+                  </div>
+                  {(() => {
+                    const tInfo = getOutletTimingDetails(selectedOutletForInfo.timings)
+                    return (
+                      <span className="text-xs font-black text-[#22A2E3]">
+                        {tInfo.formattedTiming}
+                      </span>
+                    )
+                  })()}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Opening Time</p>
+                    <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                      {formatTime12Hour(selectedOutletForInfo.timings?.openTime || "09:00")}
+                      <span className="text-[10px] text-slate-400 font-normal ml-1">({selectedOutletForInfo.timings?.openTime || "09:00"})</span>
+                    </p>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Closing Time</p>
+                    <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                      {formatTime12Hour(selectedOutletForInfo.timings?.closeTime || "23:00")}
+                      <span className="text-[10px] text-slate-400 font-normal ml-1">({selectedOutletForInfo.timings?.closeTime || "23:00"})</span>
+                    </p>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 col-span-2 sm:col-span-1">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Working Days</p>
+                    <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                      {(() => {
+                        const days = selectedOutletForInfo.timings?.openDays || []
+                        return days.length === 7 || days.length === 0 ? "7 Days Open" : `${days.length} Days Open`
+                      })()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Open Days Pill Matrix */}
+                <div className="pt-1">
+                  <p className="text-[10px] uppercase font-bold text-slate-400 mb-1.5">Open Days Schedule:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => {
+                      const openDays = selectedOutletForInfo.timings?.openDays || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+                      const isOpenOnDay = openDays.map(d => d.toLowerCase()).includes(day.toLowerCase())
+                      return (
+                        <span
+                          key={day}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold capitalize flex items-center gap-1 ${
+                            isOpenOnDay
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                              : "bg-slate-100 text-slate-400 line-through dark:bg-slate-800 dark:text-slate-500"
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${isOpenOnDay ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                          {day}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Contact & Branch Management */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-[#22A2E3]" />
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                    Contact & Management Personnel
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Branch Manager</p>
+                    <p className="text-xs font-black text-slate-900 dark:text-white mt-0.5">
+                      {selectedOutletForInfo.managerName || "Not Assigned"}
+                    </p>
+                    {selectedOutletForInfo.managerPhone && (
+                      <a 
+                        href={`tel:${selectedOutletForInfo.managerPhone}`}
+                        className="text-[11px] font-bold text-[#22A2E3] hover:underline flex items-center gap-1 mt-1"
+                      >
+                        <Phone className="w-3 h-3" />
+                        {selectedOutletForInfo.managerPhone}
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Branch Official Phone & Email</p>
+                    <a 
+                      href={`tel:${selectedOutletForInfo.phone}`}
+                      className="text-xs font-black text-slate-900 dark:text-white hover:text-[#22A2E3] flex items-center gap-1 mt-0.5"
+                    >
+                      <Phone className="w-3 h-3 text-[#22A2E3]" />
+                      {selectedOutletForInfo.phone}
+                    </a>
+                    {selectedOutletForInfo.email && (
+                      <p className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 mt-1 truncate">
+                        <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="truncate">{selectedOutletForInfo.email}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Location, Address & Service Zone */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-red-500" />
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                      Location & Geo Pinning
+                    </h4>
+                  </div>
+                  <Link
+                    to="/food/restaurant/zone-setup"
+                    className="text-[11px] font-black text-red-600 hover:underline flex items-center gap-1"
+                  >
+                    <span>Edit Map Pin</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Address</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white mt-0.5">
+                      {selectedOutletForInfo.address?.formattedAddress || 
+                       [selectedOutletForInfo.address?.addressLine1, selectedOutletForInfo.address?.area, selectedOutletForInfo.address?.city, selectedOutletForInfo.address?.pincode].filter(Boolean).join(", ") || 
+                       "Indore"}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase font-bold">Area</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">{selectedOutletForInfo.address?.area || "—"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase font-bold">City</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">{selectedOutletForInfo.address?.city || selectedOutletForInfo.city || "Indore"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase font-bold">Pincode</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">{selectedOutletForInfo.address?.pincode || "—"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase font-bold">Coordinates</span>
+                      <span className="font-mono font-bold text-[#22A2E3] text-[10px]">
+                        {selectedOutletForInfo.location?.coordinates 
+                          ? `${selectedOutletForInfo.location.coordinates[1]?.toFixed(4)}, ${selectedOutletForInfo.location.coordinates[0]?.toFixed(4)}`
+                          : "Pinned in Zone"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 4: Login Credentials & Access Control */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-[#22A2E3]" />
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                      Login Credentials & Permissions
+                    </h4>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const temp = selectedOutletForInfo
+                      setSelectedOutletForInfo(null)
+                      setSelectedOutletForCredentials(temp)
+                    }}
+                    className="text-[11px] font-black text-[#22A2E3] hover:underline"
+                  >
+                    Reset Password
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-slate-400">Username / Login ID</p>
+                      <p className="text-xs font-mono font-black text-slate-900 dark:text-white mt-0.5 select-all">
+                        {selectedOutletForInfo.credentials?.username || selectedOutletForInfo.email || selectedOutletForInfo.phone}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const val = selectedOutletForInfo.credentials?.username || selectedOutletForInfo.email || selectedOutletForInfo.phone
+                        navigator.clipboard.writeText(val)
+                        toast.success("Username copied!")
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+                      title="Copy Username"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-slate-400">Password</p>
+                      <p className="text-xs font-mono font-black text-[#22A2E3] mt-0.5 select-all">
+                        {selectedOutletForInfo.credentials?.rawPasswordDisplay || "•••••••• (Encrypted)"}
+                      </p>
+                    </div>
+                    {selectedOutletForInfo.credentials?.rawPasswordDisplay && (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedOutletForInfo.credentials.rawPasswordDisplay)
+                          toast.success("Password copied!")
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+                        title="Copy Password"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Assigned Permissions Summary */}
+                <div className="pt-1">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">
+                      Assigned Permissions ({selectedOutletForInfo.permissions?.length || 0} / {ALL_PERMISSIONS.length}):
+                    </p>
+                    <button
+                      onClick={() => {
+                        const temp = selectedOutletForInfo
+                        setSelectedOutletForInfo(null)
+                        setSelectedOutletForPermissions(temp)
+                        setTempPermissions(temp.permissions || [])
+                      }}
+                      className="text-[10px] font-black text-[#22A2E3] hover:underline"
+                    >
+                      Configure Perms
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ALL_PERMISSIONS.map((perm) => {
+                      const isGranted = (selectedOutletForInfo.permissions || []).includes(perm.id)
+                      return (
+                        <span
+                          key={perm.id}
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 ${
+                            isGranted
+                              ? "bg-[#22A2E3]/10 text-[#22A2E3] border border-[#22A2E3]/30"
+                              : "bg-slate-100 dark:bg-slate-800 text-slate-400 opacity-60 line-through"
+                          }`}
+                        >
+                          <ShieldCheck className="w-3 h-3" />
+                          {perm.label}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer Actions */}
+            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+              <button
+                onClick={() => setSelectedOutletForInfo(null)}
+                className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-black transition-colors"
+              >
+                Close
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const temp = selectedOutletForInfo
+                    setSelectedOutletForInfo(null)
+                    setSelectedOutletForEdit(temp)
+                    setEditFormData({
+                      name: temp.name,
+                      phone: temp.phone,
+                      email: temp.email,
+                      managerName: temp.managerName,
+                      managerPhone: temp.managerPhone,
+                      address: temp.address || {},
+                      status: temp.status || "active",
+                      isAcceptingOrders: temp.isAcceptingOrders !== false,
+                      isTakeawayEnabled: temp.isTakeawayEnabled !== false,
+                      openTime: temp.timings?.openTime || "09:00",
+                      closeTime: temp.timings?.closeTime || "23:00",
+                      openDays: temp.timings?.openDays || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+                    })
+                  }}
+                  className="px-5 py-2.5 bg-[#22A2E3] hover:bg-[#1a85bb] text-white rounded-2xl text-xs font-black shadow-md transition-all flex items-center gap-1.5"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  <span>Edit Branch Info</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

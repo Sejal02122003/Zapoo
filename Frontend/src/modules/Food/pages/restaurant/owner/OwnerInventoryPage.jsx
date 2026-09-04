@@ -17,7 +17,10 @@ import {
   SlidersHorizontal,
   Image as ImageIcon,
   FileSpreadsheet,
-  Upload
+  Upload,
+  Clock,
+  Timer,
+  Calendar
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
@@ -26,6 +29,54 @@ import OwnerNav from "@food/components/restaurant/owner/OwnerNav"
 import AddOutletModal from "@food/components/restaurant/owner/AddOutletModal"
 import AddEditDishModal from "@food/components/restaurant/owner/AddEditDishModal"
 import BulkMenuUploadModal from "@food/components/restaurant/owner/BulkMenuUploadModal"
+import StockTimingModal from "@food/components/restaurant/StockTimingModal"
+
+const getTimingBadgeInfo = (item) => {
+  if (item.isAvailable !== false) return null
+  const resumeAtStr = item.outOfStockUntil || item.stockRule?.resumeAt
+  const mode = item.stockTimingMode || item.stockRule?.mode || "manual"
+
+  if (mode === "manual" || !resumeAtStr) {
+    return {
+      text: "Manual Off",
+      subtext: "Turn on manually",
+      isTimed: false
+    }
+  }
+
+  const d = new Date(resumeAtStr)
+  if (isNaN(d.getTime())) {
+    return { text: "Out of stock", subtext: "", isTimed: false }
+  }
+
+  const diffMs = d.getTime() - Date.now()
+  if (diffMs <= 0) {
+    return { text: "Resuming soon...", subtext: "", isTimed: true }
+  }
+
+  const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+
+  const timeFormatted = d.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  })
+
+  const dayFormatted = d.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short"
+  })
+
+  const relativeText = diffHrs > 0 ? `in ${diffHrs}h ${diffMins}m` : `in ${diffMins}m`
+
+  return {
+    text: `Until ${timeFormatted}`,
+    subtext: `${dayFormatted} (${relativeText})`,
+    isTimed: true,
+    fullDate: d
+  }
+}
 
 export default function OwnerInventoryPage() {
   const [loading, setLoading] = useState(true)
@@ -52,6 +103,11 @@ export default function OwnerInventoryPage() {
   const [togglingId, setTogglingId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
 
+  // Stock Timing Modal states
+  const [timingItem, setTimingItem] = useState(null)
+  const [isTimingModalOpen, setIsTimingModalOpen] = useState(false)
+  const [isSavingTiming, setIsSavingTiming] = useState(false)
+
   const fetchInventory = async () => {
     setLoading(true)
     try {
@@ -73,6 +129,60 @@ export default function OwnerInventoryPage() {
     fetchInventory()
   }, [selectedOutletId])
 
+  // Real-time stock auto-expiry ticker
+  useEffect(() => {
+    const checkStockExpiry = () => {
+      const nowMs = Date.now()
+      setInventoryData((prev) => {
+        let hasExpired = false
+        const nextItems = prev.items.map((item) => {
+          if (item.isAvailable === false && item.outOfStockUntil) {
+            const resumeMs = new Date(item.outOfStockUntil).getTime()
+            if (!isNaN(resumeMs) && resumeMs <= nowMs) {
+              hasExpired = true
+              const itemId = item._id || item.id
+              // Sync to backend
+              restaurantAPI.updateFood(itemId, { 
+                isAvailable: true, 
+                outOfStockUntil: null, 
+                stockTimingMode: 'none', 
+                stockTimingConfig: null 
+              }).catch(() => {})
+
+              return {
+                ...item,
+                isAvailable: true,
+                outOfStockUntil: null,
+                stockTimingMode: 'none',
+                stockTimingConfig: null,
+                stockRule: null,
+              }
+            }
+          }
+          return item
+        })
+
+        if (!hasExpired) return prev
+
+        const inStock = nextItems.filter((i) => i.isAvailable !== false).length
+        const outOfStock = nextItems.filter((i) => i.isAvailable === false).length
+
+        return {
+          ...prev,
+          items: nextItems,
+          summary: {
+            ...prev.summary,
+            inStockItems: inStock,
+            outOfStockItems: outOfStock,
+          },
+        }
+      })
+    }
+
+    const interval = setInterval(checkStockExpiry, 15000)
+    return () => clearInterval(interval)
+  }, [])
+
   const { summary, outlets, items } = inventoryData
 
   const categories = ["all", ...new Set(items.map(i => i.category).filter(Boolean))]
@@ -93,31 +203,126 @@ export default function OwnerInventoryPage() {
     return matchesSearch && matchesCategory && matchesStatus
   })
 
-  // Toggle Live Stock
-  const handleToggleStock = async (item) => {
-    const nextStatus = item.isAvailable === false
+  // Open Timing Modal to edit or set out-of-stock schedule
+  const handleOpenTimingModal = (item) => {
+    setTimingItem(item)
+    setIsTimingModalOpen(true)
+  }
+
+  // Turn Item in stock immediately
+  const handleTurnInStock = async (item) => {
     const itemId = item._id || item.id
+    setTogglingId(itemId)
 
     // Optimistic update
-    setInventoryData(prev => ({
+    setInventoryData((prev) => ({
       ...prev,
-      items: prev.items.map(i => (i._id === item._id || i.id === item.id) ? { ...i, isAvailable: nextStatus } : i),
+      items: prev.items.map((i) =>
+        i._id === item._id || i.id === item.id
+          ? {
+              ...i,
+              isAvailable: true,
+              outOfStockUntil: null,
+              stockTimingMode: "none",
+              stockTimingConfig: null,
+              stockRule: null,
+            }
+          : i
+      ),
       summary: {
         ...prev.summary,
-        inStockItems: nextStatus ? (prev.summary.inStockItems + 1) : Math.max(0, prev.summary.inStockItems - 1),
-        outOfStockItems: nextStatus ? Math.max(0, prev.summary.outOfStockItems - 1) : (prev.summary.outOfStockItems + 1)
-      }
+        inStockItems: prev.summary.inStockItems + 1,
+        outOfStockItems: Math.max(0, prev.summary.outOfStockItems - 1),
+      },
     }))
 
-    setTogglingId(itemId)
     try {
-      await restaurantAPI.updateFood(itemId, { isAvailable: nextStatus })
-      toast.success(`"${item.name}" marked ${nextStatus ? "In Stock" : "Out of Stock"}`)
+      await restaurantAPI.updateFood(itemId, {
+        isAvailable: true,
+        outOfStockUntil: null,
+        stockTimingMode: "none",
+        stockTimingConfig: null,
+      })
+      toast.success(`"${item.name}" marked In Stock`)
+      if (isTimingModalOpen && timingItem?.id === itemId) {
+        setIsTimingModalOpen(false)
+        setTimingItem(null)
+      }
     } catch (err) {
-      toast.error("Failed to update item status")
-      fetchInventory() // Revert
+      toast.error("Failed to mark item in stock")
+      fetchInventory()
     } finally {
       setTogglingId(null)
+    }
+  }
+
+  // Apply out of stock timing from modal
+  const handleApplyStockTiming = async (payload) => {
+    if (!timingItem) return
+    const itemId = timingItem._id || timingItem.id
+    setIsSavingTiming(true)
+
+    // Optimistic update
+    setInventoryData((prev) => ({
+      ...prev,
+      items: prev.items.map((i) =>
+        i._id === itemId || i.id === itemId
+          ? {
+              ...i,
+              isAvailable: false,
+              outOfStockUntil: payload.outOfStockUntil,
+              stockTimingMode: payload.stockTimingMode,
+              stockTimingConfig: payload.stockTimingConfig,
+              stockRule: {
+                mode: payload.stockTimingMode,
+                resumeAt: payload.outOfStockUntil,
+                config: payload.stockTimingConfig,
+              },
+            }
+          : i
+      ),
+      summary: {
+        ...prev.summary,
+        inStockItems: timingItem.isAvailable !== false ? Math.max(0, prev.summary.inStockItems - 1) : prev.summary.inStockItems,
+        outOfStockItems: timingItem.isAvailable !== false ? prev.summary.outOfStockItems + 1 : prev.summary.outOfStockItems,
+      },
+    }))
+
+    try {
+      await restaurantAPI.updateFood(itemId, payload)
+      const resumeFormatted = payload.outOfStockUntil
+        ? new Date(payload.outOfStockUntil).toLocaleString("en-IN", {
+            day: "numeric",
+            month: "short",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          })
+        : "manual"
+
+      if (payload.stockTimingMode === "manual") {
+        toast.success(`"${timingItem.name}" marked Out of Stock (Manual)`)
+      } else {
+        toast.success(`"${timingItem.name}" out of stock until ${resumeFormatted}`)
+      }
+      setIsTimingModalOpen(false)
+      setTimingItem(null)
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update stock timing")
+      fetchInventory()
+    } finally {
+      setIsSavingTiming(false)
+    }
+  }
+
+  // Toggle Live Stock button click
+  const handleToggleStock = (item) => {
+    if (item.isAvailable !== false) {
+      // Currently In Stock -> Open modal to set timing or immediate out-of-stock
+      handleOpenTimingModal(item)
+    } else {
+      // Currently Out of Stock -> Turn back in stock
+      handleTurnInStock(item)
     }
   }
 
@@ -430,27 +635,65 @@ export default function OwnerInventoryPage() {
                           )}
                         </td>
 
-                        {/* Live Stock Toggle Switch */}
+                        {/* Live Stock Toggle Switch & Timing Info */}
                         <td className="px-6 py-4 text-center">
-                          <div className="inline-flex items-center gap-2">
-                            <button
-                              onClick={() => handleToggleStock(item)}
-                              disabled={isToggling}
-                              className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${
-                                isAvail
-                                  ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                  : "bg-rose-100 text-rose-800 hover:bg-rose-200 dark:bg-rose-950/60 dark:text-rose-300"
-                              }`}
-                            >
-                              {isToggling ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : isAvail ? (
-                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                              ) : (
-                                <XCircle className="w-3 h-3 text-rose-600" />
-                              )}
-                              <span>{isAvail ? "In Stock" : "Out of Stock"}</span>
-                            </button>
+                          <div className="flex flex-col items-center gap-1.5 min-w-[140px]">
+                            {/* In Stock / Out of Stock Toggle Button */}
+                            <div className="inline-flex items-center gap-1.5">
+                              <button
+                                onClick={() => handleToggleStock(item)}
+                                disabled={isToggling}
+                                className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-1.5 shadow-sm active:scale-95 ${
+                                  isAvail
+                                    ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800"
+                                    : "bg-rose-100 text-rose-800 hover:bg-rose-200 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800"
+                                }`}
+                              >
+                                {isToggling ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : isAvail ? (
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                ) : (
+                                  <XCircle className="w-3 h-3 text-rose-600" />
+                                )}
+                                <span>{isAvail ? "In Stock" : "Out of Stock"}</span>
+                              </button>
+
+                              {/* Dedicated Edit Timing Button */}
+                              <button
+                                onClick={() => handleOpenTimingModal(item)}
+                                className="p-1 text-slate-400 hover:text-[#22A2E3] hover:bg-[#22A2E3]/10 rounded-lg transition-colors"
+                                title={isAvail ? "Schedule out-of-stock timing" : "Edit out-of-stock timing"}
+                              >
+                                <Timer className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Out of Stock Timing Pill */}
+                            {!isAvail && (() => {
+                              const badge = getTimingBadgeInfo(item)
+                              if (!badge) return null
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenTimingModal(item)}
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-bold transition-colors ${
+                                    badge.isTimed
+                                      ? "bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 hover:bg-amber-100"
+                                      : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-200"
+                                  }`}
+                                  title="Click to change out-of-stock timing"
+                                >
+                                  {badge.isTimed ? (
+                                    <Clock className="w-2.5 h-2.5 text-amber-600 animate-pulse" />
+                                  ) : (
+                                    <Clock className="w-2.5 h-2.5 text-slate-400" />
+                                  )}
+                                  <span>{badge.text}</span>
+                                  {badge.subtext && <span className="opacity-75">({badge.subtext})</span>}
+                                </button>
+                              )
+                            })()}
                           </div>
                         </td>
 
@@ -487,6 +730,20 @@ export default function OwnerInventoryPage() {
           </div>
         )}
       </main>
+
+      {/* Stock Timing & Availability Modal */}
+      <StockTimingModal
+        isOpen={isTimingModalOpen}
+        onClose={() => {
+          setIsTimingModalOpen(false)
+          setTimingItem(null)
+        }}
+        item={timingItem}
+        outletProfile={outlets.find((o) => o._id === selectedOutletId) || null}
+        onApply={handleApplyStockTiming}
+        onTurnInStock={() => timingItem && handleTurnInStock(timingItem)}
+        isProcessing={isSavingTiming}
+      />
 
       {/* Add / Edit Dish Modal */}
       <AddEditDishModal
