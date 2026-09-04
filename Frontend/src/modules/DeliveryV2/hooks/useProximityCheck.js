@@ -8,30 +8,51 @@ import { calculateDistance } from '@/modules/DeliveryV2/hooks/proximity.utils';
 export const extractCoordinates = (loc) => {
   if (!loc) return null;
 
-  // Direct lat / lng
+  // Direct array [lng, lat] (GeoJSON standard) or [lat, lng]
+  if (Array.isArray(loc) && loc.length >= 2) {
+    const v0 = parseFloat(loc[0]);
+    const v1 = parseFloat(loc[1]);
+    if (Number.isFinite(v0) && Number.isFinite(v1)) {
+      // In India/general coords, lat is typically ~8 to ~37, lng is ~68 to ~98
+      if (Math.abs(v0) <= 90 && Math.abs(v1) <= 180 && v0 < v1) {
+        // [lat, lng]
+        return { lat: v0, lng: v1 };
+      }
+      // GeoJSON [lng, lat]
+      return { lat: v1, lng: v0 };
+    }
+  }
+
+  // Direct lat / lng properties
   let lat = loc.lat ?? loc.latitude ?? loc.latPoint;
   let lng = loc.lng ?? loc.longitude ?? loc.lngPoint ?? loc.long;
 
   // Nested in .location
   if ((lat == null || lng == null) && loc.location) {
-    lat = loc.location.lat ?? loc.location.latitude;
-    lng = loc.location.lng ?? loc.location.longitude;
+    lat = loc.location.lat ?? loc.location.latitude ?? loc.location.latPoint;
+    lng = loc.location.lng ?? loc.location.longitude ?? loc.location.lngPoint ?? loc.location.long;
     if ((lat == null || lng == null) && Array.isArray(loc.location.coordinates) && loc.location.coordinates.length >= 2) {
       lng = loc.location.coordinates[0];
       lat = loc.location.coordinates[1];
     }
   }
 
-  // GeoJSON [lng, lat] directly on object
+  // GeoJSON [lng, lat] directly on coordinates property
   if ((lat == null || lng == null) && Array.isArray(loc.coordinates) && loc.coordinates.length >= 2) {
     lng = loc.coordinates[0];
     lat = loc.coordinates[1];
   }
 
-  // Fallback for address object
-  if ((lat == null || lng == null) && loc.deliveryAddress) {
-    lat = loc.deliveryAddress.latitude ?? loc.deliveryAddress.lat;
-    lng = loc.deliveryAddress.longitude ?? loc.deliveryAddress.lng;
+  // Nested in .coords (HTML5 Geolocation position.coords)
+  if ((lat == null || lng == null) && loc.coords) {
+    lat = loc.coords.latitude ?? loc.coords.lat;
+    lng = loc.coords.longitude ?? loc.coords.lng;
+  }
+
+  // Fallback for address or deliveryAddress object
+  if ((lat == null || lng == null) && (loc.deliveryAddress || loc.address || loc.restaurantLocation || loc.customerLocation)) {
+    const sub = loc.deliveryAddress || loc.address || loc.restaurantLocation || loc.customerLocation;
+    return extractCoordinates(sub);
   }
 
   const pLat = parseFloat(lat);

@@ -18,6 +18,7 @@ export const PickupActionModal = ({
   status, 
   isWithinRange, 
   distanceToTarget,
+  routeInfo,
   eta,
   onReachedPickup, 
   onPickedUp,
@@ -36,6 +37,16 @@ export const PickupActionModal = ({
   const restaurantPhone = order.restaurantPhone || order.restaurant_phone || order.restaurantId?.phone || '';
   const items = order.items || [];
   const restaurantLogo = order.restaurantImage || order.restaurant?.logo || order.restaurant?.profileImage || 'https://cdn-icons-png.flaticon.com/512/3170/3170733.png';
+
+  const displayDistance = routeInfo?.distanceMeters != null && routeInfo.distanceMeters > 0
+    ? `${(routeInfo.distanceMeters / 1000).toFixed(1)} km`
+    : (Number.isFinite(distanceToTarget) && distanceToTarget !== Infinity
+      ? `${(distanceToTarget / 1000).toFixed(1)} km`
+      : '-- km');
+
+  const displayEta = routeInfo?.durationMinutes != null && routeInfo.durationMinutes > 0
+    ? `${routeInfo.durationMinutes} min`
+    : (eta ? `${eta} min` : '-- min');
 
   return (
     <div className="fixed inset-0 z-110 p-0 sm:p-4 flex items-end justify-center">
@@ -73,10 +84,8 @@ export const PickupActionModal = ({
                 {isAtPickup ? (
                   <span className="text-green-600">Reached Location √</span>
                 ) : (
-                  <span className="text-orange-500">
-                    {Number.isFinite(distanceToTarget) && distanceToTarget !== Infinity
-                      ? `${(distanceToTarget / 1000).toFixed(1)} km`
-                      : '-- km'} • {eta || '--'} min to Store
+                  <span className="text-orange-500 font-semibold">
+                    {displayDistance} • {displayEta} to Store
                   </span>
                 )}
               </p>

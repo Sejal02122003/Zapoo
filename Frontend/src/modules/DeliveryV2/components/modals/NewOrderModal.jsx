@@ -4,6 +4,7 @@ import { User, MapPin, FastForward, Clock, Phone, ChefHat, ChevronDown, CreditCa
 import { ActionSlider } from '@/modules/DeliveryV2/components/ui/ActionSlider';
 import { useDeliveryStore } from '@/modules/DeliveryV2/store/useDeliveryStore';
 import { getHaversineDistance, calculateETA } from '@/modules/DeliveryV2/utils/geo';
+import { extractCoordinates } from '@/modules/DeliveryV2/hooks/useProximityCheck';
 import { getOrderMongoId, getOrderDisplayId, isSameOrder } from '@food/utils/orderDispatchId';
 
 /**
@@ -57,18 +58,26 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
     }
 
     // B. Calculate from locations (Local calculation fallback)
-    const rest = order.restaurantLocation || order.restaurantId?.location || {};
-    const resLat = parseFloat(order.restaurant_lat || order.restaurantLat || rest.latitude || rest.lat);
-    const resLng = parseFloat(order.restaurant_lng || order.restaurantLng || rest.longitude || rest.lng);
+    const restCoords = extractCoordinates(
+      order.restaurantLocation ||
+      order.restaurant_location ||
+      order.restaurantId?.location ||
+      order.restaurant?.location ||
+      order.restaurant ||
+      order.restaurantId ||
+      order.pickupLocation
+    );
 
-    if (riderLocation && !isNaN(resLat) && !isNaN(resLng)) {
+    const riderCoords = extractCoordinates(riderLocation);
+
+    if (riderCoords && restCoords) {
       const distM = getHaversineDistance(
-        riderLocation.lat, riderLocation.lng,
-        resLat, resLng
+        riderCoords.lat, riderCoords.lng,
+        restCoords.lat, restCoords.lng
       );
       const km = distM / 1000;
       // Assume 25km/h avg for initial estimate (roughly 416m/min)
-      const mins = Math.ceil(distM / 416) + (order.prepTime || 5);
+      const mins = Math.max(1, Math.ceil(distM / 416)) + (order.prepTime || 5);
       
       return { 
         distanceKm: km.toFixed(1), 
@@ -76,7 +85,7 @@ export const NewOrderModal = ({ order, queuedOrders = [], onSelectOrder, onAccep
       };
     }
 
-    return { distanceKm: '??', etaMins: order.prepTime || 15 };
+    return { distanceKm: '--', etaMins: order.prepTime || 15 };
   }, [order, riderLocation]);
 
   const paymentDetails = useMemo(() => {
