@@ -56,12 +56,20 @@ export function sanitizeOrderForExternal(orderDoc) {
   const method = String(o.payment?.method || o.paymentMethod || 'cash').toLowerCase();
   const status = String(o.payment?.status || '').toLowerCase();
   const isPaid = status === 'paid' || method === 'wallet' || (method === 'razorpay' && status === 'paid');
+  const walletUsed = Number(o.pricing?.walletAmountUsed || 0);
+  const totalAmount = Number(o.pricing?.total || o.total || 0);
+  const fallbackDue = Math.max(0, totalAmount - walletUsed);
+  const due = isPaid ? 0 : (o.payment?.amountDue != null ? Number(o.payment.amountDue) : fallbackDue);
   if (o.payment) {
     if (isPaid) {
       o.payment.status = 'paid';
       o.payment.amountDue = 0;
+    } else {
+      o.payment.amountDue = due;
     }
   }
+  o.amountDue = due;
+  o.collectAmount = due;
   o.orderMongoId = (o._id || orderDoc?._id || "").toString();
   // Ensure orderId field for UI always contains the pretty ID
   o.orderId = o.order_id || o.orderMongoId; 
@@ -173,6 +181,11 @@ export function normalizeOrderForClient(orderDoc) {
     ? (cancelHistoryEntry?.note || order.cancellationReason || "")
     : null;
 
+  const walletUsed = Number(order?.pricing?.walletAmountUsed || 0);
+  const totalAmount = Number(order?.pricing?.total || order?.total || 0);
+  const fallbackDue = Math.max(0, totalAmount - walletUsed);
+  const due = isPaid ? 0 : (order?.payment?.amountDue != null ? Number(order.payment.amountDue) : fallbackDue);
+
   return {
     ...order,
     id: mongoId,
@@ -182,9 +195,12 @@ export function normalizeOrderForClient(orderDoc) {
     status: order?.orderStatus || order?.status || "",
     payment: {
       ...(order?.payment || {}),
-      status: clientPaymentStatus
+      status: clientPaymentStatus,
+      amountDue: due,
     },
     paymentStatus: clientPaymentStatus,
+    amountDue: due,
+    collectAmount: due,
     deliveredAt:
       order?.deliveryState?.deliveredAt || order?.deliveredAt || null,
     deliveryPartnerId:
@@ -241,7 +257,10 @@ export function buildDeliverySocketPayload(orderDoc, restaurantDoc = null) {
   const method = String(order?.payment?.method || order?.paymentMethod || 'cash').toLowerCase();
   const status = String(order?.payment?.status || '').toLowerCase();
   const isPaid = status === 'paid' || method === 'wallet' || (method === 'razorpay' && status === 'paid');
-  const amountDue = isPaid ? 0 : Number(order?.payment?.amountDue ?? order?.pricing?.total ?? 0);
+  const walletUsed = Number(order?.pricing?.walletAmountUsed || 0);
+  const totalAmount = Number(order?.pricing?.total || order?.total || 0);
+  const fallbackDue = Math.max(0, totalAmount - walletUsed);
+  const amountDue = isPaid ? 0 : (order?.payment?.amountDue != null ? Number(order.payment.amountDue) : fallbackDue);
 
   const paymentObj = {
     ...(order?.payment || {}),

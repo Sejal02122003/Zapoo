@@ -138,7 +138,7 @@ export async function createInitialTransaction(order) {
         payment: {
             method: String(order.payment?.method || 'cash'),
             status: String(order.payment?.status || 'cod_pending'),
-            amountDue: Number(order.payment?.amountDue ?? order.pricing?.total ?? 0) || 0,
+            amountDue: Number(order.payment?.amountDue ?? Math.max(0, (order.pricing?.total || 0) - (order.pricing?.walletAmountUsed || 0))) || 0,
             razorpay: {
                 orderId: String(order.payment?.razorpay?.orderId || ''),
                 paymentId: String(order.payment?.razorpay?.paymentId || ''),
@@ -165,6 +165,7 @@ export async function createInitialTransaction(order) {
             couponCode: order.pricing?.couponCode || null,
             restaurantCouponCode: order.pricing?.restaurantCouponCode || null,
             total: Number(order.pricing?.total || 0) || 0,
+            walletAmountUsed: Number(order.pricing?.walletAmountUsed || 0),
             currency: String(order.pricing?.currency || order.currency || 'INR'),
         },
         amounts: {

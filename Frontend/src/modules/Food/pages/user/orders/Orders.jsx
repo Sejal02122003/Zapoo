@@ -356,6 +356,8 @@ export default function Orders() {
               pricing: order.pricing || {}, // Keep full pricing object for discounts, coupons
               payment: order.payment || {},
               paymentMethod: order.payment?.method || order.paymentMethod,
+              amountDue: order.amountDue ?? order.payment?.amountDue ?? null,
+              collectAmount: order.collectAmount ?? null,
               restaurant: order.restaurantId?.restaurantName || order.restaurantId?.name || order.restaurantName || 'Restaurant',
               restaurantId: order.restaurantId?._id || order.restaurantId,
               restaurantSlug: order.restaurantId?.slug || null,
@@ -1008,10 +1010,22 @@ Order again from this restaurant in the ${companyName} app.`
                         <span className="text-gray-800 font-medium">{order.pricing.couponCode}</span>
                       </div>
                     )}
+                    {Number(order.pricing?.walletAmountUsed || 0) > 0 && (
+                      <div className="flex justify-between text-[11px] sm:text-xs text-green-600">
+                        <span>Paid via Wallet</span>
+                        <span className="font-medium">-{"\u20B9"}{Number(order.pricing.walletAmountUsed).toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="sm:border-t border-gray-200 dark:border-gray-700 sm:pt-1.5 sm:mt-1.5">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">Total Bill</span>
-                        <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">{"\u20B9"}{order.total.toFixed(2)}</span>
+                        <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                          {Number(order.pricing?.walletAmountUsed || 0) > 0 && (order.payment?.method === 'cash' || order.payment?.method === 'cod')
+                            ? 'Pending on Delivery'
+                            : 'Total Bill'}
+                        </span>
+                        <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">
+                          {"\u20B9"}{Number(order.amountDue ?? order.payment?.amountDue ?? Math.max(0, Number(order.total || 0) - Number(order.pricing?.walletAmountUsed || 0))).toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </div>

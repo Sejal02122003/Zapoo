@@ -396,6 +396,8 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
     subtotal: apiOrder?.pricing?.subtotal || apiOrder?.subtotal || 0,
     paymentMethod: apiOrder?.paymentMethod || apiOrder?.payment?.method || previousOrder?.paymentMethod || null,
     payment: apiOrder?.payment || previousOrder?.payment || null,
+    walletAmountUsed: apiOrder?.pricing?.walletAmountUsed || apiOrder?.walletAmountUsed || previousOrder?.walletAmountUsed || 0,
+    amountDue: apiOrder?.payment?.amountDue ?? apiOrder?.amountDue ?? previousOrder?.amountDue ?? null,
     // Preserve delivery OTP code received via socket event.
     // API responses intentionally strip the secret code for security,
     // so without preserving it the UI would lose the OTP on each poll refresh.
@@ -2362,9 +2364,22 @@ export default function OrderTracking() {
                 </div>
               )}
 
+              {Number(order?.pricing?.walletAmountUsed || order?.walletAmountUsed || 0) > 0 && (
+                <div className="flex justify-between items-center text-sm text-green-600 font-medium">
+                  <span>Paid via Zapoo Wallet</span>
+                  <span>-₹{Number(order?.pricing?.walletAmountUsed || order?.walletAmountUsed).toFixed(2)}</span>
+                </div>
+              )}
+
               <div className="pt-2 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center">
-                <span className="text-base font-bold text-gray-900 dark:text-white">Total Amount</span>
-                <span className="text-lg font-bold text-gray-900 dark:text-white">₹{Number(order?.totalAmount || 0).toFixed(2)}</span>
+                <span className="text-base font-bold text-gray-900 dark:text-white">
+                  {Number(order?.pricing?.walletAmountUsed || order?.walletAmountUsed || 0) > 0 && (String(order?.paymentMethod).toLowerCase() === 'cash' || String(order?.paymentMethod).toLowerCase() === 'cod')
+                    ? 'Cash to Pay on Delivery'
+                    : 'Total Amount'}
+                </span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">
+                  ₹{Number(order?.amountDue ?? order?.payment?.amountDue ?? Math.max(0, Number(order?.totalAmount || 0) - Number(order?.pricing?.walletAmountUsed || order?.walletAmountUsed || 0))).toFixed(2)}
+                </span>
               </div>
             </div>
 

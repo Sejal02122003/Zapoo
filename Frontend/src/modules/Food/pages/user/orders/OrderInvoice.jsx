@@ -309,6 +309,18 @@ export default function OrderInvoice() {
                     <td colSpan="4" className="px-3 py-3 border-r border-gray-400 font-extrabold text-right text-sm uppercase tracking-wide">Grand Total</td>
                     <td className="px-3 py-3 font-extrabold text-right text-base text-gray-900">₹{order.total.toFixed(2)}</td>
                   </tr>
+                  {Number(order.pricing?.walletAmountUsed || 0) > 0 && (
+                    <tr className="border-t border-gray-300">
+                      <td colSpan="4" className="px-3 py-2 border-r border-gray-400 font-bold text-right text-gray-800 uppercase text-[10px] tracking-wider">Paid via Wallet</td>
+                      <td className="px-3 py-2 text-right text-green-700 font-bold">-₹{Number(order.pricing.walletAmountUsed).toFixed(2)}</td>
+                    </tr>
+                  )}
+                  {Number(order.pricing?.walletAmountUsed || 0) > 0 && (
+                    <tr className="border-t border-gray-300 bg-amber-50">
+                      <td colSpan="4" className="px-3 py-2 border-r border-gray-400 font-bold text-right text-amber-900 uppercase text-[10px] tracking-wider">Cash to Collect on Delivery</td>
+                      <td className="px-3 py-2 text-right font-extrabold text-amber-900">₹{Number(order.amountDue ?? order.payment?.amountDue ?? Math.max(0, order.total - Number(order.pricing.walletAmountUsed))).toFixed(2)}</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

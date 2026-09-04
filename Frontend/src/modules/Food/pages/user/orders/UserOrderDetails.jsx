@@ -478,6 +478,24 @@ export default function UserOrderDetails() {
       doc.setTextColor(15, 23, 42); // Slate 900
       doc.text("Grand Total:", 140, yPos);
       doc.text(`Rs. ${total.toFixed(2)}`, totalWidth, yPos, { align: "right" });
+      yPos += 6;
+
+      const walletUsedInDoc = Number(pricing.walletAmountUsed || 0);
+      if (walletUsedInDoc > 0) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(22, 101, 52);
+        doc.text("Paid via Zapoo Wallet:", 140, yPos);
+        doc.text(`- Rs. ${walletUsedInDoc.toFixed(2)}`, totalWidth, yPos, { align: "right" });
+        yPos += 6;
+
+        const dueInDoc = Number(order.payment?.amountDue ?? Math.max(0, total - walletUsedInDoc));
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(15, 23, 42);
+        doc.text("Cash to Collect:", 140, yPos);
+        doc.text(`Rs. ${dueInDoc.toFixed(2)}`, totalWidth, yPos, { align: "right" });
+        yPos += 6;
+      }
 
       // Footer
       doc.setFontSize(8);
@@ -780,10 +798,20 @@ export default function UserOrderDetails() {
             </div>
 
 
+            {Number(pricing.walletAmountUsed || 0) > 0 && (
+              <div className="flex justify-between items-center text-sm text-green-600 dark:text-green-400 font-medium">
+                <span>Paid via Zapoo Wallet</span>
+                <span>-₹{Number(pricing.walletAmountUsed).toFixed(2)}</span>
+              </div>
+            )}
             <div className="border-t border-gray-100 dark:border-gray-800 my-2 pt-2 flex justify-between items-center">
-              <span className="font-bold text-gray-800 dark:text-gray-100">Paid</span>
               <span className="font-bold text-gray-800 dark:text-gray-100">
-                ₹{Number(pricing.total || 0).toFixed(2)}
+                {Number(pricing.walletAmountUsed || 0) > 0 && (String(paymentMethod).toLowerCase() === 'cash' || String(paymentMethod).toLowerCase() === 'cod')
+                  ? 'Pending Cash on Delivery'
+                  : (order?.payment?.status === 'paid' ? 'Paid' : 'To Pay')}
+              </span>
+              <span className="font-bold text-gray-800 dark:text-gray-100">
+                ₹{Number(order?.payment?.amountDue ?? Math.max(0, Number(pricing.total || 0) - Number(pricing.walletAmountUsed || 0))).toFixed(2)}
               </span>
             </div>
           </div>
@@ -842,6 +870,11 @@ export default function UserOrderDetails() {
               </h4>
               <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
                 Paid via: {paymentMethod.toUpperCase()}
+                {Number(pricing.walletAmountUsed || 0) > 0 && (
+                  <span className="ml-1 text-green-600 dark:text-green-400 font-medium">
+                    (₹{Number(pricing.walletAmountUsed).toFixed(2)} from Wallet)
+                  </span>
+                )}
               </p>
             </div>
           </div>
