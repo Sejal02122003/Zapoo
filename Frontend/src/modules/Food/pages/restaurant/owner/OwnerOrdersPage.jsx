@@ -365,7 +365,9 @@ export default function OwnerOrdersPage() {
                           </button>
                         </div>
                       ) : (
-                        <span className={`text-xs font-black uppercase px-3 py-1.5 rounded-xl tracking-wider ${
+                        <span 
+                          onClick={(e) => e.stopPropagation()}
+                          className={`text-xs font-black uppercase px-3 py-1.5 rounded-xl tracking-wider cursor-default ${
                           order.orderStatus === 'completed' || order.orderStatus === 'delivered'
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'
                             : order.orderStatus === 'cancelled_by_user' || order.orderStatus === 'cancelled_by_restaurant'
