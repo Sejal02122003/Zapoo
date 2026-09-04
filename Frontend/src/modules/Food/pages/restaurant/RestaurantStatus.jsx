@@ -35,6 +35,7 @@ export default function RestaurantStatus() {
   const goBack = useRestaurantBackNavigation()
   const isAuthenticated = isModuleAuthenticated('restaurant')
   const [deliveryStatus, setDeliveryStatus] = useState(false)
+  const [takeawayStatus, setTakeawayStatus] = useState(true)
   const [restaurantData, setRestaurantData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [currentDateTime, setCurrentDateTime] = useState(new Date())
@@ -63,6 +64,9 @@ export default function RestaurantStatus() {
         const data = response?.data?.data?.restaurant || response?.data?.restaurant
         if (data) {
           setRestaurantData(data)
+          if (data.isTakeawayEnabled !== undefined) {
+            setTakeawayStatus(Boolean(data.isTakeawayEnabled))
+          }
         }
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
@@ -76,6 +80,14 @@ export default function RestaurantStatus() {
     }
 
     fetchRestaurantData()
+
+    const handleTakeawayStatusUpdate = (event) => {
+      if (event.detail?.isTakeawayEnabled !== undefined) {
+        setTakeawayStatus(Boolean(event.detail.isTakeawayEnabled))
+      }
+    }
+    window.addEventListener("takeawayStatusChanged", handleTakeawayStatusUpdate)
+    return () => window.removeEventListener("takeawayStatusChanged", handleTakeawayStatusUpdate)
   }, [])
 
   // Load outlet timings from backend (DB)
@@ -293,6 +305,21 @@ export default function RestaurantStatus() {
     }
   }
 
+  // Handle takeaway status change
+  const handleTakeawayStatusChange = async (checked) => {
+    const prev = takeawayStatus
+    setTakeawayStatus(checked)
+    try {
+      await restaurantAPI.updateProfile({ isTakeawayEnabled: checked })
+      window.dispatchEvent(new CustomEvent('takeawayStatusChanged', { 
+        detail: { isTakeawayEnabled: checked } 
+      }))
+    } catch (error) {
+      debugError("Error saving takeaway status:", error)
+      setTakeawayStatus(prev)
+    }
+  }
+
   // Handle dialog close and navigate to outlet timings
   const handleGoToOutletTimings = () => {
     setShowOutletClosedDialog(false)
@@ -421,50 +448,69 @@ export default function RestaurantStatus() {
             </div>
 
             <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-base font-bold text-gray-900 mb-1.5">Delivery status</p>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${deliveryStatus ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-                <p className="text-sm text-gray-500">
-                  {deliveryStatus ? 'Receiving orders' : 'Not receiving orders'}
+              <div className="flex-1">
+                <p className="text-base font-bold text-gray-900 mb-1.5">Delivery status</p>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${deliveryStatus ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                  <p className="text-sm text-gray-500">
+                    {deliveryStatus ? 'Receiving delivery orders' : 'Not receiving delivery orders'}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={deliveryStatus}
+                onCheckedChange={handleDeliveryStatusChange}
+                className="ml-4 data-[state=unchecked]:bg-gray-300 data-[state=checked]:bg-green-600"
+              />
+            </div>
+
+            <div className="border-t border-gray-200/80 pt-4 flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-base font-bold text-gray-900 mb-1.5">Takeaway (Self-Pickup) status</p>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${takeawayStatus ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                  <p className="text-sm text-gray-500">
+                    {takeawayStatus ? 'Accepting takeaway pickups' : 'Takeaway orders disabled'}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={takeawayStatus}
+                onCheckedChange={handleTakeawayStatusChange}
+                className="ml-4 data-[state=unchecked]:bg-gray-300 data-[state=checked]:bg-green-600"
+              />
+            </div>
+
+            <div className="border-t border-gray-200/80 pt-2">
+              <p className="text-sm text-gray-700 mb-2">Current delivery slot</p>
+              <div className="flex items-center justify-between">
+                <p className="text-base font-bold text-gray-900">
+                  {loading ? "Loading..." : (
+                    (() => {
+                      // If current day is closed, show "Today is Off"
+                      if (isDayClosed) {
+                        return "Today is Off"
+                      }
+                      const timings = getCurrentDayTimings()
+                      if (timings) {
+                        const dateStr = currentDateTime.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+                        return `${dateStr}, ${timings.openingTime} - ${timings.closingTime}`
+                      }
+                      return "Not configured"
+                    })()
+                  )}
                 </p>
+                {!isDayClosed && (
+                  <button
+                    onClick={() => navigate("/restaurant/outlet-timings")}
+                    className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    Details
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
-            <Switch
-              checked={deliveryStatus}
-              onCheckedChange={handleDeliveryStatusChange}
-              className="ml-4 data-[state=unchecked]:bg-gray-300 data-[state=checked]:bg-green-600"
-            />
-          </div>
-
-          <p className="text-sm text-gray-700 mb-2">Current delivery slot</p>
-          <div className="flex items-center justify-between">
-            <p className="text-base font-bold text-gray-900">
-              {loading ? "Loading..." : (
-                (() => {
-                  // If current day is closed, show "Today is Off"
-                  if (isDayClosed) {
-                    return "Today is Off"
-                  }
-                  const timings = getCurrentDayTimings()
-                  if (timings) {
-                    const dateStr = currentDateTime.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
-                    return `${dateStr}, ${timings.openingTime} - ${timings.closingTime}`
-                  }
-                  return "Not configured"
-                })()
-              )}
-            </p>
-            {!isDayClosed && (
-              <button
-                onClick={() => navigate("/restaurant/outlet-timings")}
-                className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                Details
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
-          </div>
 
           
 

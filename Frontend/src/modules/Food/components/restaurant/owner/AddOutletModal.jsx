@@ -50,6 +50,7 @@ export default function AddOutletModal({ isOpen, onClose, onOutletCreated }) {
     password: "",
     pureVeg: false,
     isAcceptingOrders: true,
+    isTakeawayEnabled: true,
     openTime: "09:00",
     closeTime: "23:00",
     permissions: AVAILABLE_PERMISSIONS.filter(p => p.default).map(p => p.id),
@@ -110,7 +111,8 @@ export default function AddOutletModal({ isOpen, onClose, onOutletCreated }) {
         password: formData.password.trim(),
         permissions: formData.permissions,
         pureVeg: formData.pureVeg,
-        isAcceptingOrders: formData.isAcceptingOrders,
+        isAcceptingOrders: formData.isAcceptingOrders !== false,
+        isTakeawayEnabled: formData.isTakeawayEnabled !== false,
         timings: {
           openTime: formData.openTime,
           closeTime: formData.closeTime,
@@ -372,6 +374,31 @@ export default function AddOutletModal({ isOpen, onClose, onOutletCreated }) {
                     onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#22A2E3]"
                   />
+                </div>
+
+                {/* Default Channel Controls */}
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                  <span className="text-[11px] font-black uppercase text-slate-600 dark:text-slate-400">Initial Channels:</span>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.isAcceptingOrders}
+                        onChange={(e) => setFormData({ ...formData, isAcceptingOrders: e.target.checked })}
+                        className="w-4 h-4 rounded text-[#22A2E3] focus:ring-[#22A2E3]"
+                      />
+                      <span>Delivery</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.isTakeawayEnabled}
+                        onChange={(e) => setFormData({ ...formData, isTakeawayEnabled: e.target.checked })}
+                        className="w-4 h-4 rounded text-[#22A2E3] focus:ring-[#22A2E3]"
+                      />
+                      <span>Takeaway</span>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="flex justify-end pt-2">
