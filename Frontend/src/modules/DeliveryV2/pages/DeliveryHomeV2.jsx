@@ -39,7 +39,7 @@ import {
 } from 'lucide-react';
 
 import { shouldSendLocationUpdate } from "@delivery/utils/trackingInterval";
-import { getHaversineDistance, calculateETA, calculateHeading } from '@/modules/DeliveryV2/utils/geo';
+import { getHaversineDistance, calculateETA, calculateHeading, formatDistance, formatETA } from '@/modules/DeliveryV2/utils/geo';
 import { useCompanyName } from "@food/hooks/useCompanyName";
 import { useNavigate } from 'react-router-dom';
 import useNotificationInbox from "@food/hooks/useNotificationInbox";
@@ -149,9 +149,11 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
   const [simIndex, setSimIndex] = useState(0);
   const [simProgress, setSimProgress] = useState(0); // 0 to 1 between points
   const [activePolyline, setActivePolyline] = useState(null);
+  const [routeInfo, setRouteInfo] = useState(null);
   const lastEmittedPolylineRef = useRef('');
   const mapRef = useRef(null);
   const simInitializedRef = useRef(false);
+  const lastSimPanAtRef = useRef(0);
 
   const resolveActiveOrderMeta = useCallback(() => {
     if (!activeOrder) return null;
@@ -196,6 +198,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
 
   useEffect(() => {
     lastEmittedPolylineRef.current = '';
+    setRouteInfo(null);
   }, [activeOrder?._id, tripStatus]);
 
   const isLoggingOut = useRef(false);
@@ -260,12 +263,16 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
 
             setRiderLocation({ lat, lng, heading });
 
-            if (mapRef.current) {
-              mapRef.current.panTo({ lat, lng });
+            // Smoothly pan camera without choking Google Maps rendering engine
+            const now = Date.now();
+            if (now - lastSimPanAtRef.current >= 1500) {
+              lastSimPanAtRef.current = now;
+              if (mapRef.current) {
+                mapRef.current.panTo({ lat, lng });
+              }
             }
 
             // Sync with backend every 2.5 seconds during simulation so customer sees it
-            const now = Date.now();
             if (now - lastSimUpdateSentAt.current >= 2000) { // Reduced to 2s to match backend throttle
               lastSimUpdateSentAt.current = now;
               const payload = { 
@@ -1087,7 +1094,11 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                       <span className="text-[9px] text-white/70 font-black uppercase tracking-[0.15em] mb-1">Distance</span>
                       <div className="flex items-end gap-1">
                         <span className="text-2xl font-black text-white leading-none tracking-tighter">
-                          {distanceToTarget !== null && distanceToTarget !== undefined && distanceToTarget !== Infinity ? (distanceToTarget / 1000).toFixed(1) : '--'}
+                          {routeInfo?.distanceMeters != null && routeInfo.distanceMeters > 0
+                            ? (routeInfo.distanceMeters / 1000).toFixed(1)
+                            : (distanceToTarget !== null && distanceToTarget !== undefined && Number.isFinite(distanceToTarget) && distanceToTarget !== Infinity
+                              ? (distanceToTarget / 1000).toFixed(1)
+                              : '--')}
                         </span>
                         <span className="text-[11px] text-white/80 font-bold mb-0.5">KM</span>
                       </div>
@@ -1103,7 +1114,9 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                       <span className="text-[9px] text-white/70 font-black uppercase tracking-[0.15em] mb-1">Arrival</span>
                       <div className="flex items-end gap-1">
                         <span className="text-2xl font-black text-white leading-none tracking-tighter">
-                          {eta !== null && eta !== undefined ? String(eta) : '--'}
+                          {routeInfo?.durationMinutes != null && routeInfo.durationMinutes > 0
+                            ? String(routeInfo.durationMinutes)
+                            : (eta !== null && eta !== undefined ? String(eta) : '--')}
                         </span>
                         <span className="text-[11px] text-white/80 font-bold mb-0.5">MIN</span>
                       </div>
@@ -1179,7 +1192,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
         }}
       />
 
-      {/* â”€â”€â”€ 2. MAIN CONTENT â”€â”€â”€ */}
+      {/* ——— 2. MAIN CONTENT ——— */}
       <div className={`flex-1 relative overflow-y-auto ${currentTab === 'history' || currentTab === 'profile' || currentTab === 'pocket' ? 'pt-0' : 'pt-[120px]'} no-scrollbar`}>
          {currentTab === 'feed' ? (
            <div className="absolute inset-0 top-[-120px]">
@@ -1192,6 +1205,9 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                onPolylineReceived={(poly) => {
                  setActivePolyline(poly);
                  pushRoutePolylineToCustomer(poly);
+               }}
+               onRouteInfoUpdate={(info) => {
+                 setRouteInfo(info);
                }}
                fallbackPath={simPath}
                zoom={zoom}
@@ -1401,7 +1417,8 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                     status={tripStatus} 
                     isWithinRange={isWithinRange} 
                     distanceToTarget={distanceToTarget}
-                    eta={eta}
+                    routeInfo={routeInfo}
+                    eta={routeInfo?.durationMinutes || eta}
                     onReachedPickup={reachPickup} 
                     onPickedUp={(billImageUrl, otp) => pickUpOrder(billImageUrl, otp)} 
                     onMinimize={() => setIsModalMinimized(true)}
@@ -1486,14 +1503,25 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                                <Clock className="w-5 h-5 text-orange-500" />
                                <div className="flex flex-col">
                                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Time</span>
-                                  <span className={`text-sm font-bold ${isWithinRange ? 'text-green-600' : 'text-gray-900'}`}>{isWithinRange ? 'Ready' : `${eta || '--'} MINS`}</span>
+                                  <span className={`text-sm font-bold ${isWithinRange ? 'text-green-600' : 'text-gray-900'}`}>
+                                    {routeInfo?.durationMinutes != null && routeInfo.durationMinutes > 0
+                                      ? `${routeInfo.durationMinutes} MINS`
+                                      : (eta ? `${eta} MINS` : (isWithinRange ? 'Ready' : '-- MINS'))}
+                                  </span>
                                </div>
                              </div>
                              <div className="p-3 sm:p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-2.5 sm:gap-3">
                                <MapPin className="w-5 h-5 text-gray-400" />
                                <div className="flex flex-col">
                                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Distance</span>
-                                  <span className={`text-sm font-bold ${isWithinRange ? 'text-green-600' : 'text-gray-900'}`}>{isWithinRange ? '0 KM' : (Number.isFinite(distanceToTarget) && distanceToTarget !== Infinity ? `${(distanceToTarget / 1000).toFixed(1)} KM` : '-- KM')}</span>
+                                  <span className={`text-sm font-bold ${isWithinRange ? 'text-green-600' : 'text-gray-900'}`}>
+                                    {routeInfo?.distanceMeters != null && routeInfo.distanceMeters > 0
+                                      ? `${(routeInfo.distanceMeters / 1000).toFixed(1)} KM`
+                                      : (Number.isFinite(distanceToTarget) && distanceToTarget !== Infinity
+                                        ? `${(distanceToTarget / 1000).toFixed(1)} KM`
+                                        : '-- KM')}
+                                    {isWithinRange && <span className="ml-1 text-[10px] text-green-600 font-bold">(Near)</span>}
+                                  </span>
                                </div>
                              </div>
                            </div>

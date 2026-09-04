@@ -1,14 +1,15 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { 
   GoogleMap, 
-  Marker, 
-  DirectionsService, 
-  Polygon,
-  Polyline,
+  MarkerF, 
+  PolygonF,
+  PolylineF,
   useJsApiLoader,
-  OverlayView
+  OverlayViewF
 } from '@react-google-maps/api';
 import { useDeliveryStore } from '@/modules/DeliveryV2/store/useDeliveryStore';
+import { extractCoordinates } from '@/modules/DeliveryV2/hooks/useProximityCheck';
+import { getHaversineDistance } from '@/modules/DeliveryV2/utils/geo';
 import { zoneAPI } from '@food/api';
 
 const mapContainerStyle = {
@@ -26,361 +27,410 @@ const mapOptions = {
   streetViewControl: false,
   rotateControl: true,
   fullscreenControl: false,
+  gestureHandling: 'greedy',
   styles: [
-    { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
+    { elementType: "geometry", stylers: [{ color: "#f8f9fa" }] },
     { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
     { elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
     { elementType: "labels.text.stroke", stylers: [{ color: "#f5f5f5" }] },
     { featureType: "administrative.land_parcel", elementType: "labels.text.fill", stylers: [{ color: "#bdbdbd" }] },
     { featureType: "poi", elementType: "geometry", stylers: [{ color: "#eeeeee" }] },
+    { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
     { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+    { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+    { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#dadada" }] },
     { featureType: "water", elementType: "geometry", stylers: [{ color: "#c9c9c9" }] },
     { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#9e9e9e" }] }
   ]
 };
+
 const LIBRARIES = ['places', 'geometry'];
 
-export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineReceived, fallbackPath = [], zoom = 12 }) => {
+const DEFAULT_CENTER = { lat: 22.7196, lng: 75.8577 }; // Indore fallback
+
+const ROUTE_LINE_BG_OPTIONS = {
+  strokeColor: '#1d4ed8',
+  strokeOpacity: 0.25,
+  strokeWeight: 10,
+  zIndex: 10
+};
+
+const ROUTE_LINE_MAIN_OPTIONS = {
+  strokeColor: '#2563eb',
+  strokeOpacity: 0.95,
+  strokeWeight: 6,
+  zIndex: 12
+};
+
+const ZONE_POLYGON_OPTIONS = {
+  fillColor: "#22c55e",
+  fillOpacity: 0.04,
+  strokeColor: "#22c55e",
+  strokeOpacity: 0.2,
+  strokeWeight: 1.5,
+  zIndex: 1
+};
+
+export const LiveMap = ({ 
+  onMapClick, 
+  onMapLoad, 
+  onPathReceived, 
+  onPolylineReceived, 
+  onRouteInfoUpdate,
+  fallbackPath = [], 
+  zoom = 14 
+}) => {
   const { riderLocation, activeOrder, tripStatus } = useDeliveryStore();
   
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
     libraries: LIBRARIES
   });
 
-  const [directions, setDirections] = useState(null);
-  const [baselineDirections, setBaselineDirections] = useState(null);
   const [map, setMapInternal] = useState(null);
   const [zones, setZones] = useState([]);
-  const [lastDirectionsAt, setLastDirectionsAt] = useState(0);
+  const [routePath, setRoutePath] = useState([]);
+  const directionsServiceRef = useRef(null);
+  const lastRouteReqRef = useRef({ origin: null, dest: null, time: 0 });
+  const lastFittedPhaseRef = useRef('');
 
-  const handleMapLoad = (mapInstance) => {
+  // Handle map instance initialization
+  const handleMapLoad = useCallback((mapInstance) => {
     mapInstance.setOptions({
       disableDefaultUI: true,
       zoomControl: false,
       mapTypeControl: false,
       scaleControl: false,
       streetViewControl: false,
-      rotateControl: true, // Enabled for front-view navigation
+      rotateControl: true,
       fullscreenControl: false,
+      gestureHandling: 'greedy'
     });
     setMapInternal(mapInstance);
     if (onMapLoad) onMapLoad(mapInstance);
-  };
+  }, [onMapLoad]);
 
-  useEffect(() => {
-    setLastDirectionsAt(0);
-    setDirections(null);
-    setBaselineDirections(null);
-  }, [tripStatus, activeOrder?._id]);
+  // Extract precise points safely using universal extractor
+  const restaurantPoint = useMemo(() => {
+    if (!activeOrder) return null;
+    return extractCoordinates(
+      activeOrder.restaurantLocation || 
+      activeOrder.restaurant_location || 
+      activeOrder.restaurant?.location || 
+      activeOrder.restaurantId?.location || 
+      activeOrder.restaurant || 
+      activeOrder.restaurantId ||
+      activeOrder.pickupLocation
+    );
+  }, [activeOrder]);
 
-  const parsePoint = useCallback((raw) => {
-    if (!raw) return null;
-    const lat = parseFloat(raw.lat ?? raw.latitude);
-    const lng = parseFloat(raw.lng ?? raw.longitude);
-    return (Number.isFinite(lat) && Number.isFinite(lng)) ? { lat, lng } : null;
-  }, []);
-
-  const restaurantPoint = useMemo(() => parsePoint(activeOrder?.restaurantLocation), [activeOrder?.restaurantLocation, parsePoint]);
-  const customerPoint = useMemo(() => parsePoint(activeOrder?.customerLocation), [activeOrder?.customerLocation, parsePoint]);
+  const customerPoint = useMemo(() => {
+    if (!activeOrder) return null;
+    return extractCoordinates(
+      activeOrder.customerLocation || 
+      activeOrder.customer_location || 
+      activeOrder.deliveryAddress?.location || 
+      activeOrder.deliveryAddress || 
+      activeOrder.dropLocation || 
+      activeOrder.drop_location || 
+      activeOrder.userLocation ||
+      activeOrder.user?.location
+    );
+  }, [activeOrder]);
 
   const targetLocation = useMemo(() => {
     if (!activeOrder) return null;
-    let rawLoc = null;
-    if (tripStatus === 'PICKING_UP' || tripStatus === 'REACHED_PICKUP') {
-      rawLoc = activeOrder.restaurantLocation;
-    } else if (tripStatus === 'PICKED_UP' || tripStatus === 'REACHED_DROP') {
-      rawLoc = activeOrder.customerLocation;
+    if (['PICKING_UP', 'REACHED_PICKUP'].includes(tripStatus) || !['PICKED_UP', 'REACHED_DROP', 'DELIVERING', 'COMPLETED'].includes(tripStatus)) {
+      return restaurantPoint;
     }
-    if (!rawLoc) return null;
-    return parsePoint(rawLoc);
-  }, [activeOrder, tripStatus, parsePoint]);
+    if (['PICKED_UP', 'REACHED_DROP', 'DELIVERING'].includes(tripStatus)) {
+      return customerPoint;
+    }
+    return null;
+  }, [activeOrder, tripStatus, restaurantPoint, customerPoint]);
 
   const parsedRiderLocation = useMemo(() => {
     if (!riderLocation) return null;
-    const lat = parseFloat(riderLocation.lat || riderLocation.latitude);
-    const lng = parseFloat(riderLocation.lng || riderLocation.longitude);
-    return (Number.isFinite(lat) && Number.isFinite(lng)) ? { lat, lng, heading: parseFloat(riderLocation.heading || 0) } : null;
+    const coords = extractCoordinates(riderLocation);
+    if (!coords) return null;
+    const heading = parseFloat(riderLocation.heading || riderLocation.bearing || 0) || 0;
+    return { ...coords, heading };
   }, [riderLocation]);
 
-  useEffect(() => { if (map) map.setZoom(zoom); }, [zoom, map]);
-
-  const isOffCurrentRoute = useMemo(() => {
-    if (!directions || !parsedRiderLocation || !window.google?.maps?.geometry) return false;
-    const fullPath = directions.routes?.[0]?.overview_path;
-    if (!fullPath?.length) return false;
-
-    const riderLatLng = new window.google.maps.LatLng(
-      parsedRiderLocation.lat,
-      parsedRiderLocation.lng,
-    );
-    let minDistance = Infinity;
-    for (let i = 0; i < fullPath.length; i += 1) {
-      const distance = window.google.maps.geometry.spherical.computeDistanceBetween(
-        riderLatLng,
-        fullPath[i],
-      );
-      if (distance < minDistance) minDistance = distance;
+  // Handle zoom changes smoothly
+  useEffect(() => { 
+    if (map && Number.isFinite(zoom)) {
+      map.setZoom(zoom); 
     }
-    return minDistance > 100;
-  }, [directions, parsedRiderLocation]);
+  }, [zoom, map]);
 
-  const shouldUpdateRoute = useMemo(() => {
-    const now = Date.now();
-    if (!directions) return true;
-    if (isOffCurrentRoute) return true;
-
-    let throttleMs = 20000;
-    if (parsedRiderLocation && targetLocation && window.google) {
-      try {
-        const p1 = new window.google.maps.LatLng(parsedRiderLocation.lat, parsedRiderLocation.lng);
-        const p2 = new window.google.maps.LatLng(targetLocation.lat, targetLocation.lng);
-        const dist = window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
-        if (dist > 2000) throttleMs = 60000;
-        else if (dist > 500) throttleMs = 20000;
-        else throttleMs = 5000;
-      } catch (e) {}
-    }
-    return (now - lastDirectionsAt) >= throttleMs;
-  }, [lastDirectionsAt, directions, parsedRiderLocation, targetLocation, isOffCurrentRoute]);
-
+  // Initialize DirectionsService instance once
   useEffect(() => {
-    if (directions && onPathReceived) {
-      const path = directions.routes[0]?.overview_path;
-      if (path) {
-        const simplePath = path.map(p => ({
-          lat: typeof p.lat === 'function' ? p.lat() : (p.lat || p.latitude),
-          lng: typeof p.lng === 'function' ? p.lng() : (p.lng || p.longitude)
-        }));
-        onPathReceived(simplePath);
-      }
+    if (isLoaded && window.google?.maps && !directionsServiceRef.current) {
+      directionsServiceRef.current = new window.google.maps.DirectionsService();
     }
-  }, [directions, onPathReceived]);
+  }, [isLoaded]);
 
-  const directionsCallback = useCallback((result, status) => {
-    if (status === 'OK' && result) {
-      setDirections(result);
-      setLastDirectionsAt(Date.now());
-      const rawPolyline = result.routes?.[0]?.overview_polyline;
-      const encodedPolyline =
-        typeof rawPolyline === 'string' ? rawPolyline : rawPolyline?.points || '';
-      if (encodedPolyline && onPolylineReceived) onPolylineReceived(encodedPolyline);
-    } else {
-      console.warn('[LiveMap] DirectionsService failed with status:', status);
-    }
-  }, [onPolylineReceived]);
-
-  const baselineDirectionsCallback = useCallback((result, status) => {
-    if (status === 'OK' && result) {
-      setBaselineDirections(result);
-    }
-  }, []);
-
+  // Fetch Public Zones once on mount
   useEffect(() => {
+    let isMounted = true;
     (async () => {
       try {
         const response = await zoneAPI.getPublicZones();
-        if (response?.data?.success && response.data.data?.zones) {
-          const formattedZones = response.data.data.zones.map(zone => ({
-            ...zone,
-            paths: (zone.coordinates || []).map(coord => ({ lat: coord.latitude, lng: coord.longitude }))
-          })).filter(z => z.paths.length >= 3);
+        if (isMounted && response?.data?.success && response.data.data?.zones) {
+          const formattedZones = response.data.data.zones
+            .map(zone => ({
+              ...zone,
+              paths: (zone.coordinates || []).map(coord => ({
+                lat: parseFloat(coord.latitude || coord.lat),
+                lng: parseFloat(coord.longitude || coord.lng)
+              })).filter(c => Number.isFinite(c.lat) && Number.isFinite(c.lng))
+            }))
+            .filter(z => z.paths.length >= 3);
           setZones(formattedZones);
         }
-      } catch (err) {}
+      } catch (err) {
+        console.warn('[LiveMap] Failed to load public zones:', err);
+      }
     })();
+    return () => { isMounted = false; };
   }, []);
 
-  const restaurantMarkerUrl = useMemo(() => {
-    if (!activeOrder) return 'https://cdn-icons-png.flaticon.com/512/3170/3170733.png';
-    return activeOrder.restaurantImage || activeOrder.restaurant?.logo || activeOrder.restaurant?.profileImage || 'https://cdn-icons-png.flaticon.com/512/3170/3170733.png';
-  }, [activeOrder]);
+  // Imperative, throttled, and cached Directions Calculation
+  const fetchRoute = useCallback((origin, destination, force = false) => {
+    if (!directionsServiceRef.current || !origin || !destination || !window.google?.maps) return;
 
-  const customerMarkerUrl = useMemo(() => {
-    if (!activeOrder) return 'https://cdn-icons-png.flaticon.com/512/1275/1275302.png';
-    return activeOrder.customerImage || activeOrder.user?.logo || activeOrder.user?.profileImage || 'https://cdn-icons-png.flaticon.com/512/1275/1275302.png';
-  }, [activeOrder]);
+    const now = Date.now();
+    const last = lastRouteReqRef.current;
 
-  const lastCenteredPosRef = useRef(null);
-  const lastBoundsUpdateRef = useRef(0);
+    // Cache & Throttle Check
+    if (!force && last.origin && last.dest) {
+      const distFromLastOrigin = getHaversineDistance(origin.lat, origin.lng, last.origin.lat, last.origin.lng);
+      const isSameDest = Math.abs(destination.lat - last.dest.lat) < 0.0001 && Math.abs(destination.lng - last.dest.lng) < 0.0001;
+      const elapsed = now - last.time;
+
+      // If rider hasn't moved more than 60m and destination is same, throttle to at least 20s
+      if (isSameDest && distFromLastOrigin < 60 && elapsed < 20000) {
+        return;
+      }
+    }
+
+    lastRouteReqRef.current = { origin: { ...origin }, dest: { ...destination }, time: now };
+
+    directionsServiceRef.current.route(
+      {
+        origin: new window.google.maps.LatLng(origin.lat, origin.lng),
+        destination: new window.google.maps.LatLng(destination.lat, destination.lng),
+        travelMode: window.google.maps.TravelMode.DRIVING
+      },
+      (result, status) => {
+        if (status === 'OK' && result?.routes?.[0]) {
+          const route = result.routes[0];
+          const leg = route.legs?.[0];
+
+          // 1. Extract Overview Path
+          const rawPath = route.overview_path || [];
+          const simplePath = rawPath.map(p => ({
+            lat: typeof p.lat === 'function' ? p.lat() : (p.lat || p.latitude),
+            lng: typeof p.lng === 'function' ? p.lng() : (p.lng || p.longitude)
+          }));
+          setRoutePath(simplePath);
+
+          // 2. Extract Road Distance & Duration
+          const distanceMeters = leg?.distance?.value || 0;
+          const distanceText = leg?.distance?.text || '';
+          const durationSeconds = leg?.duration?.value || 0;
+          const durationMinutes = Math.max(1, Math.ceil(durationSeconds / 60));
+          const durationText = leg?.duration?.text || '';
+
+          // 3. Extract Encoded Polyline
+          const rawPolyline = route.overview_polyline;
+          const encodedPolyline = typeof rawPolyline === 'string' ? rawPolyline : (rawPolyline?.points || '');
+
+          // 4. Notify Callbacks
+          if (onPathReceived) onPathReceived(simplePath);
+          if (onPolylineReceived && encodedPolyline) onPolylineReceived(encodedPolyline);
+          if (onRouteInfoUpdate) {
+            onRouteInfoUpdate({
+              distanceMeters,
+              distanceText,
+              durationMinutes,
+              durationText
+            });
+          }
+        } else {
+          console.warn('[LiveMap] Driving route lookup status:', status);
+        }
+      }
+    );
+  }, [onPathReceived, onPolylineReceived, onRouteInfoUpdate]);
+
+  // Trigger route calculation when target or rider location updates significantly
+  useEffect(() => {
+    if (!parsedRiderLocation || !targetLocation) {
+      setRoutePath([]);
+      return;
+    }
+    fetchRoute(parsedRiderLocation, targetLocation);
+  }, [parsedRiderLocation?.lat, parsedRiderLocation?.lng, targetLocation?.lat, targetLocation?.lng, tripStatus, activeOrder?._id, fetchRoute]);
+
+  // Reset route on order or trip status change
+  useEffect(() => {
+    lastRouteReqRef.current = { origin: null, dest: null, time: 0 };
+    setRoutePath([]);
+  }, [activeOrder?._id, tripStatus]);
+
+  // Smart Camera Framing: Fit bounds ONCE per phase transition (never on a disruptive loop timer)
   useEffect(() => {
     if (!map || !window.google?.maps) return;
 
-    const hasAnchors = restaurantPoint || customerPoint;
-    if (!hasAnchors && !parsedRiderLocation) return;
+    const currentPhaseKey = `${activeOrder?._id || 'none'}_${tripStatus}`;
+    if (lastFittedPhaseRef.current === currentPhaseKey) return;
 
-    const now = Date.now();
-    if (now - lastBoundsUpdateRef.current < 12000) return;
-    lastBoundsUpdateRef.current = now;
+    const pointsToFrame = [];
+    if (parsedRiderLocation) pointsToFrame.push(parsedRiderLocation);
+    if (targetLocation) pointsToFrame.push(targetLocation);
 
-    if (!hasAnchors && parsedRiderLocation) {
-      map.panTo(parsedRiderLocation);
-    } else {
+    if (pointsToFrame.length >= 2) {
       const bounds = new window.google.maps.LatLngBounds();
-      if (restaurantPoint) bounds.extend(restaurantPoint);
-      if (customerPoint) bounds.extend(customerPoint);
-      if (parsedRiderLocation) bounds.extend(parsedRiderLocation);
-
-      map.fitBounds(bounds, { top: 70, right: 70, bottom: 120, left: 70 });
+      pointsToFrame.forEach(pt => bounds.extend(new window.google.maps.LatLng(pt.lat, pt.lng)));
+      map.fitBounds(bounds, { top: 90, right: 60, bottom: 150, left: 60 });
+      lastFittedPhaseRef.current = currentPhaseKey;
+    } else if (parsedRiderLocation && pointsToFrame.length === 1) {
+      map.panTo(parsedRiderLocation);
+      lastFittedPhaseRef.current = currentPhaseKey;
     }
+  }, [map, parsedRiderLocation, targetLocation, tripStatus, activeOrder?._id]);
 
-    if (parsedRiderLocation) {
-      lastCenteredPosRef.current = parsedRiderLocation;
-    }
-  }, [map, parsedRiderLocation, restaurantPoint, customerPoint]);
-
-  const { remainingPath, traveledPath } = useMemo(() => {
-    const pathSource = directions ? directions.routes[0]?.overview_path : fallbackPath;
-    if (!pathSource || pathSource.length === 0 || !parsedRiderLocation || !window.google?.maps) return { remainingPath: [], traveledPath: [] };
-    
-    const fullPath = pathSource.map(p => {
-      if (typeof p.lat === 'function') return { lat: p.lat(), lng: p.lng() };
-      return { lat: p.lat ?? p.latitude, lng: p.lng ?? p.longitude };
-    });
-
-    let closestIndex = 0;
-    let minDistance = Infinity;
-    const riderLatLng = new window.google.maps.LatLng(parsedRiderLocation.lat, parsedRiderLocation.lng);
-
-    for (let i = 0; i < fullPath.length; i++) {
-      const pLatLng = new window.google.maps.LatLng(fullPath[i].lat, fullPath[i].lng);
-      const distance = window.google.maps.geometry.spherical.computeDistanceBetween(riderLatLng, pLatLng);
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestIndex = i;
-      }
-    }
-
-    let startIndex = closestIndex;
-    if (closestIndex < fullPath.length - 1) {
-      const pCurrent = new window.google.maps.LatLng(fullPath[closestIndex].lat, fullPath[closestIndex].lng);
-      const pNext = new window.google.maps.LatLng(fullPath[closestIndex + 1].lat, fullPath[closestIndex + 1].lng);
-      const distToCurrent = window.google.maps.geometry.spherical.computeDistanceBetween(riderLatLng, pCurrent);
-      const distToNext = window.google.maps.geometry.spherical.computeDistanceBetween(riderLatLng, pNext);
-      const segmentLen = window.google.maps.geometry.spherical.computeDistanceBetween(pCurrent, pNext);
-      
-      if (distToNext < segmentLen && distToNext < distToCurrent) {
-        startIndex = closestIndex + 1;
-      }
-    }
-
-    const riderPoint = { lat: parsedRiderLocation.lat, lng: parsedRiderLocation.lng };
-
-    const traveled = fullPath.slice(0, startIndex);
-    traveled.push(riderPoint);
-
-    const remaining = [riderPoint, ...fullPath.slice(startIndex)];
-
-    return { remainingPath: remaining, traveledPath: traveled };
-  }, [directions, fallbackPath, parsedRiderLocation]);
-
-  const directionsServiceOptions = useMemo(() => {
-    if (!parsedRiderLocation || !targetLocation) return null;
+  // Marker icons (Memoized to prevent Google Maps from unmounting markers on render)
+  const restaurantMarkerIcon = useMemo(() => {
+    if (!window.google?.maps) return null;
+    const url = activeOrder?.restaurantImage || activeOrder?.restaurant?.logo || activeOrder?.restaurant?.profileImage || 'https://cdn-icons-png.flaticon.com/512/3170/3170733.png';
     return {
-      origin: { lat: parsedRiderLocation.lat, lng: parsedRiderLocation.lng },
-      destination: { lat: targetLocation.lat, lng: targetLocation.lng },
-      travelMode: 'DRIVING',
+      url,
+      scaledSize: new window.google.maps.Size(42, 42),
+      anchor: new window.google.maps.Point(21, 21)
     };
-  }, [parsedRiderLocation?.lat, parsedRiderLocation?.lng, targetLocation?.lat, targetLocation?.lng]);
+  }, [activeOrder?.restaurantImage, activeOrder?.restaurant?.logo, activeOrder?.restaurant?.profileImage]);
 
-  const baselineServiceOptions = useMemo(() => {
-    if (!restaurantPoint || !customerPoint) return null;
+  const customerMarkerIcon = useMemo(() => {
+    if (!window.google?.maps) return null;
+    const url = activeOrder?.customerImage || activeOrder?.user?.logo || activeOrder?.user?.profileImage || 'https://cdn-icons-png.flaticon.com/512/1275/1275302.png';
     return {
-      origin: { lat: restaurantPoint.lat, lng: restaurantPoint.lng },
-      destination: { lat: customerPoint.lat, lng: customerPoint.lng },
-      travelMode: 'DRIVING',
+      url,
+      scaledSize: new window.google.maps.Size(42, 42),
+      anchor: new window.google.maps.Point(21, 21)
     };
-  }, [restaurantPoint?.lat, restaurantPoint?.lng, customerPoint?.lat, customerPoint?.lng]);
+  }, [activeOrder?.customerImage, activeOrder?.user?.logo, activeOrder?.user?.profileImage]);
 
-  if (loadError) return <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-red-500 font-bold">Map Load Error</div>;
-  if (!isLoaded) return <div className="absolute inset-0 flex items-center justify-center bg-gray-50"><div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" /></div>;
+  const overlayOffset = useCallback((w, h) => ({
+    x: -(w / 2),
+    y: -(h / 2)
+  }), []);
 
-  const defaultCenter = { lat: 22.7196, lng: 75.8577 }; // Center on Indore as fallback
+  // Use routePath or fallbackPath
+  const activePath = routePath.length > 0 ? routePath : fallbackPath;
+
+  if (loadError) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-red-500 font-bold">
+        Map Load Error. Please check Google Maps API key.
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+        <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="absolute inset-0 z-0 text-gray-900 overflow-hidden flex flex-col">
       <GoogleMap
         onLoad={handleMapLoad}
         mapContainerStyle={mapContainerStyle}
-        center={parsedRiderLocation || targetLocation || defaultCenter}
+        center={parsedRiderLocation || targetLocation || DEFAULT_CENTER}
         zoom={zoom}
         heading={parsedRiderLocation?.heading || 0}
         onClick={(e) => onMapClick?.(e.latLng.lat(), e.latLng.lng())}
         options={mapOptions}
       >
-        {directionsServiceOptions && shouldUpdateRoute && (
-          <DirectionsService options={directionsServiceOptions} callback={directionsCallback} />
-        )}
-
-        {baselineServiceOptions && !baselineDirections && (
-          <DirectionsService options={baselineServiceOptions} callback={baselineDirectionsCallback} />
-        )}
-
-        {traveledPath.length > 0 && (
-          <Polyline 
-            path={traveledPath} 
-            options={{ 
-              strokeColor: '#9ca3af', 
-              strokeOpacity: 0.5, 
-              strokeWeight: 4, 
-              zIndex: 10,
-              icons: [{
-                icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 },
-                offset: '0',
-                repeat: '10px'
-              }]
-            }} 
+        {/* Glow Background Polyline */}
+        {activePath.length > 1 && (
+          <PolylineF 
+            path={activePath} 
+            options={ROUTE_LINE_BG_OPTIONS} 
           />
         )}
 
-        {remainingPath.length > 0 && (
-          <Polyline 
-            path={remainingPath} 
-            options={{ 
-              strokeColor: '#3b82f6', 
-              strokeOpacity: 0.9, 
-              strokeWeight: 8, 
-              zIndex: 12 
-            }} 
+        {/* Main Solid Navigation Polyline */}
+        {activePath.length > 1 && (
+          <PolylineF 
+            path={activePath} 
+            options={ROUTE_LINE_MAIN_OPTIONS} 
           />
         )}
 
+        {/* Lightweight Rider Marker with Smooth Heading Rotation */}
         {parsedRiderLocation && (
-          <OverlayView position={parsedRiderLocation} mapPaneName={OverlayView.MARKER_LAYER}>
-            <div style={{ transform: `translate(-50%, -50%) rotate(${parsedRiderLocation.heading || 0}deg)`, transition: 'transform 0.5s linear' }} className="relative w-[72px] h-[72px]">
-              <img src="/MapRider.png" alt="Rider" className="w-full h-full object-contain" />
+          <OverlayViewF 
+            position={parsedRiderLocation} 
+            mapPaneName={OverlayViewF.MARKER_LAYER}
+            getPixelPositionOffset={overlayOffset}
+          >
+            <div className="relative w-16 h-16 flex items-center justify-center pointer-events-none">
+              {/* Pulsing GPS Halo */}
+              <div className="absolute inset-2 bg-blue-500/20 rounded-full animate-ping pointer-events-none" />
+              <div 
+                style={{ 
+                  transform: `rotate(${parsedRiderLocation.heading || 0}deg)`, 
+                  transition: 'transform 0.4s ease-out' 
+                }} 
+                className="relative w-14 h-14 drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)]"
+              >
+                <img 
+                  src="/MapRider.png" 
+                  alt="Rider" 
+                  className="w-full h-full object-contain" 
+                  onError={(e) => {
+                    e.target.src = 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png';
+                  }}
+                />
+              </div>
             </div>
-          </OverlayView>
+          </OverlayViewF>
         )}
 
-        {restaurantPoint && (
-          <Marker
+        {/* Restaurant Pin */}
+        {restaurantPoint && restaurantMarkerIcon && (
+          <MarkerF
             position={restaurantPoint}
-            icon={{
-              url: restaurantMarkerUrl,
-              scaledSize: new window.google.maps.Size(44, 44),
-              anchor: new window.google.maps.Point(22, 22)
-            }}
+            icon={restaurantMarkerIcon}
           />
         )}
 
-        {customerPoint && (
-          <Marker
+        {/* Customer Pin */}
+        {customerPoint && customerMarkerIcon && (
+          <MarkerF
             position={customerPoint}
-            icon={{
-              url: customerMarkerUrl,
-              scaledSize: new window.google.maps.Size(44, 44),
-              anchor: new window.google.maps.Point(22, 22)
-            }}
+            icon={customerMarkerIcon}
           />
         )}
 
+        {/* Delivery Service Zones */}
         {zones.map((zone) => (
-          <Polygon key={zone._id} paths={zone.paths} options={{ fillColor: "#22c55e", fillOpacity: 0.03, strokeColor: "#22c55e", strokeOpacity: 0.1, strokeWeight: 1, zIndex: 1 }} />
+          <PolygonF 
+            key={zone._id || zone.id} 
+            paths={zone.paths} 
+            options={ZONE_POLYGON_OPTIONS} 
+          />
         ))}
       </GoogleMap>
     </div>
   );
 };
 
-export default LiveMap;
+export default React.memo(LiveMap);
