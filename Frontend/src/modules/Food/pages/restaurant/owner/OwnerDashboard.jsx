@@ -29,6 +29,7 @@ import { toast } from "sonner"
 import { ownerAPI } from "@food/api"
 import OwnerNav from "@food/components/restaurant/owner/OwnerNav"
 import AddOutletModal from "@food/components/restaurant/owner/AddOutletModal"
+import { getOutletTimingDetails } from "./OwnerOutletsPage"
 
 export default function OwnerDashboard() {
   const navigate = useNavigate()
@@ -156,6 +157,7 @@ export default function OwnerDashboard() {
           </button>
           {outletBreakdown.map((outlet) => {
             const isSelected = String(outlet._id) === String(selectedOutletId)
+            const tInfo = getOutletTimingDetails(outlet.timings, outlet.outletTimings)
             return (
               <button
                 key={outlet._id}
@@ -165,11 +167,12 @@ export default function OwnerDashboard() {
                     ? "bg-[#22A2E3] text-white shadow-md shadow-[#22A2E3]/20"
                     : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-[#22A2E3]"
                 }`}
+                title={`${outlet.name}: ${tInfo.formattedTiming} (${tInfo.isOpenNow ? "Open Now" : "Closed"})`}
               >
-                <span className={`w-2 h-2 rounded-full ${outlet.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                <span className={`w-2 h-2 rounded-full ${tInfo.isOpenNow ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
                 <span>{outlet.name}</span>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isSelected ? "bg-blue-700 text-blue-100" : "bg-slate-100 dark:bg-slate-800 text-slate-400"}`}>
-                  ₹{Number(outlet.totalRevenue || 0).toLocaleString()}
+                  {tInfo.formattedTiming}
                 </span>
               </button>
             )
@@ -342,6 +345,32 @@ export default function OwnerDashboard() {
                       <span>{outlet.rating || 4.5}</span>
                     </div>
                   </div>
+
+                  {/* Operational Timings Strip */}
+                  {(() => {
+                    const timingInfo = getOutletTimingDetails(outlet.timings, outlet.outletTimings)
+                    return (
+                      <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Clock className="w-3.5 h-3.5 text-[#22A2E3] shrink-0" />
+                          <div className="truncate">
+                            <p className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                              {timingInfo.formattedTiming}
+                            </p>
+                            <p className="text-[10px] text-slate-400 capitalize">{timingInfo.openDaysText}</p>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1 ${
+                          timingInfo.isOpenNow
+                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                            : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${timingInfo.isOpenNow ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                          <span>{timingInfo.isOpenNow ? "Open Now" : "Closed"}</span>
+                        </span>
+                      </div>
+                    )
+                  })()}
 
                   <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl text-center">
                     <div>

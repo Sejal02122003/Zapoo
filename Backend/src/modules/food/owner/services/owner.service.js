@@ -156,10 +156,15 @@ export async function getOwnerSummary(restaurantId, query = {}) {
       name: outlet.name,
       outletCode: outlet.outletCode,
       phone: outlet.phone,
+      email: outlet.email || "",
       city: outlet.address?.city || outlet.address?.area || "Default City",
       area: outlet.address?.area || "",
-      status: outlet.status,
-      isAcceptingOrders: outlet.isAcceptingOrders,
+      address: outlet.address || {},
+      location: outlet.location || null,
+      zoneId: outlet.zoneId || null,
+      status: outlet.status || "active",
+      isAcceptingOrders: outlet.isAcceptingOrders !== false,
+      isTakeawayEnabled: outlet.isTakeawayEnabled !== false,
       rating: outlet.rating || 4.5,
       totalOrders: agg.orderCount,
       totalRevenue: agg.revenue,
@@ -167,6 +172,12 @@ export async function getOwnerSummary(restaurantId, query = {}) {
       permissions: outlet.permissions || [],
       managerName: outlet.managerName || "",
       managerPhone: outlet.managerPhone || "",
+      timings: outlet.timings || {
+        openTime: "09:00",
+        closeTime: "23:00",
+        openDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+      },
+      outletTimings: outlet.outletTimings || outlet.timings?.schedule || null,
     };
   });
 
@@ -258,8 +269,18 @@ export async function listOutlets(restaurantId, query = {}) {
     FoodOutlet.countDocuments(filter),
   ]);
 
+  const formattedDocs = docs.map((doc) => ({
+    ...doc,
+    timings: doc.timings || {
+      openTime: doc.openTime || "09:00",
+      closeTime: doc.closeTime || "23:00",
+      openDays: doc.openDays || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    },
+    outletTimings: doc.outletTimings || doc.timings?.schedule || null,
+  }));
+
   return {
-    outlets: docs,
+    outlets: formattedDocs,
     total,
     page,
     limit,
@@ -351,6 +372,7 @@ export async function createOutlet(restaurantId, data = {}) {
       closeTime: data.closeTime || "23:00",
       openDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
     },
+    outletTimings: data.outletTimings || data.timings?.schedule || null,
     fssaiNumber: data.fssaiNumber || "",
     gstNumber: data.gstNumber || "",
   });
@@ -404,7 +426,23 @@ export async function updateOutlet(restaurantId, outletId, updateData = {}) {
   if (updateData.pureVeg !== undefined) outlet.pureVeg = Boolean(updateData.pureVeg);
   if (Array.isArray(updateData.cuisines)) outlet.cuisines = updateData.cuisines;
   if (Array.isArray(updateData.permissions)) outlet.permissions = updateData.permissions;
-  if (updateData.timings) outlet.timings = { ...outlet.timings, ...updateData.timings };
+  if (updateData.timings || updateData.openTime || updateData.closeTime || updateData.openDays) {
+    const t = updateData.timings || {};
+    const existing = outlet.timings || {};
+    outlet.timings = {
+      openTime: t.openTime || updateData.openTime || existing.openTime || "09:00",
+      closeTime: t.closeTime || updateData.closeTime || existing.closeTime || "23:00",
+      openDays: Array.isArray(t.openDays)
+        ? t.openDays
+        : Array.isArray(updateData.openDays)
+        ? updateData.openDays
+        : existing.openDays || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+      schedule: t.schedule || updateData.schedule || existing.schedule || null,
+    };
+  }
+  if (updateData.outletTimings !== undefined) {
+    outlet.outletTimings = updateData.outletTimings;
+  }
   if (updateData.fssaiNumber !== undefined) outlet.fssaiNumber = updateData.fssaiNumber;
   if (updateData.gstNumber !== undefined) outlet.gstNumber = updateData.gstNumber;
 
