@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
+import { FoodOutlet } from '../../owner/models/outlet.model.js';
 import { buildRawDownloadUrlFromFileUrl } from '../../../../services/cloudinary.service.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
 import { DeliverySupportTicket } from '../../delivery/models/supportTicket.model.js';
@@ -497,7 +498,14 @@ export async function getDashboardStats(query = {}) {
         recentCustomers,
         cashbackCreditedAgg,
         userWalletCashbackAgg,
-        expiredCashbackAgg
+        expiredCashbackAgg,
+        outletsTotal,
+        outletsActive,
+        outletsAcceptingOrders,
+        allRestaurantsList,
+        allOutletsList,
+        brandOrdersAgg,
+        outletOrdersAgg
     ] = await Promise.all([
         FoodOrder.aggregate([
             { $match: orderMatch },
@@ -679,8 +687,102 @@ export async function getDashboardStats(query = {}) {
         WalletLedgerEntry.aggregate([
             { $match: { entryType: 'EXPIRY_DEDUCTION' } },
             { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]),
+        FoodOutlet.countDocuments(zoneId ? { $or: [{ zoneId }, { restaurantId: { $in: zoneRestaurantIds || [] } }] } : {}),
+        FoodOutlet.countDocuments({ ...(zoneId ? { $or: [{ zoneId }, { restaurantId: { $in: zoneRestaurantIds || [] } }] } : {}), status: 'active' }),
+        FoodOutlet.countDocuments({ ...(zoneId ? { $or: [{ zoneId }, { restaurantId: { $in: zoneRestaurantIds || [] } }] } : {}), isAcceptingOrders: true }),
+        FoodRestaurant.find(restaurantMatch)
+            .select('_id restaurantName ownerName ownerPhone ownerEmail phone email status rating profileImage address createdAt zoneId cuisines isVegetarian')
+            .sort({ createdAt: -1 })
+            .lean(),
+        FoodOutlet.find(zoneId ? { $or: [{ zoneId }, { restaurantId: { $in: zoneRestaurantIds || [] } }] } : {}).lean(),
+        FoodOrder.aggregate([
+            { $match: orderMatch },
+            {
+                $group: {
+                    _id: '$restaurantId',
+                    totalOrders: { $sum: 1 },
+                    deliveredOrders: { $sum: { $cond: [DELIVERED_ORDER_STATUS_EXPR, 1, 0] } },
+                    cancelledOrders: { $sum: { $cond: [{ $in: ['$orderStatus', CANCELLED_ORDER_STATUSES] }, 1, 0] } },
+                    pendingOrders: { $sum: { $cond: [{ $in: ['$orderStatus', PENDING_ORDER_STATUSES] }, 1, 0] } },
+                    totalRevenue: { $sum: { $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.total', 0] }, 0] } },
+                    commission: { $sum: { $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.restaurantCommission', 0] }, 0] } }
+                }
+            }
+        ]),
+        FoodOrder.aggregate([
+            { $match: { ...orderMatch, outletId: { $ne: null } } },
+            {
+                $group: {
+                    _id: '$outletId',
+                    totalOrders: { $sum: 1 },
+                    deliveredOrders: { $sum: { $cond: [DELIVERED_ORDER_STATUS_EXPR, 1, 0] } },
+                    totalRevenue: { $sum: { $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.total', 0] }, 0] } }
+                }
+            }
         ])
     ]);
+
+    const restOrderMap = new Map((brandOrdersAgg || []).map(r => [String(r._id), r]));
+    const outletOrderMap = new Map((outletOrdersAgg || []).map(o => [String(o._id), o]));
+
+    const outletsByRest = new Map();
+    (allOutletsList || []).forEach(outlet => {
+        const rId = String(outlet.restaurantId);
+        if (!outletsByRest.has(rId)) {
+            outletsByRest.set(rId, []);
+        }
+        const oStats = outletOrderMap.get(String(outlet._id)) || {};
+        outletsByRest.get(rId).push({
+            _id: outlet._id,
+            name: outlet.name,
+            outletCode: outlet.outletCode,
+            phone: outlet.phone,
+            email: outlet.email,
+            managerName: outlet.managerName,
+            managerPhone: outlet.managerPhone,
+            status: outlet.status || 'active',
+            isAcceptingOrders: outlet.isAcceptingOrders !== false,
+            address: outlet.address || {},
+            timings: outlet.timings || {},
+            rating: outlet.rating || 0,
+            totalOrders: Number(oStats.totalOrders || outlet.totalOrders || 0),
+            totalRevenue: Number(oStats.totalRevenue || outlet.totalRevenue || 0)
+        });
+    });
+
+    const brandsWithOutlets = (allRestaurantsList || []).map(r => {
+        const rId = String(r._id);
+        const brandOutlets = outletsByRest.get(rId) || [];
+        const rStats = restOrderMap.get(rId) || {};
+        return {
+            _id: r._id,
+            restaurantName: r.restaurantName,
+            ownerName: r.ownerName || 'N/A',
+            ownerPhone: r.ownerPhone || r.phone || 'N/A',
+            ownerEmail: r.ownerEmail || r.email || 'N/A',
+            phone: r.phone || '',
+            email: r.email || '',
+            status: r.status,
+            rating: r.rating || 0,
+            profileImage: r.profileImage || '',
+            address: r.address || {},
+            createdAt: r.createdAt,
+            cuisines: r.cuisines || [],
+            isVegetarian: r.isVegetarian || false,
+            outletsCount: brandOutlets.length,
+            activeOutletsCount: brandOutlets.filter(o => o.status === 'active').length,
+            ordersSummary: {
+                totalOrders: Number(rStats.totalOrders || 0),
+                deliveredOrders: Number(rStats.deliveredOrders || 0),
+                cancelledOrders: Number(rStats.cancelledOrders || 0),
+                pendingOrders: Number(rStats.pendingOrders || 0),
+                totalRevenue: Number(rStats.totalRevenue || 0),
+                commission: Number(rStats.commission || 0)
+            },
+            outlets: brandOutlets
+        };
+    });
 
     const liveSignals = [];
     
@@ -793,6 +895,13 @@ export async function getDashboardStats(query = {}) {
             total: Number(restaurantsTotal || 0),
             pendingRequests: Number(restaurantsPending || 0)
         },
+        outlets: {
+            total: Number(outletsTotal || 0),
+            active: Number(outletsActive || 0),
+            inactive: Math.max(0, Number(outletsTotal || 0) - Number(outletsActive || 0)),
+            acceptingOrders: Number(outletsAcceptingOrders || 0)
+        },
+        brandsWithOutlets,
         deliveryBoys: {
             total: Number(deliveryTotal || 0),
             pendingRequests: Number(deliveryPending || 0)
@@ -813,6 +922,52 @@ export async function getDashboardStats(query = {}) {
         },
         monthlyData,
         liveSignals: finalLiveSignals
+    };
+}
+
+export async function getAdminOutletsSummary(query = {}) {
+    const page = Math.max(1, parseInt(query.page, 10) || 1);
+    const limit = Math.min(Math.max(1, parseInt(query.limit, 10) || 50), 200);
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (query.status && query.status !== 'all') {
+        filter.status = query.status;
+    }
+    if (query.restaurantId && mongoose.Types.ObjectId.isValid(query.restaurantId)) {
+        filter.restaurantId = new mongoose.Types.ObjectId(query.restaurantId);
+    }
+    if (query.zoneId && mongoose.Types.ObjectId.isValid(query.zoneId)) {
+        filter.zoneId = new mongoose.Types.ObjectId(query.zoneId);
+    }
+    if (query.search) {
+        const searchRegex = { $regex: query.search.trim(), $options: 'i' };
+        filter.$or = [
+            { name: searchRegex },
+            { outletCode: searchRegex },
+            { phone: searchRegex },
+            { managerName: searchRegex },
+            { 'address.city': searchRegex },
+            { 'address.area': searchRegex }
+        ];
+    }
+
+    const [outlets, total] = await Promise.all([
+        FoodOutlet.find(filter)
+            .populate('restaurantId', 'restaurantName ownerName ownerPhone ownerEmail phone email status profileImage')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+        FoodOutlet.countDocuments(filter)
+    ]);
+
+    return {
+        outlets,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
     };
 }
 

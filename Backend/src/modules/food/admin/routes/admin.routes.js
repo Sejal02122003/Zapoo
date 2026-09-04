@@ -125,6 +125,7 @@ router.patch('/restaurants/complaints/:id', adminController.updateRestaurantComp
 
 // ----- Restaurants -----
 router.get('/restaurants', adminController.getRestaurants);
+router.get('/outlets', adminController.getAdminOutlets);
 router.get('/dashboard-stats', adminController.getDashboardStats);
 router.get('/reports/restaurants', adminController.getRestaurantReport);
 router.get('/reports/transactions', adminController.getTransactionReport);
