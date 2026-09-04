@@ -472,7 +472,7 @@ export default function OwnerOutletsPage() {
                   {/* Operational Timings Banner */}
                   <div className="mt-3.5">
                     {(() => {
-                      const timingInfo = getOutletTimingDetails(outlet.timings)
+                      const timingInfo = getOutletTimingDetails(outlet.timings, outlet.outletTimings)
                       return (
                         <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800 text-xs">
                           <div className="flex items-center gap-2 min-w-0">
@@ -922,7 +922,7 @@ export default function OwnerOutletsPage() {
               </div>
 
               {(() => {
-                const tInfo = getOutletTimingDetails(selectedOutletForInfo.timings)
+                const tInfo = getOutletTimingDetails(selectedOutletForInfo.timings, selectedOutletForInfo.outletTimings)
                 return (
                   <span className={`px-3 py-1 rounded-xl text-[11px] font-black uppercase flex items-center gap-1.5 ${
                     tInfo.isOpenNow
@@ -948,7 +948,7 @@ export default function OwnerOutletsPage() {
                     </h4>
                   </div>
                   {(() => {
-                    const tInfo = getOutletTimingDetails(selectedOutletForInfo.timings)
+                    const tInfo = getOutletTimingDetails(selectedOutletForInfo.timings, selectedOutletForInfo.outletTimings)
                     return (
                       <span className="text-xs font-black text-[#22A2E3]">
                         {tInfo.formattedTiming}
@@ -957,55 +957,77 @@ export default function OwnerOutletsPage() {
                   })()}
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
-                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">Opening Time</p>
-                    <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
-                      {formatTime12Hour(selectedOutletForInfo.timings?.openTime || "09:00")}
-                      <span className="text-[10px] text-slate-400 font-normal ml-1">({selectedOutletForInfo.timings?.openTime || "09:00"})</span>
-                    </p>
-                  </div>
+                {(() => {
+                  const tInfo = getOutletTimingDetails(selectedOutletForInfo.timings, selectedOutletForInfo.outletTimings)
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <p className="text-[10px] uppercase font-bold text-slate-400">Opening Time</p>
+                        <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                          {formatTime12Hour(tInfo.openTime)}
+                          <span className="text-[10px] text-slate-400 font-normal ml-1">({tInfo.openTime})</span>
+                        </p>
+                      </div>
 
-                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">Closing Time</p>
-                    <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
-                      {formatTime12Hour(selectedOutletForInfo.timings?.closeTime || "23:00")}
-                      <span className="text-[10px] text-slate-400 font-normal ml-1">({selectedOutletForInfo.timings?.closeTime || "23:00"})</span>
-                    </p>
-                  </div>
+                      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <p className="text-[10px] uppercase font-bold text-slate-400">Closing Time</p>
+                        <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                          {formatTime12Hour(tInfo.closeTime)}
+                          <span className="text-[10px] text-slate-400 font-normal ml-1">({tInfo.closeTime})</span>
+                        </p>
+                      </div>
 
-                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 col-span-2 sm:col-span-1">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">Working Days</p>
-                    <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
-                      {(() => {
-                        const days = selectedOutletForInfo.timings?.openDays || []
-                        return days.length === 7 || days.length === 0 ? "7 Days Open" : `${days.length} Days Open`
-                      })()}
-                    </p>
-                  </div>
-                </div>
+                      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 col-span-2 sm:col-span-1">
+                        <p className="text-[10px] uppercase font-bold text-slate-400">Working Days</p>
+                        <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                          {tInfo.openDaysText}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Open Days Pill Matrix */}
-                <div className="pt-1">
-                  <p className="text-[10px] uppercase font-bold text-slate-400 mb-1.5">Open Days Schedule:</p>
-                  <div className="flex flex-wrap gap-1.5">
+                <div className="pt-1 space-y-2">
+                  <p className="text-[10px] uppercase font-bold text-slate-400">Day-Wise Operating Schedule:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => {
+                      const daySchedule = selectedOutletForInfo.outletTimings?.[day] || selectedOutletForInfo.timings?.schedule?.[day]
                       const openDays = selectedOutletForInfo.timings?.openDays || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-                      const isOpenOnDay = openDays.map(d => d.toLowerCase()).includes(day.toLowerCase())
+                      const isOpenOnDay = daySchedule !== undefined ? Boolean(daySchedule.isOpen) : openDays.map(d => d.toLowerCase()).includes(day.toLowerCase())
+                      const dayTiming = daySchedule && daySchedule.isOpen 
+                        ? `${formatTime12Hour(daySchedule.openingTime || "09:00")} - ${formatTime12Hour(daySchedule.closingTime || "23:00")}`
+                        : null
                       return (
-                        <span
+                        <div
                           key={day}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold capitalize flex items-center gap-1 ${
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold capitalize flex items-center justify-between border ${
                             isOpenOnDay
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
-                              : "bg-slate-100 text-slate-400 line-through dark:bg-slate-800 dark:text-slate-500"
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                              : "bg-slate-100 text-slate-400 line-through dark:bg-slate-800 dark:text-slate-500 border-transparent"
                           }`}
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isOpenOnDay ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                          {day}
-                        </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${isOpenOnDay ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                            <span>{day}</span>
+                          </div>
+                          {dayTiming ? (
+                            <span className="text-[10px] font-mono opacity-90">{dayTiming}</span>
+                          ) : (
+                            <span className="text-[10px] font-normal opacity-60">Closed</span>
+                          )}
+                        </div>
                       )
                     })}
+                  </div>
+
+                  <div className="pt-2">
+                    <Link
+                      to={selectedOutletForInfo.isMainRestaurant ? "/food/restaurant/outlet-timings" : `/food/restaurant/outlet-timings?outletId=${selectedOutletForInfo._id}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-black text-[#22A2E3] hover:underline"
+                    >
+                      <span>Edit Detailed Weekly Hours in Outlet Timings Manager →</span>
+                    </Link>
                   </div>
                 </div>
               </div>

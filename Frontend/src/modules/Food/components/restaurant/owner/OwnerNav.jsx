@@ -140,6 +140,14 @@ export default function OwnerNav({ selectedOutletId, onSelectOutlet, outlets = [
                         <div>
                           <p className="leading-tight font-black">All Outlets</p>
                           <p className={`text-[10px] ${!selectedOutletId ? "text-blue-100" : "text-slate-400"}`}>Consolidated Brand View</p>
+                          {restaurantData?.timings && (() => {
+                            const t = getOutletTimingDetails(restaurantData.timings, restaurantData.outletTimings)
+                            return (
+                              <p className={`text-[9px] font-bold mt-0.5 ${!selectedOutletId ? "text-blue-100" : "text-[#22A2E3]"}`}>
+                                HQ: {t.formattedTiming} ({t.isOpenNow ? "Open" : "Closed"})
+                              </p>
+                            )
+                          })()}
                         </div>
                       </div>
                       {!selectedOutletId && <Check className="w-4 h-4" />}

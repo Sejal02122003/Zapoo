@@ -5,7 +5,39 @@ import { FoodRestaurant } from "../../restaurant/models/restaurant.model.js";
 import { FoodOrder } from "../../orders/models/order.model.js";
 import { FoodRestaurantMenu } from "../../restaurant/models/restaurantMenu.model.js";
 import { FoodItem } from "../../admin/models/food.model.js";
+import { getOutletTimingsForRestaurant, upsertOutletTimingsForRestaurant } from "../../restaurant/services/outletTimings.service.js";
 import { ValidationError, NotFoundError, AuthError } from "../../../../core/auth/errors.js";
+
+/**
+ * Helper to compute HQ operational timings from live schedule and restaurant fallback
+ */
+function computeRestaurantHQTimings(restaurantDoc, restaurantTimingsResult) {
+  const mainHQTimingsMap = restaurantTimingsResult?.outletTimings || null;
+  const daysList = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const currentDayName = daysList[new Date().getDay()];
+  const todaySchedule = mainHQTimingsMap?.[currentDayName] || mainHQTimingsMap?.[currentDayName.toLowerCase()] || {};
+  const firstOpenDay = mainHQTimingsMap ? Object.values(mainHQTimingsMap).find((d) => d?.isOpen && d?.openingTime) : null;
+
+  const openTime = todaySchedule.openingTime || todaySchedule.openTime || firstOpenDay?.openingTime || restaurantDoc?.openingTime || "09:00";
+  const closeTime = todaySchedule.closingTime || todaySchedule.closeTime || firstOpenDay?.closingTime || restaurantDoc?.closingTime || "22:00";
+  const openDays = mainHQTimingsMap
+    ? Object.keys(mainHQTimingsMap).filter((d) => mainHQTimingsMap[d]?.isOpen).map((d) => d.toLowerCase())
+    : (Array.isArray(restaurantDoc?.openDays) && restaurantDoc.openDays.length > 0
+        ? restaurantDoc.openDays.map((d) => d.toLowerCase())
+        : ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]);
+
+  return {
+    mainHQTimingsMap,
+    currentDayName,
+    firstOpenDay,
+    mainHQTimings: {
+      openTime,
+      closeTime,
+      openDays,
+      schedule: mainHQTimingsMap,
+    },
+  };
+}
 
 /**
  * Helper to build pagination
@@ -148,13 +180,44 @@ export async function getOwnerSummary(restaurantId, query = {}) {
     }
   });
 
+  // Fetch restaurant details and operational timings
+  const [restaurant, restaurantTimingsResult] = await Promise.all([
+    FoodRestaurant.findById(restObjectId).lean(),
+    getOutletTimingsForRestaurant(restObjectId).catch(() => ({ outletTimings: null })),
+  ]);
+
+  const { mainHQTimingsMap, currentDayName, firstOpenDay, mainHQTimings } = computeRestaurantHQTimings(
+    restaurant,
+    restaurantTimingsResult
+  );
+
   const outletBreakdown = outlets.map((outlet) => {
     const oId = String(outlet._id);
     const agg = outletStatsMap.get(oId) || { orderCount: 0, revenue: 0, profit: 0 };
+    
+    // If outlet is main outlet or has no custom timings, inherit restaurant's configured timings
+    const isMainOutlet = !outlet.outletCode || String(outlet.name || "").toLowerCase().includes("main") || String(outlet.outletCode || "").toLowerCase().includes("main");
+    const outletTimingsObj = outlet.outletTimings || outlet.timings?.schedule || (isMainOutlet ? mainHQTimingsMap : null);
+
+    let resolvedTimings = outlet.timings;
+    if (isMainOutlet && mainHQTimingsMap) {
+      resolvedTimings = {
+        openTime: outletTimingsObj?.[currentDayName]?.openingTime || firstOpenDay?.openingTime || resolvedTimings?.openTime || mainHQTimings.openTime,
+        closeTime: outletTimingsObj?.[currentDayName]?.closingTime || firstOpenDay?.closingTime || resolvedTimings?.closeTime || mainHQTimings.closeTime,
+        openDays: Array.isArray(resolvedTimings?.openDays) && resolvedTimings.openDays.length > 0
+          ? resolvedTimings.openDays
+          : mainHQTimings.openDays,
+        schedule: outletTimingsObj || mainHQTimingsMap,
+      };
+    } else if (!resolvedTimings) {
+      resolvedTimings = mainHQTimings;
+    }
+
     return {
       _id: outlet._id,
       name: outlet.name,
       outletCode: outlet.outletCode,
+      isMainRestaurant: isMainOutlet,
       phone: outlet.phone,
       email: outlet.email || "",
       city: outlet.address?.city || outlet.address?.area || "Default City",
@@ -172,14 +235,63 @@ export async function getOwnerSummary(restaurantId, query = {}) {
       permissions: outlet.permissions || [],
       managerName: outlet.managerName || "",
       managerPhone: outlet.managerPhone || "",
-      timings: outlet.timings || {
-        openTime: "09:00",
-        closeTime: "23:00",
-        openDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
-      },
-      outletTimings: outlet.outletTimings || outlet.timings?.schedule || null,
+      timings: resolvedTimings,
+      outletTimings: outletTimingsObj,
     };
   });
+
+  // Ensure Main HQ Outlet is always present in outletBreakdown
+  const hasMainOutlet = outletBreakdown.some((o) =>
+    o.isMainRestaurant ||
+    !o.outletCode ||
+    String(o.name || "").toLowerCase().includes("main") ||
+    String(o.outletCode || "").toLowerCase().includes("main")
+  );
+
+  let finalOutletBreakdown = [...outletBreakdown];
+  if (!hasMainOutlet && restaurant) {
+    const mainHQDoc = {
+      _id: restaurant._id,
+      name: `${restaurant.restaurantName || restaurant.name || "Main Outlet"} (HQ)`,
+      outletCode: "HQ-MAIN",
+      isMainRestaurant: true,
+      phone: restaurant.primaryContactNumber || restaurant.ownerPhone || restaurant.phone || "",
+      email: restaurant.ownerEmail || restaurant.email || "",
+      city: restaurant.city || restaurant.location?.city || "Indore",
+      area: restaurant.area || restaurant.location?.area || "",
+      address: {
+        addressLine1: restaurant.addressLine1 || restaurant.location?.addressLine1 || "",
+        area: restaurant.area || restaurant.location?.area || "",
+        city: restaurant.city || restaurant.location?.city || "Indore",
+      },
+      location: restaurant.location || null,
+      zoneId: restaurant.zoneId || null,
+      status: restaurant.isActive !== false ? "active" : "inactive",
+      isAcceptingOrders: restaurant.isAcceptingOrders !== false,
+      isTakeawayEnabled: restaurant.isTakeawayEnabled !== false,
+      rating: restaurant.rating || 4.5,
+      totalOrders: stats.totalOrders,
+      totalRevenue: stats.totalRevenue,
+      totalProfit: estimatedProfit,
+      permissions: [
+        "VIEW_ORDERS",
+        "ACCEPT_ORDERS",
+        "REJECT_ORDERS",
+        "UPDATE_ORDER_STATUS",
+        "MANAGE_MENU",
+        "MANAGE_INVENTORY",
+        "VIEW_PAYMENTS",
+        "VIEW_REVENUE",
+        "VIEW_PROFIT",
+        "MANAGE_STAFF",
+      ],
+      managerName: restaurant.ownerName || "Owner / GM",
+      managerPhone: restaurant.ownerPhone || restaurant.primaryContactNumber || "",
+      timings: mainHQTimings,
+      outletTimings: mainHQTimingsMap,
+    };
+    finalOutletBreakdown.unshift(mainHQDoc);
+  }
 
   // Recent 10 orders across outlets
   const recentOrders = await FoodOrder.find(matchFilter)
@@ -189,16 +301,14 @@ export async function getOwnerSummary(restaurantId, query = {}) {
     .limit(10)
     .lean();
 
-  // Fetch restaurant details
-  const restaurant = await FoodRestaurant.findById(restObjectId).lean();
-
   return {
     restaurant: restaurant
       ? {
           _id: restaurant._id,
-          name: restaurant.name,
-          phone: restaurant.phone,
-          email: restaurant.email,
+          name: restaurant.restaurantName || restaurant.name || "Main Outlet (HQ)",
+          restaurantName: restaurant.restaurantName || restaurant.name || "Main Outlet (HQ)",
+          phone: restaurant.primaryContactNumber || restaurant.ownerPhone || restaurant.phone || "",
+          email: restaurant.ownerEmail || restaurant.email || "",
           logo: restaurant.logo,
           bannerImage: restaurant.bannerImage,
           rating: restaurant.rating || 4.5,
@@ -206,6 +316,15 @@ export async function getOwnerSummary(restaurantId, query = {}) {
           isActive: restaurant.isActive,
           isAcceptingOrders: restaurant.isAcceptingOrders,
           location: restaurant.location,
+          address: {
+            addressLine1: restaurant.addressLine1 || restaurant.location?.addressLine1 || "",
+            area: restaurant.area || restaurant.location?.area || "",
+            city: restaurant.city || restaurant.location?.city || "Indore",
+          },
+          city: restaurant.city || restaurant.location?.city || "Indore",
+          area: restaurant.area || restaurant.location?.area || "",
+          timings: mainHQTimings,
+          outletTimings: mainHQTimingsMap,
         }
       : null,
     summary: {
@@ -215,10 +334,10 @@ export async function getOwnerSummary(restaurantId, query = {}) {
       completedOrders: stats.completedOrders,
       pendingOrders: stats.pendingOrders,
       cancelledOrders: stats.cancelledOrders,
-      totalOutlets: outlets.length,
-      activeOutlets: outlets.filter((o) => o.status === "active").length,
+      totalOutlets: finalOutletBreakdown.length,
+      activeOutlets: finalOutletBreakdown.filter((o) => o.status === "active").length,
     },
-    outletBreakdown,
+    outletBreakdown: finalOutletBreakdown,
     recentOrders: recentOrders.map((o) => ({
       _id: o._id,
       order_id: o.order_id || o.orderId || String(o._id).slice(-6),
@@ -260,31 +379,114 @@ export async function listOutlets(restaurantId, query = {}) {
     ];
   }
 
-  const [docs, total] = await Promise.all([
+  const [docs, total, restaurantDoc, restaurantTimingsResult] = await Promise.all([
     FoodOutlet.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean(),
     FoodOutlet.countDocuments(filter),
+    FoodRestaurant.findById(restObjectId).lean(),
+    getOutletTimingsForRestaurant(restObjectId).catch(() => ({ outletTimings: null })),
   ]);
 
-  const formattedDocs = docs.map((doc) => ({
-    ...doc,
-    timings: doc.timings || {
-      openTime: doc.openTime || "09:00",
-      closeTime: doc.closeTime || "23:00",
-      openDays: doc.openDays || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
-    },
-    outletTimings: doc.outletTimings || doc.timings?.schedule || null,
-  }));
+  const { mainHQTimingsMap, currentDayName, firstOpenDay, mainHQTimings } = computeRestaurantHQTimings(
+    restaurantDoc,
+    restaurantTimingsResult
+  );
+
+  const formattedDocs = docs.map((doc) => {
+    const isMainOutlet = !doc.outletCode || String(doc.name || "").toLowerCase().includes("main") || String(doc.outletCode || "").toLowerCase().includes("main");
+    const outletTimingsObj = doc.outletTimings || doc.timings?.schedule || (isMainOutlet ? mainHQTimingsMap : null);
+
+    let resolvedTimings = doc.timings;
+    if (isMainOutlet && mainHQTimingsMap) {
+      resolvedTimings = {
+        openTime: outletTimingsObj?.[currentDayName]?.openingTime || firstOpenDay?.openingTime || resolvedTimings?.openTime || mainHQTimings.openTime,
+        closeTime: outletTimingsObj?.[currentDayName]?.closingTime || firstOpenDay?.closingTime || resolvedTimings?.closeTime || mainHQTimings.closeTime,
+        openDays: Array.isArray(resolvedTimings?.openDays) && resolvedTimings.openDays.length > 0
+          ? resolvedTimings.openDays
+          : mainHQTimings.openDays,
+        schedule: outletTimingsObj || mainHQTimingsMap,
+      };
+    } else if (!resolvedTimings) {
+      resolvedTimings = mainHQTimings;
+    }
+
+    return {
+      ...doc,
+      isMainRestaurant: isMainOutlet,
+      timings: resolvedTimings,
+      outletTimings: outletTimingsObj,
+    };
+  });
+
+  // If no main outlet doc exists in FoodOutlet, prepend synthetic Main HQ Outlet
+  const hasMainOutlet = formattedDocs.some((d) =>
+    d.isMainRestaurant ||
+    !d.outletCode ||
+    String(d.name || "").toLowerCase().includes("main") ||
+    String(d.outletCode || "").toLowerCase().includes("main")
+  );
+
+  let finalDocs = [...formattedDocs];
+  let finalTotal = total;
+
+  if (!hasMainOutlet && restaurantDoc && (!query.status || query.status === "active" || query.status === "all")) {
+    const searchMatch = !query.search || 
+      "main outlet".includes(String(query.search).toLowerCase()) || 
+      (restaurantDoc.restaurantName || "").toLowerCase().includes(String(query.search).toLowerCase()) ||
+      (restaurantDoc.city || "").toLowerCase().includes(String(query.search).toLowerCase());
+
+    if (searchMatch) {
+      const mainHQOutlet = {
+        _id: restaurantDoc._id,
+        restaurantId: restaurantDoc._id,
+        name: `${restaurantDoc.restaurantName || restaurantDoc.name || "Main Outlet"} (HQ)`,
+        outletCode: "HQ-MAIN",
+        isMainRestaurant: true,
+        phone: restaurantDoc.primaryContactNumber || restaurantDoc.ownerPhone || restaurantDoc.phone || "",
+        email: restaurantDoc.ownerEmail || restaurantDoc.email || "",
+        managerName: restaurantDoc.ownerName || "Owner / GM",
+        managerPhone: restaurantDoc.ownerPhone || restaurantDoc.primaryContactNumber || "",
+        city: restaurantDoc.city || restaurantDoc.location?.city || "Indore",
+        area: restaurantDoc.area || restaurantDoc.location?.area || "",
+        address: {
+          addressLine1: restaurantDoc.addressLine1 || restaurantDoc.location?.addressLine1 || "",
+          area: restaurantDoc.area || restaurantDoc.location?.area || "",
+          city: restaurantDoc.city || restaurantDoc.location?.city || "Indore",
+        },
+        location: restaurantDoc.location || null,
+        zoneId: restaurantDoc.zoneId || null,
+        status: restaurantDoc.isActive !== false ? "active" : "inactive",
+        isAcceptingOrders: restaurantDoc.isAcceptingOrders !== false,
+        isTakeawayEnabled: restaurantDoc.isTakeawayEnabled !== false,
+        permissions: [
+          "VIEW_ORDERS",
+          "ACCEPT_ORDERS",
+          "REJECT_ORDERS",
+          "UPDATE_ORDER_STATUS",
+          "MANAGE_MENU",
+          "MANAGE_INVENTORY",
+          "VIEW_PAYMENTS",
+          "VIEW_REVENUE",
+          "VIEW_PROFIT",
+          "MANAGE_STAFF",
+        ],
+        timings: mainHQTimings,
+        outletTimings: mainHQTimingsMap,
+      };
+      finalDocs.unshift(mainHQOutlet);
+      finalTotal += 1;
+    }
+  }
 
   return {
-    outlets: formattedDocs,
-    total,
+    outlets: finalDocs,
+    total: finalTotal,
     page,
     limit,
-    totalPages: Math.ceil(total / limit),
+    totalPages: Math.ceil(finalTotal / limit),
   };
 }
 
@@ -393,12 +595,53 @@ export async function createOutlet(restaurantId, data = {}) {
  */
 export async function getOutletById(restaurantId, outletId) {
   if (!restaurantId || !outletId) throw new ValidationError("Missing restaurantId or outletId");
-  const doc = await FoodOutlet.findOne({
-    _id: new mongoose.Types.ObjectId(outletId),
-    restaurantId: new mongoose.Types.ObjectId(restaurantId),
-  }).lean();
-  if (!doc) throw new NotFoundError("Outlet not found");
-  return doc;
+  const restObjectId = new mongoose.Types.ObjectId(restaurantId);
+  const isTargetMainRestaurant = String(restaurantId) === String(outletId);
+
+  const [doc, restaurantDoc, restaurantTimingsResult] = await Promise.all([
+    isTargetMainRestaurant
+      ? null
+      : FoodOutlet.findOne({
+          _id: new mongoose.Types.ObjectId(outletId),
+          restaurantId: restObjectId,
+        }).lean(),
+    FoodRestaurant.findById(restObjectId).lean(),
+    getOutletTimingsForRestaurant(restObjectId).catch(() => ({ outletTimings: null })),
+  ]);
+
+  const targetDoc = doc || (isTargetMainRestaurant ? restaurantDoc : null);
+  if (!targetDoc) throw new NotFoundError("Outlet not found");
+
+  const { mainHQTimingsMap, currentDayName, firstOpenDay, mainHQTimings } = computeRestaurantHQTimings(
+    restaurantDoc,
+    restaurantTimingsResult
+  );
+
+  const isMainOutlet = isTargetMainRestaurant || !targetDoc.outletCode || String(targetDoc.name || "").toLowerCase().includes("main") || String(targetDoc.outletCode || "").toLowerCase().includes("main");
+  const outletTimingsObj = targetDoc.outletTimings || targetDoc.timings?.schedule || (isMainOutlet ? mainHQTimingsMap : null);
+
+  let resolvedTimings = targetDoc.timings;
+  if (isMainOutlet && mainHQTimingsMap) {
+    resolvedTimings = {
+      openTime: outletTimingsObj?.[currentDayName]?.openingTime || firstOpenDay?.openingTime || resolvedTimings?.openTime || mainHQTimings.openTime,
+      closeTime: outletTimingsObj?.[currentDayName]?.closingTime || firstOpenDay?.closingTime || resolvedTimings?.closeTime || mainHQTimings.closeTime,
+      openDays: Array.isArray(resolvedTimings?.openDays) && resolvedTimings.openDays.length > 0
+        ? resolvedTimings.openDays
+        : mainHQTimings.openDays,
+      schedule: outletTimingsObj || mainHQTimingsMap,
+    };
+  } else if (!resolvedTimings) {
+    resolvedTimings = mainHQTimings;
+  }
+
+  return {
+    ...targetDoc,
+    name: targetDoc.restaurantName || targetDoc.name || "Main Outlet",
+    outletCode: targetDoc.outletCode || "HQ-MAIN",
+    isMainRestaurant: isMainOutlet,
+    timings: resolvedTimings,
+    outletTimings: outletTimingsObj,
+  };
 }
 
 /**
@@ -406,10 +649,34 @@ export async function getOutletById(restaurantId, outletId) {
  */
 export async function updateOutlet(restaurantId, outletId, updateData = {}) {
   if (!restaurantId || !outletId) throw new ValidationError("Missing restaurantId or outletId");
+  const restObjectId = new mongoose.Types.ObjectId(restaurantId);
+
+  // If updating the Main HQ Restaurant
+  if (String(restaurantId) === String(outletId)) {
+    const rest = await FoodRestaurant.findById(restObjectId);
+    if (!rest) throw new NotFoundError("Restaurant not found");
+
+    if (updateData.name) rest.restaurantName = String(updateData.name).trim();
+    if (updateData.phone) rest.primaryContactNumber = String(updateData.phone).trim();
+    if (updateData.email) rest.ownerEmail = String(updateData.email).trim().toLowerCase();
+    if (updateData.managerName) rest.ownerName = String(updateData.managerName).trim();
+    if (updateData.isAcceptingOrders !== undefined) rest.isAcceptingOrders = Boolean(updateData.isAcceptingOrders);
+    if (updateData.isTakeawayEnabled !== undefined) rest.isTakeawayEnabled = Boolean(updateData.isTakeawayEnabled);
+    if (updateData.openTime) rest.openingTime = updateData.openTime;
+    if (updateData.closeTime) rest.closingTime = updateData.closeTime;
+    if (Array.isArray(updateData.openDays)) rest.openDays = updateData.openDays;
+
+    if (updateData.outletTimings && typeof updateData.outletTimings === "object") {
+      await upsertOutletTimingsForRestaurant(restObjectId, updateData.outletTimings).catch(() => {});
+    }
+
+    await rest.save();
+    return rest;
+  }
 
   const outlet = await FoodOutlet.findOne({
     _id: new mongoose.Types.ObjectId(outletId),
-    restaurantId: new mongoose.Types.ObjectId(restaurantId),
+    restaurantId: restObjectId,
   });
 
   if (!outlet) throw new NotFoundError("Outlet not found");
