@@ -151,6 +151,14 @@ const outletSchema = new mongoose.Schema(
           "sunday",
         ],
       },
+      schedule: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
+    },
+    outletTimings: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
     },
     fssaiNumber: { type: String, trim: true },
     gstNumber: { type: String, trim: true },

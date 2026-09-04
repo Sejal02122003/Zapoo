@@ -51,37 +51,67 @@ const ALL_PERMISSIONS = [
   { id: "MANAGE_STAFF", label: "Manage Staff", desc: "Manage staff & shift schedules" },
 ]
 
-export const formatTime12Hour = (time24) => {
-  if (!time24) return "09:00 AM"
-  const [hours, minutes] = String(time24).split(':').map(Number)
-  if (isNaN(hours)) return time24
-  const period = hours >= 12 ? 'PM' : 'AM'
+export const formatTime12Hour = (time) => {
+  if (!time) return "09:00 AM"
+  const str = String(time).trim()
+  // If already contains AM or PM
+  if (/am|pm/i.test(str)) {
+    return str.replace(/:\d{2}\s/i, " ").toUpperCase()
+  }
+
+  const parts = str.split(":")
+  const hours = parseInt(parts[0], 10)
+  const minutes = parseInt(parts[1], 10)
+
+  if (isNaN(hours)) return str
+
+  const period = hours >= 12 ? "PM" : "AM"
   const hours12 = hours % 12 || 12
-  const minutesStr = (minutes || 0).toString().padStart(2, '0')
+  const minutesStr = isNaN(minutes) ? "00" : String(minutes).padStart(2, "0")
   return `${hours12}:${minutesStr} ${period}`
 }
 
-export const getOutletTimingDetails = (timings) => {
-  const openTime = timings?.openTime || "09:00"
-  const closeTime = timings?.closeTime || "23:00"
-  const openDays = Array.isArray(timings?.openDays) && timings.openDays.length > 0 
-    ? timings.openDays 
-    : ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+export const getOutletTimingDetails = (timings, outletTimingsObj = null) => {
+  let openTime = "09:00"
+  let closeTime = "23:00"
+  let openDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
-  const formattedTiming = `${formatTime12Hour(openTime)} - ${formatTime12Hour(closeTime)}`
-  
-  // Calculate if currently open
   const now = new Date()
   const currentDayName = now.toLocaleDateString("en-US", { weekday: "long" }).toLowerCase()
-  const isDayOpen = openDays.map(d => String(d).toLowerCase()).includes(currentDayName)
+  const capitalizedDay = currentDayName.charAt(0).toUpperCase() + currentDayName.slice(1)
+
+  // If outlet has day-by-day outletTimings object (e.g. { Monday: { openingTime: '09:00', closingTime: '22:00', isOpen: true } })
+  const daySchedule = outletTimingsObj?.[capitalizedDay] || timings?.schedule?.[capitalizedDay]
+
+  if (daySchedule) {
+    openTime = daySchedule.openingTime || daySchedule.openTime || "09:00"
+    closeTime = daySchedule.closingTime || daySchedule.closeTime || "23:00"
+  } else if (timings && typeof timings === "object") {
+    openTime = timings.openTime || timings.openingTime || timings.start || "09:00"
+    closeTime = timings.closeTime || timings.closingTime || timings.end || "23:00"
+    if (Array.isArray(timings.openDays) && timings.openDays.length > 0) {
+      openDays = timings.openDays.map(d => String(d).toLowerCase())
+    }
+  }
+
+  const formattedTiming = `${formatTime12Hour(openTime)} - ${formatTime12Hour(closeTime)}`
+  const isDayOpen = daySchedule !== undefined ? Boolean(daySchedule.isOpen) : openDays.includes(currentDayName)
 
   let isOpenNow = false
   if (isDayOpen) {
     const parseMins = (t) => {
       if (!t) return 0
-      const [h, m] = String(t).split(":").map(Number)
-      return (h || 0) * 60 + (m || 0)
+      const s = String(t).trim()
+      const isPM = /pm/i.test(s)
+      const isAM = /am/i.test(s)
+      const clean = s.replace(/[^\d:]/g, "")
+      const [h, m] = clean.split(":").map(Number)
+      let hours = h || 0
+      if (isPM && hours < 12) hours += 12
+      if (isAM && hours === 12) hours = 0
+      return hours * 60 + (m || 0)
     }
+
     const openMins = parseMins(openTime)
     const closeMins = parseMins(closeTime)
     const currentMins = now.getHours() * 60 + now.getMinutes()

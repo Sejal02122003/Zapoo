@@ -18,10 +18,12 @@ import {
   Shield,
   Sparkles,
   ArrowRightLeft,
-  MapPin
+  MapPin,
+  Clock
 } from "lucide-react"
 import { clearModuleAuth, getCurrentUser } from "@food/utils/auth"
-import { ownerAPI } from "@food/api"
+import { ownerAPI, restaurantAPI } from "@food/api"
+import { getOutletTimingDetails } from "@food/pages/restaurant/owner/OwnerOutletsPage"
 import restaurantLogo from "@/assets/restaurant_logo.jpeg"
 
 export default function OwnerNav({ selectedOutletId, onSelectOutlet, outlets = [], restaurantData, onOpenAddOutlet }) {
@@ -166,6 +168,14 @@ export default function OwnerNav({ selectedOutletId, onSelectOutlet, outlets = [
                                 <p className={`text-[10px] ${isSelected ? "text-blue-100" : "text-slate-400"}`}>
                                   {outlet.outletCode || "OUTLET"} • {outlet.address?.city || outlet.city || "Branch"}
                                 </p>
+                                {(() => {
+                                  const t = getOutletTimingDetails(outlet.timings, outlet.outletTimings)
+                                  return (
+                                    <p className={`text-[9px] font-bold mt-0.5 ${isSelected ? "text-blue-100" : t.isOpenNow ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+                                      {t.isOpenNow ? "● Open Now" : "○ Closed"} • {t.formattedTiming}
+                                    </p>
+                                  )
+                                })()}
                               </div>
                             </div>
                             {isSelected && <Check className="w-4 h-4 shrink-0" />}
@@ -274,6 +284,18 @@ export default function OwnerNav({ selectedOutletId, onSelectOutlet, outlets = [
             >
               <MapPin className="w-3.5 h-3.5 shrink-0" />
               <span>Zone Setup & Pin</span>
+            </Link>
+
+            <Link
+              to="/food/restaurant/outlet-timings"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shrink-0 ${
+                location.pathname === "/food/restaurant/outlet-timings"
+                  ? "bg-[#22A2E3] text-white shadow-sm shadow-[#22A2E3]/25"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5 shrink-0" />
+              <span>Outlet Timings</span>
             </Link>
 
             <Link
