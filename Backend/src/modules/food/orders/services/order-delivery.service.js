@@ -980,8 +980,11 @@ export async function confirmReachedPickupDelivery(orderId, deliveryPartnerId) {
   if (!order.deliveryVerification?.pickupOtp) {
     order.deliveryVerification = {
       ...(order.deliveryVerification?.toObject?.() || order.deliveryVerification || {}),
-      pickupOtp: { required: true, verified: false },
+      pickupOtp: { required: false, verified: true },
     };
+  } else {
+    order.deliveryVerification.pickupOtp.required = false;
+    order.deliveryVerification.pickupOtp.verified = true;
   }
   pushStatusHistory(order, {
     byRole: 'DELIVERY_PARTNER',
@@ -1050,48 +1053,7 @@ export async function requestPickupOtp(orderId, deliveryPartnerId) {
     throw new ForbiddenError('Not your order');
   }
 
-  const otp = order.pickupOtp;
-  if (!otp) {
-    throw new ValidationError('Pickup OTP not generated yet. Please confirm arrival at restaurant first.');
-  }
-
-  // Update DB to register the request so fallback polling can catch it
-  if (!order.deliveryVerification) order.deliveryVerification = {};
-  if (!order.deliveryVerification.pickupOtp) order.deliveryVerification.pickupOtp = {};
-  order.deliveryVerification.pickupOtp.requestedAt = new Date();
-  order.markModified('deliveryVerification');
-  await order.save();
-
-  const io = getIO();
-  if (io) {
-    io.to(rooms.restaurant(order.restaurantId)).emit('pickup_otp_reveal', {
-      orderMongoId: order._id.toString(),
-      orderId: order.order_id || order._id.toString(),
-      otp,
-      message: 'Delivery partner is requesting the Pickup OTP. Please share this code with them.',
-    });
-  }
-
-  try {
-    const restaurant = await mongoose.model('FoodRestaurant').findById(order.restaurantId).select('restaurantName').lean();
-    await notifyOwnersSafely(
-      [{ ownerType: 'RESTAURANT', ownerId: order.restaurantId }],
-      {
-        title: 'OTP Requested! 🔐',
-        body: `Delivery partner is requesting the Pickup OTP for Order #${order.order_id || order._id.toString()}. The OTP is: ${otp}`,
-        data: {
-          type: 'pickup_otp_request',
-          orderId: String(order.order_id || order._id.toString()),
-          orderMongoId: String(order._id),
-          otp: String(otp)
-        },
-      },
-    );
-  } catch (error) {
-    logger.error(`Error notifying restaurant about OTP request for ${order._id}: ${error?.message || error}`);
-  }
-
-  return { otp };
+  return { success: true, message: 'Pickup OTP not required for restaurant' };
 }
 
 export async function confirmPickupDelivery(orderId, deliveryPartnerId, billImageUrl, otp) {
@@ -1110,18 +1072,9 @@ export async function confirmPickupDelivery(orderId, deliveryPartnerId, billImag
       throw new ValidationError(`Order is already at status '${from}'. Cannot re-mark as '${nextStatus}'.`);
   }
 
-  const pickupRequired = order.deliveryVerification?.pickupOtp?.required !== false;
-  const pickupVerified = order.deliveryVerification?.pickupOtp?.verified === true;
-
-  if (pickupRequired && !pickupVerified) {
-    if (!otp) {
-      throw new ValidationError("Pickup OTP is required to mark this order as picked up.");
-    }
-    if (!isOtpMatch(order.pickupOtp, otp)) {
-      throw new ValidationError("Invalid Pickup OTP. Please ask the restaurant for the correct OTP.");
-    }
+  if (order.deliveryVerification?.pickupOtp) {
     order.deliveryVerification.pickupOtp.verified = true;
-    order.markModified('deliveryVerification.pickupOtp.verified');
+    order.deliveryVerification.pickupOtp.required = false;
   }
 
   order.orderStatus = nextStatus;

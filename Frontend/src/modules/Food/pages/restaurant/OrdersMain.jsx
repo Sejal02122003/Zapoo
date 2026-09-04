@@ -3731,24 +3731,6 @@ export default function OrdersMain() {
                 </div>
               )}
 
-              {/* Pickup OTP */}
-              {selectedOrder.pickupOtp ? (
-                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-0.5">Pickup Verification OTP</p>
-                    <p className="text-[9px] text-emerald-600 font-medium leading-tight">Share this code with the delivery partner.</p>
-                  </div>
-                  <div className="bg-white px-3 py-1 rounded shadow-sm border border-emerald-200">
-                    <span className="text-lg font-black text-emerald-800 tracking-[0.2em]">{selectedOrder.pickupOtp}</span>
-                  </div>
-                </div>
-              ) : (selectedOrder.status === "READY" || selectedOrder.status === "PREPARING" || selectedOrder.status === "CONFIRMED") && selectedOrder.deliveryPartnerId && selectedOrder.type === "Home Delivery" ? (
-                <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
-                  <p className="text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-0.5">Pickup Verification OTP</p>
-                  <p className="text-[9px] text-gray-500 font-medium leading-tight">Will be shown when the delivery partner reaches the restaurant.</p>
-                </div>
-              ) : null}
-
               {["preparing", "confirmed", "created", "pending"].includes(String(selectedOrder.status).toLowerCase()) && (
                 <div className="mb-4">
                   <button
@@ -3941,18 +3923,6 @@ function OrderCard({
               </p>
             </div>
           )}
-
-          {/* Pickup OTP Display on Card */}
-          {pickupOtp ? (
-            <div className="mb-2 px-2 py-1.5 bg-emerald-50 border border-emerald-100 rounded flex justify-between items-center" onClick={(e) => e.stopPropagation()}>
-              <span className="text-[9px] font-bold text-emerald-700 uppercase">Pickup OTP</span>
-              <span className="text-[13px] font-black text-emerald-800 tracking-[0.2em]">{pickupOtp}</span>
-            </div>
-          ) : (isReady || isPreparing || normalizedStatus === "confirmed") && type === "Home Delivery" ? (
-            <div className="mb-2 px-2 py-1 bg-gray-50 border border-gray-100 rounded flex justify-center items-center">
-              <span className="text-[8px] font-bold text-gray-500 uppercase tracking-wider text-center">OTP shown upon rider arrival</span>
-            </div>
-          ) : null}
 
           {/* Bottom Actions Row - Clean Grid/Flex */}
           <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-50 mt-auto">
