@@ -30,6 +30,17 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
     const partner = await FoodDeliveryPartner.findById(partnerId).lean();
     if (!partner) throw new ValidationError('Delivery partner not found');
 
+    // Auto-settle past shifts so any completed shift guarantees are credited
+    try {
+        const { shiftService } = await import('../../shifts/services/shift.service.js');
+        await shiftService.autoSettlePastShifts().catch(() => {});
+    } catch (e) {}
+
+    const partnerIds = [partnerId];
+    if (partner?.userId && mongoose.Types.ObjectId.isValid(partner.userId)) {
+        partnerIds.push(new mongoose.Types.ObjectId(partner.userId));
+    }
+
     const [
         cashLimitSettings,
         earningsAgg,
@@ -43,14 +54,22 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
         payoutsList
     ] = await Promise.all([
         getDeliveryCashLimitSettings(),
-        // 1. Total Earnings from Delivered Orders
+        // 1. Total Earnings from Delivered / Completed Orders
         FoodOrder.aggregate([
-            { $match: { 'dispatch.deliveryPartnerId': partnerId, orderStatus: 'delivered' } },
+            {
+                $match: {
+                    $or: [
+                        { 'dispatch.deliveryPartnerId': { $in: partnerIds } },
+                        { deliveryPartnerId: { $in: partnerIds } }
+                    ],
+                    orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] }
+                }
+            },
             { $group: { _id: null, totalEarned: { $sum: { $ifNull: ['$riderEarning', 0] } } } }
         ]),
-        // 2. Admin Bonuses
+        // 2. Admin Bonuses (including shift guarantee bonuses)
         DeliveryBonusTransaction.aggregate([
-            { $match: { deliveryPartnerId: partnerId } },
+            { $match: { deliveryPartnerId: { $in: partnerIds } } },
             { $group: { _id: null, total: { $sum: { $ifNull: ['$amount', 0] } } } }
         ]),
         // 3. Withdrawal Aggregates (Approved vs Pending)
@@ -103,8 +122,11 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
 
     // Sum COD orders delivered AFTER the last deposit (or all time if no deposit)
     const cashInHandMatchStage = {
-        'dispatch.deliveryPartnerId': partnerId,
-        orderStatus: 'delivered',
+        $or: [
+            { 'dispatch.deliveryPartnerId': { $in: partnerIds } },
+            { deliveryPartnerId: { $in: partnerIds } }
+        ],
+        orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] },
         ...(lastDepositAt ? { createdAt: { $gt: new Date(lastDepositAt) } } : {})
     };
 
@@ -147,12 +169,18 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
 
     // Fetch transactions for UI (Orders, Bonuses, Withdrawals, Penalties)
     const [ordersTx, bonusesList] = await Promise.all([
-        FoodOrder.find({ 'dispatch.deliveryPartnerId': partnerId, orderStatus: 'delivered' })
+        FoodOrder.find({
+            $or: [
+                { 'dispatch.deliveryPartnerId': { $in: partnerIds } },
+                { deliveryPartnerId: { $in: partnerIds } }
+            ],
+            orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] }
+        })
             .sort({ createdAt: -1 })
             .select('orderId riderEarning payment orderStatus createdAt')
             .limit(20)
             .lean(),
-        DeliveryBonusTransaction.find({ deliveryPartnerId: partnerId })
+        DeliveryBonusTransaction.find({ deliveryPartnerId: { $in: partnerIds } })
             .sort({ createdAt: -1 })
             .limit(20)
             .lean()

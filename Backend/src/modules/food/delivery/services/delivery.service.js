@@ -540,15 +540,24 @@ export const getDeliveryPartnerWallet = async (deliveryPartnerId) => {
     const deliveryWithdrawalLimit = Number(cashLimitSettings.deliveryWithdrawalLimit) || 100;
 
     const partnerId = new mongoose.Types.ObjectId(deliveryPartnerId);
+    const partnerIds = [partnerId];
+    if (partner?.userId && mongoose.Types.ObjectId.isValid(partner.userId)) {
+        partnerIds.push(new mongoose.Types.ObjectId(partner.userId));
+    }
+
+    const orderFilter = {
+        $or: [
+            { 'dispatch.deliveryPartnerId': { $in: partnerIds } },
+            { deliveryPartnerId: { $in: partnerIds } }
+        ],
+        orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] },
+    };
 
     // Earnings paid to rider through completed deliveries
     const [earningsAgg, cashAgg] = await Promise.all([
         FoodOrder.aggregate([
             {
-                $match: {
-                    'dispatch.deliveryPartnerId': partnerId,
-                    orderStatus: 'delivered',
-                }
+                $match: orderFilter
             },
             {
                 $group: {
@@ -560,8 +569,7 @@ export const getDeliveryPartnerWallet = async (deliveryPartnerId) => {
         FoodOrder.aggregate([
             {
                 $match: {
-                    'dispatch.deliveryPartnerId': partnerId,
-                    orderStatus: 'delivered',
+                    ...orderFilter,
                     'payment.method': 'cash',
                     'payment.status': 'paid'
                 }
@@ -580,22 +588,19 @@ export const getDeliveryPartnerWallet = async (deliveryPartnerId) => {
 
     // Admin-set delivery bonuses / earning addons
     const bonusAgg = await DeliveryBonusTransaction.aggregate([
-        { $match: { deliveryPartnerId: partnerId } },
+        { $match: { deliveryPartnerId: { $in: partnerIds } } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
     const totalBonus = bonusAgg?.[0] ? Number(bonusAgg[0].total) : 0;
 
     // Keep transactions list reasonably small (UI only needs recent data for charts)
     const [paymentTxList, bonusTxList] = await Promise.all([
-        FoodOrder.find({
-            'dispatch.deliveryPartnerId': partnerId,
-            orderStatus: 'delivered',
-        })
+        FoodOrder.find(orderFilter)
             .sort({ 'deliveryState.deliveredAt': -1, createdAt: -1 })
             .select('orderId riderEarning payment orderStatus deliveryState createdAt deliveryState.deliveredAt')
             .limit(2000)
             .lean(),
-        DeliveryBonusTransaction.find({ deliveryPartnerId: partnerId })
+        DeliveryBonusTransaction.find({ deliveryPartnerId: { $in: partnerIds } })
             .sort({ createdAt: -1 })
             .limit(1000)
             .lean(),
@@ -680,12 +685,29 @@ export const getDeliveryPartnerEarnings = async (deliveryPartnerId, query = {}) 
         range = getWeekRange(date);
     }
 
+    const partnerIds = [partnerId];
+    const partnerDoc = await FoodDeliveryPartner.findById(partnerId).select('userId').lean();
+    if (partnerDoc?.userId && mongoose.Types.ObjectId.isValid(partnerDoc.userId)) {
+        partnerIds.push(new mongoose.Types.ObjectId(partnerDoc.userId));
+    }
+
     const match = {
-        'dispatch.deliveryPartnerId': partnerId,
-        orderStatus: 'delivered',
+        $or: [
+            { 'dispatch.deliveryPartnerId': { $in: partnerIds } },
+            { deliveryPartnerId: { $in: partnerIds } }
+        ],
+        orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] },
     };
     if (range) {
-        match['deliveryState.deliveredAt'] = { $gte: range.start, $lte: range.end };
+        match['$and'] = [
+            {
+                $or: [
+                    { 'deliveryState.deliveredAt': { $gte: range.start, $lte: range.end } },
+                    { deliveredAt: { $gte: range.start, $lte: range.end } },
+                    { createdAt: { $gte: range.start, $lte: range.end } }
+                ]
+            }
+        ];
     }
 
     const [totalOrders, agg] = await Promise.all([
@@ -839,11 +861,22 @@ export const getDeliveryPartnerTripHistory = async (deliveryPartnerId, query = {
     const end = query.endDate ? new Date(query.endDate) : computeRange(period, date).end;
 
     const partnerId = new mongoose.Types.ObjectId(deliveryPartnerId);
-    const match = { 'dispatch.deliveryPartnerId': partnerId };
+    const partnerIds = [partnerId];
+    const partnerDoc = await FoodDeliveryPartner.findById(partnerId).select('userId').lean();
+    if (partnerDoc?.userId && mongoose.Types.ObjectId.isValid(partnerDoc.userId)) {
+        partnerIds.push(new mongoose.Types.ObjectId(partnerDoc.userId));
+    }
+
+    const match = {
+        $or: [
+            { 'dispatch.deliveryPartnerId': { $in: partnerIds } },
+            { deliveryPartnerId: { $in: partnerIds } }
+        ]
+    };
 
     const sf = String(statusFilter || '').toLowerCase();
     if (sf === 'completed') {
-        match.orderStatus = 'delivered';
+        match.orderStatus = { $in: ['delivered', 'completed', 'Delivered', 'Completed'] };
         match['deliveryState.deliveredAt'] = { $gte: start, $lte: end };
     } else if (sf === 'cancelled') {
         match.orderStatus = { $regex: '^cancelled', $options: 'i' };
@@ -852,7 +885,7 @@ export const getDeliveryPartnerTripHistory = async (deliveryPartnerId, query = {
         match.createdAt = { $gte: start, $lte: end };
         // Pending = not delivered and not cancelled
         match.$and = [
-            { orderStatus: { $ne: 'delivered' } },
+            { orderStatus: { $nin: ['delivered', 'completed', 'Delivered', 'Completed'] } },
             { orderStatus: { $not: { $regex: '^cancelled', $options: 'i' } } },
         ];
     } else {

@@ -558,14 +558,12 @@ export const shiftService = {
     autoSettlePastShifts: async () => {
         try {
             const now = new Date();
-            const pastShifts = await FoodShift.find({ endTime: { $lte: now } }).select('_id').lean();
-            if (!pastShifts || pastShifts.length === 0) return;
-            for (const shift of pastShifts) {
-                const pendingBookings = await FoodShiftBooking.countDocuments({
-                    shiftId: shift._id,
-                    status: 'BOOKED'
-                });
-                if (pendingBookings > 0) {
+            const pendingBookings = await FoodShiftBooking.find({ status: 'BOOKED' }).select('shiftId').lean();
+            if (!pendingBookings || pendingBookings.length === 0) return;
+            const shiftIds = [...new Set(pendingBookings.map(b => b.shiftId.toString()))];
+            for (const sId of shiftIds) {
+                const shift = await FoodShift.findById(sId).lean();
+                if (shift && new Date(shift.endTime) <= now) {
                     await shiftService.processShiftSettlements(shift._id);
                 }
             }
@@ -629,14 +627,37 @@ export const shiftService = {
                     orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] }
                 });
 
-                // Query Earnings in shift window
+                // Query Earnings in shift window (checking both transactions and completed orders)
                 const transactions = await FoodTransaction.find({
                     deliveryPartnerId: { $in: partnerIds },
                     createdAt: { $gte: shift.startTime, $lte: shift.endTime },
                     status: { $in: ['authorized', 'captured', 'settled', 'success'] }
                 });
                 
-                const actualEarnings = transactions.reduce((sum, tx) => sum + (tx.amounts?.riderShare || 0), 0);
+                const txEarnings = transactions.reduce((sum, tx) => sum + (tx.amounts?.riderShare || 0), 0);
+
+                const shiftOrders = await FoodOrder.find({
+                    $and: [
+                        {
+                            $or: [
+                                { 'dispatch.deliveryPartnerId': { $in: partnerIds } },
+                                { deliveryPartnerId: { $in: partnerIds } }
+                            ]
+                        },
+                        {
+                            $or: [
+                                { 'deliveryState.deliveredAt': { $gte: shift.startTime, $lte: shift.endTime } },
+                                { deliveredAt: { $gte: shift.startTime, $lte: shift.endTime } },
+                                { createdAt: { $gte: shift.startTime, $lte: shift.endTime } },
+                                { updatedAt: { $gte: shift.startTime, $lte: shift.endTime } }
+                            ]
+                        }
+                    ],
+                    orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] }
+                }).select('riderEarning').lean();
+
+                const ordersEarning = shiftOrders.reduce((sum, o) => sum + (o.riderEarning || 0), 0);
+                const actualEarnings = Math.max(ordersEarning, txEarnings);
                 
                 // --- Eligibility Rules ---
                 const rules = {
@@ -649,12 +670,12 @@ export const shiftService = {
                 let rejectionReason = null;
                 let guaranteeBonus = 0;
 
-                if (rules.minimumLoginPercentage > 0 && attendancePercentage < rules.minimumLoginPercentage) {
-                    isEligible = false;
-                    rejectionReason = 'REJECTED_ATTENDANCE';
-                } else if (rules.minimumOrders > 0 && completedOrdersCount < rules.minimumOrders) {
+                if (rules.minimumOrders > 0 && completedOrdersCount < rules.minimumOrders) {
                     isEligible = false;
                     rejectionReason = 'REJECTED_ORDERS';
+                } else if (rules.minimumLoginPercentage > 0 && attendancePercentage < rules.minimumLoginPercentage && completedOrdersCount < rules.minimumOrders) {
+                    isEligible = false;
+                    rejectionReason = 'REJECTED_ATTENDANCE';
                 } else if (attendance?.gpsAnomalyFlags?.length > 5) {
                     isEligible = false;
                     rejectionReason = 'REJECTED_FRAUD';
