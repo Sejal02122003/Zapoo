@@ -2048,7 +2048,8 @@ export async function getRestaurantCommissionBootstrap() {
         commissions: commissionsData.commissions || [], 
         restaurants,
         globalSettings: {
-            globalRestaurantCommission: feeSettings.globalRestaurantCommission || 0,
+            globalRestaurantCommission: Number.isFinite(Number(feeSettings.globalRestaurantCommission)) ? Number(feeSettings.globalRestaurantCommission) : 0,
+            globalTakeawayRestaurantCommission: Number.isFinite(Number(feeSettings.globalTakeawayRestaurantCommission)) ? Number(feeSettings.globalTakeawayRestaurantCommission) : 0,
             globalGstOnItem: feeSettings.globalGstOnItem || 0,
             globalGstOnCommission: feeSettings.globalGstOnCommission || 0,
             globalPaymentGatewayFee: feeSettings.globalPaymentGatewayFee || 0,

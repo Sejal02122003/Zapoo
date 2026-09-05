@@ -95,7 +95,7 @@ export async function createInitialTransaction(order) {
 
     const restaurantCommissionFromOrder = Number(order.pricing?.restaurantCommission);
     const restaurantCommission =
-        Number.isFinite(restaurantCommissionFromOrder) && restaurantCommissionFromOrder > 0
+        Number.isFinite(restaurantCommissionFromOrder) && restaurantCommissionFromOrder >= 0
             ? restaurantCommissionFromOrder
             : (commissionSnapshot.commissionAmount || 0);
 
@@ -104,7 +104,11 @@ export async function createInitialTransaction(order) {
         ? gstOnItemFromOrder
         : (commissionSnapshot.gstOnItem || 0);
 
-    const gstOnCommission = commissionSnapshot.gstOnCommission || 0;
+    const gstOnCommissionFromOrder = Number(order.pricing?.gstOnCommission);
+    const gstOnCommission =
+        Number.isFinite(gstOnCommissionFromOrder) && gstOnCommissionFromOrder >= 0
+            ? gstOnCommissionFromOrder
+            : (commissionSnapshot.gstOnCommission || 0);
     const paymentGatewayFee = commissionSnapshot.paymentGatewayFee || 0;
     const tcs = commissionSnapshot.tcs || 0;
 
