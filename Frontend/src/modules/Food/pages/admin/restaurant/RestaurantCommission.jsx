@@ -116,7 +116,9 @@ export default function RestaurantCommission() {
       if (data?.globalSettings) {
         setGlobalSettings({
           globalRestaurantCommission: data.globalSettings.globalRestaurantCommission ?? 0,
-          globalTakeawayRestaurantCommission: data.globalSettings.globalTakeawayRestaurantCommission ?? 0,
+          globalTakeawayRestaurantCommission: (data.globalSettings.globalTakeawayRestaurantCommission && Number(data.globalSettings.globalTakeawayRestaurantCommission) > 0) 
+            ? data.globalSettings.globalTakeawayRestaurantCommission 
+            : (data.globalSettings.globalRestaurantCommission ?? 0),
           globalGstOnItem: data.globalSettings.globalGstOnItem ?? 0,
           globalGstOnCommission: data.globalSettings.globalGstOnCommission ?? 0,
           globalPaymentGatewayFee: data.globalSettings.globalPaymentGatewayFee ?? 0,
@@ -224,7 +226,7 @@ export default function RestaurantCommission() {
       setSavingGlobal(true)
       await adminAPI.updateGlobalRestaurantCommissionSettings({
         globalRestaurantCommission: Number(globalSettings.globalRestaurantCommission || 0),
-        globalTakeawayRestaurantCommission: Number(globalSettings.globalTakeawayRestaurantCommission || 0),
+        globalTakeawayRestaurantCommission: Number(globalSettings.globalTakeawayRestaurantCommission || globalSettings.globalRestaurantCommission || 0),
         globalGstOnItem: Number(globalSettings.globalGstOnItem || 0),
         globalGstOnCommission: Number(globalSettings.globalGstOnCommission || 0),
         globalPaymentGatewayFee: Number(globalSettings.globalPaymentGatewayFee || 0),
