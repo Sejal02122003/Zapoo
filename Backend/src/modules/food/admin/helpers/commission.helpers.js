@@ -7,43 +7,59 @@ export function resolveCommissionRuleForOrder({ rule, globalSettings, orderType 
     let commissionConfig = null;
 
     if (rule && rule.status !== false) {
-        if (isTakeaway && rule.takeawayCommission && Number.isFinite(Number(rule.takeawayCommission.value)) && Number(rule.takeawayCommission.value) >= 0) {
-            commissionConfig = {
-                type: rule.takeawayCommission.type || 'percentage',
-                value: Number(rule.takeawayCommission.value)
-            };
-        } else if (!isTakeaway && rule.deliveryCommission && Number.isFinite(Number(rule.deliveryCommission.value)) && Number(rule.deliveryCommission.value) >= 0) {
-            commissionConfig = {
-                type: rule.deliveryCommission.type || 'percentage',
-                value: Number(rule.deliveryCommission.value)
-            };
-        } else if (rule.defaultCommission && Number.isFinite(Number(rule.defaultCommission.value)) && Number(rule.defaultCommission.value) >= 0) {
-            commissionConfig = {
-                type: rule.defaultCommission.type || 'percentage',
-                value: Number(rule.defaultCommission.value)
-            };
+        if (isTakeaway) {
+            if (rule.takeawayCommission && Number.isFinite(Number(rule.takeawayCommission.value)) && Number(rule.takeawayCommission.value) > 0) {
+                commissionConfig = {
+                    type: rule.takeawayCommission.type || 'percentage',
+                    value: Number(rule.takeawayCommission.value)
+                };
+            } else if (rule.defaultCommission && Number.isFinite(Number(rule.defaultCommission.value)) && Number(rule.defaultCommission.value) >= 0) {
+                commissionConfig = {
+                    type: rule.defaultCommission.type || 'percentage',
+                    value: Number(rule.defaultCommission.value)
+                };
+            } else if (rule.takeawayCommission && Number.isFinite(Number(rule.takeawayCommission.value)) && Number(rule.takeawayCommission.value) >= 0) {
+                commissionConfig = {
+                    type: rule.takeawayCommission.type || 'percentage',
+                    value: Number(rule.takeawayCommission.value)
+                };
+            }
+        } else {
+            if (rule.deliveryCommission && Number.isFinite(Number(rule.deliveryCommission.value)) && Number(rule.deliveryCommission.value) > 0) {
+                commissionConfig = {
+                    type: rule.deliveryCommission.type || 'percentage',
+                    value: Number(rule.deliveryCommission.value)
+                };
+            } else if (rule.defaultCommission && Number.isFinite(Number(rule.defaultCommission.value)) && Number(rule.defaultCommission.value) >= 0) {
+                commissionConfig = {
+                    type: rule.defaultCommission.type || 'percentage',
+                    value: Number(rule.defaultCommission.value)
+                };
+            } else if (rule.deliveryCommission && Number.isFinite(Number(rule.deliveryCommission.value)) && Number(rule.deliveryCommission.value) >= 0) {
+                commissionConfig = {
+                    type: rule.deliveryCommission.type || 'percentage',
+                    value: Number(rule.deliveryCommission.value)
+                };
+            }
         }
     }
 
     if (!commissionConfig) {
         let globalVal = 0;
         if (isTakeaway) {
-            if (globalSettings?.globalTakeawayRestaurantCommission !== undefined && 
-                globalSettings?.globalTakeawayRestaurantCommission !== null && 
-                Number.isFinite(Number(globalSettings.globalTakeawayRestaurantCommission))) {
-                globalVal = Number(globalSettings.globalTakeawayRestaurantCommission);
-            } else if (globalSettings?.globalRestaurantCommission !== undefined && 
-                       globalSettings?.globalRestaurantCommission !== null && 
-                       Number.isFinite(Number(globalSettings.globalRestaurantCommission))) {
-                globalVal = Number(globalSettings.globalRestaurantCommission);
+            const takeawayVal = Number(globalSettings?.globalTakeawayRestaurantCommission);
+            const defaultVal = Number(globalSettings?.globalRestaurantCommission);
+            if (Number.isFinite(takeawayVal) && takeawayVal > 0) {
+                globalVal = takeawayVal;
+            } else if (Number.isFinite(defaultVal) && defaultVal >= 0) {
+                globalVal = defaultVal;
             } else {
                 globalVal = 0;
             }
         } else {
-            if (globalSettings?.globalRestaurantCommission !== undefined && 
-                globalSettings?.globalRestaurantCommission !== null && 
-                Number.isFinite(Number(globalSettings.globalRestaurantCommission))) {
-                globalVal = Number(globalSettings.globalRestaurantCommission);
+            const defaultVal = Number(globalSettings?.globalRestaurantCommission);
+            if (Number.isFinite(defaultVal) && defaultVal >= 0) {
+                globalVal = defaultVal;
             } else {
                 globalVal = 0;
             }

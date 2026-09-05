@@ -2049,7 +2049,9 @@ export async function getRestaurantCommissionBootstrap() {
         restaurants,
         globalSettings: {
             globalRestaurantCommission: Number.isFinite(Number(feeSettings.globalRestaurantCommission)) ? Number(feeSettings.globalRestaurantCommission) : 0,
-            globalTakeawayRestaurantCommission: Number.isFinite(Number(feeSettings.globalTakeawayRestaurantCommission)) ? Number(feeSettings.globalTakeawayRestaurantCommission) : 0,
+            globalTakeawayRestaurantCommission: Number.isFinite(Number(feeSettings.globalTakeawayRestaurantCommission)) && Number(feeSettings.globalTakeawayRestaurantCommission) > 0
+                ? Number(feeSettings.globalTakeawayRestaurantCommission)
+                : (Number.isFinite(Number(feeSettings.globalRestaurantCommission)) ? Number(feeSettings.globalRestaurantCommission) : 10),
             globalGstOnItem: feeSettings.globalGstOnItem || 0,
             globalGstOnCommission: feeSettings.globalGstOnCommission || 0,
             globalPaymentGatewayFee: feeSettings.globalPaymentGatewayFee || 0,
@@ -2130,7 +2132,11 @@ export async function updateGlobalRestaurantCommissionSettings(body) {
     }
     
     if (globalRestaurantCommission !== undefined) settings.globalRestaurantCommission = Number(globalRestaurantCommission);
-    if (globalTakeawayRestaurantCommission !== undefined) settings.globalTakeawayRestaurantCommission = Number(globalTakeawayRestaurantCommission);
+    if (globalTakeawayRestaurantCommission !== undefined && Number(globalTakeawayRestaurantCommission) > 0) {
+        settings.globalTakeawayRestaurantCommission = Number(globalTakeawayRestaurantCommission);
+    } else if (globalRestaurantCommission !== undefined) {
+        settings.globalTakeawayRestaurantCommission = Number(globalRestaurantCommission);
+    }
     if (globalGstOnItem !== undefined) settings.globalGstOnItem = Number(globalGstOnItem);
     if (globalGstOnCommission !== undefined) settings.globalGstOnCommission = Number(globalGstOnCommission);
     if (globalPaymentGatewayFee !== undefined) settings.globalPaymentGatewayFee = Number(globalPaymentGatewayFee);
