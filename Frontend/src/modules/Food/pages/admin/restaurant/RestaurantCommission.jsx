@@ -25,8 +25,10 @@ export default function RestaurantCommission() {
   const [savingGlobal, setSavingGlobal] = useState(false)
   const [globalSettings, setGlobalSettings] = useState({
     globalRestaurantCommission: 0,
+    globalTakeawayRestaurantCommission: 0,
     globalGstOnItem: 0,
     globalGstOnCommission: 18,
+    globalPaymentGatewayFee: 0,
     applyGlobalTaxes: true,
     deductGstFromRestaurant: true
   })
@@ -113,10 +115,11 @@ export default function RestaurantCommission() {
       setApprovedRestaurants(Array.isArray(data?.restaurants) ? data.restaurants : [])
       if (data?.globalSettings) {
         setGlobalSettings({
-          globalRestaurantCommission: data.globalSettings.globalRestaurantCommission || 0,
-          globalGstOnItem: data.globalSettings.globalGstOnItem || 0,
-          globalGstOnCommission: data.globalSettings.globalGstOnCommission || 0,
-          globalPaymentGatewayFee: data.globalSettings.globalPaymentGatewayFee || 0,
+          globalRestaurantCommission: data.globalSettings.globalRestaurantCommission ?? 0,
+          globalTakeawayRestaurantCommission: data.globalSettings.globalTakeawayRestaurantCommission ?? 0,
+          globalGstOnItem: data.globalSettings.globalGstOnItem ?? 0,
+          globalGstOnCommission: data.globalSettings.globalGstOnCommission ?? 0,
+          globalPaymentGatewayFee: data.globalSettings.globalPaymentGatewayFee ?? 0,
           applyGlobalTaxes: data.globalSettings.applyGlobalTaxes !== false,
           deductGstFromRestaurant: data.globalSettings.deductGstFromRestaurant !== false
         })
@@ -220,10 +223,11 @@ export default function RestaurantCommission() {
     try {
       setSavingGlobal(true)
       await adminAPI.updateGlobalRestaurantCommissionSettings({
-        globalRestaurantCommission: Number(globalSettings.globalRestaurantCommission),
-        globalGstOnItem: Number(globalSettings.globalGstOnItem),
-        globalGstOnCommission: Number(globalSettings.globalGstOnCommission),
-        globalPaymentGatewayFee: Number(globalSettings.globalPaymentGatewayFee),
+        globalRestaurantCommission: Number(globalSettings.globalRestaurantCommission || 0),
+        globalTakeawayRestaurantCommission: Number(globalSettings.globalTakeawayRestaurantCommission || 0),
+        globalGstOnItem: Number(globalSettings.globalGstOnItem || 0),
+        globalGstOnCommission: Number(globalSettings.globalGstOnCommission || 0),
+        globalPaymentGatewayFee: Number(globalSettings.globalPaymentGatewayFee || 0),
         applyGlobalTaxes: Boolean(globalSettings.applyGlobalTaxes),
         deductGstFromRestaurant: Boolean(globalSettings.deductGstFromRestaurant)
       })
@@ -243,7 +247,15 @@ export default function RestaurantCommission() {
       restaurantId: "",
       defaultCommission: {
         type: "percentage",
-        value: "10"
+        value: globalSettings.globalRestaurantCommission?.toString() || "0"
+      },
+      deliveryCommission: {
+        type: "percentage",
+        value: globalSettings.globalRestaurantCommission?.toString() || "0"
+      },
+      takeawayCommission: {
+        type: "percentage",
+        value: globalSettings.globalTakeawayRestaurantCommission?.toString() || "0"
       },
       notes: ""
     })
@@ -282,20 +294,24 @@ export default function RestaurantCommission() {
         const restaurant = approvedRestaurants.find(r => String(r._id) === String(restIdStr));
         setSelectedRestaurant(restaurant || null);
         
-        const def = commissionData.defaultCommission || { type: "percentage", value: 10 };
+        const def = commissionData.defaultCommission || { type: "percentage", value: 0 };
         setFormData({
           restaurantId: String(restIdStr || ""),
           defaultCommission: {
             type: def.type || "percentage",
-            value: def.value?.toString() || "10"
+            value: def.value !== undefined && def.value !== null ? def.value.toString() : "0"
           },
           deliveryCommission: {
             type: commissionData.deliveryCommission?.type || def.type || "percentage",
-            value: (commissionData.deliveryCommission?.value ?? def.value)?.toString() || "10"
+            value: commissionData.deliveryCommission?.value !== undefined && commissionData.deliveryCommission?.value !== null
+              ? commissionData.deliveryCommission.value.toString()
+              : (def.value !== undefined && def.value !== null ? def.value.toString() : "0")
           },
           takeawayCommission: {
             type: commissionData.takeawayCommission?.type || def.type || "percentage",
-            value: (commissionData.takeawayCommission?.value ?? def.value)?.toString() || "5"
+            value: commissionData.takeawayCommission?.value !== undefined && commissionData.takeawayCommission?.value !== null
+              ? commissionData.takeawayCommission.value.toString()
+              : (def.value !== undefined && def.value !== null ? def.value.toString() : "0")
           },
           notes: commissionData.notes || ""
         })
@@ -340,10 +356,10 @@ export default function RestaurantCommission() {
       errors.restaurantId = "Restaurant is required"
     }
 
-    if (!formData.deliveryCommission.value || parseFloat(formData.deliveryCommission.value) < 0) {
+    if (formData.deliveryCommission?.value === '' || formData.deliveryCommission?.value === undefined || isNaN(parseFloat(formData.deliveryCommission?.value)) || parseFloat(formData.deliveryCommission?.value) < 0) {
       errors.deliveryCommission = "Delivery commission value is required"
     }
-    if (!formData.takeawayCommission.value || parseFloat(formData.takeawayCommission.value) < 0) {
+    if (formData.takeawayCommission?.value === '' || formData.takeawayCommission?.value === undefined || isNaN(parseFloat(formData.takeawayCommission?.value)) || parseFloat(formData.takeawayCommission?.value) < 0) {
       errors.takeawayCommission = "Takeaway commission value is required"
     }
 
@@ -468,7 +484,7 @@ export default function RestaurantCommission() {
               </div>
             </div>
             
-            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 transition-opacity ${!globalSettings.applyGlobalTaxes ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 transition-opacity ${!globalSettings.applyGlobalTaxes ? 'opacity-50 pointer-events-none' : ''}`}>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Global Default Commission (%)</label>
                 <div className="relative">
@@ -478,6 +494,20 @@ export default function RestaurantCommission() {
                     step="0.1"
                     value={globalSettings.globalRestaurantCommission}
                     onChange={(e) => setGlobalSettings({ ...globalSettings, globalRestaurantCommission: e.target.value })}
+                    className="w-full pl-3 pr-8 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Global Takeaway Commission (%)</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={globalSettings.globalTakeawayRestaurantCommission}
+                    onChange={(e) => setGlobalSettings({ ...globalSettings, globalTakeawayRestaurantCommission: e.target.value })}
                     className="w-full pl-3 pr-8 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                   <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
