@@ -38,7 +38,8 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 // Get icon based on address type/label
 const getAddressIcon = (address) => {
-  const label = (address.label || address.additionalDetails || "").toLowerCase()
+  if (!address || typeof address !== "object") return Home
+  const label = String(address.label || address.additionalDetails || "").toLowerCase()
   if (label.includes("home")) return Home
   if (label.includes("work") || label.includes("office")) return Briefcase
   if (label.includes("building") || label.includes("apt")) return Building2
@@ -245,10 +246,35 @@ export default function AddressSelectorPage() {
   }
 
   const handleSelectSavedAddress = async (address) => {
+    if (!address) return
     const id = getAddressId(address)
     if (id) {
       await setDefaultAddress(id)
-      try { localStorage.setItem("deliveryAddressMode", "saved") } catch {}
+      try {
+        localStorage.setItem("deliveryAddressMode", "saved")
+        let lat = Number(address.latitude)
+        let lng = Number(address.longitude)
+        if (address.location?.coordinates?.length === 2) {
+          lng = Number(address.location.coordinates[0])
+          lat = Number(address.location.coordinates[1])
+        }
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          const locData = {
+            latitude: lat,
+            longitude: lng,
+            address: [address.additionalDetails, address.street, address.city].filter(Boolean).map(String).join(", "),
+            formattedAddress: [address.additionalDetails, address.street, address.city, address.state].filter(Boolean).map(String).join(", "),
+            city: address.city ? String(address.city) : "",
+            state: address.state ? String(address.state) : "",
+            area: address.additionalDetails ? String(address.additionalDetails) : "",
+            label: address.label ? String(address.label) : "Home"
+          }
+          localStorage.setItem("userLocation", JSON.stringify(locData))
+          window.dispatchEvent(new CustomEvent("userLocationUpdated", { detail: locData }))
+        }
+      } catch (e) {
+        console.warn("Failed to persist location on saved address selection:", e)
+      }
       toast.success("Address selected")
       handleBack()
     }
@@ -781,14 +807,19 @@ export default function AddressSelectorPage() {
           </div>
 
           <div className="space-y-4">
-            {addresses.length === 0 ? (
+            {(!Array.isArray(addresses) || addresses.filter(a => a && typeof a === "object").length === 0) ? (
               <div className="text-center py-10 opacity-50">
                  <MapPin className="h-12 w-12 mx-auto mb-2 text-gray-400" />
                  <p>No addresses saved yet</p>
               </div>
             ) : (
-              addresses.map((addr, idx) => {
+              addresses.filter(a => a && typeof a === "object").map((addr, idx) => {
                 const Icon = getAddressIcon(addr)
+                const labelText = typeof addr.label === "string" && addr.label.trim() ? addr.label : "Address"
+                const detailsText = [addr.additionalDetails, addr.street, addr.city, addr.state]
+                  .filter(Boolean)
+                  .map(String)
+                  .join(", ")
                 return (
                   <button
                     key={getAddressId(addr) || idx}
@@ -799,16 +830,16 @@ export default function AddressSelectorPage() {
                       <Icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 dark:text-white capitalize">{addr.label || "Address"}</p>
+                      <p className="font-bold text-gray-900 dark:text-white capitalize">{labelText}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">
-                        {[addr.additionalDetails, addr.street, addr.city, addr.state].filter(Boolean).join(", ")}
+                        {detailsText || "Saved Address"}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
-                       <button onClick={(e) => handleEditAddress(e, addr)} className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                       <button onClick={(e) => handleEditAddress(e, addr)} className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" type="button" aria-label="Edit address">
                           <Pencil className="h-4 w-4 text-gray-500" />
                        </button>
-                       <button onClick={(e) => handleDeleteAddress(e, addr)} className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors group-hover:bg-red-50 dark:group-hover:bg-red-900/10">
+                       <button onClick={(e) => handleDeleteAddress(e, addr)} className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors group-hover:bg-red-50 dark:group-hover:bg-red-900/10" type="button" aria-label="Delete address">
                           <Trash2 className="h-4 w-4 text-red-500" />
                        </button>
                     </div>

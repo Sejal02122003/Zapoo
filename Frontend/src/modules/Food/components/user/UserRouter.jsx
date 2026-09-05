@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import UserLayout from "./UserLayout"
-import { Suspense, lazy } from "react"
+import React, { Component, Suspense, lazy } from "react"
 import Loader from "@food/components/Loader"
 import ProtectedRoute from "@food/components/ProtectedRoute"
 
@@ -102,11 +102,60 @@ const ProtectedUser = ({ children }) => (
   </ProtectedRoute>
 )
 
+class UserErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("User portal error caught:", error, errorInfo)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-50 dark:bg-[#0c0c0c] flex items-center justify-center p-6 font-sans">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 max-w-md w-full text-center border border-slate-200 dark:border-slate-800">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">📍</span>
+            </div>
+            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-2">Something Went Wrong</h2>
+            <p className="text-slate-500 text-xs mb-6 leading-relaxed">
+              We encountered an unexpected error displaying this section. Please try heading back to the home page or reloading.
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false, error: null })
+                  window.location.href = "/food/user"
+                }}
+                className="bg-primary hover:opacity-90 text-white font-bold py-3 px-5 rounded-xl text-xs transition active:scale-95 shadow-md shadow-primary/20"
+              >
+                Go to Home
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 px-5 rounded-xl text-xs transition active:scale-95"
+              >
+                Reload App
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 export default function UserRouter() {
   return (
     <Suspense fallback={<Loader />}>
-      <Routes>
-        <Route element={<UserLayout />}>
+      <UserErrorBoundary>
+        <Routes>
+          <Route element={<UserLayout />}>
           {/* Home & Discovery */}
           <Route path="" element={<ProtectedUser><Home /></ProtectedUser>} />
           <Route path="user" element={<ProtectedUser><Home /></ProtectedUser>} />
@@ -143,7 +192,8 @@ export default function UserRouter() {
           <Route path="cart" element={<ProtectedUser><Cart /></ProtectedUser>} />
           <Route path="cart/checkout" element={<ProtectedUser><Checkout /></ProtectedUser>} />
           <Route path="cart/select-address" element={<ProtectedUser><SelectAddress /></ProtectedUser>} />
-          <Route path="address-selector" element={<ProtectedUser><AddressSelectorPage /></ProtectedUser>} />
+          <Route path="address-selector" element={<AddressSelectorPage />} />
+          <Route path="user/address-selector" element={<AddressSelectorPage />} />
 
           {/* Orders */}
           <Route path="orders" element={<ProtectedUser><Orders /></ProtectedUser>} />
@@ -202,8 +252,12 @@ export default function UserRouter() {
 
           {/* Complaints */}
           <Route path="complaints/submit/:orderId" element={<ProtectedUser><SubmitComplaint /></ProtectedUser>} />
+
+          {/* Fallback to user home so unmatched routes never show a blank screen */}
+          <Route path="*" element={<Navigate to="" replace />} />
         </Route>
       </Routes>
+      </UserErrorBoundary>
     </Suspense>
   )
 }

@@ -57,6 +57,8 @@ const RedirectToFood = () => {
     newPath = path.replace('/restaurant', '/food/restaurant');
   } else if (path.startsWith('/delivery')) {
     newPath = path.replace('/delivery', '/food/delivery');
+  } else if (path.startsWith('/user')) {
+    newPath = path.replace('/user', '/food/user');
   }
   return <Navigate to={`${newPath}${location.search}`} replace />;
 };
@@ -185,7 +187,8 @@ const RootRouteHandler = () => {
 
   // If in user mobile app shell, PWA, or authenticated user -> directly open User Food App
   if (isUserAppOrShell()) {
-    return <FoodAppWrapper />;
+    const search = typeof window !== 'undefined' ? window.location.search : '';
+    return <Navigate to={`/food/user${search}`} replace />;
   }
 
   // When searching or visiting zapoo.co.in in regular web browser -> show Master Landing Page
@@ -230,6 +233,7 @@ const AppRoutes = () => {
       {/* Direct Module Routing Shortcuts */}
       <Route path="/restaurant/*" element={<RedirectToFood />} />
       <Route path="/delivery/*" element={<RedirectToFood />} />
+      <Route path="/user/*" element={<RedirectToFood />} />
 
       {/* Food Module - Handle both /food and root / for the user app */}
       <Route path="/food/*" element={<FoodAppWrapper />} />
