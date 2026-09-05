@@ -516,6 +516,10 @@ export const adminAPI = {
     adminClient.get("/food/admin/orders", { params: { limit: 50, page: 1, ...params } }),
   getOrderById: (orderId) =>
     adminClient.get(`/food/admin/orders/${String(orderId)}`),
+  updateOrderStatus: (orderId, body = {}) =>
+    adminClient.patch(`/food/admin/orders/${String(orderId)}/status`, body ?? {}),
+  completeTakeawayOrder: (orderId, note = "Completed by admin") =>
+    adminClient.patch(`/food/admin/orders/${String(orderId)}/status`, { orderStatus: "completed", note }),
   acceptOrder: (orderId) =>
     adminClient.patch(`/food/admin/orders/${String(orderId)}/status`, { orderStatus: "confirmed", note: "Accepted by admin" }),
   rejectOrder: (orderId, reason = "") =>
