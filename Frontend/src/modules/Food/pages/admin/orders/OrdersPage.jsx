@@ -418,7 +418,14 @@ export default function OrdersPage({ statusKey = "all" }) {
         ? (platformFee + commAmount)
         : Number(order.platformProfit != null ? order.platformProfit : (platformFee + commAmount - riderPay))
       const taxAmount = Number(pricing.tax || 0)
-      const discountAmount = Number(pricing.discount || 0)
+      const itemDiscountAmount = Number(pricing.itemDiscount || 0)
+      const couponDiscountAmount = Number(
+        order.pricing?.couponDiscount !== undefined
+          ? order.pricing.couponDiscount
+          : (order.couponDiscount !== undefined ? order.couponDiscount : (pricing.couponDiscount || 0))
+      )
+      const restaurantCouponDiscountAmount = Number(order.pricing?.restaurantCouponDiscount || pricing.restaurantCouponDiscount || 0)
+      const discountAmount = Number(pricing.discount !== undefined ? pricing.discount : (itemDiscountAmount + couponDiscountAmount + restaurantCouponDiscountAmount))
       const computedTotal = subtotal + deliveryFee + platformFee + taxAmount - discountAmount
       const totalAmount = Number(
         pricing.total != null ? pricing.total : computedTotal
@@ -537,14 +544,15 @@ export default function OrdersPage({ statusKey = "all" }) {
         items,
         subtotal,
         totalItemAmount: subtotal,
-        couponDiscount: discountAmount,
-        itemDiscount: 0,
+        couponDiscount: couponDiscountAmount,
+        restaurantCouponDiscount: restaurantCouponDiscountAmount,
+        itemDiscount: itemDiscountAmount,
         deliveryCharge: deliveryFee,
         riderPay,
         vatTax: taxAmount,
         platformFee,
         restaurantCommission: commAmount,
-        cashbackAmount: Number(order.pricing?.cashbackAmount || 0),
+        cashbackAmount: Number(order.pricing?.cashbackAmount || order.cashbackAmount || 0),
         platformNetProfit,
         totalAmount,
         paymentType,

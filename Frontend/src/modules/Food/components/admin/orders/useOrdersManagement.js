@@ -331,10 +331,11 @@ export function useOrdersManagement(orders, statusKey, title) {
         order.pricing?.tax
       )
       const discountAmount = toNumber(
-        order.couponDiscount ??
-        order.itemDiscount ??
-        order.discountAmount ??
-        order.pricing?.discount
+        order.couponDiscount !== undefined
+          ? order.couponDiscount
+          : (order.pricing?.couponDiscount !== undefined
+            ? order.pricing.couponDiscount
+            : (order.itemDiscount ?? order.discountAmount ?? order.pricing?.discount))
       )
       const computedTotal = subtotal + deliveryFee + taxAmount - discountAmount
       const totalAmount = toNumber(

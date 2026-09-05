@@ -3185,21 +3185,30 @@ export default function Cart() {
                       </div>
                     )}
                     {pricing?.appliedCoupon?.rewardType === 'CASHBACK' && pricing?.appliedCoupon?.amount > 0 && (
-                      <div className="flex justify-between text-sm text-green-600 font-medium">
-                        <span>Wallet Cashback ({pricing.appliedCoupon.code})</span>
-                        <span>-{RUPEE_SYMBOL}{pricing.appliedCoupon.amount.toFixed(2)}</span>
+                      <div className="flex justify-between items-center text-sm text-purple-700 dark:text-purple-300 font-medium bg-purple-50/70 dark:bg-purple-900/20 px-2.5 py-1.5 rounded-lg border border-purple-200/50 dark:border-purple-800/40">
+                        <div className="flex flex-col">
+                          <span>Wallet Cashback ({pricing.appliedCoupon.code})</span>
+                          <span className="text-[10px] text-purple-500">Credited to wallet after delivery</span>
+                        </div>
+                        <span>+{RUPEE_SYMBOL}{pricing.appliedCoupon.amount.toFixed(2)}</span>
                       </div>
                     )}
                     {pricing?.appliedCoupon?.rewardType === 'BOTH' && pricing?.appliedCoupon?.amount > 0 && (
-                      <div className="flex justify-between text-sm text-green-600 font-medium">
-                        <span>Wallet Cashback ({pricing.appliedCoupon.code})</span>
-                        <span>-{RUPEE_SYMBOL}{pricing.appliedCoupon.amount.toFixed(2)}</span>
+                      <div className="flex justify-between items-center text-sm text-purple-700 dark:text-purple-300 font-medium bg-purple-50/70 dark:bg-purple-900/20 px-2.5 py-1.5 rounded-lg border border-purple-200/50 dark:border-purple-800/40">
+                        <div className="flex flex-col">
+                          <span>Wallet Cashback ({pricing.appliedCoupon.code})</span>
+                          <span className="text-[10px] text-purple-500">Credited to wallet after delivery</span>
+                        </div>
+                        <span>+{RUPEE_SYMBOL}{pricing.appliedCoupon.amount.toFixed(2)}</span>
                       </div>
                     )}
                     {((pricing?.ruleCashback?.amount || 0) > 0) && (
-                      <div className="flex justify-between text-sm text-green-600 font-medium">
-                        <span>Order Cashback ({pricing.ruleCashback.name || 'Offer'})</span>
-                        <span>-{RUPEE_SYMBOL}{Number(pricing.ruleCashback.amount).toFixed(2)}</span>
+                      <div className="flex justify-between items-center text-sm text-purple-700 dark:text-purple-300 font-medium bg-purple-50/70 dark:bg-purple-900/20 px-2.5 py-1.5 rounded-lg border border-purple-200/50 dark:border-purple-800/40">
+                        <div className="flex flex-col">
+                          <span>Cashback Reward ({pricing.ruleCashback.name || 'Offer'})</span>
+                          <span className="text-[10px] text-purple-500">Credited to wallet on completion</span>
+                        </div>
+                        <span>+{RUPEE_SYMBOL}{Number(pricing.ruleCashback.amount).toFixed(2)}</span>
                       </div>
                     )}
                     {useWalletBalance && (selectedPaymentMethod === 'razorpay' || selectedPaymentMethod === 'cash') && walletBalance > 0 && (
