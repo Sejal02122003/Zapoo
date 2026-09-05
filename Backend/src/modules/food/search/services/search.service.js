@@ -1,4 +1,5 @@
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
+import { FoodOutlet } from '../../owner/models/outlet.model.js';
 import { FoodItem } from '../../admin/models/food.model.js';
 import { FoodCategory } from '../../admin/models/category.model.js';
 import mongoose from 'mongoose';
@@ -33,7 +34,15 @@ export const searchUnified = async (query = {}, options = {}) => {
     console.log(`[Search-Service] Querying with term: "${term}", categoryId: "${categoryId}", zoneId: "${zoneId}"`);
 
     if (zoneId && mongoose.Types.ObjectId.isValid(zoneId)) {
-        restaurantFilter.zoneId = new mongoose.Types.ObjectId(zoneId);
+        const zoneObjId = new mongoose.Types.ObjectId(zoneId);
+        const outletRestaurantIds = await FoodOutlet.distinct('restaurantId', {
+            zoneId: zoneObjId,
+            status: 'active'
+        });
+        restaurantFilter.$or = [
+            { zoneId: zoneObjId },
+            ...(outletRestaurantIds.length > 0 ? [{ _id: { $in: outletRestaurantIds } }] : [])
+        ];
     }
 
     if (isVeg === 'true') {

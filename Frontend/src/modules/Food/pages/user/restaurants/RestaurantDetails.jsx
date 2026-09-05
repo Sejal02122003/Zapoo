@@ -125,6 +125,7 @@ function RestaurantDetailsContent() {
   const [selectedVariantId, setSelectedVariantId] = useState("")
   const [showFilterSheet, setShowFilterSheet] = useState(false)
   const [showLocationSheet, setShowLocationSheet] = useState(false)
+  const [selectedOutlet, setSelectedOutlet] = useState(null)
   const [showScheduleSheet, setShowScheduleSheet] = useState(false)
   const [showOffersSheet, setShowOffersSheet] = useState(false)
   const [selectedDate, setSelectedDate] = useState(null)
@@ -207,6 +208,14 @@ function RestaurantDetailsContent() {
   useEffect(() => {
     setSelectedMenuCategory("all")
   }, [slug])
+
+  // Initialize selectedOutlet when restaurant outlets load
+  useEffect(() => {
+    if (restaurant?.outlets && Array.isArray(restaurant.outlets) && restaurant.outlets.length > 0) {
+      const nearest = restaurant.outlets.find((o) => o.isNearest) || restaurant.outlets[0]
+      setSelectedOutlet(nearest)
+    }
+  }, [restaurant?.outlets])
 
   // Fetch restaurant data from API
   useEffect(() => {
@@ -2592,16 +2601,24 @@ function RestaurantDetailsContent() {
             </div>
 
             <div className="flex items-center justify-between gap-3">
-              <div
-                className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300 min-w-0"
+              <button
+                type="button"
+                onClick={() => setShowLocationSheet(true)}
+                className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 min-w-0 text-left hover:text-red-600 dark:hover:text-red-400 transition-colors group cursor-pointer"
+                title="View all outlets"
               >
-                <MapPin className="h-4 w-4" />
-                <span className="truncate">
-                  {restaurant?.distance || "1.2 km"} | {restaurant?.location || "Location"}
+                <MapPin className="h-4 w-4 text-red-600 dark:text-red-500 shrink-0" />
+                <span className="truncate group-hover:underline underline-offset-2">
+                  {selectedOutlet ? (selectedOutlet.distance || restaurant?.distance || "1.2 km") : (restaurant?.distance || "1.2 km")} | {selectedOutlet ? (selectedOutlet.location || selectedOutlet.name || restaurant?.location || "Location") : (restaurant?.location || "Location")}
                 </span>
-              </div>
+                {Array.isArray(restaurant?.outlets) && restaurant.outlets.length > 0 && (
+                  <span className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800 flex items-center gap-0.5">
+                    {restaurant.outlets.length} {restaurant.outlets.length === 1 ? 'Outlet' : 'Outlets'} <ChevronDown className="h-3 w-3 inline" />
+                  </span>
+                )}
+              </button>
               <span
-                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white ${
+                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white shrink-0 ${
                   isRestaurantOffline ? "bg-rose-600" : "bg-emerald-600"
                 }`}
               >
@@ -2610,8 +2627,8 @@ function RestaurantDetailsContent() {
             </div>
 
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <Clock className="h-4 w-4" />
-              <span>{restaurant?.deliveryTime || "25-30 mins"}</span>
+              <Clock className="h-4 w-4 text-gray-500" />
+              <span>{selectedOutlet?.deliveryTime || restaurant?.deliveryTime || "25-30 mins"}</span>
             </div>
             </div>
           </div>
@@ -3324,74 +3341,115 @@ function RestaurantDetailsContent() {
                   style={{ willChange: "transform" }}
                 >
                   {/* Header */}
-                  <div className="px-4 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">All delivery outlets for</p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-red-600 dark:bg-red-500 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-base">{(restaurant.name || "R").charAt(0).toUpperCase()}</span>
+                  <div className="px-4 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">All delivery outlets for</p>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-red-600 dark:bg-red-500 rounded-lg flex items-center justify-center shrink-0">
+                          <span className="text-white font-bold text-base">{(restaurant?.name || "R").charAt(0).toUpperCase()}</span>
+                        </div>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{restaurant?.name || "Unknown Restaurant"}</h2>
                       </div>
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">{restaurant?.name || "Unknown Restaurant"}</h2>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowLocationSheet(false)}
+                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
+                      title="Close"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
 
                   {/* Outlets List */}
                   <div className="flex-1 overflow-y-auto px-4 py-3">
                     {restaurant?.outlets && Array.isArray(restaurant.outlets) && restaurant.outlets.length > 0 ? (
-                      <div className="space-y-2">
-                        {restaurant.outlets.map((outlet) => (
-                          <div
-                            key={outlet?.id || Math.random()}
-                            className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a]"
-                          >
-                            {outlet?.isNearest && (
-                              <div className="flex items-center gap-1.5 mb-2 px-2 py-1 bg-[#F9F9FB] dark:bg-primary/20 rounded-md">
-                                <Zap className="h-3.5 w-3.5 text-primary dark:text-primary fill-primary dark:fill-primary" />
-                                <span className="text-xs font-semibold text-primary dark:text-primary">
-                                  Nearest available outlet
-                                </span>
-                              </div>
-                            )}
-                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                              {outlet?.location || "Location"}
-                            </h3>
-                            <div className="flex items-center justify-between gap-4">
-                              <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-3.5 w-3.5" />
-                                  <span>{outlet?.deliveryTime || "25-30 mins"}</span>
+                      <div className="space-y-2.5">
+                        {restaurant.outlets.map((outlet) => {
+                          const isSelected = selectedOutlet?.id === outlet?.id || (!selectedOutlet && outlet?.isNearest);
+                          return (
+                            <div
+                              key={outlet?.id || Math.random()}
+                              onClick={() => {
+                                setSelectedOutlet(outlet);
+                                setShowLocationSheet(false);
+                              }}
+                              className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+                                isSelected
+                                  ? "border-red-500 bg-red-50/60 dark:bg-red-950/25 ring-1 ring-red-500 shadow-sm"
+                                  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] hover:border-red-300 dark:hover:border-red-700/60"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {outlet?.isNearest && (
+                                    <div className="flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/40 rounded-md">
+                                      <Zap className="h-3.5 w-3.5 text-red-600 dark:text-red-400 fill-red-600 dark:fill-red-400" />
+                                      <span className="text-[11px] font-bold text-red-700 dark:text-red-300">
+                                        Nearest outlet
+                                      </span>
+                                    </div>
+                                  )}
+                                  {outlet?.isMain && (
+                                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                                      Main Branch
+                                    </span>
+                                  )}
+                                  {outlet?.outletCode && outlet?.outletCode !== "HQ-MAIN" && (
+                                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500">
+                                      {outlet.outletCode}
+                                    </span>
+                                  )}
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-3.5 w-3.5" />
-                                  <span>{outlet?.distance || "1.2 km"}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-col items-end gap-0.5">
-                                <div className="flex items-center gap-1">
-                                  <Star className="h-3.5 w-3.5 text-[#8CC63F] dark:text-green-500 fill-[#8CC63F] dark:fill-green-500" />
-                                  <span className="text-xs font-medium text-gray-900 dark:text-white">
-                                    {(() => {
-                                      const outletRating = Number(outlet?.rating)
-                                      return Number.isFinite(outletRating) && outletRating > 0
-                                        ? outletRating.toFixed(1)
-                                        : "New"
-                                    })()}
+                                {isSelected ? (
+                                  <span className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1 shrink-0">
+                                    <Check className="h-3.5 w-3.5" /> Delivering here
                                   </span>
+                                ) : (
+                                  <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+                                    Click to select
+                                  </span>
+                                )}
+                              </div>
+                              <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">
+                                {outlet?.name && outlet.name !== restaurant?.name ? outlet.name : (outlet?.location || "Location")}
+                              </h3>
+                              {outlet?.address && outlet.address !== outlet.location && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mb-2">
+                                  {outlet.address}
+                                </p>
+                              )}
+                              <div className="flex items-center justify-between gap-4 pt-1.5 border-t border-gray-100 dark:border-gray-800/80">
+                                <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3.5 w-3.5 text-gray-500" />
+                                    <span>{outlet?.deliveryTime || "25-30 mins"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-3.5 w-3.5 text-gray-500" />
+                                    <span>{outlet?.distance || "1.2 km"}</span>
+                                  </div>
                                 </div>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  {(() => {
-                                    const outletReviews = Number(outlet?.reviews)
-                                    if (!Number.isFinite(outletReviews) || outletReviews <= 0) {
-                                      return "New"
-                                    }
-                                    return outletReviews >= 1000
-                                      ? `By ${(outletReviews / 1000).toFixed(1)}K+`
-                                      : `By ${outletReviews}+`
-                                  })()}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${outlet?.isOpen !== false && outlet?.isAcceptingOrders !== false ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"}`}>
+                                    {outlet?.isOpen !== false && outlet?.isAcceptingOrders !== false ? "Open" : "Closed"}
+                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <Star className="h-3.5 w-3.5 text-[#8CC63F] dark:text-green-500 fill-[#8CC63F] dark:fill-green-500" />
+                                    <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                                      {(() => {
+                                        const outletRating = Number(outlet?.rating);
+                                        return Number.isFinite(outletRating) && outletRating > 0
+                                          ? outletRating.toFixed(1)
+                                          : "New";
+                                      })()}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-center py-8 text-gray-500 dark:text-gray-400">
