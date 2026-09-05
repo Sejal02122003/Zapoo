@@ -676,7 +676,9 @@ export async function calculateOrderPricing(userId, dto) {
   const couponCashbackAmount = (appliedCashbackCoupon?.amount || (appliedCoupon?.rewardType === 'CASHBACK' || appliedCoupon?.rewardType === 'BOTH' ? appliedCoupon.amount : 0) || 0);
   const totalCashbackAmount = couponCashbackAmount + (ruleCashback?.amount || 0);
 
-  const total = Math.round(Math.max(0, totalBeforeDiscount - totalDiscount - totalCashbackAmount));
+  // Total payable by user: only actual discounts reduce the order total.
+  // Cashback is a reward credited to the customer's wallet after order completion/delivery, NOT an upfront bill deduction.
+  const total = Math.round(Math.max(0, totalBeforeDiscount - totalDiscount));
 
   const pgFeeRate = feeSettings.applyGlobalTaxes !== false ? (Number(feeSettings.globalPaymentGatewayFee) || 0) : 0;
   const pgBaseAmount = Math.max(0, roundedSubtotal + roundedPackagingFee - roundedRestaurantCouponDiscount - couponDiscount);
@@ -701,10 +703,10 @@ export async function calculateOrderPricing(userId, dto) {
       freeDeliveryUpTo: Number.isFinite(freeUpTo) ? freeUpTo : undefined,
       platformFee: roundedPlatformFee,
       paymentGatewayFee,
-      discount: totalDiscount + totalCashbackAmount,
+      discount: totalDiscount,
       itemDiscount: itemDiscountTotal > 0 ? Math.round(itemDiscountTotal) : undefined,
-      couponDiscount: couponDiscount > 0 ? couponDiscount : undefined,
-      restaurantCouponDiscount: roundedRestaurantCouponDiscount > 0 ? roundedRestaurantCouponDiscount : undefined,
+      couponDiscount: couponDiscount > 0 ? couponDiscount : 0,
+      restaurantCouponDiscount: roundedRestaurantCouponDiscount > 0 ? roundedRestaurantCouponDiscount : 0,
       deductGstFromRestaurant: feeSettings.deductGstFromRestaurant !== false,
       total,
       currency: "INR",
@@ -716,7 +718,12 @@ export async function calculateOrderPricing(userId, dto) {
       appliedCoupon,
       appliedRestaurantCoupon,
       ruleCashback,
-      cashbackAmount: totalCashbackAmount > 0 ? totalCashbackAmount : undefined,
+      cashbackAmount: totalCashbackAmount > 0 ? totalCashbackAmount : 0,
+      cashbackBreakdown: (couponCashbackAmount > 0 || ruleCashback) ? {
+        couponCashback: couponCashbackAmount,
+        ruleCashback: ruleCashback?.amount || 0,
+        ruleName: ruleCashback?.name || null
+      } : undefined,
       couponError,
     },
   };

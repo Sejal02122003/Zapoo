@@ -582,9 +582,12 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                 </div>
               )}
               {order.cashbackAmount !== undefined && order.cashbackAmount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Cashback Given to User (Platform Expense)</span>
-                  <span className="font-medium text-rose-600">-₹{order.cashbackAmount.toFixed(2)}</span>
+                <div className="flex justify-between items-center text-sm bg-purple-50/70 dark:bg-purple-900/20 px-2.5 py-1.5 rounded-lg border border-purple-200/50 dark:border-purple-800/40 my-1">
+                  <div className="flex flex-col">
+                    <span className="text-purple-700 dark:text-purple-300 font-medium text-xs">User Cashback Reward</span>
+                    <span className="text-[10px] text-purple-600/80 dark:text-purple-400">Credited to user wallet on completion</span>
+                  </div>
+                  <span className="font-bold text-purple-700 dark:text-purple-300">₹{order.cashbackAmount.toFixed(2)}</span>
                 </div>
               )}
               {order.platformFee !== undefined && (

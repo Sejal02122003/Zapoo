@@ -164,7 +164,9 @@ export function OrderDetailsContent() {
           const deliveryFee = firstNumber(pricing.deliveryFee, order.deliveryFee) ?? 0
           const platformFee = firstNumber(pricing.platformFee, order.platformFee) ?? 0
           const discount = firstNumber(pricing.discount, order.discount) ?? 0
-          const couponDiscount = firstNumber(pricing.restaurantCouponDiscount, pricing.couponDiscount, order.couponDiscount, pricing.discount, order.discount) ?? 0
+          const restaurantCouponDiscount = Number(pricing.restaurantCouponDiscount || order.restaurantCouponDiscount || 0)
+          const platformCouponDiscount = Number(pricing.couponDiscount || order.couponDiscount || 0)
+          const couponDiscount = restaurantCouponDiscount > 0 ? restaurantCouponDiscount : (pricing.couponCode ? platformCouponDiscount : 0)
           const referralDiscount = firstNumber(pricing.referralDiscount, order.referralDiscount) ?? 0
 
           const total =
@@ -186,7 +188,7 @@ export function OrderDetailsContent() {
             )
           const paidAmount = firstNumber(order.payment?.amountDue, order.payment?.amount, total) ?? total
 
-           const deliveryCostToAdmin = firstNumber(order.riderEarning, 30);
+          const deliveryCostToAdmin = firstNumber(order.riderEarning, 30);
           const deliveryGstToAdmin = deliveryCostToAdmin * 0.18;
           const restaurantCommission = Number(pricing.restaurantCommission) || 0;
           const gstOnItem = Number(pricing.gstOnItem) || 0;
@@ -194,11 +196,11 @@ export function OrderDetailsContent() {
           const paymentGatewayFee = Number(pricing.paymentGatewayFee) || 0;
           const tcs = Number(pricing.tcs) || 0;
 
-
           const orderType = String(order.orderType || 'delivery').toLowerCase();
           const deductGst = orderType === 'takeaway' ? true : (pricing.deductGstFromRestaurant !== false);
-          const totalAdminReceivable = Math.max(0, platformFee + restaurantCommission + Math.max(0, deliveryFee - deliveryCostToAdmin) - couponDiscount);
-          const restaurantGets = Math.max(0, itemSubtotal + packagingFee - restaurantCommission - (deductGst ? gstOnCommission : 0) - tcs - couponDiscount);
+          const totalAdminReceivable = Math.max(0, platformFee + restaurantCommission + Math.max(0, deliveryFee - deliveryCostToAdmin) - platformCouponDiscount);
+          const calculatedRestaurantGets = Math.max(0, itemSubtotal + packagingFee - restaurantCommission - (deductGst ? gstOnCommission : 0) - tcs - restaurantCouponDiscount);
+          const restaurantGets = firstNumber(order.amounts?.restaurantShare, order.restaurantShare, calculatedRestaurantGets) ?? calculatedRestaurantGets;
           const deliveryDistance = firstNumber(order.deliveryDistance, order.customer?.distance, 0);
 
           const addressParts = [
@@ -964,13 +966,13 @@ export function OrderDetailsContent() {
         </div>        {/* Detailed Payout Summary Section */}
         {(() => {
           const orderValue = Number(orderData.billing.itemSubtotal) || 0;
-          const amountYouGet = Number(orderData.billing.restaurantGets) || 0;
           const packagingFee = Number(orderData.billing.packagingFee) || 0;
-          const couponDiscount = Number(orderData.billing.couponDiscount || orderData.billing.discount || 0);
+          const restaurantCouponDiscount = Number(orderData.billing.restaurantCouponDiscount || orderData.pricing?.restaurantCouponDiscount || 0);
+          const platformCouponDiscount = Number(orderData.billing.couponDiscount || orderData.pricing?.couponDiscount || 0);
+          const couponDiscount = restaurantCouponDiscount > 0 ? restaurantCouponDiscount : (orderData.pricing?.couponCode ? platformCouponDiscount : 0);
 
-           const orderType = String(orderData.orderType || 'delivery').toLowerCase();
+          const orderType = String(orderData.orderType || 'delivery').toLowerCase();
           const deductGst = orderType === 'takeaway' ? true : (orderData.billing.deductGstFromRestaurant !== false);
-          const totalCustomerPaid = orderValue + packagingFee - couponDiscount;
 
           const commissionValue = Number(orderData.billing.restaurantCommission) || 0;
           const pgFee = 0; // Removed from calculation
@@ -980,6 +982,14 @@ export function OrderDetailsContent() {
           const gstDeduction = 0;
           const tds = Number(orderData.billing.tcs) || 0;
           const totalTaxes = gstDeduction + tds;
+
+          const backendRestaurantShare = Number(orderData.amounts?.restaurantShare ?? orderData.restaurantShare);
+          const calculatedAmountYouGet = Math.max(0, orderValue + packagingFee - totalFees - totalTaxes - restaurantCouponDiscount);
+          const amountYouGet = Number.isFinite(backendRestaurantShare) && backendRestaurantShare > 0
+            ? backendRestaurantShare
+            : (Number(orderData.billing.restaurantGets) || calculatedAmountYouGet);
+
+          const totalCustomerPaid = orderValue + packagingFee - (orderData.pricing?.couponCode ? couponDiscount : 0);
 
           return (
             <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden mb-4">
