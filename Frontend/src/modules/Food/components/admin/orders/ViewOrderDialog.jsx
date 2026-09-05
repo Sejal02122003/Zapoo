@@ -39,14 +39,36 @@ const getPaymentStatusColor = (paymentStatus) => {
   return "text-slate-600"
 }
 
-export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignDelivery, onReassignDelivery, onEmergencyBroadcast, onOrderCancelled }) {
+export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignDelivery, onReassignDelivery, onEmergencyBroadcast, onOrderCancelled, onCompleteTakeaway }) {
   const [showCancelBox, setShowCancelBox] = useState(false)
   const [cancelReason, setCancelReason] = useState("")
   const [isCancelling, setIsCancelling] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
 
   if (!order) return null
 
-  const canBeCancelled = !['delivered', 'picked_up', 'cancelled_by_user', 'cancelled_by_restaurant', 'cancelled_by_admin', 'Delivered', 'Cancelled', 'Canceled'].includes(order.orderStatus || order.status)
+  const isTakeaway = order.orderType === 'takeaway' || order.deliveryType === 'Takeaway'
+  const canBeCancelled = !['delivered', 'completed', 'picked_up', 'cancelled_by_user', 'cancelled_by_restaurant', 'cancelled_by_admin', 'Delivered', 'Cancelled', 'Canceled'].includes(order.orderStatus || order.status)
+  const canCompleteTakeaway = isTakeaway && !['delivered', 'completed', 'Delivered', 'Cancelled', 'Canceled', 'Cancelled by Restaurant', 'Cancelled by User', 'Cancelled by Admin'].includes(order.orderStatus || order.status)
+
+  const handleAdminCompleteTakeaway = async () => {
+    try {
+      setIsCompleting(true)
+      const orderIdToUse = order._id || order.id || order.orderId
+      if (onCompleteTakeaway) {
+        await onCompleteTakeaway(order)
+      } else {
+        await adminAPI.completeTakeawayOrder(orderIdToUse)
+        toast.success("Takeaway order marked as completed & handed over!")
+        if (onOrderCancelled) onOrderCancelled(orderIdToUse)
+      }
+      onOpenChange(false)
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to complete takeaway order")
+    } finally {
+      setIsCompleting(false)
+    }
+  }
 
   const handleAdminCancelOrder = async () => {
     try {
@@ -206,6 +228,17 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onAssignD
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.orderStatus)}`}>
                       {order.orderStatus}
                     </span>
+                    {canCompleteTakeaway && (
+                      <button
+                        type="button"
+                        onClick={handleAdminCompleteTakeaway}
+                        disabled={isCompleting}
+                        className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-full border border-emerald-200 transition-colors flex items-center gap-1 shadow-sm disabled:opacity-50"
+                      >
+                        {isCompleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                        <span>Handover & Complete</span>
+                      </button>
+                    )}
                     {canBeCancelled && !showCancelBox && (
                       <button
                         type="button"

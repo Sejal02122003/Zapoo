@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { Eye, Printer, ArrowUpDown, Loader2, Check, X, Trash2, Truck, Radio, Ban } from "lucide-react"
+import { Eye, Printer, ArrowUpDown, Loader2, Check, X, Trash2, Truck, Radio, Ban, CheckCircle } from "lucide-react"
 
 const getStatusColor = (orderStatus) => {
   const colors = {
@@ -46,6 +46,7 @@ export default function OrdersTable({
   onRejectOrder,
   onAssignDelivery,
   onEmergencyBroadcast,
+  onCompleteTakeaway,
   actionLoadingOrderId,
   deletingOrderId }) {
   const [currentPage, setCurrentPage] = useState(1)
@@ -414,14 +415,14 @@ export default function OrdersTable({
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.orderStatus)}`}>
-                          {order.deliveryType === 'Takeaway' ? (
-                            order.orderStatus === 'Delivered' ? 'Delivered' : 
-                            (order.orderStatus === 'Ready' || order.orderStatus === 'Food On The Way') ? 'Pending Pickup' :
+                          {(order.deliveryType === 'Takeaway' || order.orderType === 'takeaway') ? (
+                            (order.orderStatus === 'Delivered' || order.orderStatus === 'completed' || order.orderStatus === 'delivered') ? 'Delivered' : 
+                            (order.orderStatus === 'Ready for Pickup' || order.orderStatus === 'Ready' || order.orderStatus === 'Food On The Way') ? 'Ready for Pickup' :
                             order.orderStatus === 'Processing' ? 'Preparing' :
                             order.orderStatus
                           ) : order.orderStatus}
                         </span>
-                        <span className="text-xs text-slate-500">{order.deliveryType}</span>
+                        <span className="text-xs text-slate-500">{order.deliveryType || (order.orderType === 'takeaway' ? 'Takeaway' : '')}</span>
                       </div>
                       {order.cancellationReason && (
                         <div className="text-xs text-red-600 mt-1">
@@ -439,6 +440,24 @@ export default function OrdersTable({
                 {cols.actions && (
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-2">
+                      {/* Handover & Complete for Takeaway Orders */}
+                      {(order.deliveryType === 'Takeaway' || order.orderType === 'takeaway') && 
+                       !['Delivered', 'completed', 'delivered', 'Cancelled', 'Canceled', 'Cancelled by Restaurant', 'Cancelled by User', 'Cancelled by Admin'].includes(order.orderStatus) && 
+                       onCompleteTakeaway && (
+                        <button
+                          onClick={() => onCompleteTakeaway(order)}
+                          disabled={actionLoadingOrderId === (order.id || order.orderId)}
+                          className="px-2.5 py-1.5 rounded text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center gap-1 shadow-sm"
+                          title="Handover & Complete Takeaway Order"
+                        >
+                          {actionLoadingOrderId === (order.id || order.orderId) ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-3.5 h-3.5" />
+                          )}
+                          <span>Handover</span>
+                        </button>
+                      )}
                       {order.orderStatus === "Pending" && onAcceptOrder && (
                         <button
                           onClick={() => onAcceptOrder(order)}

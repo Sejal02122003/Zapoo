@@ -1197,7 +1197,7 @@ export function OrderDetailsContent() {
             </button>
           )}
 
-          {orderData.orderType === "takeaway" && orderData.status === "READY" && (
+          {orderData.orderType === "takeaway" && ["READY", "READY_FOR_PICKUP"].includes(orderData.status) && (
             <button
               onClick={handleHandoverComplete}
               disabled={isUpdatingStatus}

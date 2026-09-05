@@ -2347,6 +2347,14 @@ export async function updateOrderStatusAdmin(orderId, adminId, orderStatus, note
   
   // Allow admin to move it backward or forward, but let's at least log it
   order.orderStatus = orderStatus;
+
+  if ((orderStatus === 'completed' || orderStatus === 'delivered') && order.orderType === 'takeaway') {
+    order.deliveryState = order.deliveryState || {};
+    order.deliveryState.currentPhase = 'completed';
+    order.deliveryState.completedAt = new Date();
+    order.pickupTime = new Date();
+  }
+
   pushStatusHistory(order, {
     byRole: "ADMIN",
     byId: adminId,

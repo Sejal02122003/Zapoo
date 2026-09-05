@@ -467,7 +467,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         paymentStatus = "Failed"
       } else if (s === "cancelled" || paymentStatus === "Cancelled" || paymentStatus === "Canceled") {
         paymentStatus = "Cancelled"
-      } else if (backendStatus === "delivered" && (method === "cash" || method === "cod" || method === "cash on delivery")) {
+      } else if ((backendStatus === "delivered" || backendStatus === "completed") && (method === "cash" || method === "cod" || method === "cash on delivery")) {
         paymentStatus = "Paid"
       } else {
         paymentStatus = "Pending"
@@ -489,7 +489,9 @@ export default function OrdersPage({ statusKey = "all" }) {
         displayStatus = "Pending"
       } else if (backendStatus === "confirmed" || backendStatus === "accepted") {
         displayStatus = "Accepted"
-      } else if (backendStatus === "preparing" || backendStatus === "ready_for_pickup" || backendStatus === "processing" || backendStatus === "processed" || backendStatus === "ready") {
+      } else if (backendStatus === "ready_for_pickup" || backendStatus === "ready") {
+        displayStatus = isTakeaway ? "Ready for Pickup" : "Food On The Way"
+      } else if (backendStatus === "preparing" || backendStatus === "processing" || backendStatus === "processed") {
         displayStatus = "Processing"
       } else if (backendStatus === "picked_up" || backendStatus === "reached_pickup" || backendStatus === "en_route_to_delivery" || backendStatus === "out_for_delivery" || backendStatus === "at_drop" || backendStatus === "reached_drop") {
         displayStatus = "Food On The Way"
@@ -830,6 +832,30 @@ export default function OrdersPage({ statusKey = "all" }) {
     }
   }
 
+  const handleCompleteTakeaway = async (order) => {
+    const orderIdToUse = order.id || order._id || order.orderId
+    if (!orderIdToUse) {
+      toast.error("Order ID not found")
+      return
+    }
+
+    try {
+      setProcessingActionOrderId(order.id || order.orderId)
+      const response = await adminAPI.completeTakeawayOrder(orderIdToUse, "Takeaway completed and food handed over")
+      if (response.data?.success) {
+        toast.success(response.data?.message || `Takeaway order ${order.orderId || orderIdToUse} marked as completed & handed over!`)
+        await fetchOrders({ silent: true, withRingCheck: false })
+      } else {
+        toast.error(response.data?.message || "Failed to complete takeaway order")
+      }
+    } catch (error) {
+      debugError("Error completing takeaway order:", error)
+      toast.error(error.response?.data?.message || "Failed to complete takeaway order")
+    } finally {
+      setProcessingActionOrderId(null)
+    }
+  }
+
   const handleCancelOrder = async (order) => {
     const orderIdToUse = order.id || order._id || order.orderId
     if (!orderIdToUse) {
@@ -1062,6 +1088,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         onReassignDelivery={handleReassignDelivery}
         onEmergencyBroadcast={handleEmergencyBroadcast}
         onOrderCancelled={fetchOrders}
+        onCompleteTakeaway={handleCompleteTakeaway}
       />
       <RefundModal
         isOpen={refundModalOpen}
@@ -1142,6 +1169,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         onRejectOrder={handleRejectOrder}
         onAssignDelivery={handleAssignDelivery}
         onEmergencyBroadcast={handleEmergencyBroadcast}
+        onCompleteTakeaway={handleCompleteTakeaway}
         actionLoadingOrderId={processingActionOrderId}
         deletingOrderId={deletingOrderId}
       />
