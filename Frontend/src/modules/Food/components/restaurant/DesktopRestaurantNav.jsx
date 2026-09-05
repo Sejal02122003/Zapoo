@@ -11,7 +11,8 @@ import {
   Utensils, 
   FileText, 
   LogOut, 
-  CalendarCheck
+  CalendarCheck,
+  Ticket
 } from "lucide-react"
 import WalletIcon from "@food/components/ui/WalletIcon"
 import { restaurantAPI } from "@food/api"
@@ -308,6 +309,18 @@ export default function DesktopRestaurantNav() {
             >
               <Utensils className="w-4 h-4" />
               <span>Menu & Stock</span>
+            </Link>
+
+            <Link
+              to="/food/restaurant/owner/offers"
+              className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-colors py-2 border-b-2 whitespace-nowrap ${
+                isActive("/food/restaurant/owner/offers") || isActive("/food/restaurant/offers") || isActive("/food/restaurant/promocodes")
+                  ? "text-primary border-primary"
+                  : "text-slate-600 dark:text-slate-400 border-transparent hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <Ticket className="w-4 h-4" />
+              <span>Offers & Promos</span>
             </Link>
 
             <Link

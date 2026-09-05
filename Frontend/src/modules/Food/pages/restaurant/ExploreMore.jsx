@@ -763,8 +763,14 @@ export default function ExploreMore() {
     { id: 3, label: "Outlet timings", icon: Clock, route: "/food/restaurant/outlet-timings" },
     // { id: 4, label: "Dining Reservations", icon: Calendar, route: "/food/restaurant/reservations" },
     { id: 5, label: "Menu categories", icon: Settings, route: "/food/restaurant/menu-categories" },
-    { id: 6, label: "Promo Codes", icon: Ticket, route: "/food/restaurant/promocodes" },
+    { id: 6, label: "Offers & Promos", icon: Ticket, route: "/food/restaurant/owner/offers" },
     { id: 7, label: "Sponsored Ads", icon: Megaphone, route: "/food/restaurant/advertise" },
+  ]
+
+  const promotionsItems = [
+    { id: 1, label: "Offers & Promos", icon: Ticket, route: "/food/restaurant/owner/offers", badge: "HOT" },
+    { id: 2, label: "Sponsored Ads", icon: Megaphone, route: "/food/restaurant/advertise" },
+    { id: 3, label: "Challenges & Rewards", icon: Award, route: "/food/restaurant/challenges" },
   ]
 
   const settingsItems = [
@@ -793,6 +799,7 @@ export default function ExploreMore() {
   // All sections with their items
   const allSections = [
     { title: "Manage outlet", items: manageOutletItems, key: "manage-outlet" },
+    { title: "Offers & Marketing", items: promotionsItems, key: "promotions" },
     { title: "Settings", items: settingsItems, key: "settings" },
     { title: "Orders", items: ordersItems, key: "orders" },
     { title: "Help", items: helpItems, key: "help" },

@@ -66,6 +66,7 @@ const OwnerOrdersPage = lazy(() => import("@food/pages/restaurant/owner/OwnerOrd
 const OwnerInventoryPage = lazy(() => import("@food/pages/restaurant/owner/OwnerInventoryPage"))
 const OwnerFinancePage = lazy(() => import("@food/pages/restaurant/owner/OwnerFinancePage"))
 const OwnerAnalyticsPage = lazy(() => import("@food/pages/restaurant/owner/OwnerAnalyticsPage"))
+const OwnerOffersPage = lazy(() => import("@food/pages/restaurant/owner/OwnerOffersPage"))
 
 function RestaurantRootRedirector() {
   const user = getCurrentUser("restaurant")
@@ -174,8 +175,10 @@ export default function RestaurantRouter() {
             <Route path="owner/outlets" element={<OwnerOutletsPage />} />
             <Route path="owner/orders" element={<OwnerOrdersPage />} />
             <Route path="owner/inventory" element={<OwnerInventoryPage />} />
+            <Route path="owner/offers" element={<OwnerOffersPage />} />
             <Route path="owner/finance" element={<OwnerFinancePage />} />
             <Route path="owner/analytics" element={<OwnerAnalyticsPage />} />
+            <Route path="offers" element={<Navigate to="/food/restaurant/owner/offers" replace />} />
 
             <Route path="" element={<RestaurantRootRedirector />} />
             <Route path="orders/all" element={<AllOrdersPage />} />
@@ -208,7 +211,7 @@ export default function RestaurantRouter() {
             <Route path="finance-details" element={<FinanceDetailsPage />} />
             <Route path="phone" element={<PhoneNumbersPage />} />
             <Route path="download-report" element={<DownloadReport />} />
-            <Route path="promocodes" element={<Promocodes />} />
+            <Route path="promocodes" element={<Navigate to="/food/restaurant/owner/offers" replace />} />
             <Route path="advertise" element={<Advertise />} />
             <Route path="manage-outlets" element={<ManageOutlets />} />
             <Route path="update-bank-details" element={<UpdateBankDetails />} />

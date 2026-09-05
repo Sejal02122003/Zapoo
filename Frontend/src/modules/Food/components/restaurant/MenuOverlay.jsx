@@ -20,7 +20,8 @@ import {
   LogIn,
   UserPlus,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Ticket
 } from "lucide-react"
 import { restaurantAPI } from "@food/api"
 import { toast } from "sonner"
@@ -60,18 +61,17 @@ export default function MenuOverlay({ showMenu, setShowMenu }) {
   // Get menu options based on authentication state
   const getMenuOptions = () => {
     const baseOptions = [
-      { id: 4, name: "All Food", icon: Utensils, route: "/restaurant/food/all" },
-      { id: 6, name: "Restaurant Config", icon: Settings, route: "/restaurant/config" },
-      { id: 7, name: "Advertisements", icon: Monitor, route: "/restaurant/advertisements" },
-      { id: 9, name: "Categories", icon: Grid3x3, route: "/restaurant/categories" },
-      { id: 10, name: "Coupon", icon: Tag, route: "/restaurant/coupon" },
-      { id: 11, name: "My Business Plan", icon: FileText, route: "/restaurant/business-plan" },
-      { id: 12, name: "Reviews", icon: MessageSquare, route: "/restaurant/reviews" },
-      { id: 14, name: "Wallet Method", icon: Settings, route: "/restaurant/wallet" },
-      { id: 16, name: "Settings", icon: Settings, route: "/restaurant/settings" },
-      { id: 17, name: "Conversation", icon: MessageCircle, route: "/restaurant/conversation" },
-      { id: 18, name: "Privacy Policy", icon: Shield, route: "/restaurant/privacy" },
-      { id: 19, name: "Terms & Condition", icon: CheckSquare, route: "/restaurant/terms" },
+      { id: 4, name: "Menu & Stock", icon: Utensils, route: "/food/restaurant/inventory" },
+      { id: 10, name: "Offers & Promos", icon: Ticket, route: "/food/restaurant/owner/offers" },
+      { id: 6, name: "Outlet Info", icon: Settings, route: "/food/restaurant/outlet-info" },
+      { id: 7, name: "Advertisements", icon: Monitor, route: "/food/restaurant/advertise" },
+      { id: 9, name: "Categories", icon: Grid3x3, route: "/food/restaurant/menu-categories" },
+      { id: 12, name: "Reviews & Feedback", icon: MessageSquare, route: "/food/restaurant/feedback" },
+      { id: 14, name: "Finance & Payouts", icon: FileText, route: "/food/restaurant/hub-finance" },
+      { id: 16, name: "Delivery Settings", icon: Settings, route: "/food/restaurant/delivery-settings" },
+      { id: 17, name: "Support Centre", icon: MessageCircle, route: "/food/restaurant/help-centre/support" },
+      { id: 18, name: "Privacy Policy", icon: Shield, route: "/food/restaurant/privacy" },
+      { id: 19, name: "Terms & Condition", icon: CheckSquare, route: "/food/restaurant/terms" },
     ]
 
     if (isAuthenticated) {

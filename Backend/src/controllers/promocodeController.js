@@ -29,7 +29,7 @@ const syncRestaurantDiscount = async (restaurantId) => {
 // Restaurant: Create Promocode
 export const createPromocode = async (req, res, next) => {
   try {
-    const restaurantId = req.user?.userId;
+    const restaurantId = req.user?.restaurantId || req.user?.userId || req.user?.id;
     const { code, description, discountType, discountValue, minOrderAmount, maxDiscountAmount, expiryDate, usageLimit } = req.body;
 
     if (!code || !description || !discountType || !discountValue || !expiryDate) {
@@ -65,7 +65,7 @@ export const createPromocode = async (req, res, next) => {
 // Restaurant: Get all Promocodes
 export const getRestaurantPromocodes = async (req, res, next) => {
   try {
-    const restaurantId = req.user?.userId;
+    const restaurantId = req.user?.restaurantId || req.user?.userId || req.user?.id;
     const promocodes = await Promocode.find({ restaurantId }).sort('-createdAt');
 
     return sendResponse(res, 200, 'Promocodes fetched successfully', { promocodeList: promocodes });
@@ -77,7 +77,7 @@ export const getRestaurantPromocodes = async (req, res, next) => {
 // Restaurant: Toggle Status
 export const togglePromocodeStatus = async (req, res, next) => {
   try {
-    const restaurantId = req.user?.userId;
+    const restaurantId = req.user?.restaurantId || req.user?.userId || req.user?.id;
     const { id } = req.params;
     const { isActive } = req.body;
 
@@ -102,7 +102,7 @@ export const togglePromocodeStatus = async (req, res, next) => {
 // Restaurant: Delete Promocode
 export const deletePromocode = async (req, res, next) => {
   try {
-    const restaurantId = req.user?.userId;
+    const restaurantId = req.user?.restaurantId || req.user?.userId || req.user?.id;
     const { id } = req.params;
 
     const promocode = await Promocode.findOneAndDelete({ _id: id, restaurantId });
