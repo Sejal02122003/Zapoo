@@ -17,6 +17,7 @@ import {
   haversineKm,
   notifyOwnerSafely,
   notifyOwnersSafely,
+  notifyAdminsSafely,
 } from './order.helpers.js';
 
 // ── Batched Notification Helper ──
@@ -312,20 +313,21 @@ export async function tryAutoAssign(orderId, options = {}) {
     const isPhase3 = attempt >= 6;
 
     if (isPhase3) {
-      logger.error(`[CRITICAL] Order ${order._id} unassigned for ${attempt} attempts. Triggering Admin Alert.`);
-      try {
-        await notifyOwnersSafely(
-          [{ ownerType: 'ADMIN', ownerId: 'GLOBAL' }],
-          {
+      // Throttle Admin Alert: trigger at attempt 6, then every 20 attempts (e.g. 26, 46, ...)
+      // to avoid continuous spamming and overwhelming FCM/logs on every single cycle
+      if (attempt === 6 || (attempt > 6 && attempt % 20 === 0)) {
+        logger.error(`[CRITICAL] Order ${order._id} unassigned for ${attempt} attempts. Triggering Admin Alert.`);
+        try {
+          await notifyAdminsSafely({
             title: '⚠️ Unassigned Order Alert!',
-            body: `Order #${order.order_id || order._id} has not been picked up by any delivery partner yet.`,
+            body: `Order #${order.order_id || order._id} has not been picked up by any delivery partner yet (${attempt} attempts).`,
             sound: 'alert',
             priority: 'high',
-            data: { type: 'admin_alert_unassigned', orderId: order._id.toString() }
-          }
-        );
-      } catch (err) {
-        logger.warn(`Admin notification failed: ${err.message}`);
+            data: { type: 'admin_alert_unassigned', orderId: order._id.toString(), attempt: String(attempt) }
+          });
+        } catch (err) {
+          logger.warn(`Admin notification failed: ${err.message}`);
+        }
       }
     }
 
