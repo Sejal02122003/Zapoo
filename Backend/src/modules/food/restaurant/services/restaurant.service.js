@@ -1,4 +1,6 @@
 import { FoodRestaurant } from '../models/restaurant.model.js';
+import { FoodOutlet } from '../../owner/models/outlet.model.js';
+import { haversineMeters } from '../../../../utils/geo.js';
 import { uploadImageBuffer, uploadFileBuffer } from '../../../../services/cloudinary.service.js';
 import { processAndSaveImage } from '../../../../utils/sharp.util.js';
 import { STORAGE_CATEGORIES } from '../../../../config/storage.config.js';
@@ -1421,7 +1423,20 @@ export const listApprovedRestaurants = async (query = {}) => {
         const zoneDoc = await FoodZone.findOne({ _id: targetZoneId, isActive: true }).lean();
         const polygon = zoneToPolygon(zoneDoc);
 
-        const zoneOr = [{ zoneId: zoneObjId }];
+        // Check if restaurants have active branch outlets in this zone
+        const outletFilter = {
+            status: 'active',
+            $or: [
+                { zoneId: zoneObjId },
+                ...(polygon ? [{ location: { $geoWithin: { $geometry: polygon } } }] : [])
+            ]
+        };
+        const outletRestaurantIds = await FoodOutlet.distinct('restaurantId', outletFilter);
+
+        const zoneOr = [
+            { zoneId: zoneObjId },
+            ...(outletRestaurantIds.length > 0 ? [{ _id: { $in: outletRestaurantIds } }] : [])
+        ];
         if (polygon) {
             zoneOr.push({
                 location: { $geoWithin: { $geometry: polygon } },
@@ -1714,8 +1729,23 @@ export const listApprovedRestaurants = async (query = {}) => {
         drivingDistances = await getDrivingDistances(origin, dests);
     }
 
+    let outletCountsMap = new Map();
+    try {
+        const rawIds = (restaurantsRaw || []).map(r => r._id);
+        if (rawIds.length > 0) {
+            const outletAgg = await FoodOutlet.aggregate([
+                { $match: { restaurantId: { $in: rawIds }, status: 'active' } },
+                { $group: { _id: '$restaurantId', count: { $sum: 1 } } }
+            ]);
+            outletAgg.forEach(item => outletCountsMap.set(String(item._id), item.count));
+        }
+    } catch (e) {
+        // Silently ignore
+    }
+
     let restaurants = (restaurantsRaw || []).map((r) => {
         const drivingInfo = drivingDistances.get(String(r._id));
+        const branchCount = outletCountsMap.get(String(r._id)) || 0;
         return {
             ...r,
             // Frontend user app expects `name` and often checks `profileImage.url`
@@ -1732,7 +1762,8 @@ export const listApprovedRestaurants = async (query = {}) => {
             // Keep menuImages as an array for fallbacks; allow both string and {url} on client.
             menuImages: Array.isArray(r.menuImages) ? r.menuImages : [],
             distanceInfo: drivingInfo || null,
-            distanceText: drivingInfo ? drivingInfo.distanceText : null
+            distanceText: drivingInfo ? drivingInfo.distanceText : null,
+            outletsCount: 1 + branchCount
         };
     });
 
@@ -1921,6 +1952,111 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, query = {}) => {
         }
     }
 
+    // Fetch Branch Outlets from FoodOutlet
+    const branchOutlets = await FoodOutlet.find({
+        restaurantId: doc._id,
+        status: 'active'
+    }).lean();
+
+    // Helper to format an outlet address string
+    const formatOutletAddress = (item) => {
+        const addr = item.address || {};
+        const loc = item.location || {};
+        return (
+            loc.formattedAddress ||
+            addr.formattedAddress ||
+            [addr.addressLine1, addr.area || loc.area, addr.city || loc.city].filter(Boolean).join(', ') ||
+            item.area ||
+            item.city ||
+            doc.area ||
+            doc.city ||
+            'Location'
+        );
+    };
+
+    // Helper to calculate outlet distance and delivery time from user lat/lng
+    const getOutletDistAndEta = (oLat, oLng) => {
+        if (lat !== null && lng !== null && oLat !== null && oLng !== null) {
+            const meters = haversineMeters(lat, lng, oLat, oLng);
+            if (meters !== null) {
+                const km = meters / 1000;
+                const distText = km < 1 ? `${Math.round(meters)} m` : `${km.toFixed(1)} km`;
+                const etaMins = Math.max(15, Math.round(15 + km * 2.5));
+                return {
+                    distanceText: distText,
+                    deliveryTime: `${etaMins}-${etaMins + 5} mins`,
+                    distanceMeters: meters
+                };
+            }
+        }
+        return {
+            distanceText: drivingInfo ? drivingInfo.distanceText : (doc.distanceText || '1.2 km'),
+            deliveryTime: doc.estimatedDeliveryTime || '25-30 mins',
+            distanceMeters: 999999
+        };
+    };
+
+    // Build complete outlets list: Main HQ + active branch outlets
+    const mainLat = doc.location?.coordinates?.[1] ?? doc.location?.latitude ?? null;
+    const mainLng = doc.location?.coordinates?.[0] ?? doc.location?.longitude ?? null;
+    const mainDistInfo = getOutletDistAndEta(mainLat, mainLng);
+
+    const allOutlets = [
+        {
+            id: String(doc._id),
+            _id: String(doc._id),
+            restaurantId: String(doc._id),
+            name: doc.restaurantName || 'Main Outlet',
+            outletCode: 'HQ-MAIN',
+            location: formatOutletAddress(doc),
+            address: doc.address || doc.location?.formattedAddress || '',
+            phone: doc.primaryContactNumber || doc.phone || '',
+            deliveryTime: mainDistInfo.deliveryTime,
+            distance: mainDistInfo.distanceText,
+            distanceMeters: mainDistInfo.distanceMeters,
+            rating: normalizeRatingValue(doc.rating) || 4.2,
+            reviews: normalizeTotalRatingsValue(doc.totalRatings) || 0,
+            isOpen: isOpen,
+            isAcceptingOrders: isAcceptingOrders,
+            isMain: true,
+            coordinates: mainLat && mainLng ? [mainLng, mainLat] : undefined,
+            isNearest: false
+        }
+    ];
+
+    for (const bo of branchOutlets) {
+        const bLat = bo.location?.coordinates?.[1] ?? bo.location?.latitude ?? null;
+        const bLng = bo.location?.coordinates?.[0] ?? bo.location?.longitude ?? null;
+        const bDistInfo = getOutletDistAndEta(bLat, bLng);
+
+        allOutlets.push({
+            id: String(bo._id),
+            _id: String(bo._id),
+            restaurantId: String(doc._id),
+            name: bo.name || `${doc.restaurantName} - ${bo.outletCode || 'Branch'}`,
+            outletCode: bo.outletCode || 'BRANCH',
+            location: formatOutletAddress(bo),
+            address: bo.address?.formattedAddress || [bo.address?.addressLine1, bo.address?.area, bo.address?.city].filter(Boolean).join(', ') || '',
+            phone: bo.phone || '',
+            deliveryTime: bDistInfo.deliveryTime,
+            distance: bDistInfo.distanceText,
+            distanceMeters: bDistInfo.distanceMeters,
+            rating: normalizeRatingValue(bo.rating) || normalizeRatingValue(doc.rating) || 4.2,
+            reviews: normalizeTotalRatingsValue(bo.totalRatings) || 0,
+            isOpen: bo.isAcceptingOrders !== false && bo.status === 'active',
+            isAcceptingOrders: bo.isAcceptingOrders !== false && bo.status === 'active',
+            isMain: false,
+            coordinates: bLat && bLng ? [bLng, bLat] : undefined,
+            isNearest: false
+        });
+    }
+
+    // Sort outlets by distance and flag the nearest outlet
+    allOutlets.sort((a, b) => a.distanceMeters - b.distanceMeters);
+    if (allOutlets.length > 0) {
+        allOutlets[0].isNearest = true;
+    }
+
     return {
         ...doc,
         isAcceptingOrders,
@@ -1928,6 +2064,8 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, query = {}) => {
         isClosed,
         outletTimings,
         offers,
+        outlets: allOutlets,
+        outletsCount: allOutlets.length,
         restaurantOffers: {
             ...(doc.restaurantOffers || {}),
             coupons: offers

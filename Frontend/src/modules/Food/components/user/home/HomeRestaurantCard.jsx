@@ -4,6 +4,7 @@ import {
   BadgePercent,
   Bookmark,
   Clock,
+  MapPin,
   Star,
   Timer } from "lucide-react";
 import { Card, CardContent } from "@food/components/ui/card";
@@ -131,6 +132,12 @@ function HomeRestaurantCard({
                             <span>{availability.closingCountdownLabel}</span>
                           </div>
                         )}
+                      {(Number(restaurant?.outletsCount) > 1 || (Array.isArray(restaurant?.outlets) && restaurant.outlets.length > 1)) && (
+                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 border border-red-200/60 dark:border-red-800/60 text-[10px] font-black uppercase tracking-widest">
+                          <MapPin className="h-3 w-3 flex-shrink-0" strokeWidth={2.5} />
+                          <span>{restaurant.outletsCount || restaurant.outlets.length} Outlets</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex-shrink-0 bg-green-600 text-white px-3 py-1.5 rounded-2xl flex items-center gap-1.5 shadow-md transform transition-transform duration-300 group-hover:scale-110">
