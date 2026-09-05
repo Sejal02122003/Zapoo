@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { FoodUser } from '../users/user.model.js';
@@ -277,6 +278,22 @@ export const listOwnerTokens = async ({ ownerType, ownerId, platform }) => {
     if (!model) return [];
     const cleanId = String(ownerId?._id || ownerId || '').trim();
     if (!cleanId) return [];
+
+    // Handle GLOBAL / ALL broadcast targets gracefully without throwing CastError
+    if (cleanId.toUpperCase() === 'GLOBAL' || cleanId.toUpperCase() === 'ALL') {
+        const docs = await model.find({ isActive: true }).select('fcmTokens fcmTokenMobile').lean();
+        const tokens = [];
+        for (const d of docs) {
+            tokens.push(...readTokensFromDoc(d, platform));
+        }
+        return normalizeTokenList(tokens);
+    }
+
+    // Defensive check: prevent Mongoose CastError on invalid ObjectId strings
+    if (!mongoose.Types.ObjectId.isValid(cleanId)) {
+        return [];
+    }
+
     const doc = await model.findById(cleanId).select('fcmTokens fcmTokenMobile').lean();
     return readTokensFromDoc(doc, platform);
 };

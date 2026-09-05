@@ -3,6 +3,7 @@ import { logger } from '../../../../utils/logger.js';
 import {
   sendNotificationToOwner,
   sendNotificationToOwners,
+  notifyAdminsSafely as sendNotifyAdminsSafely,
 } from "../../../../core/notifications/firebase.service.js";
 import { getIO, rooms } from '../../../../config/socket.js';
 import { addOrderJob } from '../../../../queues/producers/order.producer.js';
@@ -97,6 +98,14 @@ export async function notifyOwnersSafely(targets, payload) {
     await sendNotificationToOwners(targets, payload);
   } catch (error) {
     logger.warn(`FCM notification failed: ${error?.message || error}`);
+  }
+}
+
+export async function notifyAdminsSafely(payload) {
+  try {
+    await sendNotifyAdminsSafely(payload);
+  } catch (error) {
+    logger.warn(`Admin FCM notification failed: ${error?.message || error}`);
   }
 }
 
