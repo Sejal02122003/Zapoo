@@ -55,7 +55,15 @@ export default function useNotificationInbox(module, options = {}) {
       fetchInbox();
     };
     window.addEventListener(REFRESH_EVENT, handler);
-    return () => window.removeEventListener(REFRESH_EVENT, handler);
+    window.addEventListener("userAuthChanged", handler);
+    window.addEventListener("authRefreshed", handler);
+    window.addEventListener("focus", handler);
+    return () => {
+      window.removeEventListener(REFRESH_EVENT, handler);
+      window.removeEventListener("userAuthChanged", handler);
+      window.removeEventListener("authRefreshed", handler);
+      window.removeEventListener("focus", handler);
+    };
   }, [fetchInbox]);
 
   useEffect(() => {

@@ -71,7 +71,7 @@ const buildDeliveryLabel = (doc) => ({
 const modelConfigMap = {
     USER: {
         model: FoodUser,
-        query: { isActive: true },
+        query: { isActive: { $ne: false } },
         select: '_id name phone email',
         buildLabel: buildUserLabel
     },
@@ -126,7 +126,7 @@ const resolveCustomTargets = async ({ targets = [], targetIds = [] } = {}) => {
         throw new ValidationError('Please select at least one recipient for custom broadcast');
     }
 
-    const users = await FoodUser.find({ _id: { $in: ids }, isActive: true }).select('_id name phone email').lean();
+    const users = await FoodUser.find({ _id: { $in: ids }, isActive: { $ne: false } }).select('_id name phone email').lean();
     return users.map((row) => ({
         ownerType: 'USER',
         ownerId: String(row._id),
@@ -171,18 +171,29 @@ const emitRealtimeNotifications = (targets = [], broadcast) => {
     const io = getIO();
     if (!io) return;
 
+    const payload = {
+        id: String(broadcast._id),
+        title: broadcast.title,
+        message: broadcast.message,
+        link: broadcast.link || '',
+        targetType: broadcast.targetType,
+        createdAt: broadcast.createdAt
+    };
+
+    // Global room broadcasts for immediate delivery to all online clients
+    if (broadcast.targetType === 'ALL') {
+        io.to('all_users').emit('admin_notification', payload);
+        io.to('all_delivery').emit('admin_notification', payload);
+    } else if (broadcast.targetType === 'USER') {
+        io.to('all_users').emit('admin_notification', payload);
+    } else if (broadcast.targetType === 'DELIVERY') {
+        io.to('all_delivery').emit('admin_notification', payload);
+    }
+
+    // Direct emission to individual owner rooms (for custom targets, restaurants, and specific IDs)
     for (const target of targets) {
         const ownerId = String(target.ownerId || '');
         if (!ownerId) continue;
-
-        const payload = {
-            id: String(broadcast._id),
-            title: broadcast.title,
-            message: broadcast.message,
-            link: broadcast.link || '',
-            targetType: broadcast.targetType,
-            createdAt: broadcast.createdAt
-        };
 
         if (target.ownerType === 'USER') {
             io.to(rooms.user(ownerId)).emit('admin_notification', payload);
@@ -251,6 +262,10 @@ export const createBroadcastNotification = async ({ body = {}, adminId } = {}) =
         )
     });
 
+    // ⚡ Emit realtime socket notification immediately so active users receive it instantly
+    emitRealtimeNotifications(resolvedTargets, broadcast);
+
+    // 🚀 Send push notifications safely in the background / without delaying socket delivery
     await notifyOwnersSafely(
         resolvedTargets.map((target) => ({
             ownerType: target.ownerType,
@@ -266,8 +281,6 @@ export const createBroadcastNotification = async ({ body = {}, adminId } = {}) =
             }
         }
     );
-
-    emitRealtimeNotifications(resolvedTargets, broadcast);
 
     return {
         broadcast,

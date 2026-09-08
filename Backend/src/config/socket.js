@@ -141,7 +141,10 @@ export const initSocket = async (server) => {
                     socket.join(`outlet:${outId}`);
                 }
             }
-            if (role === 'USER') socket.join(roomNames.user(userId));
+            if (role === 'USER') {
+                socket.join(roomNames.user(userId));
+                socket.join('all_users');
+            }
             if (role === 'ADMIN' || role === 'SUPER_ADMIN') socket.join('admin'); // Admin panel broadcasts
             if (role === 'DELIVERY_PARTNER') {
                 socket.join(roomNames.delivery(userId));

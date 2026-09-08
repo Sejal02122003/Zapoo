@@ -478,17 +478,53 @@ export const sendNotificationToOwners = async (targets = [], payload = {}) => {
         ? [...new Map(targets.filter(t => t?.ownerType && t?.ownerId).map(t => [`${t.ownerType}:${t.ownerId}`, t])).values()]
         : [];
 
-    const results = [];
+    if (!uniqueTargets.length) return [];
+
+    // Group target IDs by ownerType to fetch tokens in batch queries instead of 100+ serial DB calls
+    const idsByType = {};
     for (const target of uniqueTargets) {
-        results.push(
-            await sendNotificationToOwner({
+        const type = String(target.ownerType || '').toUpperCase();
+        if (!idsByType[type]) idsByType[type] = [];
+        const cleanId = String(target.ownerId?._id || target.ownerId || '').trim();
+        if (cleanId && mongoose.Types.ObjectId.isValid(cleanId)) {
+            idsByType[type].push(new mongoose.Types.ObjectId(cleanId));
+        }
+    }
+
+    const tokenMap = new Map();
+    await Promise.all(
+        Object.entries(idsByType).map(async ([type, ids]) => {
+            const model = getOwnerModel(type);
+            if (!model || !ids.length) return;
+            try {
+                const docs = await model.find({ _id: { $in: ids } }).select('fcmTokens fcmTokenMobile').lean();
+                for (const d of docs) {
+                    tokenMap.set(`${type}:${d._id.toString()}`, readTokensFromDoc(d));
+                }
+            } catch (err) {
+                logger.warn(`Batch token fetch failed for ${type}: ${err.message}`);
+            }
+        })
+    );
+
+    // Send notifications concurrently for recipients who actually have tokens
+    const results = await Promise.all(
+        uniqueTargets.map(async (target) => {
+            const cleanId = String(target.ownerId?._id || target.ownerId || '').trim();
+            const key = `${String(target.ownerType || '').toUpperCase()}:${cleanId}`;
+            const tokens = tokenMap.get(key) || [];
+            if (!tokens.length) {
+                return { successCount: 0, failureCount: 0, results: [] };
+            }
+            return sendNotificationToOwner({
                 ownerType: target.ownerType,
                 ownerId: target.ownerId,
                 platform: target.platform,
                 payload
-            })
-        );
-    }
+            });
+        })
+    );
+
     return results;
 };
 

@@ -23,9 +23,32 @@ export const useUserNotifications = () => {
   const context = useContext(UserNotificationContext);
   if (context) return context;
 
+  const getStoredUserId = () => {
+    try {
+      const userStr = localStorage.getItem('user_user') || localStorage.getItem('userProfile');
+      if (userStr) {
+        const parsed = JSON.parse(userStr);
+        const id = parsed?._id || parsed?.userId || parsed?.id;
+        if (id) return String(id);
+      }
+      const token = localStorage.getItem('user_accessToken') || localStorage.getItem('accessToken');
+      if (token && typeof token === 'string' && token.includes('.')) {
+        const parts = token.split('.');
+        if (parts[1]) {
+          const payload = JSON.parse(atob(parts[1]));
+          const id = payload?.userId || payload?._id || payload?.id;
+          if (id) return String(id);
+        }
+      }
+    } catch {
+      // ignore parsing errors
+    }
+    return null;
+  };
+
   const socketRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [userId, setUserId] = useState(null);
+  const [userId, setUserId] = useState(() => getStoredUserId());
   const lastDropOtpToastRef = useRef({ key: '', at: 0 });
   const lastOrderStatusToastRef = useRef({ key: '', at: 0 });
 
@@ -35,19 +58,54 @@ export const useUserNotifications = () => {
   const ORDER_STATUS_DEDUPE_MS = 4000;
 
   useEffect(() => {
-    const fetchUserId = async () => {
+    let isMounted = true;
+
+    const resolveUserId = async () => {
+      const storedId = getStoredUserId();
+      if (storedId && isMounted) {
+        setUserId(storedId);
+      }
+
+      const token = localStorage.getItem('user_accessToken') || localStorage.getItem('accessToken');
+      if (!token) {
+        if (isMounted) setUserId(null);
+        return;
+      }
+
       try {
         const response = await userAPI.getProfile();
-        if (response.data?.success && response.data.data?.user) {
+        if (response.data?.success && response.data.data?.user && isMounted) {
           const user = response.data.data.user;
           const id = user._id?.toString() || user.userId || user.id;
-          setUserId(id);
+          if (id) setUserId(String(id));
         }
       } catch {
-        // Not logged in or error
+        // Not logged in or network error
       }
     };
-    fetchUserId();
+
+    resolveUserId();
+
+    const handleAuthChange = () => {
+      resolveUserId();
+    };
+
+    window.addEventListener('userAuthChanged', handleAuthChange);
+    window.addEventListener('authRefreshed', (e) => {
+      if (!e.detail?.module || e.detail.module === 'user') handleAuthChange();
+    });
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'user_accessToken' || e.key === 'accessToken' || e.key === 'user_user') {
+        handleAuthChange();
+      }
+    });
+    window.addEventListener('focus', handleAuthChange);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('userAuthChanged', handleAuthChange);
+      window.removeEventListener('focus', handleAuthChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -164,10 +222,26 @@ export const useUserNotifications = () => {
     };
 
     const onAdminNotification = (payload) => {
-      toast.message(payload?.title || 'Notification', {
-        description: payload?.message || 'New broadcast notification received.',
-        duration: 8000 });
+      debugLog('📢 Admin broadcast notification received via socket:', payload);
+      const title = payload?.title || 'Notification';
+      const description = payload?.message || 'New broadcast notification received.';
+
+      toast(title, {
+        description,
+        duration: 8000,
+        action: payload?.link ? {
+          label: 'View',
+          onClick: () => {
+            if (typeof window !== 'undefined' && payload.link) {
+              window.location.href = payload.link;
+            }
+          }
+        } : undefined
+      });
+
+      playUserOrderNotificationAlarm().catch(() => {});
       dispatchNotificationInboxRefresh();
+      window.dispatchEvent(new CustomEvent('adminNotification', { detail: payload }));
     };
 
     sock.on('order_status_update', onOrderStatus);
