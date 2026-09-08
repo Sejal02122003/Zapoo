@@ -50,14 +50,38 @@ const toClientShape = (doc) => {
 };
 
 export async function getOutletTimingsForRestaurant(restaurantId) {
-    if (!restaurantId || !mongoose.Types.ObjectId.isValid(String(restaurantId))) {
-        throw new ValidationError('Invalid restaurant id');
+    let resolvedId = restaurantId;
+    const { FoodRestaurant } = await import('../models/restaurant.model.js');
+
+    if (!resolvedId || !mongoose.Types.ObjectId.isValid(String(resolvedId))) {
+        const val = String(resolvedId || '').trim();
+        if (!val) throw new ValidationError('Invalid restaurant id');
+        const normalizedHyphens = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const normalizedSpaces = val.toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
+        const escapeRegexStr = (s) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+        const found = await FoodRestaurant.findOne({
+            status: 'approved',
+            $or: [
+                { slug: val },
+                { slug: normalizedHyphens },
+                { restaurantNameNormalized: normalizedSpaces },
+                { restaurantNameNormalized: normalizedHyphens },
+                { restaurantName: { $regex: new RegExp(`^${escapeRegexStr(normalizedSpaces)}$`, 'i') } }
+            ]
+        }).select('_id').lean();
+
+        if (found?._id) {
+            resolvedId = found._id;
+        } else {
+            throw new ValidationError('Invalid restaurant id');
+        }
     }
-    const doc = await FoodRestaurantOutletTimings.findOne({ restaurantId }).select('timings updatedAt').lean();
+
+    const doc = await FoodRestaurantOutletTimings.findOne({ restaurantId: resolvedId }).select('timings updatedAt').lean();
     if (!doc || !doc.timings || doc.timings.length === 0) {
         // Fallback to onboarding details
-        const { FoodRestaurant } = await import('../models/restaurant.model.js');
-        const restaurant = await FoodRestaurant.findById(restaurantId).lean();
+        const restaurant = await FoodRestaurant.findById(resolvedId).lean();
         
         if (restaurant) {
             const { openDays, openingTime, closingTime } = restaurant;

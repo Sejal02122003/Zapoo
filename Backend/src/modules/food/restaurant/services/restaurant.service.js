@@ -1458,6 +1458,8 @@ export const listApprovedRestaurants = async (query = {}) => {
 
     const projection = {
         restaurantName: 1,
+        restaurantNameNormalized: 1,
+        slug: 1,
         area: 1,
         city: 1,
         cuisines: 1,
@@ -1614,6 +1616,7 @@ export const listApprovedRestaurants = async (query = {}) => {
                 ...r,
                 restaurantId: r._id,
                 id: r._id,
+                slug: r.slug || r.restaurantNameNormalized?.replace(/\s+/g, '-') || r.restaurantName?.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || String(r._id),
                 name: r.restaurantName || '',
                 rating: normalizeRatingValue(r.rating),
                 totalRatings: normalizeTotalRatingsValue(r.totalRatings),
@@ -1751,6 +1754,7 @@ export const listApprovedRestaurants = async (query = {}) => {
             // Frontend user app expects `name` and often checks `profileImage.url`
             restaurantId: r._id,
             id: r._id,
+            slug: r.slug || r.restaurantNameNormalized?.replace(/\s+/g, '-') || r.restaurantName?.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || String(r._id),
             name: r.restaurantName || '',
             rating: normalizeRatingValue(r.rating),
             totalRatings: normalizeTotalRatingsValue(r.totalRatings),
@@ -1894,18 +1898,34 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, query = {}) => {
 
     let doc = null;
 
-    // ObjectId path
+    // 1. ObjectId path
     if (/^[0-9a-fA-F]{24}$/.test(value)) {
         doc = await FoodRestaurant.findOne({ _id: value, status: 'approved' }).lean();
-    } else {
-        // Slug path: use normalized field for index-friendly exact match.
-        const restaurantNameNormalized = normalizeName(value);
-        if (restaurantNameNormalized) {
-            doc = await FoodRestaurant.findOne({
-                status: 'approved',
-                restaurantNameNormalized
-            }).lean();
+    }
+
+    // 2. Slug / Normalized Name / Exact Name match path
+    if (!doc) {
+        const normalizedHyphens = normalizeName(value);
+        const normalizedSpaces = String(value || '').trim().toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
+        const escapeRegexStr = (s) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+        const searchQueries = [
+            { slug: value },
+            { slug: normalizedHyphens },
+            { restaurantNameNormalized: normalizedSpaces },
+            { restaurantNameNormalized: normalizedHyphens },
+            { restaurantNameNormalized: value.toLowerCase() },
+            { restaurantName: { $regex: new RegExp(`^${escapeRegexStr(normalizedSpaces)}$`, 'i') } }
+        ];
+
+        if (value !== normalizedSpaces) {
+            searchQueries.push({ restaurantName: { $regex: new RegExp(`^${escapeRegexStr(value)}$`, 'i') } });
         }
+
+        doc = await FoodRestaurant.findOne({
+            status: 'approved',
+            $or: searchQueries
+        }).lean();
     }
 
     if (!doc) return null;
@@ -2057,8 +2077,14 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, query = {}) => {
         allOutlets[0].isNearest = true;
     }
 
+    const resolvedSlug = doc.slug || doc.restaurantNameNormalized?.replace(/\s+/g, '-') || doc.restaurantName?.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || String(doc._id);
+
     return {
         ...doc,
+        id: String(doc._id),
+        restaurantId: String(doc._id),
+        slug: resolvedSlug,
+        name: doc.restaurantName || doc.name || '',
         isAcceptingOrders,
         isOpen,
         isClosed,

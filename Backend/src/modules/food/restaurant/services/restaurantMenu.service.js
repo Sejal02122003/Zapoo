@@ -3,8 +3,8 @@ import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodRestaurant } from '../models/restaurant.model.js';
 import { FoodItem } from '../../admin/models/food.model.js';
 import { FoodCategory } from '../../admin/models/category.model.js';
+import { ItemDiscountRule } from '../../admin/models/itemDiscountRule.model.js';
 import { getFoodDisplayPrice, serializeFoodVariants } from '../../admin/services/foodVariant.service.js';
-import { resolveItemDiscountRule } from '../../admin/services/itemDiscount.service.js';
 
 const buildMenuFromFoods = async (foods = []) => {
     const categoryIds = Array.from(
@@ -19,11 +19,34 @@ const buildMenuFromFoods = async (foods = []) => {
         )
     );
 
-    const categoryDocs = categoryIds.length
-        ? await FoodCategory.find({ _id: { $in: categoryIds } })
-            .select('name image sortOrder')
-            .lean()
-        : [];
+    const restaurantIds = Array.from(
+        new Set(
+            (foods || [])
+                .map((food) => (food?.restaurantId ? String(food.restaurantId) : ''))
+                .filter((value) => mongoose.Types.ObjectId.isValid(value))
+        )
+    ).map((id) => new mongoose.Types.ObjectId(id));
+
+    const now = new Date();
+    const [categoryDocs, activeDiscountRules] = await Promise.all([
+        categoryIds.length
+            ? FoodCategory.find({ _id: { $in: categoryIds } })
+                  .select('name image sortOrder')
+                  .lean()
+            : [],
+        restaurantIds.length
+            ? ItemDiscountRule.find({
+                  restaurantId: { $in: restaurantIds },
+                  isActive: true,
+                  orderType: { $in: ['ALL', 'DELIVERY'] },
+                  $and: [
+                      { $or: [{ effectiveFrom: null }, { effectiveFrom: { $lte: now } }] },
+                      { $or: [{ effectiveTill: null }, { effectiveTill: { $gte: now } }] }
+                  ]
+              }).lean()
+            : []
+    ]);
+
     const categoryMap = new Map(categoryDocs.map((doc) => [String(doc._id), doc]));
 
     const byCategory = new Map();
@@ -40,12 +63,19 @@ const buildMenuFromFoods = async (foods = []) => {
         let discountPercentage = 0;
         let hasDiscount = false;
 
-        const rule = await resolveItemDiscountRule({
-            restaurantId: food.restaurantId,
-            menuItemId: food._id,
-            categoryId: categoryId,
-            orderType: 'ALL'
-        });
+        let rule = null;
+        if (activeDiscountRules.length > 0) {
+            const fRestIdStr = String(food.restaurantId || '');
+            const fFoodIdStr = String(food._id || '');
+            const restRules = activeDiscountRules.filter((r) => String(r.restaurantId) === fRestIdStr);
+            rule = restRules.find((r) => r.scope === 'MENU_ITEM' && String(r.targetId || '') === fFoodIdStr);
+            if (!rule && categoryId) {
+                rule = restRules.find((r) => r.scope === 'CATEGORY' && String(r.targetId || '') === categoryId);
+            }
+            if (!rule) {
+                rule = restRules.find((r) => r.scope === 'RESTAURANT_WIDE');
+            }
+        }
 
         if (rule) {
             if (rule.discountType === 'PERCENTAGE') {
@@ -171,9 +201,25 @@ export async function getPublicApprovedRestaurantMenu(restaurantIdOrSlug) {
         restaurant = await FoodRestaurant.findOne({ _id: value, status: 'approved' })
             .select('_id status')
             .lean();
-    } else {
-        const normalized = value.trim().toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ');
-        restaurant = await FoodRestaurant.findOne({ restaurantNameNormalized: normalized, status: 'approved' })
+    }
+    
+    if (!restaurant) {
+        const normalizedHyphens = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const normalizedSpaces = value.toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
+        const escapeRegexStr = (s) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+        restaurant = await FoodRestaurant.findOne({
+            status: 'approved',
+            $or: [
+                { slug: value },
+                { slug: normalizedHyphens },
+                { restaurantNameNormalized: normalizedSpaces },
+                { restaurantNameNormalized: normalizedHyphens },
+                { restaurantNameNormalized: value.toLowerCase() },
+                { restaurantName: { $regex: new RegExp(`^${escapeRegexStr(normalizedSpaces)}$`, 'i') } },
+                { restaurantName: { $regex: new RegExp(`^${escapeRegexStr(value)}$`, 'i') } }
+            ]
+        })
             .select('_id status')
             .lean();
     }
@@ -181,7 +227,13 @@ export async function getPublicApprovedRestaurantMenu(restaurantIdOrSlug) {
     if (!restaurant?._id) {
         return null;
     }
-    const foods = await FoodItem.find({ restaurantId: restaurant._id, approvalStatus: 'approved' })
+    const foods = await FoodItem.find({
+        $or: [
+            { restaurantId: restaurant._id },
+            { restaurantId: String(restaurant._id) }
+        ],
+        approvalStatus: 'approved'
+    })
         .sort({ createdAt: -1 })
         .limit(2000)
         .lean();

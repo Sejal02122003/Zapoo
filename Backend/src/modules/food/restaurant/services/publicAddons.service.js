@@ -12,9 +12,23 @@ export async function getPublicApprovedRestaurantAddons(restaurantIdOrSlug) {
         restaurant = await FoodRestaurant.findOne({ _id: value, status: 'approved' })
             .select('_id status')
             .lean();
-    } else {
-        const normalized = value.trim().toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ');
-        restaurant = await FoodRestaurant.findOne({ restaurantNameNormalized: normalized, status: 'approved' })
+    }
+    
+    if (!restaurant) {
+        const normalizedHyphens = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const normalizedSpaces = value.toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
+        const escapeRegexStr = (s) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+        restaurant = await FoodRestaurant.findOne({
+            status: 'approved',
+            $or: [
+                { slug: value },
+                { slug: normalizedHyphens },
+                { restaurantNameNormalized: normalizedSpaces },
+                { restaurantNameNormalized: normalizedHyphens },
+                { restaurantName: { $regex: new RegExp(`^${escapeRegexStr(normalizedSpaces)}$`, 'i') } }
+            ]
+        })
             .select('_id status')
             .lean();
     }
