@@ -60,4 +60,8 @@ export default defineConfig({
       }
     }
   }
+<<<<<<< HEAD
 });																																																																																																																																																																																																																																																																																	
+=======
+});																																																																																																																																																																																																																																																																																	
+>>>>>>> 53dffb10fa5aedcf397442042b60b87a2607cfc8
