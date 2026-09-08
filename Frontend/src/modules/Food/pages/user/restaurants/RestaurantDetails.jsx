@@ -277,9 +277,12 @@ function RestaurantDetailsContent() {
               // Fallback without zoneId so missing live location never blocks this page.
               debugLog('? Direct lookup failed, trying search by name...')
 
-                const searchVariants = zoneId
-                  ? [{ limit: 100, zoneId: zoneId, _ts: Date.now() }, { limit: 100, _ts: Date.now() }]
-                  : [{ limit: 100, _ts: Date.now() }]
+                const cleanSearchTerm = String(slug || '').replace(/[-_]+/g, ' ').trim();
+                const searchVariants = [
+                  { search: cleanSearchTerm, limit: 20, _ts: Date.now() },
+                  ...(cleanSearchTerm.length > 5 ? [{ search: cleanSearchTerm.slice(0, 5), limit: 20, _ts: Date.now() }] : []),
+                  ...(zoneId ? [{ limit: 100, zoneId: zoneId, _ts: Date.now() }, { limit: 100, _ts: Date.now() }] : [{ limit: 100, _ts: Date.now() }])
+                ];
 
                 for (const searchParams of searchVariants) {
                   try {
@@ -287,12 +290,20 @@ function RestaurantDetailsContent() {
                     const restaurants = searchResponse?.data?.data?.restaurants || searchResponse?.data?.data || []
 
                     // Try to find by slug match or name match
-                    const restaurantName = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-                    const matchingRestaurant = restaurants.find(r =>
-                      r.slug === slug ||
-                      r.name?.toLowerCase().replace(/\s+/g, '-') === slug.toLowerCase() ||
-                      r.name?.toLowerCase() === restaurantName.toLowerCase()
-                    )
+                    const targetNormalized = cleanSearchTerm.toLowerCase();
+                    const targetHyphenated = slug.toLowerCase();
+                    const matchingRestaurant = restaurants.find(r => {
+                      const rName = String(r.name || r.restaurantName || '').toLowerCase().trim();
+                      const rSlug = String(r.slug || '').toLowerCase().trim();
+                      const rHyphenated = rName.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                      return (
+                        (rSlug && (rSlug === targetHyphenated || rSlug === targetNormalized)) ||
+                        rName === targetNormalized ||
+                        rHyphenated === targetHyphenated ||
+                        rName.includes(targetNormalized) ||
+                        targetNormalized.includes(rName)
+                      );
+                    });
 
                     if (matchingRestaurant) {
                       // Get full restaurant details by ID
@@ -300,7 +311,8 @@ function RestaurantDetailsContent() {
                       if (Number.isFinite(userLocation?.latitude) && Number.isFinite(userLocation?.longitude)) {
                         requestConfigFallback.params = { lat: userLocation.latitude, lng: userLocation.longitude }
                       }
-                      const fullResponse = await restaurantAPI.getRestaurantById(matchingRestaurant._id || matchingRestaurant.restaurantId, requestConfigFallback)
+                      const resolvedId = matchingRestaurant._id || matchingRestaurant.restaurantId || matchingRestaurant.id;
+                      const fullResponse = await restaurantAPI.getRestaurantById(resolvedId, requestConfigFallback)
                       if (fullResponse.data && fullResponse.data.success && fullResponse.data.data) {
                         apiRestaurant = fullResponse.data.data
                         debugLog('? Found restaurant in restaurant API by name search:', apiRestaurant)
@@ -640,18 +652,22 @@ function RestaurantDetailsContent() {
           if (!restaurantIdForMenu) {
             debugWarn('? No restaurant ID available, searching for restaurant by name...')
             try {
-              const searchVariants = zoneId
-                ? [{ limit: 100, zoneId: zoneId, _ts: Date.now() }, { limit: 100, _ts: Date.now() }]
-                : [{ limit: 100, _ts: Date.now() }]
+              const targetName = String(transformedRestaurant.name || slug || '').replace(/[-_]+/g, ' ').trim();
+              const searchVariants = [
+                { search: targetName, limit: 20, _ts: Date.now() },
+                ...(zoneId ? [{ limit: 100, zoneId: zoneId, _ts: Date.now() }, { limit: 100, _ts: Date.now() }] : [{ limit: 100, _ts: Date.now() }])
+              ];
 
               for (const searchParams of searchVariants) {
                 const searchResponse = await restaurantAPI.getRestaurants(searchParams, { noCache: true })
                 const restaurants = searchResponse?.data?.data?.restaurants || searchResponse?.data?.data || []
 
-                // Try to find by exact name match
-                const matchingRestaurant = restaurants.find(r =>
-                  r.name?.toLowerCase().trim() === transformedRestaurant.name?.toLowerCase().trim()
-                )
+                // Try to find by exact name match or fuzzy match
+                const matchingRestaurant = restaurants.find(r => {
+                  const rName = String(r.name || r.restaurantName || '').toLowerCase().trim();
+                  const tName = targetName.toLowerCase();
+                  return rName === tName || rName.includes(tName) || tName.includes(rName);
+                });
 
                 if (matchingRestaurant) {
                   restaurantIdForMenu = matchingRestaurant._id || matchingRestaurant.restaurantId || matchingRestaurant.id
