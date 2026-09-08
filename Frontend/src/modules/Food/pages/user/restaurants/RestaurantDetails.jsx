@@ -106,7 +106,14 @@ const DishImage = ({ src, alt, className = "" }) => {
 }
 
 function RestaurantDetailsContent() {
-  const { slug } = useParams()
+  const { slug: rawSlug } = useParams()
+  const slug = useMemo(() => {
+    try {
+      return decodeURIComponent(rawSlug || '').trim()
+    } catch {
+      return String(rawSlug || '').trim()
+    }
+  }, [rawSlug])
   const navigate = useNavigate()
   const goBack = useAppBackNavigation()
   const [searchParams] = useSearchParams()
@@ -141,12 +148,6 @@ function RestaurantDetailsContent() {
   const [expandedAddButtons, setExpandedAddButtons] = useState(new Set())
   const [expandedSections, setExpandedSections] = useState(new Set([0])) // Default: Recommended section is expanded
   const [highlightedDishId, setHighlightedDishId] = useState(null)
-  const [loadingMenuItems, setLoadingMenuItems] = useState(true)
-  const [menuUnavailable, setMenuUnavailable] = useState(false)
-  const [selectedMenuCategory, setSelectedMenuCategory] = useState("all")
-  const [visibleItemCount, setVisibleItemCount] = useState(20)
-  const dishCardRefs = useRef({})
-  const [showScanAnimation, setShowScanAnimation] = useState(true)
 
   const getLineItemIdForDish = (item, variant = null) =>
     buildCartLineId(item?.id || item?._id || "", variant?.id || variant?._id || "")
@@ -170,9 +171,58 @@ function RestaurantDetailsContent() {
     highlyReordered: false,
     spicy: false })
 
-  // Restaurant data state
-  const [restaurant, setRestaurant] = useState(null)
-  const [loadingRestaurant, setLoadingRestaurant] = useState(true)
+  // Restaurant data state with sessionStorage restoration for instant refresh support
+  const [restaurant, setRestaurant] = useState(() => {
+    if (!slug) return null
+    try {
+      const cached = sessionStorage.getItem(`zapoo_cached_rest_${slug}`)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (parsed && (parsed.id || parsed._id || parsed.name)) {
+          return parsed
+        }
+      }
+    } catch (e) {}
+    return null
+  })
+
+  const [loadingRestaurant, setLoadingRestaurant] = useState(() => {
+    if (!slug) return false
+    try {
+      const cached = sessionStorage.getItem(`zapoo_cached_rest_${slug}`)
+      return !cached
+    } catch {
+      return true
+    }
+  })
+
+  const [loadingMenuItems, setLoadingMenuItems] = useState(() => {
+    if (!slug) return false
+    try {
+      const cached = sessionStorage.getItem(`zapoo_cached_rest_${slug}`)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        return !(Array.isArray(parsed?.menuSections) && parsed.menuSections.length > 0)
+      }
+    } catch (e) {}
+    return true
+  })
+
+  const [menuUnavailable, setMenuUnavailable] = useState(false)
+  const [selectedMenuCategory, setSelectedMenuCategory] = useState("all")
+  const [visibleItemCount, setVisibleItemCount] = useState(20)
+  const dishCardRefs = useRef({})
+  const [showScanAnimation, setShowScanAnimation] = useState(true)
+
+  // Persist valid restaurant data to sessionStorage so refresh never loses food items
+  useEffect(() => {
+    if (restaurant && slug && Array.isArray(restaurant.menuSections) && restaurant.menuSections.length > 0) {
+      try {
+        sessionStorage.setItem(`zapoo_cached_rest_${slug}`, JSON.stringify(restaurant))
+      } catch (e) {}
+    }
+  }, [restaurant, slug])
+
   const [restaurantError, setRestaurantError] = useState(null)
   const fetchedRestaurantRef = useRef(false) // Track if restaurant has been fetched for current slug
   const fetchedSlugRef = useRef(null)
@@ -222,9 +272,8 @@ function RestaurantDetailsContent() {
     const fetchRestaurant = async () => {
       if (!slug) return
 
-      // Prevent re-fetching for the same slug and zoneId. Mobile location/zone updates can
-      // trigger transient refetch failures that clear already-rendered content.
-      if (fetchedRestaurantRef.current && fetchedSlugRef.current === slug && fetchedZoneIdRef.current === zoneId && restaurant) {
+      // Prevent re-fetching for the same slug if already fetched and present in state.
+      if (fetchedRestaurantRef.current && fetchedSlugRef.current === slug && restaurant) {
         return
       }
 
@@ -625,7 +674,16 @@ function RestaurantDetailsContent() {
             debugError('? No restaurant ID found! Cannot fetch menu.')
           }
 
-          setRestaurant(transformedRestaurant)
+          setRestaurant(prev => {
+            const existingMenu = (prev?.menuSections && prev.menuSections.length > 0) ? prev.menuSections : (transformedRestaurant.menuSections || [])
+            const existingInventory = (prev?.inventory && prev.inventory.length > 0) ? prev.inventory : (transformedRestaurant.inventory || [])
+            return {
+              ...transformedRestaurant,
+              menuSections: existingMenu,
+              inventory: existingInventory,
+              outletTimings: prev?.outletTimings || transformedRestaurant.outletTimings || null
+            }
+          })
           fetchedRestaurantRef.current = true // Mark as fetched
           fetchedSlugRef.current = slug
           fetchedZoneIdRef.current = zoneId
@@ -787,13 +845,16 @@ function RestaurantDetailsContent() {
                     break
                   }
                 } catch (lookupError) {
-                  if (lookupError?.response?.status !== 404) {
-                    throw lookupError
-                  }
+                  debugLog('Lookup attempt failed for menu ID:', lookupId, lookupError?.message)
                 }
               }
               if (!menuResponse) {
-                throw Object.assign(new Error('Menu not found'), { response: { status: 404 } })
+                setRestaurant(prev => {
+                  if (!prev?.menuSections || prev.menuSections.length === 0) {
+                    setMenuUnavailable(true)
+                  }
+                  return prev
+                })
               }
               debugLog('? Menu resolved using lookup ID:', resolvedMenuLookupId)
               if (menuResponse.data && menuResponse.data.success && menuResponse.data.data && menuResponse.data.data.menu) {
@@ -949,7 +1010,7 @@ function RestaurantDetailsContent() {
                   ...prev,
                   menuSections: finalMenuSections }))
 
-                setMenuUnavailable(!menuHasItems)
+                setMenuUnavailable(!menuHasItems && finalMenuSections.length === 0)
 
                 // Set all sections and subsections as expanded by default
                 const defaultExpandedSections = new Set()
@@ -966,12 +1027,13 @@ function RestaurantDetailsContent() {
                 debugLog('Fetched menu sections with recommended items:', finalMenuSections)
               }
             } catch (menuError) {
-              if (menuError.response && menuError.response.status === 404) {
-                debugLog('? Menu not found for this restaurant (might be a dining-only listing).')
-                setMenuUnavailable(true)
-              } else {
-                debugError('? Error fetching menu:', menuError)
-              }
+              setRestaurant(prev => {
+                if (!prev?.menuSections || prev.menuSections.length === 0) {
+                  setMenuUnavailable(true)
+                }
+                return prev
+              })
+              debugError('? Error fetching menu:', menuError)
             } finally {
               setLoadingMenuItems(false)
             }
@@ -990,16 +1052,11 @@ function RestaurantDetailsContent() {
                     break
                   }
                 } catch (lookupError) {
-                  if (lookupError?.response?.status !== 404) {
-                    throw lookupError
-                  }
+                  debugLog('Lookup attempt failed for inventory ID:', lookupId, lookupError?.message)
                 }
               }
-              if (!inventoryResponse) {
-                throw Object.assign(new Error('Inventory not found'), { response: { status: 404 } })
-              }
-              debugLog('? Inventory resolved using lookup ID:', resolvedInventoryLookupId)
-              if (inventoryResponse.data && inventoryResponse.data.success && inventoryResponse.data.data && inventoryResponse.data.data.inventory) {
+              if (inventoryResponse?.data?.success && inventoryResponse?.data?.data?.inventory) {
+                debugLog('? Inventory resolved using lookup ID:', resolvedInventoryLookupId)
                 const inventoryCategories = inventoryResponse.data.data.inventory.categories || []
 
                 // Normalize inventory categories to ensure proper structure
@@ -1026,11 +1083,7 @@ function RestaurantDetailsContent() {
                 debugLog('? Fetched and normalized inventory categories:', normalizedInventory)
               }
             } catch (inventoryError) {
-              if (inventoryError.response && inventoryError.response.status === 404) {
-                debugLog('? Inventory not found for this restaurant (might be a dining-only listing).')
-              } else {
-                debugError('? Error fetching inventory:', inventoryError)
-              }
+              debugLog('? Inventory not found for this restaurant:', inventoryError?.message)
             }
           }
           else {
@@ -1040,7 +1093,7 @@ function RestaurantDetailsContent() {
           debugError('? No restaurant data found in API response')
           debugError('? Response:', response)
           debugError('? apiRestaurant:', apiRestaurant)
-          if (!fetchedRestaurantRef.current) {
+          if (!fetchedRestaurantRef.current && !restaurant) {
             setRestaurantError('Restaurant not found')
             setRestaurant(null)
           }
@@ -1057,21 +1110,21 @@ function RestaurantDetailsContent() {
           // Don't show "Restaurant not found" for network errors
           // The axios interceptor will show a toast notification
           debugError('Network error fetching restaurant (backend may not be running):', error)
-          if (!fetchedRestaurantRef.current) {
+          if (!fetchedRestaurantRef.current && !restaurant) {
             setRestaurantError('Backend server is not connected. Please make sure the backend is running.')
             setRestaurant(null)
           }
         } else if (is404Error) {
           // 404 error - restaurant doesn't exist in database
           debugLog(`Restaurant "${slug}" not found in database`)
-          if (!fetchedRestaurantRef.current) {
+          if (!fetchedRestaurantRef.current && !restaurant) {
             setRestaurantError('Restaurant not found')
             setRestaurant(null)
           }
         } else {
           // Other errors
           debugError('Error fetching restaurant:', error)
-          if (!fetchedRestaurantRef.current) {
+          if (!fetchedRestaurantRef.current && !restaurant) {
             setRestaurantError(error.message || 'Failed to load restaurant')
             setRestaurant(null)
           }
@@ -1082,17 +1135,16 @@ function RestaurantDetailsContent() {
       }
     }
 
-    // Reset fetched flag only when URL slug or zoneId changes.
+    // Reset fetched flag only when URL slug changes.
     // Do not compare with restaurant.slug because canonical API slug may differ
     // from route slug (e.g. "restaurant-2513"), causing refetch loops.
-    if (fetchedRestaurantRef.current && (fetchedSlugRef.current !== slug || fetchedZoneIdRef.current !== zoneId)) {
+    if (fetchedRestaurantRef.current && fetchedSlugRef.current !== slug) {
       fetchedRestaurantRef.current = false
       fetchedSlugRef.current = null
-      fetchedZoneIdRef.current = null
     }
 
     fetchRestaurant()
-  }, [slug, zoneId])
+  }, [slug])
 
   // Track previous values to prevent unnecessary recalculations
   const prevCoordsRef = useRef({ userLat: null, userLng: null, restaurantLat: null, restaurantLng: null })

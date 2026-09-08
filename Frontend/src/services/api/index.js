@@ -1195,22 +1195,24 @@ export const restaurantAPI = {
     getPublicRestaurantsOnce(params, config),
   /** Public: get single approved restaurant by id or slug */
   getRestaurantById: (id, config = {}) => {
-    const restaurant = mockRestaurants.find(r => r.id === String(id) || r.slug === String(id));
+    const safeId = String(id || "").trim();
+    const restaurant = mockRestaurants.find(r => r.id === safeId || r.slug === safeId);
     if (restaurant) return Promise.resolve({ data: { success: true, data: restaurant } });
-    return userClient.get(`/food/restaurant/restaurants/${String(id)}`, { ...config });
+    return userClient.get(`/food/restaurant/restaurants/${encodeURIComponent(safeId)}`, { ...config });
   },
   /** Public: get approved menu by restaurant id or slug */
   getMenuByRestaurantId: (id, config = {}) => {
-    const menu = mockMenus[String(id)];
+    const safeId = String(id || "").trim();
+    const menu = mockMenus[safeId];
     if (menu) return Promise.resolve({ data: { success: true, data: { menu } } });
-    return getPublicRestaurantMenuOnce(id, config);
+    return getPublicRestaurantMenuOnce(safeId, config);
   },
   /** Public: get outlet timings by restaurant id */
   getOutletTimingsByRestaurantId: (id, config = {}) =>
     getPublicRestaurantOutletTimingsOnce(id, config),
   /** Public (user app): approved add-ons by restaurant id/slug */
   getAddonsByRestaurantId: (id, config = {}) =>
-    userClient.get(`/food/restaurant/restaurants/${String(id)}/addons`, {
+    userClient.get(`/food/restaurant/restaurants/${encodeURIComponent(String(id || "").trim())}/addons`, {
       ...config,
     }),
   getPublicOffers: (params = {}) =>
@@ -1447,14 +1449,15 @@ const getPublicRestaurantMenuOnce = (id, config = {}) => {
       config: {},
     });
   }
+  const encodedId = encodeURIComponent(safeId);
   if (noCache) {
-    return userClient.get(`/food/restaurant/restaurants/${safeId}/menu`, {
+    return userClient.get(`/food/restaurant/restaurants/${encodedId}/menu`, {
       ...axiosConfig,
     });
   }
   const key = `menu:${safeId}`;
   return publicRestaurantMenuCache.getOrCreate(key, () =>
-    userClient.get(`/food/restaurant/restaurants/${safeId}/menu`, {
+    userClient.get(`/food/restaurant/restaurants/${encodedId}/menu`, {
       ...axiosConfig,
     }),
   );
@@ -1472,15 +1475,16 @@ const getPublicRestaurantOutletTimingsOnce = (id, config = {}) => {
       config: {},
     });
   }
+  const encodedId = encodeURIComponent(safeId);
   if (noCache) {
     return userClient.get(
-      `/food/restaurant/restaurants/${safeId}/outlet-timings`,
+      `/food/restaurant/restaurants/${encodedId}/outlet-timings`,
       { ...axiosConfig },
     );
   }
   const key = `outletTimings:${safeId}`;
   return publicRestaurantOutletTimingsCache.getOrCreate(key, () =>
-    userClient.get(`/food/restaurant/restaurants/${safeId}/outlet-timings`, {
+    userClient.get(`/food/restaurant/restaurants/${encodedId}/outlet-timings`, {
       ...axiosConfig,
     }),
   );
