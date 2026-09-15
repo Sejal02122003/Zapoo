@@ -30,7 +30,13 @@ const resolveRestaurantBackPath = ({ pathname, state }) => {
   const isOwner = user && (user.role === "OWNER" || user.isOwner || (!user.outletId && user.role !== "OUTLETER"))
 
   if (isOwner) {
-    if (normalizedPath === "/zone-setup" || normalizedPath === "/settings" || normalizedPath.startsWith("/owner/")) {
+    if (
+      normalizedPath === "/zone-setup" ||
+      normalizedPath === "/settings" ||
+      normalizedPath === "/outlet-info" ||
+      normalizedPath === "/outlet-timings" ||
+      normalizedPath.startsWith("/owner/")
+    ) {
       return explicitBackPath || "/food/restaurant/owner"
     }
   }

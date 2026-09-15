@@ -25,7 +25,8 @@ import {
   FileSpreadsheet,
   MapPin,
   Ticket,
-  Tag
+  Tag,
+  Info
 } from "lucide-react"
 import { toast } from "sonner"
 import { ownerAPI } from "@food/api"
@@ -175,6 +176,15 @@ export default function OwnerDashboard() {
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </button>
+
+            <Link
+              to="/food/restaurant/outlet-info"
+              className="px-3.5 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-2xl text-xs font-black border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 transition-all flex items-center gap-1.5"
+              title="Edit Restaurant Info, Logo, Cover Photos & Details"
+            >
+              <Info className="w-4 h-4 text-[#22A2E3]" />
+              <span>Outlet Info & Photos</span>
+            </Link>
 
             <button
               onClick={() => setIsAddOutletOpen(true)}

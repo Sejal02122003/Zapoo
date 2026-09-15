@@ -21,7 +21,8 @@ import {
   MapPin,
   Clock,
   Ticket,
-  Tag
+  Tag,
+  Info
 } from "lucide-react"
 import { clearModuleAuth, getCurrentUser } from "@food/utils/auth"
 import { ownerAPI, restaurantAPI } from "@food/api"
@@ -270,6 +271,18 @@ export default function OwnerNav({ selectedOutletId, onSelectOutlet, outlets = [
             >
               <BarChart3 className="w-3.5 h-3.5 shrink-0" />
               <span>Dashboard</span>
+            </Link>
+
+            <Link
+              to="/food/restaurant/outlet-info"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shrink-0 ${
+                location.pathname === "/food/restaurant/outlet-info"
+                  ? "bg-[#22A2E3] text-white shadow-sm shadow-[#22A2E3]/25"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              <span>Outlet Info & Photos</span>
             </Link>
 
             <Link
