@@ -14,6 +14,7 @@ import {
 } from "@food/components/ui/select"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { ArrowLeft, Loader2, Image as ImageIcon } from "lucide-react"
+import { Switch } from "@food/components/ui/switch"
 
 const debugError = (..._args) => {}
 
@@ -91,7 +92,11 @@ const normalizeDetailsFormFromRestaurant = (restaurant) => {
     offer: restaurant?.offer || "",
     openingTime: restaurant?.openingTime || restaurant?.deliveryTimings?.openingTime || "",
     closingTime: restaurant?.closingTime || restaurant?.deliveryTimings?.closingTime || "",
-    isActive: restaurant?.isActive !== false }
+    isActive: restaurant?.isActive !== false,
+    isAcceptingOrders:
+      restaurant?.isAcceptingOrders !== undefined
+        ? Boolean(restaurant.isAcceptingOrders)
+        : (restaurant?.isOpen !== undefined ? Boolean(restaurant.isOpen) : (restaurant?.isClosed !== undefined ? !restaurant.isClosed : true)) }
 }
 
 async function loadGooglePlaces() {
@@ -342,7 +347,8 @@ export default function EditRestaurant() {
         offer: detailsForm.offer,
         openingTime: detailsForm.openingTime || undefined,
         closingTime: detailsForm.closingTime || undefined,
-        isActive: detailsForm.isActive !== false
+        isActive: detailsForm.isActive !== false,
+        isAcceptingOrders: detailsForm.isAcceptingOrders !== false
       }
 
       if (profileImage) {
@@ -519,6 +525,19 @@ export default function EditRestaurant() {
                     >
                       No
                     </button>
+                  </div>
+                </div>
+                <div>
+                  <Label>Store Status (Accepting Orders)</Label>
+                  <div className="flex items-center gap-3 pt-2">
+                    <Switch
+                      checked={detailsForm.isAcceptingOrders !== false}
+                      onCheckedChange={(checked) => setDetailsForm((p) => ({ ...p, isAcceptingOrders: checked }))}
+                      className="data-[state=checked]:bg-emerald-600"
+                    />
+                    <span className={`text-xs font-semibold ${detailsForm.isAcceptingOrders !== false ? "text-emerald-700" : "text-slate-500"}`}>
+                      {detailsForm.isAcceptingOrders !== false ? "Online (Accepting Orders)" : "Offline (Closed)"}
+                    </span>
                   </div>
                 </div>
                 <div>

@@ -627,6 +627,28 @@ export const updateRestaurantAcceptingOrders = async (restaurantId, isAcceptingO
     } catch (cacheErr) {
         // Non-fatal
     }
+    try {
+        const { getIO, rooms } = await import('../../../../config/socket.js');
+        const io = getIO();
+        if (io) {
+            io.to(rooms.restaurant(String(restaurantId))).emit('food:restaurant:availability_changed', {
+                restaurantId: String(restaurantId),
+                isOnline: value,
+                isAcceptingOrders: value,
+                isOpen: value,
+                isClosed: !value,
+                updatedBy: 'restaurant'
+            });
+            io.emit('food:restaurant:status_updated', {
+                restaurantId: String(restaurantId),
+                isAcceptingOrders: value,
+                isOpen: value,
+                isClosed: !value
+            });
+        }
+    } catch (sockErr) {
+        // Non-fatal
+    }
     return toRestaurantProfile(doc);
 };
 

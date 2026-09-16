@@ -299,7 +299,7 @@ export async function getRestaurants(query) {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .select('restaurantName location area city profileImage coverImages menuImages menuPdf status ownerName ownerPhone zoneId zoneRank rating discount itemDiscounts discountRules isTakeawayEnabled')
+            .select('restaurantName location area city profileImage coverImages menuImages menuPdf status ownerName ownerPhone zoneId zoneRank rating discount itemDiscounts discountRules isTakeawayEnabled isAcceptingOrders isOpen isClosed isActive')
             .populate('zoneId', 'name zoneName')
             .lean(),
         FoodRestaurant.countDocuments(filter)
@@ -2897,7 +2897,10 @@ export async function updateRestaurantById(id, body = {}) {
     }
 
     if (body.isAcceptingOrders !== undefined) {
-        doc.isAcceptingOrders = parseBooleanLike(body.isAcceptingOrders, 'isAcceptingOrders');
+        const value = parseBooleanLike(body.isAcceptingOrders, 'isAcceptingOrders');
+        doc.isAcceptingOrders = value;
+        doc.isClosed = !value;
+        doc.isOpen = value;
     }
 
     if (body.isTakeawayEnabled !== undefined) {
@@ -3089,7 +3092,71 @@ export async function updateRestaurantById(id, body = {}) {
     }
 
     await doc.save();
+
+    if (body.isAcceptingOrders !== undefined) {
+        try {
+            const { getIO, rooms } = await import('../../../../config/socket.js');
+            const io = getIO();
+            if (io) {
+                const val = Boolean(doc.isAcceptingOrders);
+                io.to(rooms.restaurant(String(id))).emit('food:restaurant:availability_changed', {
+                    restaurantId: String(id),
+                    isOnline: val,
+                    isAcceptingOrders: val,
+                    isOpen: val,
+                    isClosed: !val,
+                    updatedBy: 'admin'
+                });
+                io.emit('food:restaurant:status_updated', {
+                    restaurantId: String(id),
+                    isAcceptingOrders: val,
+                    isOpen: val,
+                    isClosed: !val
+                });
+            }
+        } catch (_) {}
+    }
+
     return FoodRestaurant.findById(id).select('-__v').populate('zoneId', 'name zoneName serviceLocation isActive').lean();
+}
+
+export async function updateRestaurantAvailability(id, isAcceptingOrders) {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
+    const value = Boolean(isAcceptingOrders);
+    const doc = await FoodRestaurant.findByIdAndUpdate(
+        id,
+        { $set: { isAcceptingOrders: value, isClosed: !value, isOpen: value } },
+        { new: true, runValidators: false }
+    ).lean();
+    if (!doc) return null;
+
+    try {
+        const { invalidateCache } = await import('../../../../middleware/cache.js');
+        await invalidateCache('*restaurant*');
+    } catch (_) {}
+
+    try {
+        const { getIO, rooms } = await import('../../../../config/socket.js');
+        const io = getIO();
+        if (io) {
+            io.to(rooms.restaurant(String(id))).emit('food:restaurant:availability_changed', {
+                restaurantId: String(id),
+                isOnline: value,
+                isAcceptingOrders: value,
+                isOpen: value,
+                isClosed: !value,
+                updatedBy: 'admin'
+            });
+            io.emit('food:restaurant:status_updated', {
+                restaurantId: String(id),
+                isAcceptingOrders: value,
+                isOpen: value,
+                isClosed: !value
+            });
+        }
+    } catch (_) {}
+
+    return doc;
 }
 
 export async function updateRestaurantStatus(id, body = {}) {

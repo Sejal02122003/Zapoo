@@ -481,6 +481,31 @@ export async function updateRestaurantStatus(req, res, next) {
     }
 }
 
+export async function updateRestaurantAvailabilityAdmin(req, res, next) {
+    try {
+        const { id } = req.params;
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid restaurant id' });
+        }
+        const { isAcceptingOrders, isOpen, status } = req.body || {};
+        const targetValue = isAcceptingOrders !== undefined 
+            ? isAcceptingOrders 
+            : (isOpen !== undefined ? isOpen : (status === 'online' || status === true || status === 'active'));
+        const updated = await adminService.updateRestaurantAvailability(id, targetValue);
+        if (!updated) {
+            return res.status(404).json({ success: false, message: 'Restaurant not found' });
+        }
+        const isOnline = Boolean(updated.isAcceptingOrders);
+        res.status(200).json({
+            success: true,
+            message: `Restaurant is now ${isOnline ? 'Online (Accepting orders)' : 'Offline (Closed)'}`,
+            data: { restaurant: updated }
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export async function updateRestaurantLocation(req, res, next) {
     try {
         const { id } = req.params;

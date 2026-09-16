@@ -27,7 +27,7 @@ export default function AdminLayout() {
       // Play a loud/noticeable toast for SOS
       toast.error(
         <div className="flex flex-col gap-1">
-          <span className="font-bold text-lg">âš ï¸  EMERGENCY: {data.type}</span>
+          <span className="font-bold text-lg">⚠️ EMERGENCY: {data.type}</span>
           <span>Rider: {data.riderName} ({data.phone}) triggered an SOS alert!</span>
           {data.activeOrderNumber && (
              <span className="font-bold mt-1 text-white bg-black/20 p-1 rounded">Active Order: {data.activeOrderNumber}</span>
@@ -35,6 +35,14 @@ export default function AdminLayout() {
         </div>,
         { duration: 15000, position: "top-center", style: { background: '#ef4444', color: '#fff', border: 'none' } }
       )
+    })
+
+    socket.on("food:restaurant:status_updated", (data) => {
+      window.dispatchEvent(new CustomEvent("restaurantStatusChanged", { detail: data }))
+    })
+
+    socket.on("food:restaurant:availability_changed", (data) => {
+      window.dispatchEvent(new CustomEvent("restaurantStatusChanged", { detail: data }))
     })
 
     return () => {

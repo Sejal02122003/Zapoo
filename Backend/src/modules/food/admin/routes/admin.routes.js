@@ -148,6 +148,7 @@ router.get('/restaurants/:id/menu-pdf', adminController.getRestaurantMenuPdfDown
 router.post('/restaurants', adminController.createRestaurant);
 router.patch('/restaurants/:id', adminController.updateRestaurantById);
 router.patch('/restaurants/:id/status', adminController.updateRestaurantStatus);
+router.patch('/restaurants/:id/availability', adminController.updateRestaurantAvailabilityAdmin);
 router.patch('/restaurants/:id/location', adminController.updateRestaurantLocation);
 router.patch('/restaurants/:id/outlet-timings', adminController.updateRestaurantOutletTimings);
 router.patch('/restaurants/:id/menu', adminController.updateRestaurantMenuById);

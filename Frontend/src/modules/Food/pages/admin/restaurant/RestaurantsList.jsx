@@ -15,6 +15,7 @@ import {
 } from "@food/components/ui/select"
 import AdminLocationMapPicker from "@food/components/admin/restaurants/AdminLocationMapPicker"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
+import { Switch } from "@food/components/ui/switch"
 
 // Import icons from Dashboard-icons
 const debugLog = (...args) => {}
@@ -154,7 +155,9 @@ export default function RestaurantsList() {
     openingTime: "",
     closingTime: "",
     outletTimings: getDefaultDays(),
-    isActive: true })
+    isActive: true,
+    isAcceptingOrders: true })
+  const [togglingStatusId, setTogglingStatusId] = useState(null)
   const [profileImageFile, setProfileImageFile] = useState(null)
   const [profileImagePreview, setProfileImagePreview] = useState("")
   const [isEditingLocation, setIsEditingLocation] = useState(false)
@@ -277,6 +280,7 @@ export default function RestaurantsList() {
             zone: zoneLabelFromRestaurant(restaurant),
             approvalStatus: normalizeApprovalStatus(restaurant),
             isActive: restaurant.isActive !== false,
+            isAcceptingOrders: restaurant.isAcceptingOrders !== false && restaurant.isClosed !== true && restaurant.isOpen !== false,
             rating: restaurant.ratings?.average || restaurant.rating || 0,
             logo: getPrimaryRestaurantImage(restaurant, PLACEHOLDER_40),
             originalData: restaurant }))
@@ -311,6 +315,182 @@ export default function RestaurantsList() {
 
   const [searchParams] = useSearchParams()
   const restaurantIdFromUrl = searchParams.get("restaurantId")
+
+  // Real-time synchronization for restaurant online / availability status
+  useEffect(() => {
+    const handleStatusSync = (event) => {
+      const data = event?.detail
+      if (!data) return
+      const targetId = String(data.restaurantId || data.id || data._id || "")
+      if (!targetId) return
+      const isOnline = data.isOnline !== undefined
+        ? Boolean(data.isOnline)
+        : (data.isAcceptingOrders !== undefined ? Boolean(data.isAcceptingOrders) : Boolean(data.isOpen))
+
+      setRestaurants((prev) =>
+        prev.map((r) =>
+          (String(r._id) === targetId || String(r.id) === targetId)
+            ? {
+                ...r,
+                isAcceptingOrders: isOnline,
+                originalData: {
+                  ...(r.originalData || {}),
+                  isAcceptingOrders: isOnline,
+                  isOpen: isOnline,
+                  isClosed: !isOnline
+                }
+              }
+            : r
+        )
+      )
+
+      setSelectedRestaurant((prev) => {
+        if (!prev) return prev
+        if (String(prev._id) === targetId || String(prev.id) === targetId) {
+          return {
+            ...prev,
+            isAcceptingOrders: isOnline,
+            originalData: {
+              ...(prev.originalData || {}),
+              isAcceptingOrders: isOnline,
+              isOpen: isOnline,
+              isClosed: !isOnline
+            }
+          }
+        }
+        return prev
+      })
+
+      setRestaurantDetails((prev) => {
+        if (!prev) return prev
+        if (String(prev._id) === targetId || String(prev.id) === targetId) {
+          return {
+            ...prev,
+            isAcceptingOrders: isOnline,
+            isOpen: isOnline,
+            isClosed: !isOnline
+          }
+        }
+        return prev
+      })
+    }
+
+    window.addEventListener("restaurantStatusChanged", handleStatusSync)
+    return () => {
+      window.removeEventListener("restaurantStatusChanged", handleStatusSync)
+    }
+  }, [])
+
+  // Handle toggling restaurant accepting orders / store status from admin
+  const handleToggleAvailability = async (restaurant, nextChecked) => {
+    const restaurantId = restaurant?._id || restaurant?.id
+    if (!restaurantId) return
+
+    const previousChecked = restaurant?.isAcceptingOrders !== false
+
+    // 1. Optimistic local update
+    setRestaurants((prev) =>
+      prev.map((r) =>
+        (r._id === restaurantId || r.id === restaurantId)
+          ? {
+              ...r,
+              isAcceptingOrders: nextChecked,
+              originalData: {
+                ...(r.originalData || {}),
+                isAcceptingOrders: nextChecked,
+                isOpen: nextChecked,
+                isClosed: !nextChecked
+              }
+            }
+          : r
+      )
+    )
+
+    setSelectedRestaurant((prev) => {
+      if (!prev) return prev
+      if (prev._id === restaurantId || prev.id === restaurantId) {
+        return {
+          ...prev,
+          isAcceptingOrders: nextChecked,
+          originalData: {
+            ...(prev.originalData || {}),
+            isAcceptingOrders: nextChecked,
+            isOpen: nextChecked,
+            isClosed: !nextChecked
+          }
+        }
+      }
+      return prev
+    })
+
+    setRestaurantDetails((prev) => {
+      if (!prev) return prev
+      if (prev._id === restaurantId || prev.id === restaurantId) {
+        return {
+          ...prev,
+          isAcceptingOrders: nextChecked,
+          isOpen: nextChecked,
+          isClosed: !nextChecked
+        }
+      }
+      return prev
+    })
+
+    try {
+      setTogglingStatusId(restaurantId)
+      await adminAPI.updateRestaurantAvailability(restaurantId, nextChecked)
+    } catch (err) {
+      debugError("Error updating restaurant store status:", err)
+      // Rollback on error
+      setRestaurants((prev) =>
+        prev.map((r) =>
+          (r._id === restaurantId || r.id === restaurantId)
+            ? {
+                ...r,
+                isAcceptingOrders: previousChecked,
+                originalData: {
+                  ...(r.originalData || {}),
+                  isAcceptingOrders: previousChecked,
+                  isOpen: previousChecked,
+                  isClosed: !previousChecked
+                }
+              }
+            : r
+        )
+      )
+      setSelectedRestaurant((prev) => {
+        if (!prev) return prev
+        if (prev._id === restaurantId || prev.id === restaurantId) {
+          return {
+            ...prev,
+            isAcceptingOrders: previousChecked,
+            originalData: {
+              ...(prev.originalData || {}),
+              isAcceptingOrders: previousChecked,
+              isOpen: previousChecked,
+              isClosed: !previousChecked
+            }
+          }
+        }
+        return prev
+      })
+      setRestaurantDetails((prev) => {
+        if (!prev) return prev
+        if (prev._id === restaurantId || prev.id === restaurantId) {
+          return {
+            ...prev,
+            isAcceptingOrders: previousChecked,
+            isOpen: previousChecked,
+            isClosed: !previousChecked
+          }
+        }
+        return prev
+      })
+      alert(err?.response?.data?.message || "Failed to update restaurant status. Please try again.")
+    } finally {
+      setTogglingStatusId(null)
+    }
+  }
 
   useEffect(() => {
     if (restaurantIdFromUrl && restaurants.length > 0) {
@@ -787,7 +967,11 @@ export default function RestaurantsList() {
       openingTime: openingTimeValue,
       closingTime: closingTimeValue,
       outletTimings: getDefaultDays(),
-      isActive: restaurant.isActive !== false }
+      isActive: restaurant.isActive !== false,
+      isAcceptingOrders:
+        restaurant.isAcceptingOrders !== undefined
+          ? Boolean(restaurant.isAcceptingOrders)
+          : (restaurant.isOpen !== undefined ? Boolean(restaurant.isOpen) : (restaurant.isClosed !== undefined ? !restaurant.isClosed : true)) }
   }
 
   const handleStartEditDetails = async () => {
@@ -850,7 +1034,8 @@ export default function RestaurantsList() {
         estimatedDeliveryTime: String(detailsForm.estimatedDeliveryTime || "").trim(),
         openingTime: normalizedOpeningTime,
         closingTime: normalizedClosingTime,
-        isActive: detailsForm.isActive !== false
+        isActive: detailsForm.isActive !== false,
+        isAcceptingOrders: detailsForm.isAcceptingOrders !== false
       }
 
       if (profileImage) {
@@ -882,6 +1067,7 @@ export default function RestaurantsList() {
                 ownerPhone: updatedRestaurant.ownerPhone || updatedRestaurant.phone || item.ownerPhone,
                 zone: updatedRestaurant.location?.area || updatedRestaurant.location?.city || item.zone,
                 isActive: updatedRestaurant.isActive !== false,
+                isAcceptingOrders: updatedRestaurant.isAcceptingOrders !== undefined ? Boolean(updatedRestaurant.isAcceptingOrders) : detailsForm.isAcceptingOrders !== false,
                 approvalStatus: normalizeApprovalStatus(updatedRestaurant),
                 logo: getPrimaryRestaurantImage(updatedRestaurant, item.logo),
                 profileImage: updatedRestaurant.profileImage || profileImage || item.profileImage,
@@ -1287,6 +1473,7 @@ export default function RestaurantsList() {
                       </div>
                     </th>
                     <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">Takeaway</th>
+                    <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">Store Status</th>
                     <th
                       className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                       onClick={() => handleSort('status')}
@@ -1302,7 +1489,7 @@ export default function RestaurantsList() {
                 <tbody className="bg-white divide-y divide-slate-100">
                   {filteredRestaurants.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-6 py-20 text-center">
+                      <td colSpan={9} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center justify-center">
                           <p className="text-lg font-semibold text-slate-700 mb-1">No Data Found</p>
                           <p className="text-sm text-slate-500">No restaurants match your search</p>
@@ -1377,6 +1564,25 @@ export default function RestaurantsList() {
                               Inactive
                             </span>
                           )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <div className="flex flex-col items-center justify-center gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={restaurant.isAcceptingOrders !== false}
+                                onCheckedChange={(checked) => handleToggleAvailability(restaurant, checked)}
+                                disabled={togglingStatusId === (restaurant._id || restaurant.id)}
+                                className="data-[state=checked]:bg-emerald-600"
+                              />
+                              {togglingStatusId === (restaurant._id || restaurant.id) && (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                              )}
+                            </div>
+                            <span className={`text-[11px] font-semibold inline-flex items-center gap-1 ${restaurant.isAcceptingOrders !== false ? "text-emerald-700" : "text-slate-500"}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${restaurant.isAcceptingOrders !== false ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+                              {restaurant.isAcceptingOrders !== false ? "Online" : "Offline"}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col gap-1">
@@ -1639,6 +1845,19 @@ export default function RestaurantsList() {
                       <input type="email" value={detailsForm.email} onChange={(e) => setDetailsForm((prev) => ({ ...prev, email: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
                     </div>
                     <div>
+                      <label className="block text-xs text-slate-500 mb-1">Store Status (Accepting Orders)</label>
+                      <div className="flex items-center gap-3 pt-1">
+                        <Switch
+                          checked={detailsForm.isAcceptingOrders !== false}
+                          onCheckedChange={(checked) => setDetailsForm(prev => ({ ...prev, isAcceptingOrders: checked }))}
+                          className="data-[state=checked]:bg-emerald-600"
+                        />
+                        <span className={`text-xs font-semibold ${detailsForm.isAcceptingOrders !== false ? "text-emerald-700" : "text-slate-500"}`}>
+                          {detailsForm.isAcceptingOrders !== false ? "Online (Accepting Orders)" : "Offline (Closed)"}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
                       <label className="block text-xs text-slate-500 mb-1">Owner Name</label>
                       <input type="text" value={detailsForm.ownerName} onChange={(e) => setDetailsForm((prev) => ({ ...prev, ownerName: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
                     </div>
@@ -1805,10 +2024,27 @@ export default function RestaurantsList() {
                         <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
                           {r?.restaurantName || r?.name || "N/A"}
                         </h3>
-                        <div className="flex items-center justify-center md:justify-start gap-2">
+                        <div className="flex items-center justify-center md:justify-start gap-3 flex-wrap">
                           <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${r?.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {r?.isActive !== false ? 'Active' : 'Inactive'}
+                            {r?.isActive !== false ? 'Outlet Active' : 'Outlet Inactive'}
                           </span>
+                          <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                            <span className="text-xs font-semibold text-slate-700">Store Status:</span>
+                            <Switch
+                              checked={(restaurantDetails?.isAcceptingOrders !== undefined ? restaurantDetails.isAcceptingOrders : selectedRestaurant?.isAcceptingOrders) !== false}
+                              onCheckedChange={(checked) => handleToggleAvailability(selectedRestaurant || r, checked)}
+                              disabled={togglingStatusId === (r?._id || selectedRestaurant?._id)}
+                              className="data-[state=checked]:bg-emerald-600 scale-90"
+                            />
+                            <span className={`text-xs font-bold ${
+                              ((restaurantDetails?.isAcceptingOrders !== undefined ? restaurantDetails.isAcceptingOrders : selectedRestaurant?.isAcceptingOrders) !== false) ? "text-emerald-700" : "text-slate-500"
+                            }`}>
+                              {((restaurantDetails?.isAcceptingOrders !== undefined ? restaurantDetails.isAcceptingOrders : selectedRestaurant?.isAcceptingOrders) !== false) ? "Online (Open)" : "Offline (Closed)"}
+                            </span>
+                            {togglingStatusId === (r?._id || selectedRestaurant?._id) && (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center justify-center md:justify-start gap-6 flex-wrap">

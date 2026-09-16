@@ -458,6 +458,9 @@ export const adminAPI = {
   /** Update restaurant status (admin). Body: { status: boolean } */
   updateRestaurantStatus: (id, status) =>
     adminClient.patch(`/food/admin/restaurants/${String(id)}/status`, { status: status !== false }),
+  /** Update restaurant store availability / accepting orders (admin). */
+  updateRestaurantAvailability: (id, isAcceptingOrders) =>
+    adminClient.patch(`/food/admin/restaurants/${String(id)}/availability`, { isAcceptingOrders: Boolean(isAcceptingOrders) }),
   /** Update restaurant location (admin). Body includes lat/lng + address fields. */
   updateRestaurantLocation: (id, body) =>
     adminClient.patch(`/food/admin/restaurants/${String(id)}/location`, body ?? {}),
