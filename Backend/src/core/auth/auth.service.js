@@ -500,16 +500,33 @@ export const loginOutletWithCredentials = async (usernameOrPhone, password, fcmT
     throw new ValidationError("Username/Phone and password are required");
   }
   const query = String(usernameOrPhone).trim();
+  const rawPassword = String(password).trim();
   const digits = query.replace(/\D/g, "");
-  const last10 = digits.slice(-10);
+  const last10 = digits.length >= 10 ? digits.slice(-10) : digits;
+
+  const escapeRegex = (str) => String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escaped = escapeRegex(query);
+
+  const orConditions = [
+    { "credentials.username": { $regex: new RegExp(`^${escaped}$`, "i") } },
+    { outletCode: { $regex: new RegExp(`^${escaped}$`, "i") } },
+    { email: { $regex: new RegExp(`^${escaped}$`, "i") } },
+    { phone: query },
+    { "credentials.contactPhone": query },
+    { managerPhone: query },
+  ];
+
+  if (last10 && last10.length >= 7) {
+    orConditions.push(
+      { phoneLast10: last10 },
+      { phone: { $regex: new RegExp(last10 + "$") } },
+      { "credentials.contactPhone": { $regex: new RegExp(last10 + "$") } },
+      { managerPhone: { $regex: new RegExp(last10 + "$") } }
+    );
+  }
 
   const outletDoc = await FoodOutlet.findOne({
-    $or: [
-      { "credentials.username": query.toLowerCase() },
-      { phone: query },
-      ...(last10 ? [{ phoneLast10: last10 }] : []),
-      { email: query.toLowerCase() },
-    ],
+    $or: orConditions,
   });
 
   if (!outletDoc) {
@@ -517,8 +534,9 @@ export const loginOutletWithCredentials = async (usernameOrPhone, password, fcmT
   }
 
   const isValidPassword = outletDoc.credentials?.passwordHash
-    ? await bcrypt.compare(password, outletDoc.credentials.passwordHash)
-    : outletDoc.credentials?.rawPasswordDisplay === password;
+    ? (await bcrypt.compare(rawPassword, outletDoc.credentials.passwordHash) ||
+       (outletDoc.credentials?.rawPasswordDisplay && (outletDoc.credentials.rawPasswordDisplay === rawPassword || outletDoc.credentials.rawPasswordDisplay === password)))
+    : (outletDoc.credentials?.rawPasswordDisplay === rawPassword || outletDoc.credentials?.rawPasswordDisplay === password);
 
   if (!isValidPassword) {
     throw new AuthError("Invalid outlet credentials");
