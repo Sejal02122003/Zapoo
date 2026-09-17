@@ -53,9 +53,11 @@ const buildPagination = (query) => {
  * Get comprehensive owner dashboard summary
  */
 export async function getOwnerSummary(restaurantId, query = {}) {
-  if (!restaurantId) throw new ValidationError("Restaurant ID is required");
+  if (!restaurantId || !mongoose.Types.ObjectId.isValid(String(restaurantId))) {
+    throw new ValidationError("Valid Restaurant ID is required");
+  }
 
-  const restObjectId = new mongoose.Types.ObjectId(restaurantId);
+  const restObjectId = new mongoose.Types.ObjectId(String(restaurantId));
   const { outletId, startDate, endDate } = query;
 
   // Base match filter for orders
@@ -359,9 +361,11 @@ export async function getOwnerSummary(restaurantId, query = {}) {
  * List outlets with search and status filter
  */
 export async function listOutlets(restaurantId, query = {}) {
-  if (!restaurantId) throw new ValidationError("Restaurant ID is required");
+  if (!restaurantId || !mongoose.Types.ObjectId.isValid(String(restaurantId))) {
+    throw new ValidationError("Valid Restaurant ID is required");
+  }
 
-  const restObjectId = new mongoose.Types.ObjectId(restaurantId);
+  const restObjectId = new mongoose.Types.ObjectId(String(restaurantId));
   const { page, limit, skip } = buildPagination(query);
 
   const filter = { restaurantId: restObjectId };
