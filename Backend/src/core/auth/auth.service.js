@@ -97,6 +97,20 @@ const sanitizeDeliveryForAuthResponse = (deliveryDoc = {}) => {
   };
 };
 
+const storeRefreshToken = async ({ userId, token, expiresAt, device = null, ipAddress = null }) => {
+  try {
+    await FoodRefreshToken.findOneAndUpdate(
+      { token },
+      { userId, token, expiresAt, device, ipAddress },
+      { upsert: true, new: true }
+    );
+  } catch (err) {
+    if (err.code !== 11000) {
+      logger.warn({ err }, "Error storing refresh token");
+    }
+  }
+};
+
 export const requestUserOtp = async (phone) => {
   if (!phone) {
     throw new ValidationError("Phone is required");
@@ -255,7 +269,7 @@ export const verifyUserOtpAndLogin = async (
   const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
   const expiresAt = new Date(Date.now() + ttlMs);
 
-  await FoodRefreshToken.create({
+  await storeRefreshToken({
     userId: user._id,
     token: refreshToken,
     expiresAt,
@@ -293,7 +307,7 @@ export const adminLogin = async (email, password) => {
   const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
   const expiresAt = new Date(Date.now() + ttlMs);
 
-  await FoodRefreshToken.create({
+  await storeRefreshToken({
     userId: admin._id,
     token: refreshToken,
     expiresAt,
@@ -384,7 +398,7 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
     const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
     const expiresAt = new Date(Date.now() + ttlMs);
 
-    await FoodRefreshToken.create({
+    await storeRefreshToken({
       userId: restaurant._id,
       token: refreshToken,
       expiresAt,
@@ -455,7 +469,7 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
     const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
     const expiresAt = new Date(Date.now() + ttlMs);
 
-    await FoodRefreshToken.create({
+    await storeRefreshToken({
       userId: outletDoc._id,
       token: refreshToken,
       expiresAt,
@@ -578,7 +592,7 @@ export const loginOutletWithCredentials = async (usernameOrPhone, password, fcmT
   const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
   const expiresAt = new Date(Date.now() + ttlMs);
 
-  await FoodRefreshToken.create({
+  await storeRefreshToken({
     userId: outletDoc._id,
     token: refreshToken,
     expiresAt,
@@ -696,7 +710,7 @@ export const verifyDeliveryOtpAndLogin = async (phone, otp, fcmToken, platform) 
   const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
   const expiresAt = new Date(Date.now() + ttlMs);
 
-  await FoodRefreshToken.create({
+  await storeRefreshToken({
     userId: deliveryPartner._id,
     token: refreshToken,
     expiresAt,
