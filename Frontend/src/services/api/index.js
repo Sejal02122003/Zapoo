@@ -1500,6 +1500,13 @@ let restaurantCurrentCacheTime = 0;
 const RESTAURANT_CURRENT_CACHE_MS = 3000;
 
 const getRestaurantCurrentOnce = () => {
+  const token = typeof window !== "undefined"
+    ? (localStorage.getItem("restaurant_accessToken") || localStorage.getItem("restaurantToken"))
+    : null;
+  if (!token) {
+    return Promise.reject({ response: { status: 401, data: { message: "No restaurant token found" } } });
+  }
+
   const now = Date.now();
   if (
     restaurantCurrentCached &&

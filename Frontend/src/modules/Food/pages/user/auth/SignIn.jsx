@@ -4,7 +4,7 @@ import { AlertCircle, Loader2, ChefHat, Smartphone, MapPin, Gauge, Pizza, Leaf, 
 import AnimatedPage from "@food/components/user/AnimatedPage"
 import { authAPI } from "@food/api"
 import { motion } from "framer-motion"
-import logoNew from "@/assets/user_logo.jpeg"
+import logoNew from "@/assets/user_logo.png"
 
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}

@@ -1187,10 +1187,8 @@ export const refreshAccessToken = async (token) => {
     }
   }
 
-  const newAccessToken = signAccessToken({
-    userId: payload.userId,
-    role: payload.role,
-  });
+  const { exp, iat, jti, nbf, ...restPayload } = payload;
+  const newAccessToken = signAccessToken(restPayload);
 
   return { accessToken: newAccessToken, refreshToken: token };
 };

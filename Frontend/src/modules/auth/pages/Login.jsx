@@ -5,7 +5,7 @@ import { Phone, ArrowRight, ShieldCheck, Loader2, Utensils, Star, Heart, ShieldQ
 import { toast } from "sonner"
 import { authAPI, userAPI } from "@food/api"
 import { setAuthData } from "@food/utils/auth"
-import logoNew from "@/assets/user_logo.jpeg"
+import logoNew from "@/assets/user_logo.png"
 import bgPattern from "@/assets/food_pattern_orange.png"
 import {
   Dialog,

@@ -79,7 +79,7 @@ export const loadBusinessSettings = async () => {
  */
 export const updateFavicon = (url) => {
   // Default to Zapoo user logo if no url provided
-  url = url || "/src/assets/user_logo.jpeg";
+  url = url || "/src/assets/user_logo.png";
   if (typeof document === 'undefined') return;
 
   // Remove existing favicons

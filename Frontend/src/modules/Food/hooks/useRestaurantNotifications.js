@@ -304,6 +304,11 @@ export const useRestaurantNotifications = () => {
   // Get restaurant ID from API
   useEffect(() => {
     const fetchRestaurantId = async () => {
+      const token = typeof window !== "undefined"
+        ? (localStorage.getItem("restaurant_accessToken") || localStorage.getItem("restaurantToken"))
+        : null;
+      if (!token) return;
+
       try {
         const response = await restaurantAPI.getCurrentRestaurant();
         if (response.data?.success && response.data.data?.restaurant) {
