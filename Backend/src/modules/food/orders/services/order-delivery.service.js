@@ -1286,6 +1286,175 @@ export async function verifyDropOtpDelivery(orderId, deliveryPartnerId, otp) {
   return { order: sanitizeOrderForExternal(order) };
 }
 
+/**
+ * Common financial processing for delivered orders:
+ * 1. Credits rider wallet immediately with ride delivery earning
+ * 2. Credits weather surcharge if applicable
+ * 3. Credits any pending rider incentives
+ * 4. Checks and processes shift slot auto-settlement for booked shifts
+ */
+export async function processOrderDeliveryFinancials(order, deliveryPartnerId, finalPayMethod = 'cash') {
+  if (!order || !deliveryPartnerId) return;
+
+  // 1. Credit rider wallet immediately with ride earnings
+  try {
+    let riderEarnedAmount = Number(order.riderEarning || order.pricing?.deliveryFee || 0);
+    // If riderEarnedAmount is 0 and it's a delivery order, try fallback to base delivery fee or 25
+    if (riderEarnedAmount <= 0 && order.orderType !== 'takeaway') {
+      try {
+        const { FoodFeeSettings } = await import('../../admin/models/feeSettings.model.js');
+        const feeSettings = await FoodFeeSettings.findOne({ isActive: true }).lean();
+        riderEarnedAmount = Number(feeSettings?.riderBasePayout || feeSettings?.deliveryBasePayout || 25);
+      } catch (e) {
+        riderEarnedAmount = 25;
+      }
+      order.riderEarning = riderEarnedAmount;
+      await FoodOrder.updateOne({ _id: order._id }, { $set: { riderEarning: riderEarnedAmount } });
+    }
+
+    if (riderEarnedAmount > 0) {
+      const { creditWallet } = await import('../../../../core/payments/wallet.service.js');
+      await creditWallet({
+        entityType: 'deliveryBoy',
+        entityId: String(deliveryPartnerId),
+        amount: riderEarnedAmount,
+        description: `Order #${order.orderId || order._id} - delivery earning`,
+        category: 'delivery_earning',
+        orderId: order._id.toString(),
+        metadata: { orderId: order.orderId, paymentMethod: finalPayMethod }
+      });
+
+      const { FoodDeliveryWallet } = await import('../../delivery/models/deliveryWallet.model.js');
+      await FoodDeliveryWallet.updateOne(
+        { deliveryPartnerId: new mongoose.Types.ObjectId(deliveryPartnerId) },
+        { $inc: { totalDeliveries: 1 } },
+        { upsert: true }
+      );
+      logger.info(`[RiderWallet] Credited ${riderEarnedAmount} to rider ${deliveryPartnerId} for order ${order.orderId || order._id}`);
+    }
+
+    // 2. Credit weather fee to rider wallet if present
+    if (Number(order.pricing?.weatherFee || 0) > 0) {
+      const { creditWallet } = await import('../../../../core/payments/wallet.service.js');
+      await creditWallet({
+        entityType: 'deliveryBoy',
+        entityId: String(deliveryPartnerId),
+        amount: Number(order.pricing.weatherFee),
+        description: `Order #${order.orderId || order._id} - weather surcharge`,
+        category: 'weather_surcharge',
+        orderId: order._id.toString(),
+        metadata: { orderId: order.orderId }
+      });
+    }
+
+    // 3. Check and credit any pending incentives for rider on this order
+    const { FoodIncentive } = await import('../models/incentive.model.js');
+    const pendingIncentives = await FoodIncentive.find({
+      orderId: order._id,
+      deliveryPartnerId: new mongoose.Types.ObjectId(deliveryPartnerId),
+      status: 'PENDING'
+    });
+    for (const incentive of pendingIncentives) {
+      incentive.status = 'CREDITED';
+      await incentive.save();
+      const { creditWallet } = await import('../../../../core/payments/wallet.service.js');
+      await creditWallet({
+        entityType: 'deliveryBoy',
+        entityId: String(deliveryPartnerId),
+        amount: incentive.amount,
+        description: `Order #${order.orderId || order._id} - ${incentive.incentiveType} incentive`,
+        category: 'bonus',
+        orderId: order._id.toString(),
+        metadata: { orderId: order.orderId, reason: incentive.reason }
+      });
+      const { FoodDeliveryWallet } = await import('../../delivery/models/deliveryWallet.model.js');
+      await FoodDeliveryWallet.updateOne(
+        { deliveryPartnerId: new mongoose.Types.ObjectId(deliveryPartnerId) },
+        { $inc: { totalBonus: incentive.amount } },
+        { upsert: true }
+      );
+    }
+  } catch (riderWalletErr) {
+    logger.error(`[RiderWallet] Error crediting rider earnings on delivery: ${riderWalletErr?.message}`);
+  }
+
+  // 4. Check and process booked shift slots for rider upon ride completion
+  try {
+    const { FoodShiftBooking } = await import('../../shifts/models/shiftBooking.model.js');
+    const { shiftService } = await import('../../shifts/services/shift.service.js');
+    const { shiftRepository } = await import('../../shifts/repositories/shift.repository.js');
+
+    const partnerOid = new mongoose.Types.ObjectId(deliveryPartnerId);
+    const bookings = await FoodShiftBooking.find({
+      riderId: { $in: [partnerOid, String(deliveryPartnerId)] },
+      status: 'BOOKED'
+    }).populate('shiftId');
+
+    const now = new Date();
+    for (const booking of bookings) {
+      const shift = booking.shiftId;
+      if (!shift) continue;
+
+      const shiftStart = new Date(shift.startTime);
+      const shiftEnd = new Date(shift.endTime);
+      const shiftStartGrace = new Date(shiftStart.getTime() - 15 * 60 * 1000);
+      const shiftEndGrace = new Date(shiftEnd.getTime() + 60 * 60 * 1000);
+
+      // Record / update attendance on the shift so the ride counts
+      let attendance = await shiftRepository.getAttendanceByRiderAndShift(partnerOid, shift._id);
+      if (!attendance) {
+        await shiftRepository.createOrUpdateAttendance(partnerOid, shift._id, {
+          loginTime: order.deliveryState?.pickedUpAt || shiftStart,
+          lastHeartbeatAt: now,
+          onlineMinutes: 60,
+          loginPercentage: 100
+        });
+      } else {
+        await shiftRepository.createOrUpdateAttendance(partnerOid, shift._id, {
+          lastHeartbeatAt: now,
+          loginPercentage: Math.max(attendance.loginPercentage || 0, 100)
+        });
+      }
+
+      const rules = {
+        guaranteeAmount: booking.snapshotRules?.guaranteeAmount ?? shift.guaranteeAmount ?? 0,
+        minimumOrders: booking.snapshotRules?.minimumOrders ?? shift.minimumOrders ?? 0,
+        minimumLoginPercentage: booking.snapshotRules?.minimumLoginPercentage ?? shift.minimumLoginPercentage ?? 0
+      };
+
+      const completedOrdersCount = await FoodOrder.countDocuments({
+        $and: [
+          {
+            $or: [
+              { 'dispatch.deliveryPartnerId': partnerOid },
+              { deliveryPartnerId: partnerOid }
+            ]
+          },
+          {
+            $or: [
+              { 'deliveryState.deliveredAt': { $gte: shiftStartGrace, $lte: shiftEndGrace } },
+              { deliveredAt: { $gte: shiftStartGrace, $lte: shiftEndGrace } },
+              { createdAt: { $gte: shiftStartGrace, $lte: shiftEndGrace } }
+            ]
+          }
+        ],
+        orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] }
+      });
+
+      // Auto-settle if shift expired or minimum orders condition is met
+      const targetMinOrders = rules.minimumOrders > 0 ? rules.minimumOrders : 1;
+      const ordersRequirementMet = completedOrdersCount >= targetMinOrders;
+
+      if (now >= shiftEnd || ordersRequirementMet) {
+        logger.info(`[ShiftSettlement] Auto-settling booked shift ${shift._id} for rider ${partnerOid} (completed: ${completedOrdersCount}, min required: ${rules.minimumOrders})`);
+        await shiftService.processShiftSettlements(shift._id);
+      }
+    }
+  } catch (shiftErr) {
+    logger.error(`[ShiftSettlement] Error auto-settling booked slot shifts: ${shiftErr?.message}`);
+  }
+}
+
 export async function completeDelivery(orderId, deliveryPartnerId, body = {}) {
   const identity = buildOrderIdentityFilter(orderId);
   const order = await FoodOrder.findOne(identity).select('+deliveryOtp');
@@ -1501,146 +1670,8 @@ export async function completeDelivery(orderId, deliveryPartnerId, body = {}) {
     logger.error(`[REFERRAL] Error processing referral reward on order delivery: ${refErr?.message}`);
   }
 
-  // Credit rider wallet immediately with ride earnings
-  try {
-    const riderEarnedAmount = Number(order.riderEarning || order.pricing?.deliveryFee || 0);
-    if (deliveryPartnerId && riderEarnedAmount > 0) {
-      const { creditWallet } = await import('../../../../core/payments/wallet.service.js');
-      await creditWallet({
-        entityType: 'deliveryBoy',
-        entityId: String(deliveryPartnerId),
-        amount: riderEarnedAmount,
-        description: `Order #${order.orderId || order._id} - delivery earning`,
-        category: 'delivery_earning',
-        orderId: order._id.toString(),
-        metadata: { orderId: order.orderId, paymentMethod: finalPayMethod }
-      });
+  await processOrderDeliveryFinancials(order, deliveryPartnerId, finalPayMethod);
 
-      const { FoodDeliveryWallet } = await import('../../delivery/models/deliveryWallet.model.js');
-      await FoodDeliveryWallet.updateOne(
-        { deliveryPartnerId: new mongoose.Types.ObjectId(deliveryPartnerId) },
-        { $inc: { totalDeliveries: 1 } }
-      );
-      logger.info(`[RiderWallet] Credited ${riderEarnedAmount} to rider ${deliveryPartnerId} for order ${order.orderId || order._id}`);
-    }
-
-    // Credit weather fee to rider wallet if present
-    if (deliveryPartnerId && Number(order.pricing?.weatherFee || 0) > 0) {
-      const { creditWallet } = await import('../../../../core/payments/wallet.service.js');
-      await creditWallet({
-        entityType: 'deliveryBoy',
-        entityId: String(deliveryPartnerId),
-        amount: Number(order.pricing.weatherFee),
-        description: `Order #${order.orderId || order._id} - weather surcharge`,
-        category: 'weather_surcharge',
-        orderId: order._id.toString(),
-        metadata: { orderId: order.orderId }
-      });
-    }
-
-    // Check and credit any pending incentives for rider on this order
-    const { FoodIncentive } = await import('../models/incentive.model.js');
-    const pendingIncentives = await FoodIncentive.find({
-      orderId: order._id,
-      deliveryPartnerId: new mongoose.Types.ObjectId(deliveryPartnerId),
-      status: 'PENDING'
-    });
-    for (const incentive of pendingIncentives) {
-      incentive.status = 'CREDITED';
-      await incentive.save();
-      const { creditWallet } = await import('../../../../core/payments/wallet.service.js');
-      await creditWallet({
-        entityType: 'deliveryBoy',
-        entityId: String(deliveryPartnerId),
-        amount: incentive.amount,
-        description: `Order #${order.orderId || order._id} - ${incentive.incentiveType} incentive`,
-        category: 'bonus',
-        orderId: order._id.toString(),
-        metadata: { orderId: order.orderId, reason: incentive.reason }
-      });
-      const { FoodDeliveryWallet } = await import('../../delivery/models/deliveryWallet.model.js');
-      await FoodDeliveryWallet.updateOne(
-        { deliveryPartnerId: new mongoose.Types.ObjectId(deliveryPartnerId) },
-        { $inc: { totalBonus: incentive.amount } }
-      );
-    }
-  } catch (riderWalletErr) {
-    logger.error(`[RiderWallet] Error crediting rider earnings on delivery: ${riderWalletErr?.message}`);
-  }
-
-  // Check and process booked shift slots for rider upon ride completion
-  try {
-    const { FoodShiftBooking } = await import('../../shifts/models/shiftBooking.model.js');
-    const { FoodShift } = await import('../../shifts/models/shift.model.js');
-    const { shiftService } = await import('../../shifts/services/shift.service.js');
-    const { shiftRepository } = await import('../../shifts/repositories/shift.repository.js');
-
-    const partnerOid = new mongoose.Types.ObjectId(deliveryPartnerId);
-    const bookings = await FoodShiftBooking.find({
-      riderId: { $in: [partnerOid, String(deliveryPartnerId)] },
-      status: 'BOOKED'
-    }).populate('shiftId');
-
-    const now = new Date();
-    for (const booking of bookings) {
-      const shift = booking.shiftId;
-      if (!shift) continue;
-
-      const shiftStart = new Date(shift.startTime);
-      const shiftEnd = new Date(shift.endTime);
-      const shiftStartGrace = new Date(shiftStart.getTime() - 15 * 60 * 1000);
-      const shiftEndGrace = new Date(shiftEnd.getTime() + 60 * 60 * 1000);
-
-      // Record / update attendance on the shift so the ride counts
-      let attendance = await shiftRepository.getAttendanceByRiderAndShift(partnerOid, shift._id);
-      if (!attendance) {
-        await shiftRepository.createOrUpdateAttendance(partnerOid, shift._id, {
-          loginTime: order.deliveryState?.pickedUpAt || shiftStart,
-          lastHeartbeatAt: now,
-          onlineMinutes: 60,
-          loginPercentage: 100
-        });
-      } else {
-        await shiftRepository.createOrUpdateAttendance(partnerOid, shift._id, {
-          lastHeartbeatAt: now,
-          loginPercentage: Math.max(attendance.loginPercentage || 0, 100)
-        });
-      }
-
-      const rules = {
-        guaranteeAmount: booking.snapshotRules?.guaranteeAmount ?? shift.guaranteeAmount ?? 0,
-        minimumOrders: booking.snapshotRules?.minimumOrders ?? shift.minimumOrders ?? 0,
-        minimumLoginPercentage: booking.snapshotRules?.minimumLoginPercentage ?? shift.minimumLoginPercentage ?? 0
-      };
-
-      const completedOrdersCount = await FoodOrder.countDocuments({
-        $and: [
-          {
-            $or: [
-              { 'dispatch.deliveryPartnerId': partnerOid },
-              { deliveryPartnerId: partnerOid }
-            ]
-          },
-          {
-            $or: [
-              { 'deliveryState.deliveredAt': { $gte: shiftStartGrace, $lte: shiftEndGrace } },
-              { deliveredAt: { $gte: shiftStartGrace, $lte: shiftEndGrace } },
-              { createdAt: { $gte: shiftStartGrace, $lte: shiftEndGrace } }
-            ]
-          }
-        ],
-        orderStatus: { $in: ['delivered', 'completed', 'Delivered', 'Completed'] }
-      });
-
-      // If the rider completed minimum orders required or shift has ended, auto-settle to credit guarantee bonus immediately
-      if (now >= shiftEnd || (rules.minimumOrders > 0 && completedOrdersCount >= rules.minimumOrders)) {
-        logger.info(`[ShiftSettlement] Auto-settling booked shift ${shift._id} for rider ${partnerOid} (completed: ${completedOrdersCount}, min: ${rules.minimumOrders})`);
-        await shiftService.processShiftSettlements(shift._id);
-      }
-    }
-  } catch (shiftErr) {
-    logger.error(`[ShiftSettlement] Error auto-settling booked slot shifts: ${shiftErr?.message}`);
-  }
 
   appEvents.emit(EVENTS.ORDER_COMPLETED, order);
 
@@ -1701,6 +1732,11 @@ export async function updateOrderStatusDelivery(orderId, deliveryPartnerId, orde
         await processReferralRewardOnFirstOrder(order);
       } catch (refErr) {
         logger.error(`[REFERRAL] Error processing referral reward in updateOrderStatusDelivery: ${refErr?.message}`);
+      }
+      try {
+        await processOrderDeliveryFinancials(order, deliveryPartnerId, order.payment?.method || 'cash');
+      } catch (finErr) {
+        logger.error(`[DeliveryFinancials] Error processing financials in updateOrderStatusDelivery: ${finErr?.message}`);
       }
   }
 

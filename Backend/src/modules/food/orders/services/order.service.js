@@ -370,12 +370,15 @@ export async function createOrder(userId, dto) {
   let deliveryBonusAmount = 0;
   if (orderType !== 'takeaway') {
     riderEarning = await getRiderEarning(distanceKm);
+    const feeSettings = await FoodFeeSettings.findOne({ isActive: true }).lean();
     if (!riderEarning || riderEarning === 0) {
         riderEarning = Number(normalizedPricing.deliveryFee || 0);
     }
+    if (!riderEarning || riderEarning === 0) {
+        riderEarning = Number(feeSettings?.riderBasePayout || feeSettings?.deliveryBasePayout || 25);
+    }
     
     // Apply delivery bonus from fee settings
-    const feeSettings = await FoodFeeSettings.findOne({ isActive: true }).lean();
     deliveryBonusAmount = Number(feeSettings?.deliveryBonusAmount || 0);
     if (deliveryBonusAmount > 0) {
       riderEarning += deliveryBonusAmount;
@@ -2439,6 +2442,15 @@ export async function updateOrderStatusAdmin(orderId, adminId, orderStatus, note
           await processReferralRewardOnFirstOrder(order);
       } catch (refErr) {
           logger.error(`[REFERRAL] Error processing referral reward in updateOrderStatusAdmin: ${refErr?.message}`);
+      }
+      try {
+          const assignedPartnerId = order.dispatch?.deliveryPartnerId || order.deliveryPartnerId;
+          if (assignedPartnerId) {
+              const { processOrderDeliveryFinancials } = await import('./order-delivery.service.js');
+              await processOrderDeliveryFinancials(order, assignedPartnerId, order.payment?.method || 'cash');
+          }
+      } catch (finErr) {
+          logger.error(`[DeliveryFinancials] Error processing financials in updateOrderStatusAdmin: ${finErr?.message}`);
       }
   }
 

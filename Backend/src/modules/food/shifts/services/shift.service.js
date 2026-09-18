@@ -607,6 +607,11 @@ export const shiftService = {
                                    (partner?._id ? await shiftRepository.getAttendanceByRiderAndShift(partner._id, shiftId) : null);
                 const attendancePercentage = attendance ? (attendance.loginPercentage || 0) : 0;
 
+                const shiftStart = new Date(shift.startTime);
+                const shiftEnd = new Date(shift.endTime);
+                const shiftStartGrace = new Date(shiftStart.getTime() - 15 * 60 * 1000);
+                const shiftEndGrace = new Date(shiftEnd.getTime() + 60 * 60 * 1000);
+
                 const completedOrdersCount = await FoodOrder.countDocuments({
                     $and: [
                         {
@@ -617,10 +622,10 @@ export const shiftService = {
                         },
                         {
                             $or: [
-                                { 'deliveryState.deliveredAt': { $gte: shift.startTime, $lte: shift.endTime } },
-                                { deliveredAt: { $gte: shift.startTime, $lte: shift.endTime } },
-                                { createdAt: { $gte: shift.startTime, $lte: shift.endTime } },
-                                { updatedAt: { $gte: shift.startTime, $lte: shift.endTime } }
+                                { 'deliveryState.deliveredAt': { $gte: shiftStartGrace, $lte: shiftEndGrace } },
+                                { deliveredAt: { $gte: shiftStartGrace, $lte: shiftEndGrace } },
+                                { createdAt: { $gte: shiftStartGrace, $lte: shiftEndGrace } },
+                                { updatedAt: { $gte: shiftStartGrace, $lte: shiftEndGrace } }
                             ]
                         }
                     ],
@@ -630,7 +635,7 @@ export const shiftService = {
                 // Query Earnings in shift window (checking both transactions and completed orders)
                 const transactions = await FoodTransaction.find({
                     deliveryPartnerId: { $in: partnerIds },
-                    createdAt: { $gte: shift.startTime, $lte: shift.endTime },
+                    createdAt: { $gte: shiftStartGrace, $lte: shiftEndGrace },
                     status: { $in: ['authorized', 'captured', 'settled', 'success'] }
                 });
                 
@@ -646,10 +651,10 @@ export const shiftService = {
                         },
                         {
                             $or: [
-                                { 'deliveryState.deliveredAt': { $gte: shift.startTime, $lte: shift.endTime } },
-                                { deliveredAt: { $gte: shift.startTime, $lte: shift.endTime } },
-                                { createdAt: { $gte: shift.startTime, $lte: shift.endTime } },
-                                { updatedAt: { $gte: shift.startTime, $lte: shift.endTime } }
+                                { 'deliveryState.deliveredAt': { $gte: shiftStartGrace, $lte: shiftEndGrace } },
+                                { deliveredAt: { $gte: shiftStartGrace, $lte: shiftEndGrace } },
+                                { createdAt: { $gte: shiftStartGrace, $lte: shiftEndGrace } },
+                                { updatedAt: { $gte: shiftStartGrace, $lte: shiftEndGrace } }
                             ]
                         }
                     ],
@@ -673,7 +678,8 @@ export const shiftService = {
                 if (rules.minimumOrders > 0 && completedOrdersCount < rules.minimumOrders) {
                     isEligible = false;
                     rejectionReason = 'REJECTED_ORDERS';
-                } else if (rules.minimumLoginPercentage > 0 && attendancePercentage < rules.minimumLoginPercentage && completedOrdersCount < rules.minimumOrders) {
+                } else if (rules.minimumLoginPercentage > 0 && attendancePercentage < rules.minimumLoginPercentage && completedOrdersCount === 0) {
+                    // Only reject attendance if rider completed 0 orders during the shift
                     isEligible = false;
                     rejectionReason = 'REJECTED_ATTENDANCE';
                 } else if (attendance?.gpsAnomalyFlags?.length > 5) {
@@ -741,6 +747,23 @@ export const shiftService = {
 
                 await session.commitTransaction();
                 results.push(settlementRecord);
+
+                // Ensure core wallet Transaction is recorded for guarantee bonus
+                if (guaranteeBonus > 0 && resolvedRiderId) {
+                    try {
+                        const { creditWallet } = await import('../../../../core/payments/wallet.service.js');
+                        await creditWallet({
+                            entityType: 'deliveryBoy',
+                            entityId: String(resolvedRiderId),
+                            amount: guaranteeBonus,
+                            description: `Shift Guarantee Bonus: ${shift.name}`,
+                            category: 'bonus',
+                            metadata: { shiftId: String(shift._id), type: 'shift_guarantee_bonus' }
+                        });
+                    } catch (cwErr) {
+                        console.warn('[ShiftSettlement] core creditWallet recorded note:', cwErr?.message);
+                    }
+                }
 
             } catch (error) {
                 await session.abortTransaction();
